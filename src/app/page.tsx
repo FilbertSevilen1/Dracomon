@@ -1269,7 +1269,7 @@ export default function Home() {
                     </p>
                   </div>
                   
-                  <div className="w-full md:w-auto min-w-[290px] bg-white border border-purple-200/60 rounded-2xl p-5 shadow-sm space-y-4">
+                  {/* <div className="w-full md:w-auto min-w-[290px] bg-white border border-purple-200/60 rounded-2xl p-5 shadow-sm space-y-4">
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center font-bold text-lg text-purple-600 shadow-inner">
                         🏦
@@ -1279,8 +1279,6 @@ export default function Home() {
                         <h4 className="font-bold text-xs text-stone-700">Bank Central Asia (BCA)</h4>
                       </div>
                     </div>
-
-                    {/* EDITABLE BANK ACCOUNT DETAILS */}
                     <div className="p-3.5 bg-stone-50 border border-stone-100 rounded-xl font-mono text-center relative">
                       <div className="text-stone-400 text-[9px] uppercase font-bold tracking-wider mb-1">Account Number</div>
                       <div className="text-stone-950 font-black text-base tracking-widest select-all">
@@ -1289,8 +1287,6 @@ export default function Home() {
                       <div className="text-stone-500 text-[10px] font-bold mt-1.5">
                         A/N: IGNATIUS FILBERT SEVILEN
                       </div>
-                      
-                      {/* Copy to Clipboard Trigger */}
                       <button
                         onClick={() => {
                           navigator.clipboard.writeText('5271835648');
@@ -1302,7 +1298,7 @@ export default function Home() {
                         📋 Copy Account No.
                       </button>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </section>
 
