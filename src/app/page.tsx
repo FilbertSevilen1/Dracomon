@@ -61,6 +61,7 @@ export default function Home() {
     exportSave,
     importSave,
     switchTier,
+    markStageCleared,
   } = useGameState();
 
   // Modal open states
@@ -560,7 +561,7 @@ export default function Home() {
                 onCoinCollect={collectCoins}
                 onItemCollect={collectItem}
                 onEnemyDefeat={handleEnemyDefeated}
-                onStageClear={() => {}}
+                onStageClear={() => markStageCleared(currentStage)}
                 onQuit={() => {
                   setIsPlaying(false);
                   window.scrollTo(0, 0);

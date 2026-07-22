@@ -144,38 +144,27 @@ export function useGameState() {
   // Use Healing Potion
   const usePotion = useCallback((dracoName: string, activeEngineRef?: any) => {
     let used = false;
-    updateSaveState(prev => {
-      const potion = prev.inventory.find(i => i.id === 'potion');
-      if (potion && potion.quantity > 0) {
-        const activeDraco = prev.dracos[dracoName];
-        if (activeDraco) {
-          // If we are currently in-game, heal through the game engine
-          if (activeEngineRef && activeEngineRef.current) {
-            activeEngineRef.current.healPlayer(15);
-            used = true;
-          } else {
-            // Outside of active gameplay (menus)
-            const currentHp = activeDraco.hp ?? 10;
-            // Base max HP calculation or just standard heal
-            // Since we store base stats, we just heal
-            used = true;
-          }
-          
-          if (used) {
-            soundService.playLevelUp();
-            return {
-              ...prev,
-              inventory: prev.inventory.map(i => 
-                i.id === 'potion' ? { ...i, quantity: i.quantity - 1 } : i
-              ).filter(i => i.quantity > 0)
-            };
-          }
-        }
+    const potion = saveData.inventory.find(i => i.id === 'potion');
+    if (potion && potion.quantity > 0) {
+      if (activeEngineRef && activeEngineRef.current) {
+        activeEngineRef.current.healPlayer(15);
+        used = true;
+      } else {
+        used = true;
       }
-      return prev;
-    });
+
+      if (used) {
+        soundService.playLevelUp();
+        updateSaveState(prev => ({
+          ...prev,
+          inventory: prev.inventory.map(i => 
+            i.id === 'potion' ? { ...i, quantity: i.quantity - 1 } : i
+          ).filter(i => i.quantity > 0)
+        }));
+      }
+    }
     return used;
-  }, [updateSaveState]);
+  }, [saveData.inventory, updateSaveState]);
 
   // Use Upgrade Stone to increase a stat permanently
   const useUpgradeStone = useCallback((dracoName: string, stat: keyof PlayerStats) => {
@@ -503,13 +492,11 @@ export function useGameState() {
   const markStageCleared = useCallback((stageNum: number) => {
     updateSaveState(prev => {
       const currentCompleted = prev.completedStages || [1];
-      if (!currentCompleted.includes(stageNum)) {
-        return {
-          ...prev,
-          completedStages: [...currentCompleted, stageNum, stageNum + 1]
-        };
-      }
-      return prev;
+      const nextStages = new Set([...currentCompleted, stageNum, stageNum + 1]);
+      return {
+        ...prev,
+        completedStages: Array.from(nextStages)
+      };
     });
   }, [updateSaveState]);
 
