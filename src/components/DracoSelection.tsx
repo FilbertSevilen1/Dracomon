@@ -47,14 +47,14 @@ const DRACO_META: {
     bgGradient: 'from-emerald-400 to-teal-600',
   },
   Shieldmon: {
-    role: 'Tank / Defender',
-    abilityName: 'Aegis Shield Charge',
-    abilityDesc: 'Melee bash. Special creates 2s indestructible shield bubble.',
-    ultimateName: 'Fortress Shockwave',
-    ultimateDesc: '5s total invulnerability, radial knockback blast & hazard rush.',
+    role: 'Tank / Bulwark Trample',
+    abilityName: 'Shield Trample Dash',
+    abilityDesc: 'High-speed 600px dash that trample and knocks back all enemies caught in path.',
+    ultimateName: 'Portal Rampage Charge',
+    ultimateDesc: 'Raises shield forward and charges continuously to the nearest portal, launching all hit enemies skyward!',
     cost: 200,
-    colorClass: 'text-blue-600 border-blue-200 bg-blue-50',
-    bgGradient: 'from-blue-400 to-indigo-600',
+    colorClass: 'text-blue-500 border-blue-500 bg-blue-950',
+    bgGradient: 'from-blue-900 via-indigo-950 to-slate-900',
   },
   Assassinmon: {
     role: 'Stealth / Burst',
@@ -95,6 +95,16 @@ const DRACO_META: {
     cost: 250,
     colorClass: 'text-purple-600 border-purple-200 bg-purple-50',
     bgGradient: 'from-purple-600 via-indigo-600 to-cyan-500',
+  },
+  Shadowmon: {
+    role: 'Ranged Dark / Soul Burst',
+    abilityName: 'Dark Shadowraze Eruption',
+    abilityDesc: 'Fires dark crimson energy bolts. Special erupts a vertical nether shadowraze pillar from the ground.',
+    ultimateName: 'Soul Blast',
+    ultimateDesc: '1.5s channel, 120 energy, dual screen-sweeping dark waves empowered up to 5x by Dark Soul Stacks.',
+    cost: 450,
+    colorClass: 'text-rose-600 border-rose-900 bg-rose-950',
+    bgGradient: 'from-rose-900 via-stone-900 to-red-950',
   },
 };
 
@@ -203,6 +213,23 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
     );
   }
 
+  if (name === 'Shadowmon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.2)" />
+        <path d="M 28 45 Q 6 20 32 32 Z" fill="#9f1239" stroke="#ef4444" strokeWidth="1.5" />
+        <path d="M 72 45 Q 94 20 68 32 Z" fill="#9f1239" stroke="#ef4444" strokeWidth="1.5" />
+        <rect x="34" y="34" width="32" height="42" rx="10" fill="#18181b" stroke="#ef4444" strokeWidth="2.5" />
+        <path d="M 32 30 L 26 14 L 40 24 Z" fill="#ef4444" />
+        <path d="M 68 30 L 74 14 L 60 24 Z" fill="#ef4444" />
+        <rect x="42" y="44" width="5" height="4" fill="#ef4444" />
+        <rect x="53" y="44" width="5" height="4" fill="#ef4444" />
+        <circle cx="50" cy="62" r="7" fill="#881337" stroke="#ef4444" strokeWidth="1.5" />
+        <text x="50" y="65" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="900" fontFamily="monospace">5</text>
+      </svg>
+    );
+  }
+
   // Flymon
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
@@ -254,7 +281,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   const spd = inspectedData.speed || 1;
 
   const levelUpCost = lvl * 100;
-  const canLevelUp = isUnlocked && lvl < 25 && coins >= levelUpCost;
+  const canLevelUp = isUnlocked && lvl < 15 && coins >= levelUpCost;
 
   return (
     <motion.div
@@ -470,12 +497,12 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-bold text-stone-800 flex items-center gap-1">
                   <span>Battle Attributes</span>
-                  {isUnlocked && <span className="text-stone-400 font-normal text-[11px]">(Level {lvl}/25)</span>}
+                  {isUnlocked && <span className="text-stone-400 font-normal text-[11px]">(Level {lvl}/15)</span>}
                 </div>
 
                 {isUnlocked && (
                   <div>
-                    {lvl >= 25 ? (
+                    {lvl >= 15 ? (
                       <span className="px-2.5 py-1 text-[10px] font-bold text-purple-700 bg-purple-100 rounded-lg">
                         MAX LEVEL
                       </span>

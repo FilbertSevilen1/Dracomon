@@ -52,6 +52,7 @@ export default function Home() {
     collectCoins,
     collectItem,
     usePotion,
+    pendingLevelUps,
     useUpgradeStone,
     buyItem,
     handleEnemyDefeated,
@@ -225,8 +226,8 @@ export default function Home() {
       cost: 200,
       role: 'Tank / Fortress Sentinel',
       lore: 'Forged in the molten depths of Volcanic Peak. Encased in royal steel armor, Shieldmon projects invulnerable light barriers that block all damage while crushing foes with shield bashes.',
-      signatureSkill: 'Aegis Invulnerable Barrier (2s Shield)',
-      ultimateSkill: 'Aegis Fortress Shockwave (5s Invulnerable)',
+      signatureSkill: 'Shield Trample Dash (600px Max Trample & Knockback)',
+      ultimateSkill: 'Portal Rampage Charge (Invincible Shield Charge to Exit Portal • Skyward Launch)',
       color: 'blue',
       tagColor: 'bg-blue-100 text-blue-900 border-blue-300 font-mono',
       attackType: 'Heavy Shield Bash Wave',
@@ -360,6 +361,37 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Shadowmon',
+      title: 'Nether Dark Dragon',
+      cost: 450,
+      role: 'Ranged Dark / Soul Burst DPS',
+      lore: 'Born from the pitch-black void of the Nether Realm. Shadowmon attacks with dark crimson energy bolts. Defeating enemies in a stage absorbs Dark Soul Stacks (up to 5 max) onto his body, which empower his 120-Energy 360° Dark Void Eruption ultimate by up to 5x multiplier!',
+      signatureSkill: 'Dark Shadowraze Eruption (Vertical Nether Ground Pillar)',
+      ultimateSkill: 'Soul Blast (120 Energy • 1.5s Channel • Dual Screen-Sweeping Dark Waves)',
+      color: 'rose',
+      tagColor: 'bg-rose-950 text-rose-300 border-rose-700 font-mono',
+      attackType: 'Ranged Dark Crimson Plasma Bolts',
+      hp: saveData.dracos['Shadowmon']?.hp || 20,
+      atk: saveData.dracos['Shadowmon']?.attack || 9,
+      def: saveData.dracos['Shadowmon']?.defense || 3,
+      spd: saveData.dracos['Shadowmon']?.speed || 8,
+      jump: 10.5,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
+          <path d="M 28 45 Q 6 20 32 32 Z" fill="#9f1239" stroke="#ef4444" strokeWidth="1.5" />
+          <path d="M 72 45 Q 94 20 68 32 Z" fill="#9f1239" stroke="#ef4444" strokeWidth="1.5" />
+          <rect x="34" y="34" width="32" height="42" rx="10" fill="#18181b" stroke="#ef4444" strokeWidth="2.5" />
+          <path d="M 32 30 L 26 14 L 40 24 Z" fill="#ef4444" />
+          <path d="M 68 30 L 74 14 L 60 24 Z" fill="#ef4444" />
+          <rect x="42" y="44" width="5" height="4" fill="#ef4444" />
+          <rect x="53" y="44" width="5" height="4" fill="#ef4444" />
+          <circle cx="50" cy="62" r="7" fill="#881337" stroke="#ef4444" strokeWidth="1.5" />
+          <text x="50" y="65" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="900" fontFamily="monospace">5</text>
+        </svg>
+      ),
+    },
   ];
 
   // FAQ List
@@ -487,6 +519,16 @@ export default function Home() {
       desc: 'Climbable tree vines, 2s root vine traps, instant-death toxic poison swamp chasm with melting acid skeleton animation, reviving skeleton archers, and the Primordial King Kong Boss with 3-jump 2s seismic stun ground slam!',
       boss: 'King Kong',
       color: 'emerald'
+    },
+    {
+      num: 11,
+      name: 'Gladiator Arena',
+      difficulty: 'SURVIVAL DEFENSE (2 MIN)',
+      diffClass: 'bg-rose-500 text-white font-black border-rose-400',
+      borderHover: 'hover:border-rose-500 hover:bg-rose-500/10 ring-2 ring-rose-400/30',
+      desc: 'Roman Colosseum defense map! Endless gladiator enemy waves spawn for 2 full minutes. Survive the 120s timer to spawn the Exit Portal!',
+      boss: 'Gladiator Waves',
+      color: 'rose'
     }
   ];
 
@@ -503,16 +545,21 @@ export default function Home() {
   const currentStages = STAGE_CARDS.slice(stagePage * itemsPerPage, (stagePage + 1) * itemsPerPage);
 
   return (
-    <div className="min-h-screen bg-stone-50 bg-grid text-stone-900 flex flex-col justify-between font-display relative overflow-hidden scroll-smooth">
+    <div className={`min-h-screen ${isPlaying ? 'bg-stone-950 overflow-hidden' : 'bg-stone-50 bg-grid'} text-stone-900 flex flex-col justify-between font-display relative overflow-hidden scroll-smooth`}>
       
       {/* Dynamic background lighting accents */}
-      <div className="absolute top-0 right-0 w-[55rem] h-[55rem] bg-amber-200/25 rounded-full blur-3xl -z-10 animate-blob-drift-1" />
-      <div className="absolute top-[35rem] left-0 w-[45rem] h-[45rem] bg-indigo-200/25 rounded-full blur-3xl -z-10 animate-blob-drift-2" />
-      <div className="absolute bottom-0 right-0 w-[50rem] h-[50rem] bg-emerald-200/20 rounded-full blur-3xl -z-10 animate-blob-drift-3" />
-      <div className="absolute top-[80rem] right-12 w-[35rem] h-[35rem] bg-rose-200/20 rounded-full blur-3xl -z-10 animate-blob-drift-1" />
+      {!isPlaying && (
+        <>
+          <div className="absolute top-0 right-0 w-[55rem] h-[55rem] bg-amber-200/25 rounded-full blur-3xl -z-10 animate-blob-drift-1" />
+          <div className="absolute top-[35rem] left-0 w-[45rem] h-[45rem] bg-indigo-200/25 rounded-full blur-3xl -z-10 animate-blob-drift-2" />
+          <div className="absolute bottom-0 right-0 w-[50rem] h-[50rem] bg-emerald-200/20 rounded-full blur-3xl -z-10 animate-blob-drift-3" />
+          <div className="absolute top-[80rem] right-12 w-[35rem] h-[35rem] bg-rose-200/20 rounded-full blur-3xl -z-10 animate-blob-drift-1" />
+        </>
+      )}
 
       {/* Navigation Header */}
-      <header className="sticky top-0 w-full border-b border-stone-200/70 bg-white/85 backdrop-blur-md px-6 md:px-12 py-3.5 flex items-center justify-between z-50 shadow-sm">
+      {!isPlaying && (
+        <header className="sticky top-0 w-full border-b border-stone-200/70 bg-white/85 backdrop-blur-md px-6 md:px-12 py-3.5 flex items-center justify-between z-50 shadow-sm">
         <div className="flex items-center gap-3">
           <span className="text-xl md:text-2xl font-black tracking-tight text-stone-900 flex items-center gap-2">
             🐉 DRACOMON <span className="text-amber-500 font-extrabold">RPG</span>
@@ -522,9 +569,9 @@ export default function Home() {
         {/* Center Nav Links */}
         <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-stone-600">
           <button onClick={() => scrollToSection('about')} className="hover:text-amber-600 transition-colors">About</button>
+          <button onClick={() => scrollToSection('membership')} className="hover:text-amber-600 transition-colors">Memberships</button>
           <button onClick={() => scrollToSection('characters')} className="hover:text-amber-600 transition-colors">Heroes</button>
           <button onClick={() => scrollToSection('realms')} className="hover:text-amber-600 transition-colors">Stages</button>
-          <button onClick={() => scrollToSection('membership')} className="hover:text-amber-600 transition-colors">Memberships</button>
         </nav>
 
         {/* Right Utility Bar */}
@@ -552,39 +599,42 @@ export default function Home() {
           </button>
         </div>
       </header>
+      )}
 
       {/* Main Container */}
       <main className="flex-1 w-full z-30">
         <AnimatePresence mode="wait">
           {isPlaying ? (
-            // IN-GAME SCREEN VIEW
+            // IN-GAME SCREEN VIEW (10% Smaller Framed Viewport)
             <motion.div
               key="game-screen-wrapper"
-              initial={{ opacity: 0, scale: 0.98 }}
+              initial={{ opacity: 0, scale: 0.96 }}
               animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.98 }}
-              className="w-full flex justify-center p-4 md:p-8"
+              exit={{ opacity: 0, scale: 0.96 }}
+              className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-stone-950/95 backdrop-blur-xl p-[2.5vh] p-[2.5vw] overflow-hidden select-none"
             >
-              <GameScreen
-                saveData={saveData}
-                stageNum={currentStage}
-                onCoinCollect={collectCoins}
-                onItemCollect={collectItem}
-                onEnemyDefeat={handleEnemyDefeated}
-                onStageClear={() => markStageCleared(currentStage)}
-                onNextLevel={() => {
-                  markStageCleared(currentStage);
-                  setCurrentStage(Math.min(currentStage + 1, 10));
-                }}
-                onQuit={() => {
-                  setIsPlaying(false);
-                  window.scrollTo(0, 0);
-                }}
-                openSettings={() => setShowSettings(true)}
-                openInventory={() => setShowInventory(true)}
-                activePotionCount={activePotionCount}
-                onUsePotion={usePotion}
-              />
+              <div className="w-[90vw] h-[90vh] max-w-full max-h-full rounded-3xl border-2 border-stone-800/80 shadow-[0_0_60px_rgba(0,0,0,0.9)] overflow-hidden relative bg-stone-950 flex flex-col">
+                <GameScreen
+                  saveData={saveData}
+                  stageNum={currentStage}
+                  onCoinCollect={collectCoins}
+                  onItemCollect={collectItem}
+                  onEnemyDefeat={handleEnemyDefeated}
+                  onStageClear={() => markStageCleared(currentStage)}
+                  onNextLevel={() => {
+                    markStageCleared(currentStage);
+                    setCurrentStage(Math.min(currentStage + 1, 11));
+                  }}
+                  onQuit={() => {
+                    setIsPlaying(false);
+                    window.scrollTo(0, 0);
+                  }}
+                  openSettings={() => setShowSettings(true)}
+                  openInventory={() => setShowInventory(true)}
+                  activePotionCount={activePotionCount}
+                  onUsePotion={usePotion}
+                />
+              </div>
             </motion.div>
           ) : (
             // FULL GAME WEBSITE LANDING VIEW
@@ -685,11 +735,11 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Hero Right Interactive Floating Islands */}
-                  <div className="md:col-span-5 flex justify-center items-center h-[460px] md:h-[500px] relative select-none w-full">
+                  {/* Hero Right Interactive Floating Islands (Non-overlapping 8-Point Ring Constellation) */}
+                  <div className="md:col-span-5 flex justify-center items-center h-[500px] relative select-none w-full px-2">
                     {/* Floating Island 1: Jumpmon (Top-Left) */}
                     <motion.div
-                      className={`absolute top-0 left-0 md:left-2 flex flex-col items-center cursor-pointer group z-10 ${
+                      className={`absolute top-2 left-2 md:left-4 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Jumpmon' ? 'scale-105' : ''
                       }`}
                       onClick={() => handleHeroSelectDraco('Jumpmon', 0)}
@@ -698,198 +748,28 @@ export default function Home() {
                       <div className="animate-float-slow drop-shadow-md">
                         {companionShowcase[0].svg}
                       </div>
-                      <div className={`w-28 h-7 bg-[#10b981] border-2 ${activeDracoName === 'Jumpmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#047857]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#b45309] h-3.5 mt-auto w-full" />
+                      <div className={`w-24 h-6 bg-[#10b981] border-2 ${activeDracoName === 'Jumpmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#047857]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#b45309] h-3 mt-auto w-full" />
                       </div>
                       <div className="mt-1 flex flex-col items-center">
                         <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
                           Jumpmon
                         </span>
                         {activeDracoName === 'Jumpmon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
                             ⚡ EQUIPPED
                           </span>
                         ) : (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
                             ✓ EQUIP
                           </span>
                         )}
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 2: Archermon (Top-Right) */}
+                    {/* Floating Island 2: Magemon (Top-Center) */}
                     <motion.div
-                      className={`absolute top-0 right-0 md:right-2 flex flex-col items-center cursor-pointer group z-10 ${
-                        activeDracoName === 'Archermon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Archermon', 100)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-medium drop-shadow-md">
-                        {companionShowcase[1].svg}
-                      </div>
-                      <div className={`w-28 h-7 bg-[#64748b] border-2 ${activeDracoName === 'Archermon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#334155]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#475569] h-3.5 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Archermon
-                        </span>
-                        {activeDracoName === 'Archermon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Archermon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 UNLOCK (100C)
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {/* Floating Island 3: Shieldmon (Mid-Left) */}
-                    <motion.div
-                      className={`absolute top-[165px] left-2 md:left-8 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Shieldmon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Shieldmon', 200)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-fast drop-shadow-md">
-                        {companionShowcase[2].svg}
-                      </div>
-                      <div className={`w-30 h-7 bg-[#4b5563] border-2 ${activeDracoName === 'Shieldmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#1f2937]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#ea580c] h-3.5 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Shieldmon
-                        </span>
-                        {activeDracoName === 'Shieldmon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Shieldmon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 UNLOCK (200C)
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {/* Floating Island 4: Assassinmon (Mid-Right) */}
-                    <motion.div
-                      className={`absolute top-[165px] right-2 md:right-8 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Assassinmon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Assassinmon', 300)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-slow drop-shadow-md">
-                        {companionShowcase[3].svg}
-                      </div>
-                      <div className={`w-28 h-7 bg-[#581c87] border-2 ${activeDracoName === 'Assassinmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#3b0764]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#1e1b4b] h-3.5 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Assassinmon
-                        </span>
-                        {activeDracoName === 'Assassinmon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Assassinmon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 UNLOCK (300C)
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {/* Floating Island 5: Flymon (Bottom-Left) */}
-                    <motion.div
-                      className={`absolute bottom-0 left-0 md:left-2 flex flex-col items-center cursor-pointer group z-10 ${
-                        activeDracoName === 'Flymon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Flymon', 400)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-medium drop-shadow-md">
-                        {companionShowcase[4].svg}
-                      </div>
-                      <div className={`w-28 h-7 bg-[#e11d48] border-2 ${activeDracoName === 'Flymon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#881337]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#fda4af] h-3.5 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Flymon
-                        </span>
-                        {activeDracoName === 'Flymon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Flymon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 UNLOCK (400C)
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {/* Floating Island 6: Whitemon (Bottom-Right) */}
-                    <motion.div
-                      className={`absolute bottom-0 right-0 md:right-2 flex flex-col items-center cursor-pointer group z-10 ${
-                        activeDracoName === 'Whitemon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Whitemon', 500)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-slow drop-shadow-md">
-                        {companionShowcase[5].svg}
-                      </div>
-                      <div className={`w-28 h-7 bg-[#0284c7] border-2 ${activeDracoName === 'Whitemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#0369a1]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#38bdf8] h-3.5 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Whitemon
-                        </span>
-                        {activeDracoName === 'Whitemon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Whitemon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 UNLOCK (500C)
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {/* Floating Island 7: Magemon (Center Bottom) */}
-                    <motion.div
-                      className={`absolute bottom-[-15px] left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-30 ${
+                      className={`absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Magemon' ? 'scale-105' : ''
                       }`}
                       onClick={() => handleHeroSelectDraco('Magemon', 250)}
@@ -898,24 +778,228 @@ export default function Home() {
                       <div className="animate-float-fast drop-shadow-md">
                         {companionShowcase[6].svg}
                       </div>
-                      <div className={`w-28 h-7 bg-[#4c1d95] border-2 ${activeDracoName === 'Magemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#312e81]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#6d28d9] h-3.5 mt-auto w-full" />
+                      <div className={`w-24 h-6 bg-[#4c1d95] border-2 ${activeDracoName === 'Magemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#312e81]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#6d28d9] h-3 mt-auto w-full" />
                       </div>
                       <div className="mt-1 flex flex-col items-center">
                         <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
                           Magemon
                         </span>
                         {activeDracoName === 'Magemon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
                             ⚡ EQUIPPED
                           </span>
                         ) : saveData.dracos['Magemon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
                             ✓ EQUIP
                           </span>
                         ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 UNLOCK (250C)
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 250C
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 3: Archermon (Top-Right) */}
+                    <motion.div
+                      className={`absolute top-2 right-2 md:right-4 flex flex-col items-center cursor-pointer group z-20 ${
+                        activeDracoName === 'Archermon' ? 'scale-105' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Archermon', 100)}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className="animate-float-medium drop-shadow-md">
+                        {companionShowcase[1].svg}
+                      </div>
+                      <div className={`w-24 h-6 bg-[#64748b] border-2 ${activeDracoName === 'Archermon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#334155]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#475569] h-3 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
+                          Archermon
+                        </span>
+                        {activeDracoName === 'Archermon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Archermon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 100C
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 4: Shieldmon (Mid-Left) */}
+                    <motion.div
+                      className={`absolute top-[175px] left-0 md:left-2 flex flex-col items-center cursor-pointer group z-20 ${
+                        activeDracoName === 'Shieldmon' ? 'scale-105' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Shieldmon', 200)}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className="animate-float-fast drop-shadow-md">
+                        {companionShowcase[2].svg}
+                      </div>
+                      <div className={`w-24 h-6 bg-[#4b5563] border-2 ${activeDracoName === 'Shieldmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#1f2937]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#ea580c] h-3 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
+                          Shieldmon
+                        </span>
+                        {activeDracoName === 'Shieldmon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Shieldmon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 200C
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 5: Shadowmon (Mid-Right) */}
+                    <motion.div
+                      className={`absolute top-[175px] right-0 md:right-2 flex flex-col items-center cursor-pointer group z-20 ${
+                        activeDracoName === 'Shadowmon' ? 'scale-110' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Shadowmon', 450)}
+                      whileHover={{ scale: 1.15 }}
+                    >
+                      <div className="animate-float-slow drop-shadow-xl">
+                        {companionShowcase[7].svg}
+                      </div>
+                      <div className={`w-24 h-6 bg-[#881337] border-2 ${activeDracoName === 'Shadowmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#ef4444]'} rounded-full shadow-xl mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#18181b] h-3 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-900 uppercase tracking-wider group-hover:text-rose-600 transition-colors">
+                          Shadowmon
+                        </span>
+                        {activeDracoName === 'Shadowmon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Shadowmon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-rose-300 bg-rose-950 border border-rose-700 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 450C
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 6: Assassinmon (Bottom-Left) */}
+                    <motion.div
+                      className={`absolute bottom-2 left-2 md:left-4 flex flex-col items-center cursor-pointer group z-20 ${
+                        activeDracoName === 'Assassinmon' ? 'scale-105' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Assassinmon', 300)}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className="animate-float-slow drop-shadow-md">
+                        {companionShowcase[3].svg}
+                      </div>
+                      <div className={`w-24 h-6 bg-[#581c87] border-2 ${activeDracoName === 'Assassinmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#3b0764]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#1e1b4b] h-3 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
+                          Assassinmon
+                        </span>
+                        {activeDracoName === 'Assassinmon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Assassinmon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 300C
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 7: Whitemon (Bottom-Center) */}
+                    <motion.div
+                      className={`absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-20 ${
+                        activeDracoName === 'Whitemon' ? 'scale-105' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Whitemon', 500)}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className="animate-float-slow drop-shadow-md">
+                        {companionShowcase[5].svg}
+                      </div>
+                      <div className={`w-24 h-6 bg-[#0284c7] border-2 ${activeDracoName === 'Whitemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#0369a1]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#38bdf8] h-3 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
+                          Whitemon
+                        </span>
+                        {activeDracoName === 'Whitemon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Whitemon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 500C
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 8: Flymon (Bottom-Right) */}
+                    <motion.div
+                      className={`absolute bottom-2 right-2 md:right-4 flex flex-col items-center cursor-pointer group z-20 ${
+                        activeDracoName === 'Flymon' ? 'scale-105' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Flymon', 400)}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className="animate-float-medium drop-shadow-md">
+                        {companionShowcase[4].svg}
+                      </div>
+                      <div className={`w-24 h-6 bg-[#e11d48] border-2 ${activeDracoName === 'Flymon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#881337]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#fda4af] h-3 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
+                          Flymon
+                        </span>
+                        {activeDracoName === 'Flymon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Flymon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 400C
                           </span>
                         )}
                       </div>
@@ -973,6 +1057,123 @@ export default function Home() {
                     <p className="text-xs text-stone-500 leading-relaxed">
                       Your save data is saved locally in browser storage. Export or import save JSON strings anytime to back up progress.
                     </p>
+                  </div>
+                </div>
+              </section>
+
+              {/* MEMBERSHIP TIERS SECTION (Above Heroes Section) */}
+              <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-16 border-t border-stone-200/60">
+                <div className="text-center max-w-3xl mx-auto space-y-3">
+                  <span className="text-xs font-mono font-black text-amber-600 uppercase tracking-widest bg-amber-100 border border-amber-300 px-3 py-1 rounded-full">
+                    ★ ACCOUNT MEMBERSHIP & PROGRESSION TIERS
+                  </span>
+                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
+                  <p className="text-stone-600 text-sm leading-relaxed">
+                    Unlock instant access to all dragon companions, boosted starting attributes, and exclusive summoner perks.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8 mt-12">
+                  {/* Free Tier */}
+                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                    saveData.tier === 'Free' || !saveData.tier
+                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                  }`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-extrabold text-stone-500 uppercase">Standard Tier</span>
+                        { (saveData.tier === 'Free' || !saveData.tier) && (
+                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                        )}
+                      </div>
+                      <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
+                      <div className="text-3xl font-black text-stone-900 font-mono">0 <span className="text-sm text-stone-500 font-sans">Coins</span></div>
+                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon unlocked</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock characters via campaign coins</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Full offline local save persistence</li>
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() => switchTier('Free')}
+                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                        saveData.tier === 'Free' || !saveData.tier
+                          ? 'bg-stone-200 text-stone-600 cursor-default'
+                          : 'bg-stone-900 text-white hover:bg-stone-800 shadow-md active:scale-95'
+                      }`}
+                    >
+                      {saveData.tier === 'Free' || !saveData.tier ? 'Current Active Tier' : 'Switch to Free Tier'}
+                    </button>
+                  </div>
+
+                  {/* Basic Tier */}
+                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                    saveData.tier === 'Basic'
+                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                  }`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-extrabold text-emerald-600 uppercase">Recommended Tier</span>
+                        { saveData.tier === 'Basic' && (
+                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                        )}
+                      </div>
+                      <h3 className="text-2xl font-black text-stone-900">Basic Tier</h3>
+                      <div className="text-3xl font-black text-emerald-600 font-mono">Level 5 <span className="text-sm text-stone-500 font-sans">All Unlocked</span></div>
+                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Every Character Unlocked Immediately!</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Level 5 starting level</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> +1 Bonus splitted to ALL attributes per level up</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Whitemon & Bird Familiar access</li>
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() => switchTier('Basic')}
+                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                        saveData.tier === 'Basic'
+                          ? 'bg-stone-200 text-stone-600 cursor-default'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-95'
+                      }`}
+                    >
+                      {saveData.tier === 'Basic' ? 'Current Active Tier' : 'Activate Basic Tier'}
+                    </button>
+                  </div>
+
+                  {/* Premium Tier */}
+                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                    saveData.tier === 'Premium'
+                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                  }`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-extrabold text-purple-600 uppercase">God Tier</span>
+                        { saveData.tier === 'Premium' && (
+                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                        )}
+                      </div>
+                      <h3 className="text-2xl font-black text-stone-900">Premium Tier</h3>
+                      <div className="text-3xl font-black text-purple-600 font-mono">Max Boost <span className="text-sm text-stone-500 font-sans">Full Roster</span></div>
+                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Every Character Unlocked immediately</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> High starting level (Level 10)</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Maximized +1 bonus to ALL stats per level</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Full energy regeneration perks</li>
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() => switchTier('Premium')}
+                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                        saveData.tier === 'Premium'
+                          ? 'bg-stone-200 text-stone-600 cursor-default'
+                          : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md active:scale-95'
+                      }`}
+                    >
+                      {saveData.tier === 'Premium' ? 'Current Active Tier' : 'Activate Premium Tier'}
+                    </button>
                   </div>
                 </div>
               </section>
@@ -1516,122 +1717,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* MEMBERSHIP TIERS SECTION */}
-              <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-16 border-t border-stone-200/60">
-                <div className="text-center max-w-3xl mx-auto space-y-3">
-                  <span className="text-xs font-mono font-black text-amber-600 uppercase tracking-widest bg-amber-100 border border-amber-300 px-3 py-1 rounded-full">
-                    ★ ACCOUNT MEMBERSHIP & PROGRESSION TIERS
-                  </span>
-                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
-                  <p className="text-stone-600 text-sm leading-relaxed">
-                    Unlock instant access to all dragon companions, boosted starting attributes, and exclusive summoner perks.
-                  </p>
-                </div>
 
-                <div className="grid md:grid-cols-3 gap-8 mt-12">
-                  {/* Free Tier */}
-                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-                    saveData.tier === 'Free' || !saveData.tier
-                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
-                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
-                  }`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-extrabold text-stone-500 uppercase">Standard Tier</span>
-                        { (saveData.tier === 'Free' || !saveData.tier) && (
-                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                        )}
-                      </div>
-                      <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
-                      <div className="text-3xl font-black text-stone-900 font-mono">0 <span className="text-sm text-stone-500 font-sans">Coins</span></div>
-                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon unlocked</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock characters via campaign coins</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Full offline local save persistence</li>
-                      </ul>
-                    </div>
-                    <button
-                      onClick={() => switchTier('Free')}
-                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                        saveData.tier === 'Free' || !saveData.tier
-                          ? 'bg-stone-200 text-stone-600 cursor-default'
-                          : 'bg-stone-900 text-white hover:bg-stone-800 shadow-md active:scale-95'
-                      }`}
-                    >
-                      {saveData.tier === 'Free' || !saveData.tier ? 'Current Active Tier' : 'Switch to Free Tier'}
-                    </button>
-                  </div>
-
-                  {/* Basic Tier */}
-                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-                    saveData.tier === 'Basic'
-                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
-                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
-                  }`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-extrabold text-emerald-600 uppercase">Recommended Tier</span>
-                        { saveData.tier === 'Basic' && (
-                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                        )}
-                      </div>
-                      <h3 className="text-2xl font-black text-stone-900">Basic Tier</h3>
-                      <div className="text-3xl font-black text-emerald-600 font-mono">Level 5 <span className="text-sm text-stone-500 font-sans">All Unlocked</span></div>
-                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Every Character Unlocked Immediately!</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Level 5 starting level</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> +1 Bonus splitted to ALL attributes per level up</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Whitemon & Bird Familiar access</li>
-                      </ul>
-                    </div>
-                    <button
-                      onClick={() => switchTier('Basic')}
-                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                        saveData.tier === 'Basic'
-                          ? 'bg-stone-200 text-stone-600 cursor-default'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-95'
-                      }`}
-                    >
-                      {saveData.tier === 'Basic' ? 'Current Active Tier' : 'Activate Basic Tier'}
-                    </button>
-                  </div>
-
-                  {/* Premium Tier */}
-                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-                    saveData.tier === 'Premium'
-                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
-                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
-                  }`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-extrabold text-purple-600 uppercase">God Tier</span>
-                        { saveData.tier === 'Premium' && (
-                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                        )}
-                      </div>
-                      <h3 className="text-2xl font-black text-stone-900">Premium Tier</h3>
-                      <div className="text-3xl font-black text-purple-600 font-mono">Max Boost <span className="text-sm text-stone-500 font-sans">Full Roster</span></div>
-                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Every Character Unlocked immediately</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> High starting level (Level 10)</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Maximized +1 bonus to ALL stats per level</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Full energy regeneration perks</li>
-                      </ul>
-                    </div>
-                    <button
-                      onClick={() => switchTier('Premium')}
-                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                        saveData.tier === 'Premium'
-                          ? 'bg-stone-200 text-stone-600 cursor-default'
-                          : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md active:scale-95'
-                      }`}
-                    >
-                      {saveData.tier === 'Premium' ? 'Current Active Tier' : 'Activate Premium Tier'}
-                    </button>
-                  </div>
-                </div>
-              </section>
 
             </div>
           )}
@@ -1858,12 +1944,14 @@ export default function Home() {
         {/* Level Up selection */}
         {showLevelUp && levelUpInfo && (
           <LevelUpModal
+            key={`${levelUpInfo.dracoName}-${levelUpInfo.oldLevel}-${levelUpInfo.newLevel}-${pendingLevelUps.length}`}
             dracoName={levelUpInfo.dracoName}
             oldLevel={levelUpInfo.oldLevel}
             newLevel={levelUpInfo.newLevel}
             baseIncrease={levelUpInfo.baseIncrease}
             bonusRoll={levelUpInfo.bonusRoll}
             onApplyBonus={applyLevelUpBonus}
+            pendingCount={pendingLevelUps.length}
           />
         )}
 
@@ -1886,56 +1974,58 @@ export default function Home() {
       </AnimatePresence>
 
       {/* AAA FOOTER */}
-      <footer className="w-full border-t border-stone-200 bg-white/70 backdrop-blur-md pt-12 pb-8 z-40 select-none font-sans">
-        <div className="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-4 gap-8 text-left text-xs">
-          <div className="space-y-3">
-            <span className="text-lg font-black text-stone-900 flex items-center gap-1 font-display">
-              🐉 DRACOMON RPG
-            </span>
-            <p className="text-stone-500 leading-relaxed text-[11px]">
-              Offline platforming dragon action RPG built with HTML5 Canvas 2D engine & React.
-            </p>
+      {!isPlaying && (
+        <footer className="w-full border-t border-stone-200 bg-white/70 backdrop-blur-md pt-12 pb-8 z-40 select-none font-sans">
+          <div className="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-4 gap-8 text-left text-xs">
+            <div className="space-y-3">
+              <span className="text-lg font-black text-stone-900 flex items-center gap-1 font-display">
+                🐉 DRACOMON RPG
+              </span>
+              <p className="text-stone-500 leading-relaxed text-[11px]">
+                Offline platforming dragon action RPG built with HTML5 Canvas 2D engine & React.
+              </p>
+            </div>
+
+            <div>
+              <h4 className="font-extrabold text-stone-900 uppercase tracking-wider mb-3 font-mono">Quick Navigation</h4>
+              <ul className="space-y-2 text-stone-500 font-semibold">
+                <li><button onClick={() => scrollToSection('hero')} className="hover:text-amber-600">Overview</button></li>
+                <li><button onClick={() => scrollToSection('about')} className="hover:text-amber-600">About Realm</button></li>
+                <li><button onClick={() => scrollToSection('characters')} className="hover:text-amber-600">Character Lore</button></li>
+                <li><button onClick={() => scrollToSection('realms')} className="hover:text-amber-600">Campaign Stages</button></li>
+              </ul>
+            </div>
+
+            <div>
+              <h4 className="font-extrabold text-stone-900 uppercase tracking-wider mb-3 font-mono">Community & Help</h4>
+              <ul className="space-y-2 text-stone-500 font-semibold">
+                <li><button onClick={() => scrollToSection('faq')} className="hover:text-amber-600">FAQ</button></li>
+                <li><button onClick={() => scrollToSection('contact')} className="hover:text-amber-600">Contact Guild</button></li>
+                <li><button onClick={() => scrollToSection('support')} className="hover:text-amber-600">Support Developers 💖</button></li>
+                <li><button onClick={() => setShowControlsModal(true)} className="hover:text-amber-600">Controls Guide</button></li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h4 className="font-extrabold text-stone-900 uppercase tracking-wider font-mono">Release Info</h4>
+              <p className="text-stone-400 text-[11px] font-mono">
+                Version: <strong className="text-stone-700">v1.2.0 Stable</strong> <br />
+                Stack: React 19, Next.js 15, Canvas 2D
+              </p>
+              <button
+                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-xl text-[11px] font-mono font-extrabold text-stone-700 transition-all"
+              >
+                ↑ Back To Top
+              </button>
+            </div>
           </div>
 
-          <div>
-            <h4 className="font-extrabold text-stone-900 uppercase tracking-wider mb-3 font-mono">Quick Navigation</h4>
-            <ul className="space-y-2 text-stone-500 font-semibold">
-              <li><button onClick={() => scrollToSection('hero')} className="hover:text-amber-600">Overview</button></li>
-              <li><button onClick={() => scrollToSection('about')} className="hover:text-amber-600">About Realm</button></li>
-              <li><button onClick={() => scrollToSection('characters')} className="hover:text-amber-600">Character Lore</button></li>
-              <li><button onClick={() => scrollToSection('realms')} className="hover:text-amber-600">Campaign Stages</button></li>
-            </ul>
+          <div className="mt-8 pt-6 border-t border-stone-100 text-center text-[11px] text-stone-400 font-mono">
+            © {new Date().getFullYear()} Dracomon RPG Realm. All rights reserved. Offline Save Persistence Enabled.
           </div>
-
-          <div>
-            <h4 className="font-extrabold text-stone-900 uppercase tracking-wider mb-3 font-mono">Community & Help</h4>
-            <ul className="space-y-2 text-stone-500 font-semibold">
-              <li><button onClick={() => scrollToSection('faq')} className="hover:text-amber-600">FAQ</button></li>
-              <li><button onClick={() => scrollToSection('contact')} className="hover:text-amber-600">Contact Guild</button></li>
-              <li><button onClick={() => scrollToSection('support')} className="hover:text-amber-600">Support Developers 💖</button></li>
-              <li><button onClick={() => setShowControlsModal(true)} className="hover:text-amber-600">Controls Guide</button></li>
-            </ul>
-          </div>
-
-          <div className="space-y-3">
-            <h4 className="font-extrabold text-stone-900 uppercase tracking-wider font-mono">Release Info</h4>
-            <p className="text-stone-400 text-[11px] font-mono">
-              Version: <strong className="text-stone-700">v1.2.0 Stable</strong> <br />
-              Stack: React 19, Next.js 15, Canvas 2D
-            </p>
-            <button
-              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-              className="px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-xl text-[11px] font-mono font-extrabold text-stone-700 transition-all"
-            >
-              ↑ Back To Top
-            </button>
-          </div>
-        </div>
-
-        <div className="mt-8 pt-6 border-t border-stone-100 text-center text-[11px] text-stone-400 font-mono">
-          © {new Date().getFullYear()} Dracomon RPG Realm. All rights reserved. Offline Save Persistence Enabled.
-        </div>
-      </footer>
+        </footer>
+      )}
     </div>
   );
 }

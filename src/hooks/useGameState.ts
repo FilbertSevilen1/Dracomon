@@ -83,21 +83,22 @@ export function useGameState() {
   // Unlock Draco
   const unlockDraco = useCallback((name: string, cost: number) => {
     updateSaveState(prev => {
-      const draco = prev.dracos[name];
+      const draco = prev.dracos[name] || DEFAULT_SAVE_DATA.dracos[name];
       if (draco && !draco.unlocked && prev.player.coins >= cost) {
         soundService.playCoin();
         const updatedDracos = { ...prev.dracos };
         updatedDracos[name] = {
-          ...updatedDracos[name],
+          ...draco,
           unlocked: true
         };
+        const unlockedList = Array.from(new Set([...(prev.unlockedDraco || []), name]));
         return {
           ...prev,
           player: {
             ...prev.player,
             coins: prev.player.coins - cost
           },
-          unlockedDraco: [...prev.unlockedDraco, name],
+          unlockedDraco: unlockedList,
           dracos: updatedDracos
         };
       }
@@ -238,6 +239,14 @@ export function useGameState() {
     return success;
   }, [updateSaveState]);
 
+  const [pendingLevelUps, setPendingLevelUps] = useState<{
+    dracoName: string;
+    oldLevel: number;
+    newLevel: number;
+    baseIncrease: Partial<PlayerStats>;
+    bonusRoll: number;
+  }[]>([]);
+
   // Complete level / Gain EXP and handle levels up
   const handleEnemyDefeated = useCallback((expGain: number, coinsGain: number) => {
     updateSaveState(prev => {
@@ -251,9 +260,7 @@ export function useGameState() {
       let currentExp = (draco.exp || 0) + expGain;
       let currentLevel = draco.level || 1;
       let requiredExp = currentLevel * 30;
-      let levelUpOccurred = false;
 
-      // Base stats increase rolled during levels up
       const baseIncrease: Partial<PlayerStats> = {
         hp: 2,
         attack: 1,
@@ -261,51 +268,52 @@ export function useGameState() {
         speed: 1,
       };
 
-      if (currentLevel >= 25) {
-        currentExp = 0; // Capped at Level 25 max
-      } else if (currentExp >= requiredExp) {
-        levelUpOccurred = true;
+      const newPendingItems: {
+        dracoName: string;
+        oldLevel: number;
+        newLevel: number;
+        baseIncrease: Partial<PlayerStats>;
+        bonusRoll: number;
+      }[] = [];
+
+      const updatedDracos = { ...prev.dracos };
+
+      while (currentLevel < 15 && currentExp >= requiredExp) {
         currentExp -= requiredExp;
-        const newLevel = Math.min(25, currentLevel + 1);
-        const roll = Math.floor(Math.random() * 6) + 1; // 1-6 random dice bonus
+        const oldLvl = currentLevel;
+        currentLevel = Math.min(15, currentLevel + 1);
+        requiredExp = currentLevel * 30;
 
-        // Sound cue and celebration confetti
-        setTimeout(() => {
-          soundService.playLevelUp();
-          confetti({ particleCount: 80, spread: 60, origin: { y: 0.6 } });
-        }, 100);
-
-        setLevelUpInfo({
+        const roll = Math.floor(Math.random() * 2) + 1; // 1-2 random dice bonus (max +2)
+        newPendingItems.push({
           dracoName: activeName,
-          oldLevel: currentLevel,
-          newLevel,
+          oldLevel: oldLvl,
+          newLevel: currentLevel,
           baseIncrease,
           bonusRoll: roll
         });
-        setShowLevelUp(true);
 
-        // We will halt gameplay and trigger selection overlay
-        currentLevel = newLevel;
-      }
-
-      const updatedDracos = { ...prev.dracos };
-      updatedDracos[activeName] = {
-        ...updatedDracos[activeName],
-        level: currentLevel,
-        exp: currentExp,
-      };
-
-      // If level up occurred, apply base stats immediately
-      if (levelUpOccurred) {
+        // Apply base stats for this level up immediately during combat
         const dStats = updatedDracos[activeName];
         if (dStats) {
           dStats.hp = (dStats.hp || 10) + (baseIncrease.hp || 0);
           dStats.attack = (dStats.attack || 1) + (baseIncrease.attack || 0);
           dStats.defense = (dStats.defense || 1) + (baseIncrease.defense || 0);
           dStats.speed = Math.min(20, (dStats.speed || 1) + (baseIncrease.speed || 0));
-          dStats.jump = Math.min(14, (dStats.jump || 1) + (baseIncrease.jump || 0));
+          dStats.jump = Math.min(14, (dStats.jump || 10) + (baseIncrease.jump || 0));
         }
       }
+
+      if (newPendingItems.length > 0) {
+        soundService.playLevelUp();
+        setPendingLevelUps(prevList => [...prevList, ...newPendingItems]);
+      }
+
+      updatedDracos[activeName] = {
+        ...updatedDracos[activeName],
+        level: currentLevel,
+        exp: currentLevel >= 15 ? 0 : currentExp,
+      };
 
       return {
         ...prev,
@@ -351,8 +359,17 @@ export function useGameState() {
       };
     });
 
-    setShowLevelUp(false);
-    setLevelUpInfo(null);
+    setPendingLevelUps(prevList => {
+      const remaining = prevList.slice(1);
+      if (remaining.length > 0) {
+        setLevelUpInfo(remaining[0]);
+        setShowLevelUp(true);
+      } else {
+        setLevelUpInfo(null);
+        setShowLevelUp(false);
+      }
+      return remaining;
+    });
   }, [levelUpInfo, updateSaveState]);
 
   // Level Up Draco With Coins
@@ -362,7 +379,7 @@ export function useGameState() {
       const draco = prev.dracos[name];
       if (!draco) return prev;
       const currentLvl = draco.level || 1;
-      if (currentLvl >= 25) return prev; // Capped at Level 25
+      if (currentLvl >= 15) return prev; // Capped at Level 15
       const cost = currentLvl * 100;
       if (prev.player.coins >= cost) {
         soundService.playLevelUp();
@@ -381,18 +398,20 @@ export function useGameState() {
             setPlayerMaxHP(d.hp);
           }
 
-          // Open Level Up Modal for bonus stat allocation
-          const bonusRoll = Math.floor(Math.random() * 6) + 1; // 1-6
-          setTimeout(() => {
+          const bonusRoll = Math.floor(Math.random() * 2) + 1; // 1-2 (max +2)
+          const item = {
+            dracoName: name,
+            oldLevel: currentLvl,
+            newLevel: currentLvl + 1,
+            baseIncrease: { hp: 2, attack: 1, defense: 1, speed: 1 },
+            bonusRoll
+          };
+          setPendingLevelUps(prevList => {
+            const list = [...prevList, item];
+            setLevelUpInfo(list[0]);
             setShowLevelUp(true);
-            setLevelUpInfo({
-              dracoName: name,
-              oldLevel: currentLvl,
-              newLevel: currentLvl + 1,
-              baseIncrease: { hp: 2, attack: 1, defense: 1, speed: 1 },
-              bonusRoll
-            });
-          }, 300);
+            return list;
+          });
         }
         success = true;
         return {
@@ -498,7 +517,15 @@ export function useGameState() {
         completedStages: Array.from(nextStages)
       };
     });
-  }, [updateSaveState]);
+
+    setPendingLevelUps(prevList => {
+      if (prevList.length > 0 && !showLevelUp) {
+        setLevelUpInfo(prevList[0]);
+        setShowLevelUp(true);
+      }
+      return prevList;
+    });
+  }, [showLevelUp, updateSaveState]);
 
   return {
     saveData,
@@ -512,6 +539,7 @@ export function useGameState() {
     setPlayerMaxHP,
     showLevelUp,
     levelUpInfo,
+    pendingLevelUps,
     updateSettings,
     selectDraco,
     unlockDraco,

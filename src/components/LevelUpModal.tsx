@@ -12,6 +12,7 @@ interface LevelUpModalProps {
   bonusRoll: number;
   currentStats?: PlayerStats;
   onApplyBonus: (stat: keyof PlayerStats) => void;
+  pendingCount?: number;
 }
 
 export const LevelUpModal: React.FC<LevelUpModalProps> = ({
@@ -22,15 +23,18 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   bonusRoll,
   currentStats,
   onApplyBonus,
+  pendingCount,
 }) => {
   const [diceRolling, setDiceRolling] = useState(true);
   const [currentDiceVal, setCurrentDiceVal] = useState(1);
 
   // Animate the dice roll for a few frames before settling on the actual bonusRoll
   useEffect(() => {
+    setDiceRolling(true);
+    setCurrentDiceVal(1);
     let count = 0;
     const interval = setInterval(() => {
-      setCurrentDiceVal(Math.floor(Math.random() * 6) + 1);
+      setCurrentDiceVal(Math.floor(Math.random() * 2) + 1);
       count++;
       if (count > 12) {
         clearInterval(interval);
@@ -40,7 +44,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
     }, 80);
 
     return () => clearInterval(interval);
-  }, [bonusRoll]);
+  }, [bonusRoll, oldLevel, newLevel]);
 
   const handleSelectStat = (stat: keyof PlayerStats) => {
     if (diceRolling) return;
@@ -76,6 +80,12 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         <div className="mx-auto w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-4 border border-amber-200 shadow-sm animate-bounce">
           <Award className="w-8 h-8 text-amber-600" />
         </div>
+
+        {pendingCount && pendingCount > 1 && (
+          <div className="mb-2 inline-block px-3 py-1 bg-amber-100 border border-amber-300 text-amber-900 rounded-full text-xs font-bold font-mono">
+            Level Up Bonus ({pendingCount} Remaining)
+          </div>
+        )}
 
         <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 font-display">LEVEL UP!</h2>
         <p className="text-sm font-semibold text-stone-400 mt-1 uppercase tracking-wider">

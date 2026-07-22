@@ -31,7 +31,7 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
@@ -56,7 +56,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator';
   hp: number;
   maxHp: number;
   attack: number;
@@ -75,6 +75,9 @@ interface Enemy {
   jumpCooldown?: number;
   jumpCount?: number;
   isLeaping?: boolean;
+  isImmortal?: boolean;
+  stunTimer?: number;
+  damageAcc?: number;
 }
 
 export class GameEngine {
@@ -198,6 +201,12 @@ export class GameEngine {
   private archermonUltActive = false;
   private archermonUltTimer = 0;
 
+  // Shieldmon Rework Skill & Ultimate States
+  private shieldmonDashActive = false;
+  private shieldmonDashTimer = 0;
+  private shieldmonChargeActive = false;
+  private shieldmonChargeTimer = 0;
+
   // Magemon Skill & Ultimate States
   private magemonSpellIndex = 0;
   private magemonUltActive = false;
@@ -230,8 +239,22 @@ export class GameEngine {
   private birdAttackCooldown = 0;
   private birdRampageTimer = 0;
 
-  // Animations
+  // Animations & Exit Portal State
   private frameCount = 0;
+  private exitPortalActive = false;
+  private exitPortalPos: { x: number; y: number } | null = null;
+
+  // Gladiator Arena Survival Mode
+  private isSurvivalMode: boolean = false;
+  private survivalTimer: number = 0;
+  private survivalWaveTimer: number = 0;
+  private arenaExploded: boolean = false;
+
+  // Shadowmon Stacks & Ult State
+  private shadowmonStacks: number = 0;
+  private shadowmonUltActive: boolean = false;
+  private shadowmonUltTimer: number = 0;
+  private shadowmonUltStacksUsed: number = 0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -309,10 +332,38 @@ export class GameEngine {
     this.floatingTexts = [];
 
     const grid = this.getActiveGrid();
-    this.levelWidth = grid[0].length * this.level.tileSize;
+    let maxCols = 0;
+    for (let r = 0; r < grid.length; r++) {
+      maxCols = Math.max(maxCols, grid[r].length);
+    }
+    this.levelWidth = maxCols * this.level.tileSize;
     this.levelHeight = grid.length * this.level.tileSize;
 
+    this.shadowmonStacks = 0;
+    this.shadowmonUltActive = false;
+    this.exitPortalActive = false;
+    this.exitPortalPos = null;
+
+    this.isSurvivalMode = !!this.level.isSurvivalMode;
+    this.arenaExploded = false;
+    if (this.isSurvivalMode) {
+      const duration = this.level.survivalDuration || 120;
+      this.survivalTimer = duration * 60; // 120s * 60fps = 7200 frames
+      this.survivalWaveTimer = 180; // 3 seconds initial wave spawn delay
+    } else {
+      this.survivalTimer = 0;
+      this.survivalWaveTimer = 0;
+    }
+
     const ts = this.level.tileSize;
+    for (let r = 0; r < grid.length; r++) {
+      for (let c = 0; c < grid[r].length; c++) {
+        if (grid[r][c] === 'P') {
+          this.exitPortalPos = { x: c * ts + ts / 2, y: r * ts + ts / 2 };
+          break;
+        }
+      }
+    }
     for (let r = 0; r < grid.length; r++) {
       const row = grid[r];
       for (let c = 0; c < row.length; c++) {
@@ -413,27 +464,50 @@ export class GameEngine {
             state: 'patrol',
             animFrame: 0,
           });
-        } else if (char === 'K' && this.level.isUnderwater) {
-          // Killer Whale Boss
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex,
-            y: ey,
-            vx: -3.0,
-            vy: 0,
-            width: 80,
-            height: 50,
-            type: 'killer_whale',
-            hp: 120,
-            maxHp: 120,
-            attack: 8,
-            defense: 4,
-            facing: -1,
-            shootCooldown: 60,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'Leviathan Orca',
-          });
+        } else if (char === 'K') {
+          if (this.level.isUnderwater) {
+            // Killer Whale Boss
+            this.enemies.push({
+              id: this.enemyIdCounter++,
+              x: ex,
+              y: ey,
+              vx: -3.0,
+              vy: 0,
+              width: 80,
+              height: 50,
+              type: 'killer_whale',
+              hp: 120,
+              maxHp: 120,
+              attack: 8,
+              defense: 4,
+              facing: -1,
+              shootCooldown: 60,
+              state: 'patrol',
+              animFrame: 0,
+              name: 'Leviathan Orca',
+            });
+          } else {
+            // Primordial King Kong Boss in Jungle Sanctuary!
+            this.enemies.push({
+              id: this.enemyIdCounter++,
+              x: ex,
+              y: ey - 24,
+              vx: -2.5,
+              vy: 0,
+              width: 76,
+              height: 64,
+              type: 'king_kong',
+              hp: 160,
+              maxHp: 160,
+              attack: 10,
+              defense: 5,
+              facing: -1,
+              shootCooldown: 90,
+              state: 'patrol',
+              animFrame: 0,
+              name: 'Primordial King Kong',
+            });
+          }
         } else if (char === '1') {
           // Slime
           this.enemies.push({
@@ -515,26 +589,49 @@ export class GameEngine {
             animFrame: 0,
           });
         } else if (char === 'S') {
-          // King Slime Boss
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 48,
-            vx: -0.6,
-            vy: 0,
-            width: 60,
-            height: 48,
-            type: 'king_slime',
-            hp: 80,
-            maxHp: 80,
-            attack: 5,
-            defense: 2,
-            facing: -1,
-            shootCooldown: 90,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'King Slime Lord'
-          });
+          if (this.level.name.includes('Stage 10') || this.level.name.includes('Jungle')) {
+            // Skeleton Archer Enemy in Jungle Stage!
+            this.enemies.push({
+              id: this.enemyIdCounter++,
+              x: ex + 4,
+              y: ey + ts - 38,
+              vx: -1.2,
+              vy: 0,
+              width: 30,
+              height: 38,
+              type: 'skeleton_archer',
+              hp: 25,
+              maxHp: 25,
+              attack: 5,
+              defense: 2,
+              facing: -1,
+              shootCooldown: 90,
+              state: 'patrol',
+              animFrame: 0,
+              name: 'Undead Skeleton'
+            });
+          } else {
+            // King Slime Boss in Stage 1
+            this.enemies.push({
+              id: this.enemyIdCounter++,
+              x: ex + 2,
+              y: ey + ts - 48,
+              vx: -0.6,
+              vy: 0,
+              width: 60,
+              height: 48,
+              type: 'king_slime',
+              hp: 80,
+              maxHp: 80,
+              attack: 5,
+              defense: 2,
+              facing: -1,
+              shootCooldown: 90,
+              state: 'patrol',
+              animFrame: 0,
+              name: 'King Slime Lord'
+            });
+          }
         } else if (char === 'B') {
           // Boss: Sentinel Archdemon in Stage 2, Fire Lord in Stage 3
           const isStage2 = this.level.name.includes('Stage 2');
@@ -599,7 +696,7 @@ export class GameEngine {
             animFrame: 0,
             name: 'Shadow Overlord'
           });
-        } else if (char === 'X') {
+        } else if (char === 'D') {
           // Primordial Dragon King Final Boss
           this.enemies.push({
             id: this.enemyIdCounter++,
@@ -751,12 +848,25 @@ export class GameEngine {
       return;
     }
 
-    const activeBossExists = this.enemies.some(e => this.isBossType(e.type));
-    if (!activeBossExists && this.isPortal(pxMid, pyMid)) {
-      soundService.playLevelUp();
-      this.callbacks.onStageClear();
-      this.isPaused = true;
-      return;
+    // Check entry into Exit Portal (Locked vs Unlocked)
+    if (this.exitPortalPos) {
+      const dx = pxMid - this.exitPortalPos.x;
+      const dy = pyMid - this.exitPortalPos.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist < 40) {
+        if (this.exitPortalActive) {
+          soundService.playLevelUp();
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'EXIT PORTAL ENTERED! STAGE CLEARED! 🌀✨', '#a855f7');
+          this.callbacks.onStageClear();
+          this.isPaused = true;
+          return;
+        } else {
+          if (this.frameCount % 45 === 0) {
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'DEFEAT THE BOSS FIRST TO UNLOCK PORTAL! 🔒', '#ef4444');
+          }
+        }
+      }
     }
 
     // Underwater Jump: Half height (-7 max), but INFINITE swimming jumps!
@@ -909,6 +1019,23 @@ export class GameEngine {
         type: 'arcane_orb'
       });
       this.spawnDustParticles(slashX, slashY, 6, '#c084fc');
+    } else if (this.selectedDraco === 'Shadowmon') {
+      soundService.playShoot();
+      // Ranged Red Dark Energy Projectile
+      const darkVx = this.pFacing * (this.stats.speed + 7);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 20,
+        y: this.py + this.pHeight / 2 - 5,
+        vx: darkVx,
+        vy: 0,
+        width: 20,
+        height: 14,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 1.1),
+        color: '#ef4444',
+        type: 'dark_energy' as any
+      });
+      this.spawnDustParticles(slashX, slashY, 8, '#ef4444');
     } else {
       // Jumpmon Melee Sword Swing
       soundService.playHit();
@@ -987,8 +1114,8 @@ export class GameEngine {
         if ((this.pFacing === 1 && dx > -20 && dx < 320) || (this.pFacing === -1 && dx < 20 && dx > -320)) {
           if (Math.abs(this.py - enemy.y) < 120) {
             this.damageEnemy(enemy, gustDamage);
-            enemy.vx = this.pFacing * 14; // STRONG PUSH BACK KNOCKBACK!
-            enemy.vy = -4;
+            enemy.vx = this.pFacing * 4.5; // Gentle wind gust push back
+            enemy.vy = -2.5;
             this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#fda4af');
             this.addFloatingText(enemy.x, enemy.y - 15, 'GUST PUSH BACK! 🌪️💨', '#f43f5e');
           }
@@ -1053,6 +1180,18 @@ export class GameEngine {
           maxLife: 20
         });
       }
+    } else if (this.selectedDraco === 'Shieldmon') {
+      // SHIELD TRAMPLE DASH (Dashes up to 600px, trampling all enemies in path)
+      soundService.playHit();
+      this.specialCooldown = 180; // 3.0s cooldown
+      this.shieldmonDashActive = true;
+      this.shieldmonDashTimer = 22; // 22 frames high-speed dash (~0.36s)
+      this.pvx = this.pFacing * 24.0; // High speed trample velocity!
+      this.pInvulnerableFrames = 24;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'SHIELD TRAMPLE DASH! 🛡️⚡', '#3b82f6');
+      this.screenShake = 18;
+      (this as any).shieldmonDashHitIds = new Set();
     } else if (this.selectedDraco === 'Archermon') {
       // Piercing Volley - fires 3 arrows in a spread
       soundService.playShoot();
@@ -1113,6 +1252,73 @@ export class GameEngine {
 
       // Increment spell rotation index
       this.magemonSpellIndex = (this.magemonSpellIndex + 1) % 3;
+    } else if (this.selectedDraco === 'Shadowmon') {
+      // INSTANT SHADOWRAZE GROUND EXPLOSION (Max 600px Range)
+      this.specialCooldown = 150; // 2.5s cooldown
+      const maxRange = 600;
+      let nearestEnemy: Enemy | null = null;
+      let minDistance = 9999;
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dist = Math.abs(enemy.x - this.px);
+        if (dist < minDistance && dist <= maxRange) {
+          minDistance = dist;
+          nearestEnemy = enemy;
+        }
+      });
+
+      const rawTargetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : this.px + (this.pFacing * 250);
+      // Clamp targetX within max 600px range of Shadowmon
+      const targetX = Math.max(this.px - maxRange, Math.min(this.px + maxRange, rawTargetX));
+      const targetY = nearestEnemy ? (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2 : this.py + this.pHeight / 2;
+
+      soundService.playHit();
+      this.screenShake = 28;
+      this.addFloatingText(targetX, targetY - 40, 'SHADOWRAZE EXPLOSION! 🌋💣💥', '#ef4444');
+
+      // 1. INSTANT AoE DAMAGE & HEAVY KNOCKUP BLAST TO ALL ENEMIES IN 100px RADIUS
+      this.enemies.forEach(enemy => {
+        if (enemy.hp > 0) {
+          const dist = Math.hypot(enemy.x + enemy.width / 2 - targetX, enemy.y + enemy.height / 2 - targetY);
+          if (dist < 100) {
+            this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.8));
+            enemy.vx = (enemy.x > targetX ? 1 : -1) * 6.5;
+            enemy.vy = -7.0; // Violent vertical explosion launch!
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 22, '#ef4444');
+          }
+        }
+      });
+
+      // 2. MASSIVE GROUND EXPLOSION DEBRIS & FLAME PARTICLES (45 Particles bursting outward in 360 degrees)
+      for (let i = 0; i < 45; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 12 + 3;
+        this.particles.push({
+          x: targetX,
+          y: targetY,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 3, // Upward biased explosive blast
+          size: Math.random() * 10 + 4,
+          color: i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#9f1239' : '#18181b',
+          life: 32,
+          maxLife: 32
+        });
+      }
+
+      // 3. EXPANDING EXPLOSION RING SHOCKWAVE PROJECTILE
+      this.projectiles.push({
+        x: targetX - 45,
+        y: targetY - 45,
+        vx: 0,
+        vy: 0,
+        width: 90,
+        height: 90,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 1.5),
+        color: '#ef4444',
+        type: 'dark_energy' as any,
+        life: 12
+      } as any);
     }
   }
 
@@ -1204,11 +1410,6 @@ export class GameEngine {
         y < enemy.y + enemy.height &&
         y + h > enemy.y
       ) {
-        // Shieldmon Avatar state & charge stuns enemies for 2 seconds!
-        if (this.avatarActive || (this.selectedDraco === 'Shieldmon' && this.shieldActive)) {
-          enemy.stunnedTimer = 120; // 2.0s Stun!
-          this.addFloatingText(enemy.x, enemy.y - 15, 'STUNNED 2s! 💫', '#60a5fa');
-        }
         this.damageEnemy(enemy, damage);
       }
     });
@@ -1223,6 +1424,7 @@ export class GameEngine {
       case 'Flymon': return 200;
       case 'Whitemon': return 120;
       case 'Magemon': return 300;
+      case 'Shadowmon': return 120;
       default: return 100;
     }
   }
@@ -1231,29 +1433,32 @@ export class GameEngine {
     switch (this.selectedDraco) {
       case 'Jumpmon': return 'Meteor Smackdown';
       case 'Archermon': return 'Arrow Shower';
-      case 'Shieldmon': return 'Avatar';
+      case 'Shieldmon': return 'Portal Rampage Charge';
       case 'Assassinmon': return 'Single Slash of Death';
       case 'Flymon': return 'Laser Beam';
       case 'Whitemon': return 'Primal Roar';
       case 'Magemon': return 'Trio Orb Blast';
+      case 'Shadowmon': return 'Soul Blast';
       default: return 'Ultimate';
     }
   }
 
   private getUltimateVoiceLine(): string {
     switch (this.selectedDraco) {
-      case 'Jumpmon': return 'FEEL THE SUN\'S POWER! METEOR SMACKDOWN!!!';
-      case 'Archermon': return 'BLIND THE HEAVENS! ARROW SHOWER!!!';
-      case 'Shieldmon': return 'UNBREAKABLE WILL! AVATAR STATE!!!';
-      case 'Assassinmon': return 'ONE SLASH... ONE KILL! SINGLE SLASH OF DEATH!!!';
-      case 'Flymon': return 'HYPER CHARGED LASER! LAZER BEAM!!!';
-      case 'Whitemon': return 'BEHOLD THE PRIMAL ROAR! FAMILIAR RAMPAGE!!!';
-      case 'Magemon': return 'BEHOLD THE ANCIENT SPELLS! TRIO ORB BLAST!!!';
-      default: return 'UNLEASH THE BEAST!';
+      case 'Jumpmon': return 'Fulfill the prophecy of the sun!';
+      case 'Archermon': return 'Nature will purge your corruption!';
+      case 'Shieldmon': return 'Shields up! Charging to the exit portal!';
+      case 'Assassinmon': return 'Fall before the shadow Katana...';
+      case 'Flymon': return 'Hyper charged crimson laser beam firing!';
+      case 'Whitemon': return 'Hear the primal roar of the wild!';
+      case 'Magemon': return 'Behold the elemental devastation of the stars!';
+      case 'Shadowmon': return 'Gather, dark souls... SOUL BLAST!';
+      default: return 'Unleash full power!';
     }
   }
 
   private getUltimateCost(): number {
+    if (this.selectedDraco === 'Shadowmon') return 120;
     if (this.selectedDraco === 'Magemon') return 150;
     return this.getMaxEnergy();
   }
@@ -1393,34 +1598,11 @@ export class GameEngine {
     }
     else if (this.selectedDraco === 'Flymon') {
       soundService.playLevelUp();
-      // Jump to TOP of the level!
-      this.py = 35;
-      this.pvy = -6;
-      this.pGrounded = false;
-
-      // Find HIGHEST HP enemy strictly inside the visible screen frame!
-      let bestEnemy: Enemy | null = null;
-      let maxHpOnScreen = -1;
-      let minDistanceOnScreen = 99999;
-
-      this.enemies.forEach(enemy => {
-        if (this.isEnemyInsideFrame(enemy)) {
-          const dist = Math.abs((this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2));
-          if (enemy.hp > maxHpOnScreen) {
-            maxHpOnScreen = enemy.hp;
-            minDistanceOnScreen = dist;
-            bestEnemy = enemy;
-          } else if (enemy.hp === maxHpOnScreen && dist < minDistanceOnScreen) {
-            minDistanceOnScreen = dist;
-            bestEnemy = enemy;
-          }
-        }
-      });
-
-      this.flymonLaserTargetEnemy = bestEnemy;
+      this.pvy = 0;
+      this.flymonLaserTargetEnemy = null;
       this.laserBeamActive = true;
       this.laserBeamDuration = 90; // 1.5 seconds continuous beam
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SKY HIGH ANGLED HYPER LASER! 🛸⚡', '#f43f5e');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'HYPER CHARGED LASER! 🛸⚡', '#f43f5e');
     }
     else if (this.selectedDraco === 'Whitemon') {
       soundService.playLevelUp();
@@ -1466,6 +1648,17 @@ export class GameEngine {
       this.birdActive = true;
       this.birdRampageTimer = 180;
     }
+    else if (this.selectedDraco === 'Shieldmon') {
+      // PORTAL RAMPAGE CHARGE (Puts shield forward and charges continuously to nearest portal!)
+      soundService.playLevelUp();
+      this.shieldmonChargeActive = true;
+      this.shieldmonChargeTimer = 180; // Charge up to 3 seconds until portal!
+      this.pInvulnerableFrames = 220; // Full invulnerability during portal charge!
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 35, 'PORTAL RAMPAGE CHARGE! 🛡️🏃‍♂️💨', '#3b82f6');
+      this.screenShake = 35;
+      (this as any).shieldmonChargeHitIds = new Set();
+    }
     else if (this.selectedDraco === 'Magemon') {
       soundService.playLevelUp();
       this.magemonUltActive = true;
@@ -1496,6 +1689,37 @@ export class GameEngine {
         });
       }
     }
+    else if (this.selectedDraco === 'Shadowmon') {
+      soundService.playLevelUp();
+      this.shadowmonUltActive = true;
+      this.shadowmonUltTimer = 90; // 90 frames (~1.5s channel time)
+      this.shadowmonUltStacksUsed = this.shadowmonStacks;
+
+      // CAMERA ZOOM IN (1.85x Zoom focused on Shadowmon)
+      this.cameraZoom = 1.85;
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+      this.pvy = -6; // Float launch in mid-air
+      this.pGrounded = false;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, `CHARGING SOUL BLAST (${this.shadowmonStacks}/5 STACKS)... 🔴⚡`, '#ef4444');
+
+      // Crimson Nether Void Particle Charge around Shadowmon
+      for (let p = 0; p < 30; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 7 + 3,
+          color: p % 2 === 0 ? '#ef4444' : '#7f1d1d',
+          life: 25,
+          maxLife: 25
+        });
+      }
+    }
 
     this.birdX = this.px;
     this.birdY = this.py - 50;
@@ -1505,14 +1729,36 @@ export class GameEngine {
     // Calculate defense reduction with Avatar double damage multiplier check
     const finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 2.0 : damage;
     const damageDealt = Math.max(1, finalDamage - Math.floor(enemy.defense / 2));
-    enemy.hp -= damageDealt;
+
+    if (enemy.isImmortal) {
+      enemy.hp = Math.max(1, enemy.hp - damageDealt); // Cannot drop below 1 HP!
+      enemy.damageAcc = (enemy.damageAcc || 0) + damageDealt;
+
+      // Stun Threshold (Every 45 damage accumulated stuns Immortal Gladiator for 1s = 60 frames)
+      if (enemy.damageAcc >= 45) {
+        enemy.damageAcc = 0;
+        enemy.stunTimer = 60; // 1 second stun!
+        enemy.vx = 0;
+        enemy.vy = 0;
+        soundService.playHit();
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, 'STUNNED! 💫', '#fef08a');
+        this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
+      }
+
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${damageDealt} [IMMORTAL 🛡️]`, '#fbbf24');
+    } else {
+      enemy.hp -= damageDealt;
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${damageDealt}`, '#ef4444');
+    }
+
     soundService.playHit();
-    this.addFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${damageDealt}`, '#ef4444');
     this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#ef4444');
 
     // Knockback
-    enemy.vx = this.pFacing * 1.5;
-    enemy.vy = -2.5;
+    if (!enemy.isImmortal || (enemy.stunTimer || 0) <= 0) {
+      enemy.vx = this.pFacing * 1.5;
+      enemy.vy = -2.5;
+    }
 
     // Gain energy per hit
     if (!this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
@@ -1520,12 +1766,21 @@ export class GameEngine {
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
     }
 
-    if (enemy.hp <= 0) {
+    if (!enemy.isImmortal && enemy.hp <= 0) {
       this.defeatEnemy(enemy);
     }
   }
 
   private defeatEnemy(enemy: Enemy) {
+    // Increment Shadowmon Dark Soul Stacks on enemy defeat (max 5)
+    if (this.selectedDraco === 'Shadowmon') {
+      const oldStacks = this.shadowmonStacks;
+      this.shadowmonStacks = Math.min(5, this.shadowmonStacks + 1);
+      if (this.shadowmonStacks > oldStacks) {
+        soundService.playCoin();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, `+1 DARK SOUL STACK (${this.shadowmonStacks}/5) 🔴`, '#ef4444');
+      }
+    }
     // Drop rates
     let expReward = 6;
     let coinReward = 12;
@@ -1654,31 +1909,31 @@ export class GameEngine {
     // Spawn drop coin visual particles
     this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
 
-    // Trigger clear victory immediately if boss is slain
+    // Notify boss defeat and spawn Exit Portal!
     if (this.isBossType(enemy.type)) {
       const otherBosses = this.enemies.filter(e => e.id !== enemy.id && this.isBossType(e.type));
       if (otherBosses.length === 0) {
-        soundService.playLevelUp();
-        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 60, 'VICTORY! STAGE CLEARED! 🌌', '#a855f7');
+        this.exitPortalActive = true;
+        if (!this.exitPortalPos) {
+          this.exitPortalPos = { x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height / 2 };
+        }
 
-        // Spawn huge fireworks particles at player!
-        for (let i = 0; i < 40; i++) {
+        soundService.playLevelUp();
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 60, 'FINAL BOSS SLAIN! EXIT PORTAL SPAWNED! 🌀✨', '#a855f7');
+
+        // Spawn huge fireworks particles at portal location!
+        for (let i = 0; i < 45; i++) {
           this.particles.push({
-            x: this.px + this.pWidth / 2,
-            y: this.py + this.pHeight / 2,
-            vx: Math.random() * 8 - 4,
-            vy: Math.random() * -6 - 2,
+            x: this.exitPortalPos.x,
+            y: this.exitPortalPos.y,
+            vx: (Math.random() - 0.5) * 8,
+            vy: (Math.random() - 0.5) * 8,
             size: Math.random() * 6 + 3,
-            color: `hsl(${Math.random() * 360}, 100%, 70%)`,
+            color: i % 2 === 0 ? '#a855f7' : '#38bdf8',
             life: 60,
             maxLife: 60
           });
         }
-
-        setTimeout(() => {
-          this.callbacks.onStageClear();
-          this.isPaused = true;
-        }, 1500);
       }
     }
 
@@ -1827,6 +2082,184 @@ export class GameEngine {
   }
 
   private updatePhysics() {
+    // Gladiator Arena Survival Mode Wave Spawner & Timer Ticking
+    if (this.isSurvivalMode && !this.isPaused && this.pHP > 0) {
+      if (this.survivalTimer > 0) {
+        this.survivalTimer--;
+        const secondsLeft = Math.ceil(this.survivalTimer / 60);
+
+        // AT 30 SECONDS REMAINING: MAP ERUPTS AND IMMORTAL GLADIATOR SPAWNS!
+        if (secondsLeft <= 30 && !this.arenaExploded) {
+          this.arenaExploded = true;
+          this.screenShake = 40;
+          soundService.playHit();
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 60, 'ARENA ERUPTED! IMMORTAL GLADIATOR AWAKENED! 🌋💀', '#ef4444');
+
+          // Spawn 80 volcanic eruption explosion particles across arena
+          for (let p = 0; p < 80; p++) {
+            this.particles.push({
+              x: Math.random() * this.levelWidth,
+              y: Math.random() * this.levelHeight,
+              vx: (Math.random() - 0.5) * 12,
+              vy: -Math.random() * 10 - 2,
+              size: Math.random() * 10 + 4,
+              color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#f97316' : '#fef08a',
+              life: 50,
+              maxLife: 50
+            });
+          }
+
+          // Spawn the IMMORTAL GLADIATOR CHAMPION!
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: this.levelWidth / 2,
+            y: 180,
+            vx: 2.2,
+            vy: 0,
+            width: 72,
+            height: 72,
+            type: 'immortal_gladiator',
+            hp: 600,
+            maxHp: 600,
+            attack: 15,
+            defense: 8,
+            facing: 1,
+            shootCooldown: 50,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'Immortal Gladiator',
+            isImmortal: true,
+            stunTimer: 0,
+            damageAcc: 0
+          });
+        }
+
+        // Wave enemy spawner with HP scaling overtime
+        this.survivalWaveTimer--;
+        if (this.survivalWaveTimer <= 0) {
+          this.survivalWaveTimer = Math.floor(Math.random() * 80) + 140; // Spawn wave every 2.3-3.6s
+
+          if (this.enemies.length < 15) {
+            const arenaCenterX = this.levelWidth / 2;
+            const spawnX = arenaCenterX + (Math.random() * 260 - 130); // Centered in middle of arena!
+            const spawnY = 240;
+            const facingDir = Math.random() > 0.5 ? 1 : -1;
+
+            // HP Scales overtime (Base HP increases up to +150% as timer ticks down!)
+            const elapsedRatio = (120 - secondsLeft) / 120;
+            const hpMultiplier = 1 + elapsedRatio * 1.5;
+
+            let mobType = 'slime';
+            let baseHp = 16;
+            let mobAtk = 4;
+            let mobSpeed = 1.8;
+            let mobWidth = 32;
+            let mobHeight = 32;
+
+            const rand = Math.random();
+            if (secondsLeft > 80) {
+              if (rand < 0.25) mobType = 'skeleton_archer';
+              else if (rand < 0.5) mobType = 'bomb_thrower';
+              else if (rand < 0.75) mobType = 'slime';
+              else mobType = 'goblin_archer';
+              baseHp = mobType === 'skeleton_archer' ? 26 : mobType === 'bomb_thrower' ? 28 : 18;
+              mobAtk = 4;
+              if (mobType === 'skeleton_archer') { mobWidth = 32; mobHeight = 38; }
+              else if (mobType === 'bomb_thrower') { mobWidth = 32; mobHeight = 32; }
+            } else if (secondsLeft > 50) {
+              if (rand < 0.25) mobType = 'skeleton_archer';
+              else if (rand < 0.5) mobType = 'bomb_thrower';
+              else if (rand < 0.7) mobType = 'fire_golem';
+              else if (rand < 0.88) mobType = 'flying_wyvern';
+              else mobType = 'miniboss'; // Archdemon Boss Spawn!
+              baseHp = mobType === 'miniboss' ? 120 : 35;
+              mobAtk = mobType === 'miniboss' ? 8 : 6;
+              if (mobType === 'miniboss') { mobWidth = 56; mobHeight = 56; }
+              else if (mobType === 'skeleton_archer') { mobWidth = 32; mobHeight = 38; }
+            } else if (secondsLeft > 30) {
+              if (rand < 0.25) mobType = 'bomb_thrower';
+              else if (rand < 0.5) mobType = 'skeleton_archer';
+              else if (rand < 0.7) mobType = 'frost_wyvern'; // Frost Wyvern Boss Spawn!
+              else mobType = 'shadow_overlord'; // Shadow Overlord Boss Spawn!
+              baseHp = mobType === 'shadow_overlord' ? 220 : mobType === 'frost_wyvern' ? 180 : 55;
+              mobAtk = 8;
+              if (mobType === 'shadow_overlord' || mobType === 'frost_wyvern') { mobWidth = 72; mobHeight = 68; }
+              else if (mobType === 'skeleton_archer') { mobWidth = 32; mobHeight = 38; }
+            } else {
+              // Final Chaos Phase (30s remaining): Dragon King & King Kong Boss Spawns + Bombers & Skeletons!
+              if (rand < 0.25) mobType = 'king_kong';
+              else if (rand < 0.5) mobType = 'dragon_king';
+              else if (rand < 0.75) mobType = 'bomb_thrower';
+              else mobType = 'skeleton_archer';
+              baseHp = mobType === 'king_kong' ? 600 : mobType === 'dragon_king' ? 350 : 70;
+              mobAtk = 12;
+              if (mobType === 'king_kong') { mobWidth = 86; mobHeight = 86; }
+              else if (mobType === 'dragon_king') { mobWidth = 88; mobHeight = 80; }
+              else if (mobType === 'skeleton_archer') { mobWidth = 32; mobHeight = 38; }
+            }
+
+            const scaledHp = Math.floor(baseHp * hpMultiplier);
+
+            this.enemies.push({
+              id: this.enemyIdCounter++,
+              x: spawnX,
+              y: spawnY,
+              vx: facingDir * mobSpeed,
+              vy: 0,
+              width: mobWidth,
+              height: mobHeight,
+              type: mobType as any,
+              hp: scaledHp,
+              maxHp: scaledHp,
+              attack: mobAtk,
+              defense: 2,
+              facing: facingDir,
+              shootCooldown: 60,
+              state: 'patrol',
+              animFrame: 0,
+              name: 'Gladiator Beast'
+            });
+
+            soundService.playShoot();
+            // Spawn summoning portal particles in center of arena
+            for (let p = 0; p < 16; p++) {
+              this.particles.push({
+                x: spawnX + Math.random() * mobWidth,
+                y: spawnY + Math.random() * mobHeight,
+                vx: (Math.random() - 0.5) * 6,
+                vy: -Math.random() * 5 - 2,
+                size: Math.random() * 6 + 3,
+                color: p % 2 === 0 ? '#f59e0b' : '#ef4444',
+                life: 20,
+                maxLife: 20
+              });
+            }
+          }
+        }
+
+        if (this.survivalTimer === 0) {
+          this.exitPortalActive = true;
+          soundService.playLevelUp();
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 60, 'ARENA SURVIVED! EXIT PORTAL UNLOCKED! 🛡️🏆', '#f59e0b');
+
+          if (this.exitPortalPos) {
+            for (let i = 0; i < 50; i++) {
+              this.particles.push({
+                x: this.exitPortalPos.x,
+                y: this.exitPortalPos.y,
+                vx: (Math.random() - 0.5) * 10,
+                vy: (Math.random() - 0.5) * 10,
+                size: Math.random() * 7 + 3,
+                color: i % 2 === 0 ? '#f59e0b' : '#38bdf8',
+                life: 70,
+                maxLife: 70
+              });
+            }
+          }
+        }
+      }
+    }
+
     // Lock player physics during Poison Swamp acid skeleton meltdown
     if (this.skeletonDeathTimer > 0) {
       this.pvx = 0;
@@ -2284,6 +2717,200 @@ export class GameEngine {
       }
     }
 
+    // Shadowmon Ultimate Cutscene & Dual Dark Energy Wave Launch
+    if (this.shadowmonUltActive) {
+      this.shadowmonUltTimer--;
+      this.pvx = 0;
+      this.pvy = 0; // Float in mid-air during charge
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+      // Inward gathering crimson aura particles
+      if (this.frameCount % 2 === 0) {
+        const ang = Math.random() * Math.PI * 2;
+        const dist = 50;
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + Math.cos(ang) * dist,
+          y: this.py + this.pHeight / 2 + Math.sin(ang) * dist,
+          vx: -Math.cos(ang) * 3,
+          vy: -Math.sin(ang) * 3,
+          size: Math.random() * 6 + 3,
+          color: '#ef4444',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      // Frame 0: CHARGE ENDS -> LAUNCH DUAL EXPANDING DARK ENERGY WAVES TOWARDS LEFT & RIGHT!
+      if (this.shadowmonUltTimer <= 0) {
+        this.shadowmonUltActive = false;
+        this.cameraZoom = 1.0;
+        this.screenShake = 40;
+        soundService.playHit();
+
+        // Calculate wave lines: 1 base wave line + 1 wave line per stack (1 to 6 wave lines max!)
+        const totalWaves = 1 + this.shadowmonUltStacksUsed;
+        const waveDamage = Math.floor(this.stats.attack * 3.5);
+
+        // Launch totalWaves dark energy wave lines expanding to the left and right!
+        [-1, 1].forEach(dir => {
+          for (let w = 0; w < totalWaves; w++) {
+            const delay = w * 70; // Staggered wave lines 70ms apart
+            const yOffset = (w - (totalWaves - 1) / 2) * 16;
+            setTimeout(() => {
+              this.projectiles.push({
+                x: this.px + (dir === 1 ? this.pWidth : -50),
+                y: this.py - 30 + yOffset,
+                vx: dir * (this.stats.speed + 9 + w * 1.5),
+                vy: 0,
+                width: 50 + w * 6,
+                height: 110 + w * 8,
+                isEnemy: false,
+                damage: waveDamage,
+                color: w % 2 === 0 ? '#ef4444' : '#9f1239',
+                type: 'dark_energy' as any
+              });
+            }, delay);
+          }
+        });
+
+        // Instant 1000px screen-wide eruption effect on all active enemies
+        this.enemies.forEach(enemy => {
+          if (enemy.hp > 0 && Math.abs(enemy.x - this.px) <= 1000) {
+            this.damageEnemy(enemy, waveDamage * totalWaves);
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 25, '#ef4444');
+            this.addFloatingText(enemy.x, enemy.y - 20, `SOUL BLAST (${totalWaves} WAVES)! 🔴🌊💥`, '#ef4444');
+          }
+        });
+
+        this.addFloatingText(
+          this.px + this.pWidth / 2,
+          this.py - 45,
+          `SOUL BLAST (${totalWaves} WAVE LINES)! 🔴🌊💥`,
+          '#ef4444'
+        );
+
+        // Reset Dark Soul Stacks back to 0!
+        this.shadowmonStacks = 0;
+      }
+    }
+
+    // Shieldmon Special: Shield Trample Dash (Max 600px Trample)
+    if (this.shieldmonDashActive) {
+      this.shieldmonDashTimer--;
+      this.pvx = this.pFacing * 24.0;
+
+      // Trample and knock back all enemies hit during dash
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dx = Math.abs(enemy.x + enemy.width / 2 - (this.px + this.pWidth / 2));
+        const dy = Math.abs(enemy.y + enemy.height / 2 - (this.py + this.pHeight / 2));
+        if (dx < 50 && dy < 50) {
+          const hitSet = (this as any).shieldmonDashHitIds || ((this as any).shieldmonDashHitIds = new Set());
+          if (!hitSet.has(enemy.id)) {
+            hitSet.add(enemy.id);
+            this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.8));
+            enemy.vx = this.pFacing * 12.0; // Heavy knockback trample
+            enemy.vy = -5.0; // Knock up
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 16, '#3b82f6');
+            this.addFloatingText(enemy.x, enemy.y - 20, 'TRAMPLED! 🛡️💥', '#3b82f6');
+          }
+        }
+      });
+
+      // Spawn ground trample spark & dust trail
+      if (this.frameCount % 2 === 0) {
+        this.particles.push({
+          x: this.px + (this.pFacing === 1 ? 0 : this.pWidth),
+          y: this.py + this.pHeight - 4,
+          vx: -this.pFacing * (Math.random() * 4 + 2),
+          vy: -Math.random() * 4,
+          size: Math.random() * 6 + 3,
+          color: '#60a5fa',
+          life: 16,
+          maxLife: 16
+        });
+      }
+
+      if (this.shieldmonDashTimer <= 0) {
+        this.shieldmonDashActive = false;
+        (this as any).shieldmonDashHitIds = null;
+      }
+    }
+
+    // Shieldmon Ultimate: Portal Rampage Charge (Charges forward up to 3.0s (180 frames) or until portal!)
+    if (this.shieldmonChargeActive) {
+      this.shieldmonChargeTimer--;
+      this.pvx = this.pFacing * 18.0; // High speed rampage!
+      this.pInvulnerableFrames = 15;
+      this.screenShake = 6; // Continuous rumble shake during rampage
+
+      // Exit portal location check
+      const portalX = (this.exitPortalActive && (this as any).exitPortalX) ? (this as any).exitPortalX : (this.pFacing === 1 ? this.levelWidth - 60 : 60);
+      const distToPortal = Math.abs(this.px + this.pWidth / 2 - portalX);
+
+      // Check if reached exit portal or 3.0s timer finished
+      const reachedBoundary = (this.pFacing === 1 && this.px >= this.levelWidth - 60) || (this.pFacing === -1 && this.px <= 20);
+      if (distToPortal < 40 || reachedBoundary || this.shieldmonChargeTimer <= 0) {
+        // Rampage Finish Impact!
+        this.shieldmonChargeActive = false;
+        this.pvx = 0;
+        this.screenShake = 45;
+        soundService.playHit();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 40, 'PORTAL IMPACT TRAMPLE! 🛡️⚡💥', '#fef08a');
+
+        // Massive ground impact debris burst
+        for (let i = 0; i < 35; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 10 + 3;
+          this.particles.push({
+            x: this.px + this.pWidth / 2,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 3,
+            size: Math.random() * 8 + 4,
+            color: i % 3 === 0 ? '#60a5fa' : i % 3 === 1 ? '#fbbf24' : '#1e3a8a',
+            life: 30,
+            maxLife: 30
+          });
+        }
+      }
+
+      // TRAMPLE & LAUNCH ALL ENEMIES SKYWARD ALONG CHARGE PATH
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dx = Math.abs(enemy.x + enemy.width / 2 - (this.px + this.pWidth / 2));
+        const dy = Math.abs(enemy.y + enemy.height / 2 - (this.py + this.pHeight / 2));
+        if (dx < 65 && dy < 70) {
+          const hitSet = (this as any).shieldmonChargeHitIds || ((this as any).shieldmonChargeHitIds = new Set());
+          if (!hitSet.has(enemy.id)) {
+            hitSet.add(enemy.id);
+            this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.5));
+            enemy.vx = this.pFacing * 8.0;
+            enemy.vy = -13.0; // Launch skyward high into air!
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 25, '#60a5fa');
+            this.addFloatingText(enemy.x, enemy.y - 30, 'LAUNCHED & TRAMPLED! 🛡️🚀💥', '#fef08a');
+          }
+        }
+      });
+
+      // Sparking shield trail particles
+      if (this.frameCount % 2 === 0) {
+        for (let s = 0; s < 3; s++) {
+          this.particles.push({
+            x: this.px + (this.pFacing === 1 ? this.pWidth : 0),
+            y: this.py + Math.random() * this.pHeight,
+            vx: -this.pFacing * (Math.random() * 6 + 4),
+            vy: (Math.random() - 0.5) * 6,
+            size: Math.random() * 7 + 3,
+            color: s % 2 === 0 ? '#60a5fa' : '#fef08a',
+            life: 20,
+            maxLife: 20
+          });
+        }
+      }
+    }
+
     // Shieldmon Avatar Area Aura push-back & stun effect
     if (this.selectedDraco === 'Shieldmon' && this.avatarActive && this.frameCount % 10 === 0) {
       const centerX = this.px + this.pWidth / 2;
@@ -2386,8 +3013,11 @@ export class GameEngine {
     // Horizontal Movement
     let speedMultiplier = 1.0;
 
-    // Shieldmon Special Charge Phase (First 30 frames / 0.5s of block)
-    if (this.selectedDraco === 'Shieldmon' && this.shieldActive && this.shieldDuration > 90) {
+    if (this.shieldmonChargeActive) {
+      this.pvx = this.pFacing * 18.0; // Maintain constant 18.0 speed for 3s portal rampage charge!
+    } else if (this.shieldmonDashActive) {
+      this.pvx = this.pFacing * 22.0; // Maintain constant 22.0 speed for 600px trample dash!
+    } else if (this.selectedDraco === 'Shieldmon' && this.shieldActive && this.shieldDuration > 90) {
       this.pvx = this.pFacing * 9.5;
 
       // Damage enemies along the dash path
@@ -2417,9 +3047,11 @@ export class GameEngine {
       }
     }
 
-    // Apply friction
-    this.pvx *= this.friction;
-    if (Math.abs(this.pvx) < 0.1) this.pvx = 0;
+    // Apply friction (bypassed during active charges)
+    if (!this.shieldmonChargeActive && !this.shieldmonDashActive) {
+      this.pvx *= this.friction;
+      if (Math.abs(this.pvx) < 0.1) this.pvx = 0;
+    }
 
     // Apply gravity & velocity caps
     this.pvy += this.gravity;
@@ -2655,6 +3287,15 @@ export class GameEngine {
 
     // Projectiles
     this.projectiles.forEach((proj, index) => {
+      // Decrement and cleanup projectiles with explicit life duration (e.g. ground shockwave rings)
+      if ((proj as any).life !== undefined) {
+        (proj as any).life--;
+        if ((proj as any).life <= 0) {
+          this.projectiles.splice(index, 1);
+          return;
+        }
+      }
+
       if ((proj as any).type === 'bomb') {
         // Bomb Physics (Gravity and bouncing)
         proj.vy = (proj.vy || 0) + 0.24;
@@ -3464,7 +4105,7 @@ export class GameEngine {
         const ey = r * ts;
 
         // Skip drawn tiles outside camera viewport view to optimize
-        if (ex + ts < this.cameraX || ex > this.cameraX + this.canvas.width) continue;
+        if (ex + ts < this.cameraX - 40 || ex > this.cameraX + this.canvas.width + 120) continue;
 
         if (char === '#') {
           // Solid Block
@@ -3655,7 +4296,7 @@ export class GameEngine {
             }
           }
         } else if (char === 'm') {
-          // Sub-map Portal ('m')
+          // Sub-map Portal ('m' - Next Area Portal)
           const angle = (this.frameCount * 0.05) % (Math.PI * 2);
           this.ctx.save();
           this.ctx.translate(ex + ts / 2, ey + ts / 2);
@@ -3678,34 +4319,93 @@ export class GameEngine {
           this.ctx.stroke();
 
           this.ctx.restore();
+
+          // Floating Label for Next Area Portal
+          this.ctx.save();
+          this.ctx.font = 'bold 11px monospace';
+          this.ctx.textAlign = 'center';
+          this.ctx.fillStyle = '#38bdf8';
+          this.ctx.shadowColor = '#0284c7';
+          this.ctx.shadowBlur = 8;
+          this.ctx.fillText('NEXT AREA 🌀', ex + ts / 2, ey - 14);
+          this.ctx.restore();
         } else if (char === 'P') {
-          // Swirling Portal - only show if boss is defeated!
-          const activeBossExists = this.enemies.some(e => this.isBossType(e.type));
-          if (!activeBossExists) {
-            const angle = (this.frameCount * 0.05) % (Math.PI * 2);
-            this.ctx.save();
-            this.ctx.translate(ex + ts / 2, ey + ts / 2);
+          // Stage Exit Portal ('P' - Always visible locked or unlocked!)
+          const angle = (this.frameCount * 0.04) % (Math.PI * 2);
+          this.ctx.save();
+          this.ctx.translate(ex + ts / 2, ey + ts / 2);
+
+          if (this.exitPortalActive) {
+            // UNLOCKED ACTIVE PORTAL (Glowing Purple & Cyan Arcane Vortex)
             this.ctx.rotate(angle);
 
-            const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 24);
-            grad.addColorStop(0, '#a855f7');
-            grad.addColorStop(0.5, '#6366f1');
+            const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
+            grad.addColorStop(0, '#ffffff');
+            grad.addColorStop(0.3, '#a855f7');
+            grad.addColorStop(0.7, '#6366f1');
             grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
 
             this.ctx.fillStyle = grad;
             this.ctx.beginPath();
-            this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
+            this.ctx.arc(0, 0, 26, 0, Math.PI * 2);
             this.ctx.fill();
 
-            // Portal swirls
-            this.ctx.strokeStyle = '#ffffff';
+            // Outer Pulsing Ring
+            this.ctx.strokeStyle = '#c084fc';
+            this.ctx.lineWidth = 2.5;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 18 + Math.sin(this.frameCount * 0.1) * 3, 0, Math.PI * 2);
+            this.ctx.stroke();
+          } else {
+            // LOCKED EXIT PORTAL (Visible Crimson Ring with Lock Icon 🔒)
+            this.ctx.rotate(-angle * 0.5);
+
+            const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 22);
+            grad.addColorStop(0, 'rgba(239, 68, 68, 0.7)');
+            grad.addColorStop(0.6, 'rgba(153, 27, 27, 0.4)');
+            grad.addColorStop(1, 'rgba(153, 27, 27, 0)');
+
+            this.ctx.fillStyle = grad;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 22, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Red Lock Outer Ring
+            this.ctx.strokeStyle = '#ef4444';
             this.ctx.lineWidth = 2;
             this.ctx.beginPath();
-            this.ctx.arc(0, 0, 16, 0, Math.PI, false);
+            this.ctx.arc(0, 0, 16, 0, Math.PI * 2);
             this.ctx.stroke();
 
-            this.ctx.restore();
+            // Center Lock Icon Graphic
+            this.ctx.fillStyle = '#fef08a';
+            this.ctx.fillRect(-4, -2, 8, 7); // Lock Body
+            this.ctx.strokeStyle = '#fef08a';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            this.ctx.arc(0, -3, 3, Math.PI, 0); // Lock Shackle
+            this.ctx.stroke();
           }
+
+          this.ctx.restore();
+
+          // Floating Label Banner above Exit Portal
+          this.ctx.save();
+          this.ctx.font = 'bold 11px monospace';
+          this.ctx.textAlign = 'center';
+
+          if (this.exitPortalActive) {
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.shadowColor = '#a855f7';
+            this.ctx.shadowBlur = 10;
+            this.ctx.fillText('EXIT PORTAL 🌀', ex + ts / 2, ey - 14);
+          } else {
+            this.ctx.fillStyle = '#fca5a5';
+            this.ctx.shadowColor = '#ef4444';
+            this.ctx.shadowBlur = 6;
+            this.ctx.fillText('EXIT PORTAL (LOCKED 🔒)', ex + ts / 2, ey - 14);
+          }
+          this.ctx.restore();
         }
       }
     }
@@ -3971,18 +4671,38 @@ export class GameEngine {
         this.ctx.fill();
         this.ctx.stroke();
         this.ctx.restore();
-      } else if (proj.type === 'arcane_orb') {
+      } else if (proj.type === 'dark_energy') {
         this.ctx.save();
         const cx = proj.x + proj.width / 2;
         const cy = proj.y + proj.height / 2;
-        const grad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, proj.width / 2);
-        grad.addColorStop(0, '#ffffff');
-        grad.addColorStop(0.5, '#c084fc');
-        grad.addColorStop(1, '#6d28d9');
-        this.ctx.fillStyle = grad;
-        this.ctx.beginPath();
-        this.ctx.arc(cx, cy, proj.width / 2, 0, Math.PI * 2);
-        this.ctx.fill();
+
+        if (proj.width > 50) {
+          // Large Expanding Dark Energy Shockwave Ring (for Shadowraze & Soul Blast Waves)
+          const radius = proj.width / 2;
+          const grad = this.ctx.createRadialGradient(cx, cy, 4, cx, cy, radius);
+          grad.addColorStop(0, 'rgba(239, 68, 68, 0.8)');
+          grad.addColorStop(0.6, 'rgba(159, 18, 57, 0.4)');
+          grad.addColorStop(1, 'rgba(24, 24, 27, 0)');
+
+          this.ctx.fillStyle = grad;
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#ef4444';
+          this.ctx.lineWidth = 3;
+          this.ctx.stroke();
+        } else {
+          // Standard Ranged Crimson Plasma Bolt
+          const grad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, proj.width / 2);
+          grad.addColorStop(0, '#ffffff');
+          grad.addColorStop(0.4, '#ef4444');
+          grad.addColorStop(1, '#9f1239');
+          this.ctx.fillStyle = grad;
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, proj.width / 2, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
         this.ctx.restore();
       } else {
         // Arrow lines
@@ -4497,6 +5217,81 @@ export class GameEngine {
         this.ctx.strokeStyle = '#eab308';
         this.ctx.lineWidth = 1.5;
         this.ctx.strokeRect(hbX, hbY, hbW, 10);
+      } else if (enemy.type === 'immortal_gladiator') {
+        // IMMORTAL GLADIATOR CHAMPION
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+
+        // Dark Crimson Titan Frame
+        this.ctx.fillStyle = '#881337';
+        this.ctx.strokeStyle = '#f43f5e';
+        this.ctx.lineWidth = 3;
+        this.ctx.fillRect(bx, by, bw, bh);
+        this.ctx.strokeRect(bx, by, bw, bh);
+
+        // Gold Skull Horns & Visor
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx + 12, by);
+        this.ctx.lineTo(bx + 4, by - 16);
+        this.ctx.lineTo(bx + 24, by + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx + bw - 12, by);
+        this.ctx.lineTo(bx + bw - 4, by - 16);
+        this.ctx.lineTo(bx + bw - 24, by + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Glowing Crimson Visor Eyes
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.fillRect(bx + 16, by + 14, bw - 32, 6);
+
+        // Dual Flaming Gladiator Axes
+        this.ctx.fillStyle = '#f97316';
+        this.ctx.fillRect(enemy.facing === 1 ? bx + bw + 2 : bx - 14, by + 8, 12, 40);
+
+        // Stunned indicator spinning stars 💫
+        if (enemy.stunTimer && enemy.stunTimer > 0) {
+          const starAngle = (this.frameCount * 0.2) % (Math.PI * 2);
+          for (let s = 0; s < 3; s++) {
+            const sang = starAngle + (s * Math.PI * 2) / 3;
+            const sx = bx + bw / 2 + Math.cos(sang) * 24;
+            const sy = by - 18 + Math.sin(sang) * 8;
+            this.ctx.fillStyle = '#fef08a';
+            this.ctx.beginPath();
+            this.ctx.arc(sx, sy, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        }
+
+        // IMMORTAL GLADIATOR HP BAR OVERLAY
+        const hbW = bw + 40;
+        const hbX = bx - 20;
+        const hbY = by - 36;
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillRect(hbX, hbY, hbW, 10);
+        this.ctx.fillStyle = enemy.stunTimer && enemy.stunTimer > 0 ? '#fef08a' : '#f43f5e';
+        this.ctx.fillRect(hbX, hbY, hbW * Math.max(0, enemy.hp / enemy.maxHp), 10);
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(hbX, hbY, hbW, 10);
+
+        // Floating Title Banner
+        this.ctx.font = 'bold 11px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = enemy.stunTimer && enemy.stunTimer > 0 ? '#fef08a' : '#fca5a5';
+        this.ctx.shadowColor = '#ef4444';
+        this.ctx.shadowBlur = 8;
+        this.ctx.fillText(
+          enemy.stunTimer && enemy.stunTimer > 0 ? '💫 STUNNED! (1s)' : 'IMMORTAL GLADIATOR 🛡️💀',
+          bx + bw / 2,
+          hbY - 6
+        );
       }
 
       // Draw standard HP bar overlay for regular enemies (excluding bosses)
@@ -4632,6 +5427,11 @@ export class GameEngine {
       accentColor = '#312e81'; // Dark Indigo
       bellyColor = '#c084fc'; // Light Purple
       detailColor = '#f59e0b'; // Gold Sash Trim
+    } else if (this.selectedDraco === 'Shadowmon') {
+      mainColor = '#18181b'; // Obsidian Nether Black
+      accentColor = '#881337'; // Crimson Red
+      bellyColor = '#9f1239'; // Deep Crimson
+      detailColor = '#ef4444'; // Glowing Red Eyes & Accents
     }
 
     const px = this.px;
@@ -4690,6 +5490,42 @@ export class GameEngine {
         this.ctx.lineTo(px + (this.pFacing === 1 ? -50 : pw + 50), sy);
         this.ctx.stroke();
       }
+      this.ctx.restore();
+    }
+
+    // Shadowmon Dark Nether Aura & Crimson Bat Dragon Wings
+    if (this.selectedDraco === 'Shadowmon') {
+      this.ctx.save();
+      const auraPulse = Math.sin(this.frameCount * 0.1) * 4;
+      this.ctx.fillStyle = 'rgba(159, 18, 57, 0.25)';
+      this.ctx.beginPath();
+      this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 10 + auraPulse, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Flapping Bat Dragon Wings
+      const wingFlap = Math.sin(this.frameCount * 0.2) * 5;
+      this.ctx.fillStyle = '#9f1239';
+      this.ctx.strokeStyle = '#ef4444';
+      this.ctx.lineWidth = 1.5;
+
+      // Left Wing
+      this.ctx.beginPath();
+      this.ctx.moveTo(px + pw / 2 - 8, py + 16);
+      this.ctx.quadraticCurveTo(px - 18, py - 6 + wingFlap, px - 28, py + 12 + wingFlap);
+      this.ctx.quadraticCurveTo(px - 16, py + 22, px + pw / 2 - 8, py + 28);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Right Wing
+      this.ctx.beginPath();
+      this.ctx.moveTo(px + pw / 2 + 8, py + 16);
+      this.ctx.quadraticCurveTo(px + pw + 18, py - 6 + wingFlap, px + pw + 28, py + 12 + wingFlap);
+      this.ctx.quadraticCurveTo(px + pw + 16, py + 22, px + pw / 2 + 8, py + 28);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
       this.ctx.restore();
     }
 
@@ -4783,12 +5619,46 @@ export class GameEngine {
     this.ctx.fill();
     this.ctx.stroke();
 
-    // 5. Belly Scales Plate
+    // 5. Belly Scales Plate & Shadowmon Dark Soul Stack Badge
     this.ctx.fillStyle = bellyColor;
     const bellyX = this.pFacing === 1 ? px + 8 : px + 6;
     this.ctx.beginPath();
     this.ctx.ellipse(bellyX + 8, bodyY + ph / 2 + 4, 7, 10, 0, 0, Math.PI * 2);
     this.ctx.fill();
+
+    // Shadowmon Body Stack Counter Badge (0 - 5 Stacks)
+    if (this.selectedDraco === 'Shadowmon') {
+      this.ctx.save();
+      const stackX = px + pw / 2;
+      const stackY = bodyY + 22; // Centered on torso/chest so overhead HP bar does not cut across it!
+
+      this.ctx.fillStyle = 'rgba(24, 24, 27, 0.95)';
+      this.ctx.strokeStyle = '#ef4444';
+      this.ctx.lineWidth = 1.8;
+      this.ctx.beginPath();
+      this.ctx.arc(stackX, stackY, 11, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.font = '900 12px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.textBaseline = 'middle';
+      this.ctx.fillStyle = this.shadowmonStacks >= 5 ? '#fef08a' : '#ffffff';
+      this.ctx.fillText(`${this.shadowmonStacks}`, stackX, stackY + 1);
+
+      // Orbiting Red Soul Embers based on stack count
+      for (let s = 0; s < this.shadowmonStacks; s++) {
+        const sang = (this.frameCount * 0.12) + (s * Math.PI * 2) / 5;
+        const sx = stackX + Math.cos(sang) * 16;
+        const sy = stackY + Math.sin(sang) * 16;
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      this.ctx.restore();
+    }
 
     // 6. Draco Horns / Ears
     this.ctx.fillStyle = accentColor;
@@ -5445,6 +6315,38 @@ export class GameEngine {
       this.ctx.font = 'bold italic 15px "Courier New", monospace';
       this.ctx.fillText(`"${this.getUltimateVoiceLine()}"`, 45, h - 85);
     }
+
+    // Gladiator Arena Survival Mode HUD Banner
+    if (this.isSurvivalMode) {
+      const secondsTotal = Math.max(0, Math.ceil(this.survivalTimer / 60));
+      const mins = Math.floor(secondsTotal / 60);
+      const secs = secondsTotal % 60;
+      const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+
+      this.ctx.save();
+      const tw = 240;
+      const th = 36;
+      const tx = (this.canvas.width - tw) / 2;
+      const ty = 12;
+
+      this.ctx.fillStyle = 'rgba(28, 25, 23, 0.88)';
+      this.ctx.strokeStyle = secondsTotal <= 15 ? '#ef4444' : '#f59e0b';
+      this.ctx.lineWidth = 2;
+      this.ctx.fillRect(tx, ty, tw, th);
+      this.ctx.strokeRect(tx, ty, tw, th);
+
+      this.ctx.font = 'bold 13px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillStyle = secondsTotal <= 15 ? '#fca5a5' : '#fef08a';
+      this.ctx.shadowColor = secondsTotal <= 15 ? '#ef4444' : '#f59e0b';
+      this.ctx.shadowBlur = 8;
+      this.ctx.fillText(
+        this.survivalTimer === 0 ? '🛡️ SURVIVED! REACH PORTAL 🌀' : `🛡️ ARENA DEFENSE: ${timeStr}`,
+        tx + tw / 2,
+        ty + 22
+      );
+      this.ctx.restore();
+    }
   }
 
   // CORE ENGINE RUNNER
@@ -5526,7 +6428,7 @@ export class GameEngine {
       }
     }
 
-    // Flymon Laser skill ticking (jump to top of level + angled piercing laser to nearest highest HP enemy)
+    // Flymon Laser skill ticking (straight beam 1200px in the direction character is facing)
     if (this.laserBeamActive) {
       this.laserBeamDuration--;
       if (this.laserBeamDuration <= 0) {
@@ -5534,59 +6436,51 @@ export class GameEngine {
         this.flymonLaserTargetEnemy = null;
         this.flymonLaserEndPos = null;
       } else {
-        // Hold Flymon at top of level
+        // Hold Flymon hovering in place while firing laser
         this.pvy = 0;
-        this.py = Math.max(30, Math.min(60, this.py));
 
         const startX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
         const startY = this.py + this.pHeight / 2;
 
-        let endX = startX + this.pFacing * 650;
-        let endY = startY + 450;
+        const endX = startX + this.pFacing * 1200;
+        const endY = startY;
 
-        if (!this.flymonLaserTargetEnemy || !this.isEnemyInsideFrame(this.flymonLaserTargetEnemy)) {
-          // Dynamically re-scan for highest HP enemy strictly inside the visible screen frame
-          let best: Enemy | null = null;
-          let maxHP = -1;
-
-          this.enemies.forEach(e => {
-            if (this.isEnemyInsideFrame(e) && e.hp > maxHP) {
-              maxHP = e.hp;
-              best = e;
-            }
-          });
-          this.flymonLaserTargetEnemy = best;
-        }
-
-        if (this.flymonLaserTargetEnemy && this.isEnemyInsideFrame(this.flymonLaserTargetEnemy)) {
-          endX = this.flymonLaserTargetEnemy.x + this.flymonLaserTargetEnemy.width / 2;
-          endY = this.flymonLaserTargetEnemy.y + this.flymonLaserTargetEnemy.height / 2;
-          this.pFacing = endX > startX ? 1 : -1;
-        }
-
-        // Piercing Laser Beam: directly reaches target through all platforms!
         this.flymonLaserEndPos = { x: endX, y: endY };
 
-        // Continuous high damage to target enemy
-        if (this.flymonLaserTargetEnemy && this.flymonLaserTargetEnemy.hp > 0) {
-          this.damageEnemy(this.flymonLaserTargetEnemy, Math.floor(this.stats.attack * 0.50));
-          if (this.frameCount % 3 === 0) {
-            this.spawnDustParticles(endX, endY, 8, '#f43f5e');
-          }
-        }
+        const minX = Math.min(startX, endX);
+        const maxX = Math.max(startX, endX);
 
-        // Also damage any other enemies along the laser beam path!
+        // Damage all enemies along the 1200px straight laser beam path!
         this.enemies.forEach(enemy => {
-          if (enemy.id !== this.flymonLaserTargetEnemy?.id && enemy.hp > 0) {
+          if (enemy.hp > 0) {
             const ex = enemy.x + enemy.width / 2;
             const ey = enemy.y + enemy.height / 2;
-            // Distance from point to line segment
-            const lineDist = Math.abs((endY - startY) * ex - (endX - startX) * ey + endX * startY - endY * startX) / (Math.hypot(endY - startY, endX - startX) || 1);
-            if (lineDist < 30) {
-              this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.35));
+            // Check if enemy is within horizontal 1200px beam range and vertical line thickness (30px)
+            if (ex >= minX - enemy.width / 2 && ex <= maxX + enemy.width / 2 && Math.abs(ey - startY) < (30 + enemy.height / 2)) {
+              this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.50));
+              enemy.vx = this.pFacing * 2.0; // Laser knockback
+              if (this.frameCount % 4 === 0) {
+                this.spawnDustParticles(ex, ey, 5, '#f43f5e');
+              }
             }
           }
         });
+
+        if (this.frameCount % 2 === 0) {
+          // Spawn glowing laser particles along beam path
+          const randomDist = Math.random() * 1200;
+          const px = startX + this.pFacing * randomDist;
+          this.particles.push({
+            x: px,
+            y: startY + (Math.random() * 20 - 10),
+            vx: this.pFacing * (Math.random() * 4 + 2),
+            vy: (Math.random() - 0.5) * 3,
+            size: Math.random() * 5 + 2,
+            color: Math.random() > 0.5 ? '#f43f5e' : '#ffffff',
+            life: 15,
+            maxLife: 15
+          });
+        }
       }
     }
 
@@ -5595,31 +6489,6 @@ export class GameEngine {
       this.avatarDuration--;
       if (this.avatarDuration <= 0) {
         this.avatarActive = false;
-      }
-    }
-
-    // Hyper Laser beam damage ticking
-    if (this.laserBeamActive) {
-      this.laserBeamDuration--;
-      if (this.laserBeamDuration <= 0) {
-        this.laserBeamActive = false;
-      } else if (this.frameCount % 5 === 0) {
-        const bx = this.pFacing === 1 ? this.px + this.pWidth : 0;
-        const bw = this.pFacing === 1 ? this.levelWidth - bx : this.px;
-        const by = this.py + 10;
-        const bh = 24;
-
-        this.enemies.forEach(enemy => {
-          if (
-            enemy.x < bx + bw &&
-            enemy.x + enemy.width > bx &&
-            enemy.y < by + bh &&
-            enemy.y + enemy.height > by
-          ) {
-            this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.8));
-            enemy.vx = this.pFacing * 3.5; // Laser knockback push
-          }
-        });
       }
     }
 

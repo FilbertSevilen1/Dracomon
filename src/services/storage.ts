@@ -112,6 +112,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.2,
     },
+    Shadowmon: {
+      level: 1,
+      exp: 0,
+      hp: 20,
+      attack: 9,
+      defense: 3,
+      speed: 8,
+      jump: 10.5,
+      range: 8,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -196,6 +208,20 @@ export const storageService = {
             range: 8,
             unlocked: false,
             energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Magemon) {
+          parsed.dracos.Magemon = {
+            level: 1,
+            exp: 0,
+            hp: 19,
+            attack: 7,
+            defense: 3,
+            speed: 6.5,
+            jump: 11,
+            range: 12,
+            unlocked: false,
+            energyRegen: 1.2,
           };
         }
 
