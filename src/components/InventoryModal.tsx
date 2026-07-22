@@ -64,9 +64,11 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   const handleUseUpgradeStone = (stat: keyof PlayerStats) => {
     if (stoneQty <= 0) return;
     const success = onUseUpgradeStone(selectedDraco, stat);
-    if (success) {
+    if (success && stoneQty - 1 <= 0) {
+      // Close the picker only when stones run out
       setStoneUpgrading(false);
     }
+    // If stones remain, stay in upgrade panel so player can keep upgrading
   };
 
   const handleBuy = (itemId: 'potion' | 'upgrade_stone', cost: number) => {
