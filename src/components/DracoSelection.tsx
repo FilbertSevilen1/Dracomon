@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { SaveData, DracoData } from '../types/game';
-import { Shield, Target, Zap, Lock, Sparkles, Coins } from 'lucide-react';
+import { SaveData, DracoData, TierType } from '../types/game';
+import { Shield, Target, Zap, Lock, Sparkles, Coins, Layers, Award } from 'lucide-react';
 import { soundService } from '../services/sound';
 
 interface DracoSelectionProps {
@@ -10,15 +10,17 @@ interface DracoSelectionProps {
   onUnlock: (name: string, cost: number) => void;
   onLevelUpWithCoins: (name: string) => void;
   onClose: () => void;
+  onSwitchTier?: (tier: TierType) => void;
 }
 
-// Draco detailed descriptions and pricing
 // Draco detailed descriptions and pricing
 const DRACO_META: {
   [key: string]: {
     role: string;
     abilityName: string;
     abilityDesc: string;
+    ultimateName: string;
+    ultimateDesc: string;
     cost: number;
     colorClass: string;
     bgGradient: string;
@@ -26,32 +28,40 @@ const DRACO_META: {
 } = {
   Jumpmon: {
     role: 'Mobility / Agile',
-    abilityName: 'Double Leap',
+    abilityName: 'Double Leap & Spin Slash',
     abilityDesc: 'Can execute a second jump mid-air. Spin melee attack covers a wide circular area around itself.',
+    ultimateName: 'Earthshaker Ground Slam (Ultimate)',
+    ultimateDesc: 'Jumps high into the sky and slams down, spawning dual shockwaves that deal 30 damage to all grounded foes.',
     cost: 0,
     colorClass: 'text-amber-600 border-amber-200 bg-amber-50',
     bgGradient: 'from-amber-400 to-orange-500',
   },
   Archermon: {
     role: 'Ranged / DPS',
-    abilityName: 'Piercing Volley',
-    abilityDesc: 'Shoots rapid arrows horizontally. Special ability shoots three arrows in a spread.',
+    abilityName: 'Triple Arrow Volley',
+    abilityDesc: 'Shoots rapid arrows horizontally. Special ability shoots three arrows in a spread volley.',
+    ultimateName: 'Arrow Rain Barrage (Ultimate)',
+    ultimateDesc: 'Fires a volley of 12 rapid piercing arrows into the sky that rain down across all enemies on screen.',
     cost: 100,
     colorClass: 'text-emerald-600 border-emerald-200 bg-emerald-50',
     bgGradient: 'from-emerald-400 to-teal-600',
   },
   Shieldmon: {
     role: 'Tank / Defender',
-    abilityName: 'Aegis Block',
-    abilityDesc: 'Bashes enemies in melee. Special creates an indestructible shield bubble that negates all damage for 2 seconds and charges forward.',
+    abilityName: 'Aegis Shield Charge',
+    abilityDesc: 'Bashes enemies in melee. Special creates an indestructible shield bubble that negates all damage for 2 seconds.',
+    ultimateName: 'Aegis Fortress Shockwave (Ultimate)',
+    ultimateDesc: 'Grants 5s of total invulnerability, unleashes a radial knockback blast, and charges forward breaking hazards.',
     cost: 200,
     colorClass: 'text-blue-600 border-blue-200 bg-blue-50',
     bgGradient: 'from-blue-400 to-indigo-600',
   },
   Assassinmon: {
     role: 'Stealth / Burst',
-    abilityName: 'Shadow Dash Strike',
+    abilityName: 'Shadow Dash Slash',
     abilityDesc: 'Strikes fast with dual daggers. Special dashes forward invulnerably, slashing all enemies in the shadow path.',
+    ultimateName: 'Shadow Void Assassination (Ultimate)',
+    ultimateDesc: 'Teleports behind all visible enemies in zero seconds, executing lethal shadow slashes with 100% critical crits.',
     cost: 300,
     colorClass: 'text-purple-600 border-purple-200 bg-purple-50',
     bgGradient: 'from-purple-500 to-indigo-800',
@@ -60,9 +70,31 @@ const DRACO_META: {
     role: 'Aerial / Float',
     abilityName: 'Sonic Wind Slice',
     abilityDesc: 'Spits poison needles. Special launches dual sonic blades and allows hovering mid-air (extreme jump height).',
+    ultimateName: 'Sonic Typhoon Whirlwind (Ultimate)',
+    ultimateDesc: 'Launches a giant rotating wind hurricane projectile forward while granting 4s of infinite mid-air floating flight.',
     cost: 400,
     colorClass: 'text-rose-600 border-rose-200 bg-rose-50',
     bgGradient: 'from-rose-400 to-pink-600',
+  },
+  Whitemon: {
+    role: 'Summoner / Beastmaster',
+    abilityName: 'Bird Familiar Summon',
+    abilityDesc: 'Throws spinning axes. Special summons an uncontrollable Bird Familiar that seeks nearby enemies.',
+    ultimateName: 'Primal Roar & Familiar Rampage (Ultimate)',
+    ultimateDesc: 'Roars to stun all visible enemies for 3 seconds while driving the Bird Familiar into Rampage mode (3x attack speed).',
+    cost: 500,
+    colorClass: 'text-sky-600 border-sky-200 bg-sky-50',
+    bgGradient: 'from-sky-400 to-indigo-600',
+  },
+  Magemon: {
+    role: 'Mage / Elemental Spells',
+    abilityName: 'Invoked Spell (Meteor / Sun Strike / Tornado)',
+    abilityDesc: 'Casts 3 random legendary spells: 45° rolling Chaos Meteor, 1.7s homing Sun Strike laser, or enemy-lifting Tornado.',
+    ultimateName: 'Trio Orb Blast (Ultimate)',
+    ultimateDesc: 'Summons a Giant Cleave arc in front (1.5x size) followed immediately by Chaos Meteor, Sun Strike, and Tornado!',
+    cost: 250,
+    colorClass: 'text-purple-600 border-purple-200 bg-purple-50',
+    bgGradient: 'from-purple-600 via-indigo-600 to-cyan-500',
   },
 };
 
@@ -164,6 +196,52 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean }> = ({ name, an
     );
   }
 
+  if (name === 'Whitemon') {
+    return (
+      <motion.svg width="120" height="120" viewBox="0 0 100 100" {...motionProps} className="mx-auto">
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.1)" />
+        {/* Feather Wings */}
+        <path d="M 32 48 Q 10 24 34 36 Z" fill="#e2e8f0" opacity="0.9" />
+        <path d="M 68 48 Q 90 24 66 36 Z" fill="#e2e8f0" opacity="0.9" />
+        {/* White Body */}
+        <rect x="36" y="36" width="28" height="40" rx="10" fill="#f8fafc" stroke="#64748b" strokeWidth="2.5" />
+        <rect x="42" y="44" width="5" height="7" fill="#000" />
+        <rect x="53" y="44" width="5" height="7" fill="#000" />
+        {/* Feathers crown */}
+        <path d="M 34 36 Q 50 18 66 36 Z" fill="#38bdf8" />
+        {/* Bird Familiar hovering near shoulder */}
+        <circle cx="24" cy="30" r="5" fill="#38bdf8" />
+        <path d="M 18 30 L 22 26 L 24 32 Z" fill="#7dd3fc" />
+        {/* Throwing Axe */}
+        <path d="M 68 44 L 80 32 L 76 52 Z" fill="#94a3b8" stroke="#475569" strokeWidth="1.5" />
+      </motion.svg>
+    );
+  }
+
+  if (name === 'Magemon') {
+    return (
+      <motion.svg width="120" height="120" viewBox="0 0 100 100" {...motionProps} className="mx-auto">
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.15)" />
+        {/* Floating Quas / Wex / Exort Magical Orbs */}
+        <circle cx="30" cy="22" r="6" fill="#ef4444" stroke="#991b1b" strokeWidth="1.5" />
+        <circle cx="50" cy="14" r="6" fill="#38bdf8" stroke="#0284c7" strokeWidth="1.5" />
+        <circle cx="70" cy="22" r="6" fill="#fbbf24" stroke="#d97706" strokeWidth="1.5" />
+        {/* Wizard Robe & Body */}
+        <path d="M 32 45 L 68 45 L 76 80 L 24 80 Z" fill="#4c1d95" stroke="#312e81" strokeWidth="2.5" />
+        {/* Golden Sash Trim */}
+        <path d="M 50 45 L 42 80 M 50 45 L 58 80" stroke="#f59e0b" strokeWidth="2" />
+        {/* Wizard Hood / Head */}
+        <circle cx="50" cy="40" r="14" fill="#6d28d9" stroke="#4c1d95" strokeWidth="2" />
+        {/* Glowing Eyes */}
+        <circle cx="45" cy="38" r="2.5" fill="#f59e0b" />
+        <circle cx="55" cy="38" r="2.5" fill="#f59e0b" />
+        {/* Magic Staff */}
+        <rect x="74" y="25" width="4" height="55" rx="2" fill="#78350f" />
+        <circle cx="76" cy="23" r="6" fill="#a855f7" stroke="#6b21a8" strokeWidth="1.5" />
+      </motion.svg>
+    );
+  }
+
   // Flymon
   return (
     <motion.svg width="120" height="120" viewBox="0 0 100 100" {...motionProps} className="mx-auto">
@@ -185,9 +263,10 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean }> = ({ name, an
   );
 };
 
-export const DracoSelection: React.FC<DracoSelectionProps> = ({ saveData, onSelect, onUnlock, onLevelUpWithCoins, onClose }) => {
+export const DracoSelection: React.FC<DracoSelectionProps> = ({ saveData, onSelect, onUnlock, onLevelUpWithCoins, onClose, onSwitchTier }) => {
   const currentDraco = saveData.selectedDraco;
   const coins = saveData.player.coins;
+  const currentTier = saveData.tier || 'Free';
 
   const handleCardClick = (name: string, unlocked: boolean) => {
     if (unlocked) {
@@ -213,14 +292,35 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({ saveData, onSele
         initial={{ scale: 0.95, y: 15 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.95, y: 15 }}
-        className="w-full max-w-5xl overflow-hidden border bg-white/90 border-stone-200 rounded-3xl shadow-2xl backdrop-blur-xl"
+        className="w-full max-w-6xl max-h-[88vh] flex flex-col overflow-hidden border bg-white/95 border-stone-200 rounded-3xl shadow-2xl backdrop-blur-xl"
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-8 py-6 border-b border-stone-100">
+        <div className="flex flex-wrap items-center justify-between gap-4 px-8 py-5 border-b border-stone-100 flex-shrink-0">
           <div>
             <h2 className="text-2xl font-bold tracking-tight text-stone-900 font-display">Draco Sanctuary</h2>
             <p className="text-sm text-stone-500">Equip your companion or unlock legendary Draco classes.</p>
           </div>
+
+          {/* Account Tier Selector Badges */}
+          {onSwitchTier && (
+            <div className="flex items-center gap-1.5 p-1 bg-stone-100 border border-stone-200 rounded-2xl">
+              {(['Free', 'Basic', 'Premium'] as TierType[]).map((t) => (
+                <button
+                  key={t}
+                  onClick={() => onSwitchTier(t)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1 ${
+                    currentTier === t
+                      ? 'bg-amber-500 text-stone-950 shadow-md ring-2 ring-amber-400/40'
+                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                  }`}
+                >
+                  <Award className="w-3.5 h-3.5" />
+                  <span>{t} Tier</span>
+                </button>
+              ))}
+            </div>
+          )}
+
           <div className="flex items-center gap-3 px-4 py-2 bg-stone-50 rounded-full border border-stone-100 shadow-sm">
             <Coins className="w-5 h-5 text-amber-500 fill-amber-500 animate-pulse" />
             <span className="font-mono font-bold text-stone-800">{coins} Coins</span>
@@ -228,7 +328,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({ saveData, onSele
         </div>
 
         {/* Content */}
-        <div className="p-8">
+        <div className="p-6 md:p-8 overflow-y-auto">
           <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-thin scrollbar-thumb-stone-300 scrollbar-track-transparent">
             {Object.keys(saveData.dracos).map(name => {
               const dData = saveData.dracos[name];
@@ -253,7 +353,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({ saveData, onSele
                 <motion.div
                   key={name}
                   whileHover={{ y: isUnlocked ? -4 : 0 }}
-                  className={`w-[270px] flex-shrink-0 relative flex flex-col justify-between p-6 border rounded-2xl transition-all duration-300 ${
+                  className={`w-[330px] md:w-[360px] flex-shrink-0 relative flex flex-col justify-between p-6 border rounded-3xl transition-all duration-300 ${
                     isEquipped
                       ? 'border-stone-900 bg-stone-50/50 shadow-md ring-1 ring-stone-900'
                       : isUnlocked
@@ -290,13 +390,32 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({ saveData, onSele
                   </div>
 
                   {/* Abilities & Levels */}
-                  <div className="mb-6 space-y-4">
-                    <div className="p-3 bg-stone-50/80 rounded-xl border border-stone-100 text-xs">
-                      <p className="font-bold text-stone-700 flex items-center gap-1">
-                        <Sparkles className="w-3.5 h-3.5 text-stone-900" />
-                        {meta.abilityName}
-                      </p>
-                      <p className="text-stone-500 mt-1 leading-relaxed">{meta.abilityDesc}</p>
+                  <div className="mb-4 space-y-2.5">
+                    {/* Special & Ultimate Skill 2-Column Grid */}
+                    <div className="grid grid-cols-2 gap-2.5">
+                      {/* Special Skill */}
+                      <div className="p-3 bg-stone-50/90 rounded-xl border border-stone-100 text-xs">
+                        <p className="font-bold text-stone-800 flex items-center gap-1 text-[11px]">
+                          <Sparkles className="w-3.5 h-3.5 text-stone-900 flex-shrink-0" />
+                          Special Skill
+                        </p>
+                        <p className="font-extrabold text-amber-700 mt-1 text-[11px] leading-tight">
+                          {meta.abilityName}
+                        </p>
+                        <p className="text-stone-600 mt-1.5 text-[10px] leading-relaxed">{meta.abilityDesc}</p>
+                      </div>
+
+                      {/* Ultimate Skill */}
+                      <div className="p-3 bg-amber-50/90 rounded-xl border border-amber-200/80 text-xs">
+                        <p className="font-bold text-amber-950 flex items-center gap-1 text-[11px]">
+                          <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500 flex-shrink-0" />
+                          Ultimate Skill
+                        </p>
+                        <p className="font-extrabold text-purple-700 mt-1 text-[11px] leading-tight">
+                          {meta.ultimateName}
+                        </p>
+                        <p className="text-amber-950/80 mt-1.5 text-[10px] leading-relaxed font-medium">{meta.ultimateDesc}</p>
+                      </div>
                     </div>
 
                     {isUnlocked ? (

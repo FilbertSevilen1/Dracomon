@@ -159,19 +159,32 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                     <div className="grid grid-cols-2 gap-3">
                       {statLabels.map(({ key, label, desc }) => {
                         const currentVal = dracoDetails ? (dracoDetails as any)[key] || 0 : 0;
+                        const isCapped = (key === 'speed' && currentVal >= 20) || (key === 'jump' && currentVal >= 14);
+
                         return (
                           <button
                             key={key}
+                            disabled={isCapped}
                             onClick={() => handleUseUpgradeStone(key)}
-                            className="flex flex-col justify-between p-4 border border-stone-200 rounded-xl bg-white hover:border-purple-500 hover:bg-purple-50/20 text-left transition-all group"
+                            className={`flex flex-col justify-between p-4 border rounded-xl text-left transition-all group ${
+                              isCapped
+                                ? 'opacity-50 cursor-not-allowed border-stone-200 bg-stone-100'
+                                : 'border-stone-200 bg-white hover:border-purple-500 hover:bg-purple-50/20 cursor-pointer'
+                            }`}
                           >
                             <div>
-                              <span className="text-xs font-bold text-stone-800 block group-hover:text-purple-700">{label}</span>
+                              <span className={`text-xs font-bold block ${isCapped ? 'text-stone-400' : 'text-stone-800 group-hover:text-purple-700'}`}>{label}</span>
                               <span className="text-[10px] text-stone-400 block mt-0.5">{desc}</span>
                             </div>
-                            <span className="text-xs font-mono font-bold mt-2 text-stone-500">
-                              Current: <span className="text-stone-950 font-bold">{currentVal}</span> → <span className="text-purple-600 font-bold">{currentVal + 1}</span>
-                            </span>
+                            {isCapped ? (
+                              <span className="text-xs font-mono font-bold mt-2 text-stone-400">
+                                MAX CAPPED ({key === 'speed' ? '20' : '14'})
+                              </span>
+                            ) : (
+                              <span className="text-xs font-mono font-bold mt-2 text-stone-500">
+                                Current: <span className="text-stone-950 font-bold">{currentVal}</span> → <span className="text-purple-600 font-bold">{currentVal + 1}</span>
+                              </span>
+                            )}
                           </button>
                         );
                       })}

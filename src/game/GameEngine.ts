@@ -31,7 +31,11 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb';
+  channelTimer?: number;
+  targetX?: number;
+  targetY?: number;
+  hitEnemyIds?: number[];
 }
 
 interface Pickup {
@@ -52,7 +56,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale';
   hp: number;
   maxHp: number;
   attack: number;
@@ -62,6 +66,9 @@ interface Enemy {
   state: 'patrol' | 'alert' | 'charge';
   animFrame: number;
   name?: string;
+  stunnedTimer?: number;
+  isSuspended?: boolean;
+  suspendedTimer?: number;
 }
 
 export class GameEngine {
@@ -144,6 +151,20 @@ export class GameEngine {
   private levelHeight = 600;
   private enemyIdCounter = 0;
 
+  // Multi-map state
+  private currentSubMapIndex = 0;
+
+  // Whitemon & Bird Familiar State
+  private birdActive = false;
+  private birdX = 0;
+  private birdY = 0;
+  private birdVx = 0;
+  private birdVy = 0;
+  private birdState: 'idle' | 'swooping' | 'returning' = 'idle';
+  private birdTargetEnemy: Enemy | null = null;
+  private birdAttackCooldown = 0;
+  private birdRampageTimer = 0;
+
   // Animations
   private frameCount = 0;
 
@@ -178,9 +199,6 @@ export class GameEngine {
     this.pEnergy = this.getMaxEnergy();
     this.maxJumps = 2; // All companions (Jumpmon, Archermon, Shieldmon) have Double Jump!
 
-    this.levelWidth = this.level.grid[0].length * this.level.tileSize;
-    this.levelHeight = this.level.grid.length * this.level.tileSize;
-
     this.initLevelEntities();
     this.setupInputListeners();
     
@@ -192,22 +210,34 @@ export class GameEngine {
     this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
   }
 
-  private initLevelEntities() {
+  private getActiveGrid(): string[] {
+    if (this.level.maps && this.level.maps.length > 0) {
+      const idx = Math.max(0, Math.min(this.level.maps.length - 1, this.currentSubMapIndex));
+      return this.level.maps[idx].grid;
+    }
+    return this.level.grid || [];
+  }
+
+  private initLevelEntities(preservePlayerPos = false) {
     this.enemies = [];
     this.projectiles = [];
     this.pickups = [];
     this.particles = [];
     this.floatingTexts = [];
 
+    const grid = this.getActiveGrid();
+    this.levelWidth = grid[0].length * this.level.tileSize;
+    this.levelHeight = grid.length * this.level.tileSize;
+
     const ts = this.level.tileSize;
-    for (let r = 0; r < this.level.grid.length; r++) {
-      const row = this.level.grid[r];
+    for (let r = 0; r < grid.length; r++) {
+      const row = grid[r];
       for (let c = 0; c < row.length; c++) {
         const char = row[c];
         const ex = c * ts;
         const ey = r * ts;
 
-        if (char === '@') {
+        if (char === '@' && !preservePlayerPos) {
           // Player spawn
           this.px = ex;
           this.py = ey + ts - this.pHeight;
@@ -220,6 +250,107 @@ export class GameEngine {
         } else if (char === 's') {
           // Upgrade Stone
           this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'upgrade_stone', amount: 1, collected: false });
+        } else if (char === 'F') {
+          // Flying Enemy
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex,
+            y: ey,
+            vx: -2.0,
+            vy: 0,
+            width: 34,
+            height: 28,
+            type: 'flying_wyvern',
+            hp: 15,
+            maxHp: 15,
+            attack: 4,
+            defense: 1,
+            facing: -1,
+            shootCooldown: 0,
+            state: 'patrol',
+            animFrame: 0,
+          });
+        } else if (char === 'f') {
+          // Fish enemy
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex,
+            y: ey,
+            vx: -2.2,
+            vy: 0,
+            width: 32,
+            height: 22,
+            type: 'fish',
+            hp: 12,
+            maxHp: 12,
+            attack: 3,
+            defense: 1,
+            facing: -1,
+            shootCooldown: 0,
+            state: 'patrol',
+            animFrame: 0,
+          });
+        } else if (char === 'A') {
+          // Moving Anchor
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex,
+            y: ey,
+            vx: 0,
+            vy: 2.0,
+            width: 36,
+            height: 48,
+            type: 'anchor',
+            hp: 999,
+            maxHp: 999,
+            attack: 10,
+            defense: 99,
+            facing: 1,
+            shootCooldown: 0,
+            state: 'patrol',
+            animFrame: 0,
+          });
+        } else if (char === 'C') {
+          // Instant-Kill Scallop
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex + 2,
+            y: ey + ts - 32,
+            vx: 0,
+            vy: 0,
+            width: 36,
+            height: 32,
+            type: 'scallop',
+            hp: 40,
+            maxHp: 40,
+            attack: 9999,
+            defense: 10,
+            facing: 1,
+            shootCooldown: 0,
+            state: 'patrol',
+            animFrame: 0,
+          });
+        } else if (char === 'K' && this.level.isUnderwater) {
+          // Killer Whale Boss
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex,
+            y: ey,
+            vx: -3.0,
+            vy: 0,
+            width: 80,
+            height: 50,
+            type: 'killer_whale',
+            hp: 120,
+            maxHp: 120,
+            attack: 8,
+            defense: 4,
+            facing: -1,
+            shootCooldown: 60,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'Leviathan Orca',
+          });
         } else if (char === '1') {
           // Slime
           this.enemies.push({
@@ -231,8 +362,8 @@ export class GameEngine {
             width: 32,
             height: 24,
             type: 'slime',
-            hp: 8 + (this.level.grid.length * 2), // scales with stage
-            maxHp: 8 + (this.level.grid.length * 2),
+            hp: 8 + (grid.length * 2), // scales with stage
+            maxHp: 8 + (grid.length * 2),
             attack: 2,
             defense: 1,
             facing: -1,
@@ -251,8 +382,8 @@ export class GameEngine {
             width: 28,
             height: 36,
             type: 'goblin_archer',
-            hp: 12 + (this.level.grid.length * 3),
-            maxHp: 12 + (this.level.grid.length * 3),
+            hp: 12 + (grid.length * 3),
+            maxHp: 12 + (grid.length * 3),
             attack: 3,
             defense: 1,
             facing: -1,
@@ -291,8 +422,8 @@ export class GameEngine {
             width: 32,
             height: 36,
             type: 'bomb_thrower' as any,
-            hp: 20 + (this.level.grid.length * 4),
-            maxHp: 20 + (this.level.grid.length * 4),
+            hp: 20 + (grid.length * 4),
+            maxHp: 20 + (grid.length * 4),
             attack: 4,
             defense: 2,
             facing: -1,
@@ -469,10 +600,44 @@ export class GameEngine {
 
   private jump() {
     if (this.isPaused || this.pHP <= 0) return;
-    const effectiveJump = Math.max(10, this.stats.jump);
+
+    const pxMid = this.px + this.pWidth / 2;
+    const pyMid = this.py + this.pHeight / 2;
+
+    // Enter Portals using Jump button!
+    if (this.isMapPortal(pxMid, pyMid)) {
+      soundService.playLevelUp();
+      if (this.level.maps && this.level.maps.length > 0) {
+        this.currentSubMapIndex = (this.currentSubMapIndex + 1) % this.level.maps.length;
+        this.initLevelEntities();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'PORTAL ENTERED! 🌀', '#a855f7');
+      }
+      return;
+    }
+
+    const activeBossExists = this.enemies.some(e => this.isBossType(e.type));
+    if (!activeBossExists && this.isPortal(pxMid, pyMid)) {
+      soundService.playLevelUp();
+      this.callbacks.onStageClear();
+      this.isPaused = true;
+      return;
+    }
+
+    // Underwater Jump: Half height (-7 max), but INFINITE swimming jumps!
+    if (this.level.isUnderwater) {
+      const effectiveJump = Math.min(14, Math.max(10, this.stats.jump));
+      this.pvy = -Math.min(7, effectiveJump * 0.48); // Half height jump in water
+      this.pGrounded = false;
+      this.isPlunging = false;
+      soundService.playJump();
+      this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight, 6, '#38bdf8');
+      return;
+    }
+
+    const effectiveJump = Math.min(14, Math.max(10, this.stats.jump));
 
     if (this.pGrounded) {
-      this.pvy = -effectiveJump * 0.95; // Ground Jump UP
+      this.pvy = -Math.min(14, effectiveJump * 0.95); // Ground Jump UP (capped at -14)
       this.pGrounded = false;
       this.jumpCount = 1;
       this.isPlunging = false;
@@ -480,7 +645,7 @@ export class GameEngine {
       this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight, 8);
     } else if (this.jumpCount < this.maxJumps) {
       // Double Jump UP for ALL companions!
-      this.pvy = -effectiveJump * 0.98; // Upward double jump velocity!
+      this.pvy = -Math.min(14, effectiveJump * 0.98); // Upward double jump velocity (capped at -14)
       this.jumpCount = 2;
       this.isPlunging = false;
       soundService.playJump();
@@ -560,6 +725,40 @@ export class GameEngine {
         type: 'arrow'
       });
       this.spawnDustParticles(slashX, slashY, 4, '#fda4af');
+    } else if (this.selectedDraco === 'Whitemon') {
+      soundService.playShoot();
+      // Throwing Axe Projectile
+      const axeVx = this.pFacing * (this.stats.speed + 5);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 16,
+        y: this.py + this.pHeight / 2 - 6,
+        vx: axeVx,
+        vy: -1.5,
+        width: 20,
+        height: 20,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 1.1),
+        color: '#e2e8f0',
+        type: 'axe'
+      });
+      this.spawnDustParticles(slashX, slashY, 6, '#e2e8f0');
+    } else if (this.selectedDraco === 'Magemon') {
+      soundService.playShoot();
+      // Arcane Orb Projectile
+      const orbVx = this.pFacing * (this.stats.speed + 6);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 16,
+        y: this.py + this.pHeight / 2 - 4,
+        vx: orbVx,
+        vy: 0,
+        width: 16,
+        height: 16,
+        isEnemy: false,
+        damage: this.stats.attack,
+        color: '#a855f7',
+        type: 'arcane_orb'
+      });
+      this.spawnDustParticles(slashX, slashY, 6, '#c084fc');
     } else {
       // Jumpmon Melee Sword Swing
       soundService.playHit();
@@ -671,7 +870,103 @@ export class GameEngine {
           type: 'arrow'
         });
       });
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'ARROW VOLLEY!', '#f43f5e');
+    } else if (this.selectedDraco === 'Whitemon') {
+      soundService.playJump();
+      this.specialCooldown = 120; // 2s cooldown
+      this.birdActive = true;
+      this.birdX = this.px;
+      this.birdY = this.py - 40;
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'BIRD FAMILIAR SUMMONED! 🦅', '#38bdf8');
+      for (let i = 0; i < 10; i++) {
+        this.particles.push({
+          x: this.px + Math.random() * 20 - 10,
+          y: this.py - 30,
+          vx: Math.random() * 4 - 2,
+          vy: Math.random() * 4 - 2,
+          size: Math.random() * 4 + 2,
+          color: '#38bdf8',
+          life: 20,
+          maxLife: 20
+        });
+      }
+    } else if (this.selectedDraco === 'Magemon') {
+      soundService.playShoot();
+      this.specialCooldown = 180; // 3.0s cooldown
+      
+      const spellChoice = Math.floor(Math.random() * 3);
+      this.castMagemonSpell(spellChoice);
+    }
+  }
+
+  private castMagemonSpell(spellType: number) {
+    // Find nearest opponent to target meteor and sun strike near enemy
+    let nearestEnemy: Enemy | null = null;
+    let minDistance = 9999;
+    this.enemies.forEach(enemy => {
+      const dist = Math.abs(enemy.x - this.px);
+      if (dist < minDistance) {
+        minDistance = dist;
+        nearestEnemy = enemy;
+      }
+    });
+
+    if (spellType === 0) {
+      // ☄️ Chaos Meteor: Spawns near opponent rather than fixed range!
+      const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : this.px + this.pFacing * 120;
+      const targetY = nearestEnemy ? (nearestEnemy as Enemy).y : this.py;
+      const startX = targetX - (this.pFacing * 100);
+      const startY = Math.max(20, targetY - 160);
+
+      this.projectiles.push({
+        x: startX,
+        y: startY,
+        vx: this.pFacing * 5.0,
+        vy: 6.0,
+        width: 36,
+        height: 36,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 2.6),
+        color: '#f97316',
+        type: 'meteor'
+      });
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'CHAOS METEOR! ☄️', '#f97316');
+      
+    } else if (spellType === 1) {
+      // ☀️ Sun Strike: Channels laser for 1.7s (102 frames) then explodes & deals damage during explosion phase!
+      const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : this.px + this.pFacing * 140;
+
+      this.projectiles.push({
+        x: targetX - 26,
+        y: 0,
+        vx: 0,
+        vy: 0,
+        width: 52,
+        height: this.canvas.height,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 3.5),
+        color: '#f59e0b',
+        type: 'sun_strike',
+        channelTimer: 102,
+        targetX: targetX
+      });
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'SUN STRIKE! ☀️', '#f59e0b');
+
+    } else {
+      // 🌪️ Tornado: Swirling wind lifts enemies into air untargetable/suspended then drops down
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 36,
+        y: this.py - 10,
+        vx: this.pFacing * 6.5,
+        vy: 0,
+        width: 36,
+        height: 60,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 2.2),
+        color: '#06b6d4',
+        type: 'tornado',
+        hitEnemyIds: []
+      });
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'TORNADO! 🌪️', '#06b6d4');
     }
   }
 
@@ -695,6 +990,8 @@ export class GameEngine {
       case 'Shieldmon': return 80;
       case 'Assassinmon': return 150;
       case 'Flymon': return 200;
+      case 'Whitemon': return 120;
+      case 'Magemon': return 300;
       default: return 100;
     }
   }
@@ -706,6 +1003,8 @@ export class GameEngine {
       case 'Shieldmon': return 'Avatar';
       case 'Assassinmon': return 'Death of Thousand Knives';
       case 'Flymon': return 'Laser Beam';
+      case 'Whitemon': return 'Primal Roar';
+      case 'Magemon': return 'Trio Orb Blast';
       default: return 'Ultimate';
     }
   }
@@ -717,6 +1016,8 @@ export class GameEngine {
       case 'Shieldmon': return 'UNBREAKABLE WILL! AVATAR STATE!!!';
       case 'Assassinmon': return 'DIE BY A THOUSAND CUTS! DEATH OF THOUSAND KNIVES!!!';
       case 'Flymon': return 'HYPER CHARGED LASER! LAZER BEAM!!!';
+      case 'Whitemon': return 'BEHOLD THE PRIMAL ROAR! FAMILIAR RAMPAGE!!!';
+      case 'Magemon': return 'BEHOLD THE ANCIENT SPELLS! TRIO ORB BLAST!!!';
       default: return 'UNLEASH THE BEAST!';
     }
   }
@@ -809,6 +1110,81 @@ export class GameEngine {
       this.laserBeamActive = true;
       this.laserBeamDuration = 45; // 0.75 seconds
     }
+    else if (this.selectedDraco === 'Whitemon') {
+      soundService.playLevelUp();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'PRIMAL ROAR! 🦁🔊', '#ef4444');
+      
+      // Launch travelling sound wave projectiles forward in front
+      // Damage & Stun happen ON HIT as the sound wave hits each enemy!
+      for (let w = 0; w < 4; w++) {
+        setTimeout(() => {
+          this.projectiles.push({
+            x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 40,
+            y: this.py + this.pHeight / 2 - 25,
+            vx: this.pFacing * (6.5 + w * 2),
+            vy: 0,
+            width: 40 + w * 10,
+            height: 40 + w * 10,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 3.2),
+            color: '#38bdf8',
+            type: 'sonar',
+            hitEnemyIds: []
+          } as any);
+        }, w * 80);
+      }
+
+      // Spawn travelling sound wave particles forward in a cone
+      for (let i = 0; i < 30; i++) {
+        const angle = (this.pFacing === 1 ? 0 : Math.PI) + (Math.random() * 0.7 - 0.35);
+        const speed = Math.random() * 9 + 5;
+        this.particles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px,
+          y: this.py + this.pHeight / 2 + (Math.random() * 24 - 12),
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          size: Math.random() * 6 + 3,
+          color: i % 2 === 0 ? '#38bdf8' : '#fbbf24',
+          life: 25,
+          maxLife: 25
+        });
+      }
+
+      // Bird Familiar Rampage
+      this.birdActive = true;
+      this.birdRampageTimer = 180;
+    }
+    else if (this.selectedDraco === 'Magemon') {
+      soundService.playLevelUp();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'TRIO ORB BLAST! 🔮✨', '#a855f7');
+
+      // Step A: Giant Cleave (1.5x size arc blade in facing direction)
+      const cleaveW = this.pWidth * 2.2;
+      const cleaveH = this.pHeight * 2.2;
+      const cleaveX = this.pFacing === 1 ? this.px + this.pWidth : this.px - cleaveW;
+
+      this.projectiles.push({
+        x: cleaveX,
+        y: this.py - 15,
+        vx: this.pFacing * 8.5,
+        vy: 0,
+        width: cleaveW,
+        height: cleaveH,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 3.0),
+        color: '#a855f7',
+        type: 'giant_cleave',
+        hitEnemyIds: []
+      } as any);
+
+      // Step B: Followed immediately by ALL 3 Special Skills in succession!
+      setTimeout(() => { this.castMagemonSpell(0); }, 100); // ☄️ Chaos Meteor
+      setTimeout(() => { this.castMagemonSpell(1); }, 300); // ☀️ Homing Sun Strike
+      setTimeout(() => { this.castMagemonSpell(2); }, 500); // 🌪️ Tornado
+    }
+    
+    this.birdX = this.px;
+    this.birdY = this.py - 50;
   }
 
   private damageEnemy(enemy: Enemy, damage: number) {
@@ -1013,58 +1389,80 @@ export class GameEngine {
   }
 
   private isSolid(x: number, y: number): boolean {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return false;
     const ts = this.level.tileSize;
     const col = Math.floor(x / ts);
     const row = Math.floor(y / ts);
 
-    if (col < 0 || col >= this.level.grid[0].length || row < 0 || row >= this.level.grid.length) {
-      return false; // Out of bounds are not solid, player will fall through
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
+      return false;
     }
 
-    const char = this.level.grid[row][col];
+    const char = grid[row][col];
     return char === '#';
   }
 
   private checkPlatformOneWay(x: number, y: number): boolean {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return false;
     const ts = this.level.tileSize;
     const col = Math.floor(x / ts);
     const row = Math.floor(y / ts);
 
-    if (col < 0 || col >= this.level.grid[0].length || row < 0 || row >= this.level.grid.length) {
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
       return false;
     }
 
-    return this.level.grid[row][col] === '=';
+    return grid[row][col] === '=';
   }
 
   private getHazard(x: number, y: number): 'spike' | null {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return null;
     const ts = this.level.tileSize;
     const col = Math.floor(x / ts);
     const row = Math.floor(y / ts);
 
-    if (col < 0 || col >= this.level.grid[0].length || row < 0 || row >= this.level.grid.length) {
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
       return null;
     }
 
-    const char = this.level.grid[row][col];
+    const char = grid[row][col];
     if (char === '*') return 'spike';
     return null;
   }
 
   private isPortal(x: number, y: number): boolean {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return false;
     const ts = this.level.tileSize;
     const col = Math.floor(x / ts);
     const row = Math.floor(y / ts);
 
-    if (col < 0 || col >= this.level.grid[0].length || row < 0 || row >= this.level.grid.length) {
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
       return false;
     }
 
-    return this.level.grid[row][col] === 'P';
+    return grid[row][col] === 'P';
+  }
+
+  private isMapPortal(x: number, y: number): boolean {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return false;
+    const ts = this.level.tileSize;
+    const col = Math.floor(x / ts);
+    const row = Math.floor(y / ts);
+
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
+      return false;
+    }
+
+    return grid[row][col] === 'm';
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king'].includes(type);
+    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale'].includes(type);
   }
 
   private updatePhysics() {
@@ -1092,11 +1490,12 @@ export class GameEngine {
         });
       }
     } else {
+      const effectiveSpeed = Math.min(20, this.stats.speed);
       if (this.keys['a'] || this.keys['arrowleft']) {
-        this.pvx -= (this.stats.speed * 0.08) * speedMultiplier;
+        this.pvx -= (effectiveSpeed * 0.08) * speedMultiplier;
         this.pFacing = -1;
       } else if (this.keys['d'] || this.keys['arrowright']) {
-        this.pvx += (this.stats.speed * 0.08) * speedMultiplier;
+        this.pvx += (effectiveSpeed * 0.08) * speedMultiplier;
         this.pFacing = 1;
       }
     }
@@ -1105,9 +1504,10 @@ export class GameEngine {
     this.pvx *= this.friction;
     if (Math.abs(this.pvx) < 0.1) this.pvx = 0;
 
-    // Apply gravity
+    // Apply gravity & velocity caps
     this.pvy += this.gravity;
-    if (this.pvy > 10) this.pvy = 10; // terminal velocity
+    if (this.pvy > 10) this.pvy = 10; // terminal falling velocity
+    if (this.pvy < -14) this.pvy = -14; // capped jump upward velocity (-14 max)
 
     // Move player X
     const newPx = this.px + this.pvx;
@@ -1276,7 +1676,7 @@ export class GameEngine {
     const tBottom = this.py + this.pHeight;
     if (this.checkTrampoline(tLeft, tBottom) || this.checkTrampoline(tRight, tBottom)) {
       soundService.playJump();
-      this.pvy = -16.5; // High bounce
+      this.pvy = -16; // High bounce capped at 16
       this.pGrounded = false;
       this.jumpCount = 1;
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'BOING! 🌀', '#38bdf8');
@@ -1298,19 +1698,12 @@ export class GameEngine {
     // Landmine checking
     this.checkLandmineDetonation(this.px + this.pWidth / 2, this.py + this.pHeight - 4);
 
-    // Check hazard spikes/lava contact
+    // Hazard spikes/lava contact
     const pxMid = this.px + this.pWidth / 2;
     const pyBottom = this.py + this.pHeight - 2;
     const hazard = this.getHazard(pxMid, pyBottom) || this.getHazard(this.px + 4, pyBottom) || this.getHazard(this.px + this.pWidth - 4, pyBottom);
     if (hazard === 'spike') {
       this.handlePlayerHit(5, pxMid);
-    }
-
-    // Check portal contact (Level Clear!)
-    const activeBossExists = this.enemies.some(e => this.isBossType(e.type));
-    if (!activeBossExists && this.isPortal(pxMid, this.py + this.pHeight / 2)) {
-      this.callbacks.onStageClear();
-      this.isPaused = true;
     }
   }
 
@@ -1397,6 +1790,140 @@ export class GameEngine {
             return;
           }
         }
+      } else if (!proj.isEnemy) {
+        if (proj.type === 'meteor') {
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          // Spawn fiery ember trail
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: (Math.random() - 0.5) * 3,
+              vy: (Math.random() - 0.5) * 3,
+              size: Math.random() * 6 + 3,
+              color: '#f97316',
+              life: 15,
+              maxLife: 15
+            });
+          }
+
+          // Check ground / solid block collision
+          if (this.isSolid(proj.x + proj.width / 2, proj.y + proj.height) || proj.y > this.levelHeight - 40) {
+            soundService.playHit();
+            // Meteor Detonation! Spawns rolling fire explosion
+            this.checkMeleeHit(proj.x - 40, proj.y - 20, 120, 60, proj.damage);
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height, 20, '#f97316');
+            this.addFloatingText(proj.x, proj.y - 10, 'METEOR IMPACT! ☄️💥', '#f97316');
+
+            // Spawn rolling ground fire projectile
+            this.projectiles.push({
+              x: proj.x,
+              y: proj.y - 10,
+              vx: (proj.vx > 0 ? 1 : -1) * 4.5,
+              vy: 0,
+              width: 48,
+              height: 24,
+              isEnemy: false,
+              damage: Math.floor(proj.damage * 0.6),
+              color: '#ef4444',
+              type: 'fireball'
+            });
+
+            this.projectiles.splice(index, 1);
+            return;
+          }
+        }
+        else if (proj.type === 'sun_strike') {
+          if (proj.channelTimer && proj.channelTimer > 0) {
+            proj.channelTimer--;
+
+            // Channeling Laser Animation Particles
+            if (this.frameCount % 2 === 0) {
+              this.particles.push({
+                x: proj.targetX! + (Math.random() - 0.5) * 44,
+                y: Math.random() * this.canvas.height,
+                vx: (Math.random() - 0.5) * 2,
+                vy: -Math.random() * 5 - 3,
+                size: Math.random() * 5 + 2,
+                color: '#fef08a',
+                life: 15,
+                maxLife: 15
+              });
+            }
+
+            if (proj.channelTimer === 0) {
+              // DETONATION BEGINS! (Channels 1.7s then explodes & deals damage during explosion phase)
+              soundService.playShoot();
+              (proj as any).isExploding = true;
+              (proj as any).explosionTimer = 20; // 20 frames explosion phase
+              this.addFloatingText(proj.targetX! - 20, this.py - 20, 'SOLAR EXPLOSION! ☀️💥', '#f59e0b');
+            }
+            return;
+          }
+
+          // EXPLOSION PHASE: Deals damage continuously during explosion frames!
+          if ((proj as any).isExploding) {
+            (proj as any).explosionTimer--;
+            
+            // Deal damage during explosion phase
+            this.checkMeleeHit(proj.targetX! - 26, 0, 52, this.canvas.height, Math.ceil(proj.damage / 4));
+            
+            // Explosion flare particles
+            for (let i = 0; i < 3; i++) {
+              this.particles.push({
+                x: proj.targetX! + (Math.random() - 0.5) * 50,
+                y: this.py + (Math.random() - 0.5) * 80,
+                vx: (Math.random() - 0.5) * 8,
+                vy: -Math.random() * 8 - 4,
+                size: Math.random() * 8 + 4,
+                color: i % 2 === 0 ? '#f59e0b' : '#ef4444',
+                life: 20,
+                maxLife: 20
+              });
+            }
+
+            if ((proj as any).explosionTimer <= 0) {
+              this.projectiles.splice(index, 1);
+              return;
+            }
+          }
+        }
+        else if (proj.type === 'tornado') {
+          proj.x += proj.vx;
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + (Math.random() - 0.5) * 30,
+              y: proj.y + Math.random() * proj.height,
+              vx: (Math.random() - 0.5) * 3,
+              vy: -Math.random() * 4 - 2,
+              size: Math.random() * 5 + 2,
+              color: '#06b6d4',
+              life: 15,
+              maxLife: 15
+            });
+          }
+
+          if (proj.x < 0 || proj.x > this.levelWidth) {
+            this.projectiles.splice(index, 1);
+            return;
+          }
+        }
+        else if (proj.type === 'giant_cleave') {
+          proj.x += proj.vx;
+          if (proj.x < 0 || proj.x > this.levelWidth) {
+            this.projectiles.splice(index, 1);
+            return;
+          }
+        }
+        else {
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth) {
+            this.projectiles.splice(index, 1);
+            return;
+          }
+        }
       } else {
         proj.x += proj.vx;
         proj.y += proj.vy;
@@ -1429,8 +1956,40 @@ export class GameEngine {
             proj.y < enemy.y + enemy.height &&
             proj.y + proj.height > enemy.y
           ) {
-            this.damageEnemy(enemy, proj.damage);
-            this.projectiles.splice(index, 1);
+            if (proj.type === 'sonar') {
+              const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
+              if (!hitSet.includes(enemy.id)) {
+                hitSet.push(enemy.id);
+                enemy.stunnedTimer = 180; // 3s Stun on hit!
+                this.damageEnemy(enemy, proj.damage);
+                soundService.playHit();
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#f59e0b');
+                this.addFloatingText(enemy.x, enemy.y - 10, 'STUNNED! 💫', '#fbbf24');
+              }
+            } else if (proj.type === 'tornado') {
+              const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
+              if (!hitSet.includes(enemy.id)) {
+                hitSet.push(enemy.id);
+                enemy.isSuspended = true;
+                enemy.suspendedTimer = 90; // Lift for 1.5 seconds!
+                this.damageEnemy(enemy, proj.damage);
+                soundService.playHit();
+                this.addFloatingText(enemy.x, enemy.y - 15, 'LIFTED INTO TORNADO! 🌪️', '#06b6d4');
+              }
+            } else if (proj.type === 'giant_cleave') {
+              const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
+              if (!hitSet.includes(enemy.id)) {
+                hitSet.push(enemy.id);
+                this.damageEnemy(enemy, proj.damage);
+                soundService.playHit();
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 10, '#a855f7');
+              }
+            } else if (proj.type === 'sun_strike') {
+              // Damage handled continuously in explosion phase!
+            } else {
+              this.damageEnemy(enemy, proj.damage);
+              this.projectiles.splice(index, 1);
+            }
           }
         });
       }
@@ -1438,20 +1997,65 @@ export class GameEngine {
 
     // Enemies update
     this.enemies.forEach(enemy => {
-      enemy.vy += this.gravity;
-      enemy.y += enemy.vy;
+      if (enemy.stunnedTimer && enemy.stunnedTimer > 0) {
+        enemy.stunnedTimer--;
+        return; // Stunned enemies skip movement & attacks!
+      }
 
-      // Platform check
       let grounded = false;
-      const left = enemy.x;
-      const right = enemy.x + enemy.width;
-      const bottom = enemy.y + enemy.height;
 
-      const collidesBottom = this.isSolid(left + 2, bottom) || this.isSolid(right - 2, bottom);
-      if (collidesBottom) {
-        enemy.y = Math.floor(bottom / ts) * ts - enemy.height;
-        enemy.vy = 0;
-        grounded = true;
+      if (enemy.type === 'flying_wyvern' || enemy.type === 'fish') {
+        enemy.x += enemy.vx;
+        enemy.y += Math.sin(this.frameCount * 0.1 + enemy.id) * 1.2;
+        if (this.isSolid(enemy.x, enemy.y) || enemy.x < 10 || enemy.x > this.levelWidth - 40) {
+          enemy.vx = -enemy.vx;
+          enemy.facing = enemy.vx > 0 ? 1 : -1;
+        }
+      } else if (enemy.type === 'anchor') {
+        enemy.y += enemy.vy;
+        if (enemy.y > 380 || enemy.y < 40) {
+          enemy.vy = -enemy.vy;
+        }
+      } else if (enemy.type === 'scallop') {
+        // Stationary clam trap
+      } else if (enemy.type === 'killer_whale') {
+        enemy.x += enemy.vx;
+        if (this.isSolid(enemy.x, enemy.y) || enemy.x < 10 || enemy.x > this.levelWidth - 80) {
+          enemy.vx = -enemy.vx;
+          enemy.facing = enemy.vx > 0 ? 1 : -1;
+        }
+        enemy.shootCooldown--;
+        if (enemy.shootCooldown <= 0) {
+          enemy.shootCooldown = 75;
+          soundService.playShoot();
+          this.projectiles.push({
+            x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 16,
+            y: enemy.y + enemy.height / 2,
+            vx: enemy.facing * 4.5,
+            vy: 0,
+            width: 16,
+            height: 16,
+            isEnemy: true,
+            damage: enemy.attack,
+            color: '#38bdf8',
+            type: 'sonar'
+          });
+        }
+      } else {
+        enemy.vy += this.gravity;
+        enemy.y += enemy.vy;
+
+        // Platform check
+        const left = enemy.x;
+        const right = enemy.x + enemy.width;
+        const bottom = enemy.y + enemy.height;
+
+        const collidesBottom = this.isSolid(left + 2, bottom) || this.isSolid(right - 2, bottom);
+        if (collidesBottom) {
+          enemy.y = Math.floor(bottom / ts) * ts - enemy.height;
+          enemy.vy = 0;
+          grounded = true;
+        }
       }
 
       // Patrol movement
@@ -1642,6 +2246,104 @@ export class GameEngine {
         this.handlePlayerHit(enemy.attack, enemy.x + enemy.width / 2);
       }
     });
+
+    // Update Whitemon's Bird Familiar AI
+    this.updateBirdFamiliar();
+  }
+
+  private updateBirdFamiliar() {
+    if (!this.birdActive) return;
+
+    if (this.birdRampageTimer > 0) {
+      this.birdRampageTimer--;
+    }
+
+    const isRampage = this.birdRampageTimer > 0;
+    const speed = isRampage ? 11 : 6.5;
+
+    // Decrement attack cooldown
+    if (this.birdAttackCooldown > 0) {
+      this.birdAttackCooldown--;
+    }
+
+    const homeX = this.px + (this.pFacing === 1 ? -15 : this.pWidth + 15);
+    const homeY = this.py - 30 + Math.sin(this.frameCount * 0.15) * 6;
+
+    if (this.birdState === 'idle') {
+      // Smoothly hover near Whitemon
+      const dx = homeX - this.birdX;
+      const dy = homeY - this.birdY;
+      this.birdX += dx * 0.15;
+      this.birdY += dy * 0.15;
+
+      // Look for target if cooldown ready
+      if (this.birdAttackCooldown <= 0) {
+        // Find nearest alive enemy within 250px (half range)
+        let nearestEnemy: Enemy | null = null;
+        let minDist = 250;
+
+        for (const enemy of this.enemies) {
+          if (enemy.hp <= 0) continue;
+          const dist = Math.hypot(this.px - enemy.x, this.py - enemy.y);
+          if (dist < minDist) {
+            minDist = dist;
+            nearestEnemy = enemy;
+          }
+        }
+
+        if (nearestEnemy) {
+          this.birdTargetEnemy = nearestEnemy;
+          this.birdState = 'swooping';
+        }
+      }
+    } else if (this.birdState === 'swooping') {
+      // Move towards target enemy
+      if (!this.birdTargetEnemy || this.birdTargetEnemy.hp <= 0) {
+        // Target defeated or lost, return home
+        this.birdState = 'returning';
+        this.birdTargetEnemy = null;
+      } else {
+        const tx = this.birdTargetEnemy.x + this.birdTargetEnemy.width / 2;
+        const ty = this.birdTargetEnemy.y + this.birdTargetEnemy.height / 2;
+
+        const dx = tx - this.birdX;
+        const dy = ty - this.birdY;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist < 20) {
+          // HIT TARGET! Deal damage
+          const damage = Math.floor(this.stats.attack * (isRampage ? 1.4 : 0.85));
+          this.damageEnemy(this.birdTargetEnemy, damage);
+          soundService.playHit();
+
+          // Spawn feather & slash particles
+          this.spawnDustParticles(tx, ty, 8, isRampage ? '#f97316' : '#38bdf8');
+          this.addFloatingText(tx, ty - 10, `${damage} 🦅`, isRampage ? '#f97316' : '#38bdf8');
+
+          // Return to Whitemon
+          this.birdState = 'returning';
+          this.birdAttackCooldown = isRampage ? 10 : 40; // Faster attacks during rampage!
+          this.birdTargetEnemy = null;
+        } else {
+          // Move towards target
+          this.birdX += (dx / dist) * speed;
+          this.birdY += (dy / dist) * speed;
+        }
+      }
+    } else if (this.birdState === 'returning') {
+      // Fly back to Whitemon
+      const dx = homeX - this.birdX;
+      const dy = homeY - this.birdY;
+      const dist = Math.hypot(dx, dy);
+
+      if (dist < 25) {
+        // Returned home!
+        this.birdState = 'idle';
+      } else {
+        this.birdX += (dx / dist) * (speed * 1.1);
+        this.birdY += (dy / dist) * (speed * 1.1);
+      }
+    }
   }
 
   private updateParticles() {
@@ -1733,8 +2435,9 @@ export class GameEngine {
     }
 
     // Draw Map Layout
-    for (let r = 0; r < this.level.grid.length; r++) {
-      const row = this.level.grid[r];
+    const activeGrid = this.getActiveGrid();
+    for (let r = 0; r < activeGrid.length; r++) {
+      const row = activeGrid[r];
       for (let c = 0; c < row.length; c++) {
         const char = row[c];
         const ex = c * ts;
@@ -1880,6 +2583,30 @@ export class GameEngine {
               });
             }
           }
+        } else if (char === 'm') {
+          // Sub-map Portal ('m')
+          const angle = (this.frameCount * 0.05) % (Math.PI * 2);
+          this.ctx.save();
+          this.ctx.translate(ex + ts / 2, ey + ts / 2);
+          this.ctx.rotate(angle);
+          
+          const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 24);
+          grad.addColorStop(0, '#38bdf8');
+          grad.addColorStop(0.5, '#0284c7');
+          grad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+          
+          this.ctx.fillStyle = grad;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 16, 0, Math.PI, false);
+          this.ctx.stroke();
+
+          this.ctx.restore();
         } else if (char === 'P') {
           // Swirling Portal - only show if boss is defeated!
           const activeBossExists = this.enemies.some(e => this.isBossType(e.type));
@@ -1974,6 +2701,218 @@ export class GameEngine {
         this.ctx.beginPath();
         this.ctx.arc(proj.x + proj.width / 2, proj.y + proj.height / 2 + bounce, proj.width / 2, 0, Math.PI * 2);
         this.ctx.fill();
+      } else if (proj.type === 'axe') {
+        this.ctx.save();
+        this.ctx.translate(proj.x + proj.width / 2, proj.y + proj.height / 2);
+        this.ctx.rotate(this.frameCount * 0.3);
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.fillRect(-2, -10, 4, 20);
+        this.ctx.fillStyle = '#e2e8f0';
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(-4, -4, 8, Math.PI / 2, -Math.PI / 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.arc(4, -4, 8, -Math.PI / 2, Math.PI / 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.restore();
+      } else if (proj.type === 'sonar') {
+        this.ctx.save();
+        this.ctx.strokeStyle = proj.color || '#38bdf8';
+        this.ctx.lineWidth = 3.5;
+        const waveRadius = proj.width / 2 + (this.frameCount % 6);
+        const isFacingRight = proj.vx >= 0;
+        const startAngle = isFacingRight ? -Math.PI / 2.5 : Math.PI / 2.5;
+        const endAngle = isFacingRight ? Math.PI / 2.5 : (Math.PI * 3) / 2.5;
+        
+        // Outer directional travelling sound wave arc
+        this.ctx.beginPath();
+        this.ctx.arc(proj.x + proj.width / 2, proj.y + proj.height / 2, waveRadius, startAngle, endAngle);
+        this.ctx.stroke();
+
+        // Inner golden sound wave echo arc
+        this.ctx.strokeStyle = '#fbbf24';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(proj.x + proj.width / 2, proj.y + proj.height / 2, Math.max(4, waveRadius - 8), startAngle, endAngle);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      } else if ((proj as any).type === 'bomb') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+
+        // Black Bomb Sphere
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.strokeStyle = '#475569';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, proj.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Metallic Fuse Cap
+        this.ctx.fillStyle = '#94a3b8';
+        this.ctx.fillRect(cx - 2, cy - proj.width / 2 - 3, 4, 3);
+
+        // Glowing Sparkling Fuse Flame
+        const sparkColor = this.frameCount % 4 < 2 ? '#ef4444' : '#fbbf24';
+        this.ctx.fillStyle = sparkColor;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy - proj.width / 2 - 5, 3.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
+      } else if (proj.type === 'sun_strike') {
+        this.ctx.save();
+        const tx = proj.targetX!;
+        const channelTimer = proj.channelTimer || 0;
+        const isExploding = (proj as any).isExploding;
+
+        if (channelTimer > 0) {
+          // Channeling Laser Beam (0s to 1.7s)
+          const chargeProgress = 1 - (channelTimer / 102);
+
+          // Beaming Light Column
+          this.ctx.fillStyle = `rgba(253, 224, 71, ${0.15 + chargeProgress * 0.2})`;
+          this.ctx.fillRect(tx - 16, 0, 32, this.canvas.height);
+
+          // Center Laser Filament Line
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 + chargeProgress * 0.5})`;
+          this.ctx.lineWidth = 3 + chargeProgress * 4;
+          this.ctx.beginPath();
+          this.ctx.moveTo(tx, 0);
+          this.ctx.lineTo(tx, this.canvas.height);
+          this.ctx.stroke();
+
+          // Expanding Solar Target Sigil on Ground
+          const ringRadius = 24 * chargeProgress + 6;
+          this.ctx.strokeStyle = '#f59e0b';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(tx, this.py + this.pHeight - 5, ringRadius, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // Pulsing Core
+          this.ctx.fillStyle = '#fef08a';
+          this.ctx.beginPath();
+          this.ctx.arc(tx, this.py + this.pHeight - 5, 5, 0, Math.PI * 2);
+          this.ctx.fill();
+
+        } else if (isExploding) {
+          // DETONATION EXPLOSION PHASE (1.7s complete -> erupting solar laser pillar!)
+          const expTimer = (proj as any).explosionTimer || 20;
+          const alpha = expTimer / 20;
+
+          // Blinding Solar Pillar Core
+          this.ctx.fillStyle = `rgba(254, 240, 138, ${alpha})`;
+          this.ctx.fillRect(tx - 20, 0, 40, this.canvas.height);
+
+          // Outer Solar Flame Walls
+          this.ctx.fillStyle = `rgba(245, 158, 11, ${alpha * 0.8})`;
+          this.ctx.fillRect(tx - 32, 0, 12, this.canvas.height);
+          this.ctx.fillRect(tx + 20, 0, 12, this.canvas.height);
+
+          // Erupting Radial Shockwave Ring at ground
+          const shockRadius = (20 - expTimer) * 4 + 10;
+          this.ctx.strokeStyle = `rgba(239, 68, 68, ${alpha})`;
+          this.ctx.lineWidth = 4;
+          this.ctx.beginPath();
+          this.ctx.arc(tx, this.py + this.pHeight - 5, shockRadius, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+        this.ctx.restore();
+
+      } else if (proj.type === 'meteor') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+
+        // Rotating Magma Texture Angle
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(this.frameCount * 0.15);
+
+        // Fiery Glowing Meteor Core
+        const grad = this.ctx.createRadialGradient(0, 0, 3, 0, 0, proj.width / 2 + 4);
+        grad.addColorStop(0, '#fef08a');
+        grad.addColorStop(0.35, '#f97316');
+        grad.addColorStop(0.75, '#dc2626');
+        grad.addColorStop(1, '#451a03');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, proj.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Magma Rock Surface Fractures
+        this.ctx.strokeStyle = '#78350f';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-10, -6);
+        this.ctx.lineTo(4, -10);
+        this.ctx.lineTo(8, 6);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+
+      } else if (proj.type === 'tornado') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+
+        // Dynamic 3D Swirling Wind Vortex Funnel (Wider on TOP, Narrow tip at BOTTOM)
+        for (let i = 0; i < 6; i++) {
+          const yOff = (i * 10 + (this.frameCount * 3)) % proj.height;
+          // progress goes 0 at top to 1 at bottom
+          const progress = yOff / proj.height;
+          // w is widest at top (46px) and narrowest at bottom tip (12px)
+          const w = 12 + (1 - progress) * 34;
+          const rotAngle = Math.sin(this.frameCount * 0.25 + i * 0.5) * 0.35;
+
+          this.ctx.strokeStyle = i % 2 === 0 ? '#06b6d4' : '#38bdf8';
+          this.ctx.lineWidth = 1.5 + (1 - progress) * 2.2;
+          this.ctx.beginPath();
+          this.ctx.ellipse(cx, proj.y + yOff, w / 2, 5, rotAngle, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // Outer wind swirl accent arc
+          this.ctx.strokeStyle = '#e0f2fe';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.ellipse(cx + Math.cos(this.frameCount * 0.3 + i) * 3, proj.y + yOff, (w / 2) * 0.7, 3, -rotAngle, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+        this.ctx.restore();
+      } else if (proj.type === 'giant_cleave') {
+        this.ctx.save();
+        this.ctx.fillStyle = '#a855f7';
+        this.ctx.strokeStyle = '#c084fc';
+        this.ctx.lineWidth = 4;
+        
+        // Arc blade crescent shape
+        this.ctx.beginPath();
+        this.ctx.arc(proj.x + proj.width / 2, proj.y + proj.height / 2, proj.width / 2, -Math.PI / 3, Math.PI / 3);
+        this.ctx.lineTo(proj.x + proj.width / 4, proj.y + proj.height / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.restore();
+      } else if (proj.type === 'arcane_orb') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const grad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, proj.width / 2);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.5, '#c084fc');
+        grad.addColorStop(1, '#6d28d9');
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, proj.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
       } else {
         // Arrow lines
         this.ctx.fillRect(proj.x, proj.y, proj.width, proj.height);
@@ -2238,16 +3177,153 @@ export class GameEngine {
         this.ctx.fillRect(enemy.x + 58, enemy.y - 16, 12, 16);
 
         // GRAND BOSS HEALTHBAR
-        const hbW = enemy.width + 32;
-        const hbX = enemy.x - 16;
+        const hbW = enemy.width + 30;
+        const hbX = enemy.x - 15;
         const hbY = enemy.y - 32;
-        this.ctx.fillStyle = 'rgba(0,0,0,0.85)';
-        this.ctx.fillRect(hbX, hbY, hbW, 10);
-        this.ctx.fillStyle = '#f59e0b';
-        this.ctx.fillRect(hbX, hbY, hbW * (enemy.hp / enemy.maxHp), 10);
-        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        this.ctx.fillRect(hbX, hbY, hbW, 9);
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.fillRect(hbX, hbY, hbW * (enemy.hp / enemy.maxHp), 9);
+        this.ctx.strokeStyle = '#f59e0b';
         this.ctx.lineWidth = 1.5;
-        this.ctx.strokeRect(hbX, hbY, hbW, 10);
+        this.ctx.strokeRect(hbX, hbY, hbW, 9);
+
+      } else if (enemy.type === 'bomb_thrower') {
+        // Demonic Grenadier Bomb Thrower Enemy
+        const isFacingRight = enemy.facing === 1;
+
+        // Dark Slate Body
+        this.ctx.fillStyle = '#334155';
+        this.ctx.strokeStyle = '#0f172a';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        this.ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+        // Crimson Helmet & Visor
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.fillRect(
+          isFacingRight ? enemy.x + enemy.width - 14 : enemy.x,
+          enemy.y + 4,
+          14,
+          10
+        );
+
+        // Glowing Yellow Eyes
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.fillRect(
+          isFacingRight ? enemy.x + enemy.width - 8 : enemy.x + 3,
+          enemy.y + 7,
+          4,
+          4
+        );
+
+        // Bomb in Hand ready to throw
+        const bombX = isFacingRight ? enemy.x + enemy.width + 2 : enemy.x - 12;
+        const bombY = enemy.y + 12;
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.beginPath();
+        this.ctx.arc(bombX + 6, bombY + 6, 6, 0, Math.PI * 2);
+        this.ctx.fill();
+        // Bomb Fuse Spark
+        this.ctx.fillStyle = this.frameCount % 4 < 2 ? '#ef4444' : '#fbbf24';
+        this.ctx.beginPath();
+        this.ctx.arc(bombX + 6, bombY, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+      } else if (enemy.type === 'flying_wyvern') {
+        // Flying Wyvern
+        this.ctx.fillStyle = '#c084fc';
+        this.ctx.strokeStyle = '#6b21a8';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.ellipse(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width / 2, enemy.height / 2, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        const flap = Math.sin(this.frameCount * 0.25) * 8;
+        this.ctx.fillStyle = '#a855f7';
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x, enemy.y + 10);
+        this.ctx.lineTo(enemy.x - 14, enemy.y - 6 + flap);
+        this.ctx.lineTo(enemy.x + 8, enemy.y + 14);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width, enemy.y + 10);
+        this.ctx.lineTo(enemy.x + enemy.width + 14, enemy.y - 6 + flap);
+        this.ctx.lineTo(enemy.x + enemy.width - 8, enemy.y + 14);
+        this.ctx.closePath();
+        this.ctx.fill();
+      } else if (enemy.type === 'fish') {
+        // Swimming Fish
+        this.ctx.fillStyle = '#06b6d4';
+        this.ctx.strokeStyle = '#0891b2';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width / 2, enemy.height / 2, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        const tailSwing = Math.sin(this.frameCount * 0.3) * 4;
+        const tailX = enemy.facing === 1 ? enemy.x : enemy.x + enemy.width;
+        this.ctx.beginPath();
+        this.ctx.moveTo(tailX, enemy.y + enemy.height / 2);
+        this.ctx.lineTo(tailX - enemy.facing * 10, enemy.y + enemy.height / 2 - 8 + tailSwing);
+        this.ctx.lineTo(tailX - enemy.facing * 10, enemy.y + enemy.height / 2 + 8 + tailSwing);
+        this.ctx.closePath();
+        this.ctx.fill();
+      } else if (enemy.type === 'anchor') {
+        // Moving Anchor
+        this.ctx.fillStyle = '#475569';
+        this.ctx.strokeStyle = '#1e293b';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width / 2, 0);
+        this.ctx.lineTo(enemy.x + enemy.width / 2, enemy.y);
+        this.ctx.stroke();
+        this.ctx.fillRect(enemy.x + 4, enemy.y + 8, enemy.width - 8, 36);
+        this.ctx.strokeRect(enemy.x + 4, enemy.y + 8, enemy.width - 8, 36);
+      } else if (enemy.type === 'scallop') {
+        // Scallop Clam Trap
+        const isClosed = Math.abs(this.px + this.pWidth / 2 - (enemy.x + enemy.width / 2)) < 24;
+        this.ctx.fillStyle = isClosed ? '#ef4444' : '#fb7185';
+        this.ctx.strokeStyle = '#881337';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + 8, 16, Math.PI, 0);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + 24, 16, 0, Math.PI);
+        this.ctx.fill();
+        this.ctx.stroke();
+        if (!isClosed) {
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.beginPath();
+          this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + 16, 5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+      } else if (enemy.type === 'killer_whale') {
+        // Killer Whale Boss
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.strokeStyle = '#0284c7';
+        this.ctx.lineWidth = 3;
+        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        this.ctx.fillStyle = '#f8fafc';
+        this.ctx.fillRect(enemy.x + 8, enemy.y + enemy.height - 14, enemy.width - 16, 12);
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width / 2 - 8, enemy.y);
+        this.ctx.lineTo(enemy.x + enemy.width / 2, enemy.y - 18);
+        this.ctx.lineTo(enemy.x + enemy.width / 2 + 12, enemy.y);
+        this.ctx.closePath();
+        this.ctx.fill();
+        const hbW = enemy.width + 20;
+        const hbX = enemy.x - 10;
+        const hbY = enemy.y - 25;
+        this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        this.ctx.fillRect(hbX, hbY, hbW, 8);
+        const hpPct = Math.max(0, enemy.hp / enemy.maxHp);
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.fillRect(hbX, hbY, hbW * hpPct, 8);
       }
 
       // Draw standard HP bar overlay for regular enemies (excluding bosses)
@@ -2276,6 +3352,41 @@ export class GameEngine {
       this.ctx.fillRect(part.x, part.y, part.size, part.size);
       this.ctx.globalAlpha = 1.0;
     });
+
+    // Draw Bird Familiar (Whitemon)
+    if (this.birdActive) {
+      this.ctx.save();
+      const isRampage = this.birdRampageTimer > 0;
+      if (isRampage) {
+        this.ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
+        this.ctx.beginPath();
+        this.ctx.arc(this.birdX, this.birdY, 18, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+      this.ctx.fillStyle = isRampage ? '#f97316' : '#38bdf8';
+      this.ctx.strokeStyle = isRampage ? '#7c2d12' : '#0369a1';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.arc(this.birdX, this.birdY, 8, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      const wingFlap = Math.sin(this.frameCount * 0.4) * 6;
+      this.ctx.fillStyle = isRampage ? '#fef08a' : '#7dd3fc';
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.birdX - 4, this.birdY);
+      this.ctx.lineTo(this.birdX - 14, this.birdY - 6 + wingFlap);
+      this.ctx.lineTo(this.birdX, this.birdY + 4);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.birdX + 4, this.birdY);
+      this.ctx.lineTo(this.birdX + 14, this.birdY - 6 + wingFlap);
+      this.ctx.lineTo(this.birdX, this.birdY + 4);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.restore();
+    }
 
     // Draw Player
     this.ctx.save();
@@ -2311,6 +3422,16 @@ export class GameEngine {
       accentColor = '#881337'; // Deep red/burgundy
       bellyColor = '#fda4af'; // Pink belly
       detailColor = '#facc15'; // Yellow highlights
+    } else if (this.selectedDraco === 'Whitemon') {
+      mainColor = '#f8fafc'; // White
+      accentColor = '#64748b'; // Slate
+      bellyColor = '#e2e8f0'; // Light slate
+      detailColor = '#38bdf8'; // Cyan
+    } else if (this.selectedDraco === 'Magemon') {
+      mainColor = '#6d28d9'; // Deep Purple Wizard Robes
+      accentColor = '#312e81'; // Dark Indigo
+      bellyColor = '#c084fc'; // Light Purple
+      detailColor = '#f59e0b'; // Gold Sash Trim
     }
 
     const px = this.px;
@@ -2884,25 +4005,29 @@ export class GameEngine {
   }
 
   private checkTrampoline(x: number, y: number): boolean {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return false;
     const ts = this.level.tileSize;
     const col = Math.floor(x / ts);
     const row = Math.floor(y / ts);
-    if (col < 0 || col >= this.level.grid[0].length || row < 0 || row >= this.level.grid.length) {
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
       return false;
     }
-    return this.level.grid[row][col] === 'T';
+    return grid[row][col] === 'T';
   }
 
   private checkLandmineDetonation(x: number, y: number) {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return;
     const ts = this.level.tileSize;
     const col = Math.floor(x / ts);
     const row = Math.floor(y / ts);
-    if (col < 0 || col >= this.level.grid[0].length || row < 0 || row >= this.level.grid.length) {
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
       return;
     }
-    if (this.level.grid[row][col] === 'M') {
-      const rowStr = this.level.grid[row];
-      this.level.grid[row] = rowStr.substring(0, col) + '.' + rowStr.substring(col + 1);
+    if (grid[row][col] === 'M') {
+      const rowStr = grid[row];
+      grid[row] = rowStr.substring(0, col) + '.' + rowStr.substring(col + 1);
 
       soundService.playHit();
       this.handlePlayerHit(4, x);

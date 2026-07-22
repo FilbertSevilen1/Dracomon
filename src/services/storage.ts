@@ -88,7 +88,32 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Whitemon: {
+      level: 1,
+      exp: 0,
+      hp: 20,
+      attack: 6,
+      defense: 3,
+      speed: 6,
+      jump: 11,
+      range: 8,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
+    Magemon: {
+      level: 1,
+      exp: 0,
+      hp: 19,
+      attack: 7,
+      defense: 3,
+      speed: 6.5,
+      jump: 11,
+      range: 12,
+      unlocked: false,
+      energyRegen: 1.2,
+    },
   },
+  tier: 'Free',
   inventory: DEFAULT_ITEMS,
   settings: {
     volume: 80,
@@ -114,6 +139,7 @@ export const storageService = {
         // Fallback for missing fields (backward compatibility)
         if (!parsed.inventory) parsed.inventory = [];
         if (!parsed.settings.sfxVolume) parsed.settings.sfxVolume = 80;
+        if (!parsed.tier) parsed.tier = 'Free';
 
         // Auto-migrate spelling from Assasinmon to Assassinmon
         if (parsed.dracos.Assasinmon) {
@@ -154,6 +180,20 @@ export const storageService = {
             speed: 6,
             jump: 14,
             range: 5,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Whitemon) {
+          parsed.dracos.Whitemon = {
+            level: 1,
+            exp: 0,
+            hp: 20,
+            attack: 6,
+            defense: 3,
+            speed: 6,
+            jump: 11,
+            range: 8,
             unlocked: false,
             energyRegen: 1.0,
           };

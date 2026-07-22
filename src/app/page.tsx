@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useGameState } from '../hooks/useGameState';
 import { DracoSelection } from '../components/DracoSelection';
 import { InventoryModal } from '../components/InventoryModal';
 import { LevelUpModal } from '../components/LevelUpModal';
 import { SettingsModal } from '../components/SettingsModal';
+import { VersionHistoryModal } from '../components/VersionHistoryModal';
 import { GameScreen } from '../components/GameScreen';
 import { soundService } from '../services/sound';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -59,6 +60,7 @@ export default function Home() {
     resetGameSave,
     exportSave,
     importSave,
+    switchTier,
   } = useGameState();
 
   // Modal open states
@@ -67,7 +69,9 @@ export default function Home() {
   const [showSettings, setShowSettings] = useState(false);
   const [showStageSelector, setShowStageSelector] = useState(false);
   const [showControlsModal, setShowControlsModal] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
   const [stagePage, setStagePage] = useState(0);
+  const [realmPage, setRealmPage] = useState(0);
 
   // Contact form state
   const [contactName, setContactName] = useState('');
@@ -88,11 +92,32 @@ export default function Home() {
   const potionItem = saveData.inventory.find(i => i.id === 'potion');
   const activePotionCount = potionItem ? potionItem.quantity : 0;
 
+  // Auto scroll to top when toggling game screen or stage page
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [isPlaying, stagePage]);
+
+  const isStageUnlocked = (stageNum: number) => {
+    if (saveData.tier === 'Basic' || saveData.tier === 'Premium') {
+      return true; // Basic and Premium membership tiers unlock all maps immediately!
+    }
+    if (stageNum === 1) return true; // Stage 1 unlocked by default for Free Tier
+    const completed = saveData.completedStages || [1];
+    return completed.includes(stageNum) || completed.includes(stageNum - 1);
+  };
+
   const handleStartStage = (stageNum: number) => {
+    if (!isStageUnlocked(stageNum)) {
+      soundService.playHit();
+      scrollToSection('membership');
+      alert(`🔒 Stage ${stageNum} is locked!\n\nComplete Stage ${stageNum - 1} or activate Basic/Premium Membership to unlock all maps immediately.`);
+      return;
+    }
     soundService.playClick();
     setCurrentStage(stageNum);
     setShowStageSelector(false);
     setIsPlaying(true);
+    window.scrollTo(0, 0);
   };
 
   // Sound triggers for landing page companion click
@@ -141,6 +166,7 @@ export default function Home() {
       role: 'High Mobility / Swordmaster',
       lore: 'Born from the sunlit high ridges of Whispering Woods, Jumpmon wields the Golden Flame Greatsword. Master of mid-air double leaps and sweeping rotational blade slashes.',
       signatureSkill: 'Flame Sword Swing & Double Leap',
+      ultimateSkill: 'Earthshaker Ground Slam (30 AoE Shockwaves)',
       color: 'amber',
       tagColor: 'bg-amber-100 text-amber-900 border-amber-300 font-mono',
       attackType: 'Melee Flame Slash Arc',
@@ -170,6 +196,7 @@ export default function Home() {
       role: 'Ranged DPS / Wind Sentinel',
       lore: 'Sovereign guardian of the Mystic Ruins canopy. Armed with an ancient enchanted ranger bow, Archermon shoots rapid arrows and unleashes piercing triple-arrow volleys.',
       signatureSkill: 'Piercing Arrow Volley (3x Spread)',
+      ultimateSkill: 'Arrow Rain Barrage (12 Sky Arrows)',
       color: 'emerald',
       tagColor: 'bg-emerald-100 text-emerald-900 border-emerald-300 font-mono',
       attackType: 'Ranged Bow Wind Slash & Arrow Shot',
@@ -198,6 +225,7 @@ export default function Home() {
       role: 'Tank / Fortress Sentinel',
       lore: 'Forged in the molten depths of Volcanic Peak. Encased in royal steel armor, Shieldmon projects invulnerable light barriers that block all damage while crushing foes with shield bashes.',
       signatureSkill: 'Aegis Invulnerable Barrier (2s Shield)',
+      ultimateSkill: 'Aegis Fortress Shockwave (5s Invulnerable)',
       color: 'blue',
       tagColor: 'bg-blue-100 text-blue-900 border-blue-300 font-mono',
       attackType: 'Heavy Shield Bash Wave',
@@ -225,6 +253,7 @@ export default function Home() {
       role: 'Stealth / Burst DPS',
       lore: 'Born in the pitch-black obsidian caves of Mystic Ruins, Assassinmon is a shadow assassin wielding twin daggers. Specialized in silent shadow-steps and high speed strike combinations.',
       signatureSkill: 'Shadow Dash Strike (Invulnerable Dash)',
+      ultimateSkill: 'Shadow Void Assassination (Instant Quad-Slash)',
       color: 'purple',
       tagColor: 'bg-purple-100 text-purple-900 border-purple-300 font-mono',
       attackType: 'Melee Shadow Dagger Slash',
@@ -252,6 +281,7 @@ export default function Home() {
       role: 'Aerial Hover / Wind Storm',
       lore: 'Guardian of the high skies above Volcanic Peaks. Flymon utilizes powerful wings to glide and hover in mid-air. Shoots rapid poison needles and releases sonic wave slashes.',
       signatureSkill: 'Sonic Wind Slice (Air Launch & 2-way Slash)',
+      ultimateSkill: 'Sonic Typhoon Whirlwind (Infinite Flight)',
       color: 'rose',
       tagColor: 'bg-rose-100 text-rose-900 border-rose-300 font-mono',
       attackType: 'Ranged Poison Needle Shot',
@@ -270,6 +300,62 @@ export default function Home() {
           <rect x="36" y="56" width="28" height="4" fill="#fb7185" />
           <circle cx="44" cy="44" r="3.5" fill="#facc15" />
           <circle cx="56" cy="44" r="3.5" fill="#facc15" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Whitemon',
+      title: 'Beastmaster Summoner',
+      cost: 500,
+      role: 'Summoner / Beastmaster',
+      lore: 'Master of ancient beast spirits from the Sunken Coral Reefs. Whitemon throws spinning axes and commands an autonomous Bird Familiar. Unleashes Primal Roar to paralyze foes and drive the familiar into a frenzy.',
+      signatureSkill: 'Bird Familiar Autonomous Attack',
+      ultimateSkill: 'Primal Roar & Familiar Rampage (3s Stun + 3x Speed)',
+      color: 'sky',
+      tagColor: 'bg-sky-100 text-sky-900 border-sky-300 font-mono',
+      attackType: 'Throwing Axes & Bird Familiar Attack',
+      hp: saveData.dracos['Whitemon']?.hp || 20,
+      atk: saveData.dracos['Whitemon']?.attack || 6,
+      def: saveData.dracos['Whitemon']?.defense || 3,
+      spd: saveData.dracos['Whitemon']?.speed || 6,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
+          <path d="M 32 48 Q 10 24 34 36 Z" fill="#e2e8f0" opacity="0.9" />
+          <path d="M 68 48 Q 90 24 66 36 Z" fill="#e2e8f0" opacity="0.9" />
+          <rect x="36" y="36" width="28" height="40" rx="10" fill="#f8fafc" stroke="#64748b" strokeWidth="2" />
+          <circle cx="24" cy="30" r="5" fill="#38bdf8" />
+          <path d="M 68 44 L 80 32 L 76 52 Z" fill="#94a3b8" stroke="#475569" strokeWidth="1.5" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Magemon',
+      title: 'Grand Magus Spell Weaver',
+      cost: 250,
+      role: 'Mage / Elemental Spells',
+      lore: 'An ancient grand magus who commands Quas, Wex, and Exort elemental orbs. Magemon casts unpredictable legendary spells: 45° rolling Chaos Meteor, 1.7s homing Sun Strike laser, and enemy-lifting Tornado.',
+      signatureSkill: 'Invoked Spell (Meteor / Sun Strike / Tornado)',
+      ultimateSkill: 'Trio Orb Blast (Giant Cleave + Meteor + Sun Strike + Tornado)',
+      color: 'purple',
+      tagColor: 'bg-purple-100 text-purple-900 border-purple-300 font-mono',
+      attackType: 'Arcane Energy Orbs',
+      hp: saveData.dracos['Magemon']?.hp || 19,
+      atk: saveData.dracos['Magemon']?.attack || 7,
+      def: saveData.dracos['Magemon']?.defense || 3,
+      spd: saveData.dracos['Magemon']?.speed || 6.5,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
+          <circle cx="30" cy="22" r="5" fill="#ef4444" />
+          <circle cx="50" cy="14" r="5" fill="#38bdf8" />
+          <circle cx="70" cy="22" r="5" fill="#fbbf24" />
+          <path d="M 32 45 L 68 45 L 76 80 L 24 80 Z" fill="#4c1d95" stroke="#312e81" strokeWidth="2" />
+          <circle cx="50" cy="40" r="14" fill="#6d28d9" stroke="#4c1d95" strokeWidth="2" />
+          <circle cx="45" cy="38" r="2.5" fill="#f59e0b" />
+          <circle cx="55" cy="38" r="2.5" fill="#f59e0b" />
         </svg>
       ),
     },
@@ -380,6 +466,16 @@ export default function Home() {
       desc: 'Magma core erupting fire torrents and the Primordial Dragon King.',
       boss: 'Dragon King',
       color: 'amber'
+    },
+    {
+      num: 9,
+      name: 'Underwater Abyss',
+      difficulty: 'WATER WORLD',
+      diffClass: 'bg-cyan-500 text-stone-950 font-black border-cyan-300',
+      borderHover: 'hover:border-cyan-500 hover:bg-cyan-500/10 ring-2 ring-cyan-400/30',
+      desc: 'Low gravity floating, water currents, moving anchors, scallop traps, and Leviathan Orca Killer Whale boss.',
+      boss: 'Killer Whale',
+      color: 'cyan'
     }
   ];
 
@@ -418,12 +514,23 @@ export default function Home() {
           <button onClick={() => scrollToSection('about')} className="hover:text-amber-600 transition-colors">About Realm</button>
           <button onClick={() => scrollToSection('characters')} className="hover:text-amber-600 transition-colors">Character Lore</button>
           <button onClick={() => scrollToSection('realms')} className="hover:text-amber-600 transition-colors">Campaign Stages</button>
+          <button onClick={() => scrollToSection('membership')} className="hover:text-amber-600 transition-colors flex items-center gap-1">
+            <Award className="w-3.5 h-3.5 text-amber-500" /> Membership Tiers
+          </button>
           <button onClick={() => scrollToSection('faq')} className="hover:text-amber-600 transition-colors">FAQ</button>
           <button onClick={() => scrollToSection('contact')} className="hover:text-amber-600 transition-colors">Guild Contact</button>
         </nav>
 
         {/* Right Utility Bar */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => { soundService.playClick(); setShowVersionHistory(true); }}
+            className="px-3 py-1.5 bg-amber-400 text-stone-950 rounded-xl text-xs font-mono font-black border border-amber-300 shadow-sm hover:bg-amber-300 transition-all active:scale-95 flex items-center gap-1"
+          >
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>v0.0.3</span>
+          </button>
+
           <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 border border-stone-200 rounded-full text-xs font-semibold text-stone-700 shadow-sm">
             <span className="text-stone-400">Partner:</span>
             <span className="font-bold text-stone-900">{activeDracoName} (Lv.{activeLevel})</span>
@@ -479,7 +586,10 @@ export default function Home() {
                 onItemCollect={collectItem}
                 onEnemyDefeat={handleEnemyDefeated}
                 onStageClear={() => {}}
-                onQuit={() => setIsPlaying(false)}
+                onQuit={() => {
+                  setIsPlaying(false);
+                  window.scrollTo(0, 0);
+                }}
                 openSettings={() => setShowSettings(true)}
                 openInventory={() => setShowInventory(true)}
                 activePotionCount={activePotionCount}
@@ -586,10 +696,10 @@ export default function Home() {
                   </div>
 
                   {/* Hero Right Interactive Floating Islands */}
-                  <div className="md:col-span-5 flex justify-center items-center h-[340px] md:h-[400px] relative select-none">
-                    {/* Floating Island 1: Jumpmon */}
+                  <div className="md:col-span-5 flex justify-center items-center h-[460px] md:h-[500px] relative select-none w-full">
+                    {/* Floating Island 1: Jumpmon (Top-Left) */}
                     <motion.div
-                      className={`absolute top-2 left-2 md:left-6 flex flex-col items-center cursor-pointer group z-10 ${
+                      className={`absolute top-0 left-0 md:left-2 flex flex-col items-center cursor-pointer group z-10 ${
                         activeDracoName === 'Jumpmon' ? 'scale-105' : ''
                       }`}
                       onClick={() => handleHeroSelectDraco('Jumpmon', 0)}
@@ -617,9 +727,9 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 2: Archermon */}
+                    {/* Floating Island 2: Archermon (Top-Right) */}
                     <motion.div
-                      className={`absolute bottom-2 left-0 md:left-4 flex flex-col items-center cursor-pointer group z-10 ${
+                      className={`absolute top-0 right-0 md:right-2 flex flex-col items-center cursor-pointer group z-10 ${
                         activeDracoName === 'Archermon' ? 'scale-105' : ''
                       }`}
                       onClick={() => handleHeroSelectDraco('Archermon', 100)}
@@ -651,9 +761,9 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 3: Shieldmon (Center Center) */}
+                    {/* Floating Island 3: Shieldmon (Mid-Left) */}
                     <motion.div
-                      className={`absolute top-28 left-[110px] md:left-[140px] flex flex-col items-center cursor-pointer group z-20 ${
+                      className={`absolute top-[165px] left-2 md:left-8 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Shieldmon' ? 'scale-105' : ''
                       }`}
                       onClick={() => handleHeroSelectDraco('Shieldmon', 200)}
@@ -685,9 +795,9 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 4: Assassinmon */}
+                    {/* Floating Island 4: Assassinmon (Mid-Right) */}
                     <motion.div
-                      className={`absolute top-2 right-2 md:right-6 flex flex-col items-center cursor-pointer group z-10 ${
+                      className={`absolute top-[165px] right-2 md:right-8 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Assassinmon' ? 'scale-105' : ''
                       }`}
                       onClick={() => handleHeroSelectDraco('Assassinmon', 300)}
@@ -719,9 +829,9 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 5: Flymon */}
+                    {/* Floating Island 5: Flymon (Bottom-Left) */}
                     <motion.div
-                      className={`absolute bottom-2 right-0 md:right-4 flex flex-col items-center cursor-pointer group z-10 ${
+                      className={`absolute bottom-0 left-0 md:left-2 flex flex-col items-center cursor-pointer group z-10 ${
                         activeDracoName === 'Flymon' ? 'scale-105' : ''
                       }`}
                       onClick={() => handleHeroSelectDraco('Flymon', 400)}
@@ -748,6 +858,74 @@ export default function Home() {
                         ) : (
                           <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
                             🔒 UNLOCK (400C)
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 6: Whitemon (Bottom-Right) */}
+                    <motion.div
+                      className={`absolute bottom-0 right-0 md:right-2 flex flex-col items-center cursor-pointer group z-10 ${
+                        activeDracoName === 'Whitemon' ? 'scale-105' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Whitemon', 500)}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className="animate-float-slow drop-shadow-md">
+                        {companionShowcase[5].svg}
+                      </div>
+                      <div className={`w-28 h-7 bg-[#0284c7] border-2 ${activeDracoName === 'Whitemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#0369a1]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#38bdf8] h-3.5 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
+                          Whitemon
+                        </span>
+                        {activeDracoName === 'Whitemon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Whitemon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 UNLOCK (500C)
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 7: Magemon (Center Bottom) */}
+                    <motion.div
+                      className={`absolute bottom-[-15px] left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-30 ${
+                        activeDracoName === 'Magemon' ? 'scale-105' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Magemon', 250)}
+                      whileHover={{ scale: 1.1 }}
+                    >
+                      <div className="animate-float-fast drop-shadow-md">
+                        {companionShowcase[6].svg}
+                      </div>
+                      <div className={`w-28 h-7 bg-[#4c1d95] border-2 ${activeDracoName === 'Magemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#312e81]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#6d28d9] h-3.5 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
+                          Magemon
+                        </span>
+                        {activeDracoName === 'Magemon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-2 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Magemon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 UNLOCK (250C)
                           </span>
                         )}
                       </div>
@@ -889,15 +1067,22 @@ export default function Home() {
                             <p>{item.lore}</p>
                           </div>
 
-                          {/* Signature Ability */}
+                          {/* Signature & Ultimate Ability */}
                           <div className="mt-3 space-y-1.5 text-xs">
                             <div className="flex justify-between text-stone-600">
                               <span className="font-semibold">Attack Style:</span>
                               <span className="font-bold text-stone-900">{item.attackType}</span>
                             </div>
                             <div className="flex justify-between text-stone-600">
-                              <span className="font-semibold">Signature Skill:</span>
+                              <span className="font-semibold">Special Skill:</span>
                               <span className="font-bold text-amber-600">{item.signatureSkill}</span>
+                            </div>
+                            <div className="flex justify-between text-stone-600">
+                              <span className="font-semibold flex items-center gap-1">
+                                <Zap className="w-3 h-3 text-purple-500 fill-purple-500" />
+                                Ultimate Skill:
+                              </span>
+                              <span className="font-bold text-purple-600">{item.ultimateSkill}</span>
                             </div>
                           </div>
 
@@ -1024,189 +1209,140 @@ export default function Home() {
 
               {/* CAMPAIGN STAGES SECTION */}
               <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
-                <div className="text-center max-w-3xl mx-auto space-y-3">
-                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">Explore Platform Realms</h2>
-                  <p className="text-stone-600 text-sm leading-relaxed">
-                    Deploy your active dragon companion into custom campaign realms filled with slimes, archers, hazards, and bosses.
-                  </p>
+                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+                  <div>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase tracking-widest rounded-full font-mono border border-amber-200">
+                      🗺️ 9 Campaign Realms
+                    </div>
+                    <h2 className="text-3xl md:text-5xl font-black text-stone-900 mt-2 font-display">Explore Platform Realms</h2>
+                    <p className="text-stone-600 text-xs md:text-sm leading-relaxed mt-1">
+                      Conquer custom hand-crafted platform stages. Basic & Premium members get all maps unlocked instantly!
+                    </p>
+                  </div>
+
+                  {/* Pagination Header Controls */}
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => {
+                        soundService.playClick();
+                        setRealmPage(p => Math.max(0, p - 1));
+                      }}
+                      disabled={realmPage === 0}
+                      className="px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold font-mono transition-all shadow-sm"
+                    >
+                      ◀ Prev
+                    </button>
+                    <span className="px-3 py-1.5 bg-stone-100 text-stone-700 text-xs font-mono font-bold rounded-xl border border-stone-200">
+                      Page {realmPage + 1} of {Math.ceil(STAGE_CARDS.length / 3)}
+                    </span>
+                    <button
+                      onClick={() => {
+                        soundService.playClick();
+                        setRealmPage(p => Math.min(Math.ceil(STAGE_CARDS.length / 3) - 1, p + 1));
+                      }}
+                      disabled={realmPage >= Math.ceil(STAGE_CARDS.length / 3) - 1}
+                      className="px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold font-mono transition-all shadow-sm"
+                    >
+                      Next ▶
+                    </button>
+                  </div>
                 </div>
 
-                <div className="grid md:grid-cols-3 gap-6 mt-10">
-                  {/* Stage 1 */}
-                  <div className="p-7 bg-white border border-stone-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-emerald-600 uppercase tracking-wider font-mono">Stage 1</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-emerald-100 text-emerald-800 font-extrabold rounded-md">[ EASY ]</span>
+                {/* Paginated Stage Cards Grid (3 cards per page) */}
+                <div className="grid md:grid-cols-3 gap-6">
+                  {STAGE_CARDS.slice(realmPage * 3, (realmPage + 1) * 3).map((stage) => {
+                    const unlocked = isStageUnlocked(stage.num);
+
+                    return (
+                      <div
+                        key={stage.num}
+                        className={`relative p-7 border rounded-3xl transition-all flex flex-col justify-between space-y-4 overflow-hidden ${
+                          stage.num === 9
+                            ? 'bg-gradient-to-b from-cyan-950/5 via-sky-500/10 to-cyan-500/20 border-cyan-300 ring-2 ring-cyan-400/40 shadow-lg'
+                            : stage.num === 8
+                            ? 'bg-gradient-to-b from-amber-500/5 to-amber-500/10 border-amber-300 ring-2 ring-amber-400/30 shadow-md'
+                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                        } ${!unlocked ? 'opacity-90' : ''}`}
+                      >
+                        {/* Lock Overlay Badge if locked */}
+                        {!unlocked && (
+                          <div className="absolute inset-0 z-20 bg-stone-900/65 backdrop-blur-[2px] p-6 flex flex-col items-center justify-center text-center text-white space-y-2 rounded-3xl">
+                            <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-lg shadow-inner">
+                              <Lock className="w-5 h-5" />
+                            </div>
+                            <h4 className="font-extrabold text-sm text-stone-100 font-display">Stage {stage.num} Locked</h4>
+                            <p className="text-[10px] text-stone-300 max-w-[200px] leading-tight">
+                              Complete Stage {stage.num - 1} or activate <span className="text-amber-400 font-bold">Basic Membership</span> to unlock!
+                            </p>
+                            <button
+                              onClick={() => scrollToSection('membership')}
+                              className="mt-2 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95"
+                            >
+                              Unlock with Membership
+                            </button>
+                          </div>
+                        )}
+
+                        <div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-black text-stone-600 uppercase tracking-wider font-mono">Stage {stage.num}</span>
+                            <span className={`px-2.5 py-0.5 text-[9px] font-mono rounded-md font-extrabold ${stage.diffClass}`}>
+                              {stage.difficulty}
+                            </span>
+                          </div>
+                          <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display flex items-center gap-2">
+                            <span>{stage.name}</span>
+                            {stage.num === 9 && <span className="text-xs text-cyan-600 font-mono">🌊 SUB-MAP</span>}
+                          </h3>
+                          <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                            {stage.desc}
+                          </p>
+                        </div>
+
+                        <div className="pt-2 border-t border-stone-100/80 flex flex-col gap-2">
+                          <div className="flex justify-between text-[10px] font-bold text-stone-400 font-mono">
+                            <span>Boss: {stage.boss}</span>
+                            <span>{unlocked ? 'Unlocked' : 'Locked'}</span>
+                          </div>
+                          <button
+                            onClick={() => handleStartStage(stage.num)}
+                            disabled={!unlocked}
+                            className={`w-full py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                              !unlocked
+                                ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                                : stage.num === 9
+                                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-md active:scale-95'
+                                : stage.num === 8
+                                ? 'bg-amber-500 hover:bg-amber-600 text-stone-950 shadow-md active:scale-95'
+                                : 'bg-stone-900 hover:bg-amber-600 text-white shadow-sm active:scale-95'
+                            }`}
+                          >
+                            <Play className="w-4 h-4 fill-current" />
+                            <span>{unlocked ? `Deploy to Stage ${stage.num}` : `Locked (Requires Stage ${stage.num - 1})`}</span>
+                          </button>
+                        </div>
                       </div>
-                      <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display">Whispering Woods</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        Gentle forest platforms with Slimes. Features the <strong>King Slime Lord</strong> boss guarding the exit portal.
-                      </p>
-                    </div>
+                    );
+                  })}
+                </div>
 
+                {/* Bottom Page Indicator Dots */}
+                <div className="mt-8 flex items-center justify-center gap-2">
+                  {Array.from({ length: Math.ceil(STAGE_CARDS.length / 3) }).map((_, idx) => (
                     <button
-                      onClick={() => handleStartStage(1)}
-                      className="w-full py-3 bg-stone-900 hover:bg-emerald-700 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-                      <span>Deploy to Stage 1</span>
-                    </button>
-                  </div>
-
-                  {/* Stage 2 */}
-                  <div className="p-7 bg-white border border-stone-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-slate-600 uppercase tracking-wider font-mono">Stage 2</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-slate-100 text-slate-800 font-extrabold rounded-md">[ MEDIUM ]</span>
-                      </div>
-                      <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display">Mystic Ruins</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        Ancient ruined stone structures with floor spikes, Goblin Archers, and the <strong>Sentinel Archdemon</strong>.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleStartStage(2)}
-                      className="w-full py-3 bg-stone-900 hover:bg-slate-700 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 text-slate-400 fill-slate-400" />
-                      <span>Deploy to Stage 2</span>
-                    </button>
-                  </div>
-
-                  {/* Stage 3 */}
-                  <div className="p-7 bg-white border border-stone-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-orange-600 uppercase tracking-wider font-mono">Stage 3</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-orange-100 text-orange-800 font-extrabold rounded-md">[ HARD ]</span>
-                      </div>
-                      <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display">Volcanic Peak</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        Magma hazards with Fire Golems and the <strong>Dracoguard Fire Lord</strong> lava dragon boss.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleStartStage(3)}
-                      className="w-full py-3 bg-stone-900 hover:bg-orange-600 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 text-orange-400 fill-orange-400" />
-                      <span>Deploy to Stage 3</span>
-                    </button>
-                  </div>
-
-                  {/* Stage 4 */}
-                  <div className="p-7 bg-white border border-stone-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-sky-600 uppercase tracking-wider font-mono">Stage 4</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-sky-100 text-sky-800 font-extrabold rounded-md">[ EXPERT ]</span>
-                      </div>
-                      <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display">Frozen Citadel</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        Glacial ice chasms with Frost Golems and the <strong>Frostbite Wyvern</strong> ice dragon boss fight.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleStartStage(4)}
-                      className="w-full py-3 bg-stone-900 hover:bg-sky-700 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 text-sky-400 fill-sky-400" />
-                      <span>Deploy to Stage 4</span>
-                    </button>
-                  </div>
-
-                  {/* Stage 5 */}
-                  <div className="p-7 bg-white border border-stone-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-purple-600 uppercase tracking-wider font-mono">Stage 5</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-purple-100 text-purple-800 font-extrabold rounded-md">[ MASTER ]</span>
-                      </div>
-                      <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display">Shadow Abyss</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        Corrupted void crystal platforms featuring the <strong>Shadow Overlord</strong> dark energy dragon boss.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleStartStage(5)}
-                      className="w-full py-3 bg-stone-900 hover:bg-purple-700 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 text-purple-400 fill-purple-400" />
-                      <span>Deploy to Stage 5</span>
-                    </button>
-                  </div>
-
-                  {/* Stage 6 */}
-                  <div className="p-7 bg-white border border-stone-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-emerald-600 uppercase tracking-wider font-mono">Stage 6</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-emerald-100 text-emerald-800 font-extrabold rounded-md">[ CHALLENGE ]</span>
-                      </div>
-                      <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display">Celestial Temple</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        Grand sanctuary altar defending sacred artifacts from corrupted Fire Golems.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleStartStage(6)}
-                      className="w-full py-3 bg-stone-900 hover:bg-emerald-700 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 text-emerald-400 fill-emerald-400" />
-                      <span>Deploy to Stage 6</span>
-                    </button>
-                  </div>
-
-                  {/* Stage 7 */}
-                  <div className="p-7 bg-white border border-stone-200 rounded-3xl shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-sky-600 uppercase tracking-wider font-mono">Stage 7</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-sky-100 text-sky-800 font-extrabold rounded-md">[ EXPERT ]</span>
-                      </div>
-                      <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display">Sky Heavens</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        Use bouncy trampolines to cross bottomless pits guarded by landmines, skewers, and Sentinel Archdemons.
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleStartStage(7)}
-                      className="w-full py-3 bg-stone-900 hover:bg-sky-600 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center justify-center gap-2"
-                    >
-                      <Play className="w-4 h-4 text-sky-400 fill-sky-400" />
-                      <span>Deploy to Stage 7</span>
-                    </button>
-                  </div>
-
-                  {/* Stage 8 */}
-                  <div className="p-7 bg-white border border-amber-300 ring-2 ring-amber-400/30 rounded-3xl shadow-md hover:shadow-xl transition-all flex flex-col justify-between space-y-4 bg-gradient-to-b from-amber-500/5 to-amber-500/10">
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-black text-amber-700 uppercase tracking-wider font-mono">Stage 8 • FINAL</span>
-                        <span className="px-2.5 py-0.5 text-[9px] font-mono bg-amber-500 text-stone-950 font-black rounded-md">[ DRAGON KING ]</span>
-                      </div>
-                      <h3 className="text-xl font-black text-stone-900 mt-2 font-display">Primordial Core</h3>
-                      <p className="text-xs text-stone-600 mt-2 leading-relaxed">
-                        Magma cores erupting fire torrents! Defeat the legendary <strong>PRIMORDIAL DRAGON KING</strong> with 5-arrow Bullet-Hell!
-                      </p>
-                    </div>
-
-                    <button
-                      onClick={() => handleStartStage(8)}
-                      className="w-full py-3 bg-amber-500 hover:bg-amber-600 text-stone-950 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 shadow-md"
-                    >
-                      <Play className="w-4 h-4 text-stone-950 fill-stone-950" />
-                      <span>Face Dragon King</span>
-                    </button>
-                  </div>
+                      key={idx}
+                      onClick={() => {
+                        soundService.playClick();
+                        setRealmPage(idx);
+                      }}
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        realmPage === idx
+                          ? 'bg-amber-500 ring-2 ring-amber-400/40 w-8'
+                          : 'bg-stone-300 hover:bg-stone-400'
+                      }`}
+                      title={`Go to Page ${idx + 1}`}
+                    />
+                  ))}
                 </div>
               </section>
 
@@ -1387,6 +1523,123 @@ export default function Home() {
                 </div>
               </section>
 
+              {/* MEMBERSHIP TIERS SECTION */}
+              <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-16 border-t border-stone-200/60">
+                <div className="text-center max-w-3xl mx-auto space-y-3">
+                  <span className="text-xs font-mono font-black text-amber-600 uppercase tracking-widest bg-amber-100 border border-amber-300 px-3 py-1 rounded-full">
+                    ★ ACCOUNT MEMBERSHIP & PROGRESSION TIERS
+                  </span>
+                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
+                  <p className="text-stone-600 text-sm leading-relaxed">
+                    Unlock instant access to all dragon companions, boosted starting attributes, and exclusive summoner perks.
+                  </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8 mt-12">
+                  {/* Free Tier */}
+                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                    saveData.tier === 'Free' || !saveData.tier
+                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                  }`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-extrabold text-stone-500 uppercase">Standard Tier</span>
+                        { (saveData.tier === 'Free' || !saveData.tier) && (
+                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                        )}
+                      </div>
+                      <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
+                      <div className="text-3xl font-black text-stone-900 font-mono">0 <span className="text-sm text-stone-500 font-sans">Coins</span></div>
+                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon unlocked</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock characters via campaign coins</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Full offline local save persistence</li>
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() => switchTier('Free')}
+                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                        saveData.tier === 'Free' || !saveData.tier
+                          ? 'bg-stone-200 text-stone-600 cursor-default'
+                          : 'bg-stone-900 text-white hover:bg-stone-800 shadow-md active:scale-95'
+                      }`}
+                    >
+                      {saveData.tier === 'Free' || !saveData.tier ? 'Current Active Tier' : 'Switch to Free Tier'}
+                    </button>
+                  </div>
+
+                  {/* Basic Tier */}
+                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                    saveData.tier === 'Basic'
+                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                  }`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-extrabold text-emerald-600 uppercase">Recommended Tier</span>
+                        { saveData.tier === 'Basic' && (
+                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                        )}
+                      </div>
+                      <h3 className="text-2xl font-black text-stone-900">Basic Tier</h3>
+                      <div className="text-3xl font-black text-emerald-600 font-mono">Level 5 <span className="text-sm text-stone-500 font-sans">All Unlocked</span></div>
+                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Every Character Unlocked Immediately!</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Level 5 starting level</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> +1 Bonus splitted to ALL attributes per level up</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Whitemon & Bird Familiar access</li>
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() => switchTier('Basic')}
+                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                        saveData.tier === 'Basic'
+                          ? 'bg-stone-200 text-stone-600 cursor-default'
+                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-95'
+                      }`}
+                    >
+                      {saveData.tier === 'Basic' ? 'Current Active Tier' : 'Activate Basic Tier'}
+                    </button>
+                  </div>
+
+                  {/* Premium Tier */}
+                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                    saveData.tier === 'Premium'
+                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                  }`}>
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs font-mono font-extrabold text-purple-600 uppercase">God Tier</span>
+                        { saveData.tier === 'Premium' && (
+                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                        )}
+                      </div>
+                      <h3 className="text-2xl font-black text-stone-900">Premium Tier</h3>
+                      <div className="text-3xl font-black text-purple-600 font-mono">Max Boost <span className="text-sm text-stone-500 font-sans">Full Roster</span></div>
+                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Every Character Unlocked immediately</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> High starting level (Level 10)</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Maximized +1 bonus to ALL stats per level</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Full energy regeneration perks</li>
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() => switchTier('Premium')}
+                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                        saveData.tier === 'Premium'
+                          ? 'bg-stone-200 text-stone-600 cursor-default'
+                          : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md active:scale-95'
+                      }`}
+                    >
+                      {saveData.tier === 'Premium' ? 'Current Active Tier' : 'Activate Premium Tier'}
+                    </button>
+                  </div>
+                </div>
+              </section>
+
             </div>
           )}
         </AnimatePresence>
@@ -1410,30 +1663,44 @@ export default function Home() {
               <h2 className="text-2xl font-extrabold tracking-tight text-stone-900 font-display">Select Campaign Map</h2>
               <p className="text-xs text-stone-500 mt-1">Deploy your companion into custom platform realms.</p>
               <div className="grid md:grid-cols-2 gap-4 mt-6 min-h-[310px] p-1">
-                {currentStages.map((stage) => (
-                  <div
-                    key={stage.num}
-                    onClick={() => handleStartStage(stage.num)}
-                    className={`p-5 border border-stone-200 rounded-2xl cursor-pointer transition-all hover:shadow-md flex flex-col justify-between group ${stage.borderHover}`}
-                  >
-                    <div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-xs font-extrabold text-stone-400 tracking-wider uppercase font-mono">Stage {stage.num}</span>
-                        <span className={`px-2 py-0.5 text-[9px] font-mono rounded font-bold ${stage.diffClass}`}>
-                          {stage.difficulty}
-                        </span>
+                {currentStages.map((stage) => {
+                  const unlocked = isStageUnlocked(stage.num);
+                  return (
+                    <div
+                      key={stage.num}
+                      onClick={() => handleStartStage(stage.num)}
+                      className={`relative p-5 border border-stone-200 rounded-2xl transition-all flex flex-col justify-between group overflow-hidden ${
+                        unlocked
+                          ? 'cursor-pointer hover:shadow-md bg-white ' + stage.borderHover
+                          : 'cursor-not-allowed bg-stone-50 opacity-80'
+                      }`}
+                    >
+                      {!unlocked && (
+                        <div className="absolute inset-0 z-20 bg-stone-900/60 backdrop-blur-[2px] p-4 flex flex-col items-center justify-center text-center text-white space-y-1">
+                          <Lock className="w-5 h-5 text-amber-400" />
+                          <span className="text-xs font-black">Stage {stage.num} Locked</span>
+                          <span className="text-[10px] text-stone-300">Complete Stage {stage.num - 1} or Activate Basic Membership</span>
+                        </div>
+                      )}
+                      <div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-xs font-extrabold text-stone-400 tracking-wider uppercase font-mono">Stage {stage.num}</span>
+                          <span className={`px-2 py-0.5 text-[9px] font-mono rounded font-bold ${stage.diffClass}`}>
+                            {stage.difficulty}
+                          </span>
+                        </div>
+                        <h3 className="font-extrabold text-stone-900 text-lg mt-2 font-display">{stage.name}</h3>
+                        <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                          {stage.desc}
+                        </p>
                       </div>
-                      <h3 className="font-extrabold text-stone-900 text-lg mt-2 font-display">{stage.name}</h3>
-                      <p className="text-xs text-stone-500 mt-2 leading-relaxed">
-                        {stage.desc}
-                      </p>
+                      <div className="mt-6 flex items-center justify-between text-xs font-bold text-stone-600 group-hover:text-stone-900 font-mono">
+                        <span>Boss: {stage.boss}</span>
+                        <span className="group-hover:translate-x-1 transition-transform">{unlocked ? 'Deploy ➔' : 'Locked 🔒'}</span>
+                      </div>
                     </div>
-                    <div className="mt-6 flex items-center justify-between text-xs font-bold text-stone-600 group-hover:text-stone-900 font-mono">
-                      <span>Boss: {stage.boss}</span>
-                      <span className="group-hover:translate-x-1 transition-transform">Deploy ➔</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Pagination Controls */}
@@ -1569,17 +1836,18 @@ export default function Home() {
 
       {/* OVERLAY PORTALS */}
       <AnimatePresence>
-        {/* Draco Selection */}
+        {/* Roster selection */}
         {showSelection && (
           <DracoSelection
             saveData={saveData}
-            onSelect={selectDraco}
-            onUnlock={unlockDraco}
-            onLevelUpWithCoins={(name) => {
+            onSelect={(name) => {
+              selectDraco(name);
               setShowSelection(false);
-              levelUpDracoWithCoins(name);
             }}
+            onUnlock={(name, cost) => unlockDraco(name, cost)}
+            onLevelUpWithCoins={(name) => levelUpDracoWithCoins(name)}
             onClose={() => setShowSelection(false)}
+            onSwitchTier={switchTier}
           />
         )}
 
@@ -1616,6 +1884,11 @@ export default function Home() {
             onImportSave={importSave}
             onClose={() => setShowSettings(false)}
           />
+        )}
+
+        {/* Version History Modal */}
+        {showVersionHistory && (
+          <VersionHistoryModal onClose={() => setShowVersionHistory(false)} />
         )}
       </AnimatePresence>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SaveData, DracoData, PlayerStats, InventoryItem } from '../types/game';
+import { SaveData, DracoData, PlayerStats, InventoryItem, TierType } from '../types/game';
 import { storageService, DEFAULT_SAVE_DATA } from '../services/storage';
 import { soundService } from '../services/sound';
 import confetti from 'canvas-confetti';
@@ -185,10 +185,17 @@ export function useGameState() {
       if (stone && stone.quantity > 0) {
         const draco = prev.dracos[dracoName];
         if (draco && draco.unlocked) {
-          soundService.playLevelUp();
-          const updatedDracos = { ...prev.dracos };
+          const updatedDracos = JSON.parse(JSON.stringify(prev.dracos));
           const oldVal = (updatedDracos[dracoName] as any)[stat] || 0;
-          (updatedDracos[dracoName] as any)[stat] = oldVal + 1;
+          if (stat === 'speed' && oldVal >= 20) return prev; // Speed capped at 20
+          if (stat === 'jump' && oldVal >= 14) return prev; // Jump capped at 14
+
+          let newVal = oldVal + 1;
+          if (stat === 'speed') newVal = Math.min(20, newVal);
+          if (stat === 'jump') newVal = Math.min(14, newVal);
+
+          soundService.playLevelUp();
+          (updatedDracos[dracoName] as any)[stat] = newVal;
           
           success = true;
           return {
@@ -306,7 +313,8 @@ export function useGameState() {
           dStats.hp = (dStats.hp || 10) + (baseIncrease.hp || 0);
           dStats.attack = (dStats.attack || 1) + (baseIncrease.attack || 0);
           dStats.defense = (dStats.defense || 1) + (baseIncrease.defense || 0);
-          dStats.speed = (dStats.speed || 1) + (baseIncrease.speed || 0);
+          dStats.speed = Math.min(20, (dStats.speed || 1) + (baseIncrease.speed || 0));
+          dStats.jump = Math.min(14, (dStats.jump || 1) + (baseIncrease.jump || 0));
         }
       }
 
@@ -339,7 +347,12 @@ export function useGameState() {
           draco.energyRegen = Math.min(10.0, currentRegen + 0.1 * levelUpInfo.bonusRoll);
         } else {
           const oldStatVal = (draco as any)[stat] || 0;
-          (draco as any)[stat] = oldStatVal + levelUpInfo.bonusRoll;
+          if (stat === 'speed' && oldStatVal >= 20) return prev;
+          if (stat === 'jump' && oldStatVal >= 14) return prev;
+          let newVal = oldStatVal + levelUpInfo.bonusRoll;
+          if (stat === 'speed') newVal = Math.min(20, newVal);
+          if (stat === 'jump') newVal = Math.min(14, newVal);
+          (draco as any)[stat] = newVal;
         }
       }
 
@@ -371,7 +384,8 @@ export function useGameState() {
           d.hp = (d.hp || 10) + 2;
           d.attack = (d.attack || 1) + 1;
           d.defense = (d.defense || 1) + 1;
-          d.speed = (d.speed || 1) + 1;
+          d.speed = Math.min(20, (d.speed || 1) + 1);
+          d.jump = Math.min(14, (d.jump || 10) + 1);
           
           if (name === prev.selectedDraco) {
             setPlayerHP(d.hp);
@@ -435,6 +449,70 @@ export function useGameState() {
     return false;
   }, []);
 
+  // Switch Account Tier (Free, Basic, Premium)
+  const switchTier = useCallback((newTier: TierType) => {
+    soundService.playClick();
+    updateSaveState(prev => {
+      const updatedDracos = { ...prev.dracos };
+      const allNames = Object.keys(updatedDracos);
+
+      allNames.forEach(name => {
+        const d = updatedDracos[name];
+        if (!d) return;
+
+          if (newTier === 'Basic') {
+            d.unlocked = true;
+            const targetLevel = Math.max(5, d.level || 1);
+            const levelDiff = targetLevel - (d.level || 1);
+            d.level = targetLevel;
+            // Splitted 1 to all attributes per level up (+4 bonus to all attributes for Lv.5)
+            const boost = Math.max(4, levelDiff * 1);
+            d.hp = (d.hp || 18) + boost;
+            d.attack = (d.attack || 4) + boost;
+            d.defense = (d.defense || 2) + boost;
+            d.speed = Math.min(20, (d.speed || 5) + boost);
+            d.jump = Math.min(14, (d.jump || 10) + boost);
+            d.range = (d.range || 1) + boost;
+          } else if (newTier === 'Premium') {
+            d.unlocked = true;
+            const targetLevel = Math.max(10, d.level || 1);
+            const levelDiff = targetLevel - (d.level || 1);
+            d.level = targetLevel;
+            // Splitted 1 to all attributes per level up (+9 bonus to all attributes for Lv.10)
+            const boost = Math.max(9, levelDiff * 1);
+            d.hp = (d.hp || 18) + boost;
+            d.attack = (d.attack || 4) + boost;
+            d.defense = (d.defense || 2) + boost;
+            d.speed = Math.min(20, (d.speed || 5) + boost);
+            d.jump = Math.min(14, (d.jump || 10) + boost);
+            d.range = (d.range || 1) + boost;
+          }
+      });
+
+      const unlockedList = newTier !== 'Free' ? allNames : prev.unlockedDraco;
+
+      return {
+        ...prev,
+        tier: newTier,
+        unlockedDraco: unlockedList,
+        dracos: updatedDracos,
+      };
+    });
+  }, [updateSaveState]);
+
+  const markStageCleared = useCallback((stageNum: number) => {
+    updateSaveState(prev => {
+      const currentCompleted = prev.completedStages || [1];
+      if (!currentCompleted.includes(stageNum)) {
+        return {
+          ...prev,
+          completedStages: [...currentCompleted, stageNum, stageNum + 1]
+        };
+      }
+      return prev;
+    });
+  }, [updateSaveState]);
+
   return {
     saveData,
     isPlaying,
@@ -461,5 +539,7 @@ export function useGameState() {
     resetGameSave,
     exportSave,
     importSave,
+    switchTier,
+    markStageCleared,
   };
 }

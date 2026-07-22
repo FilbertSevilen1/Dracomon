@@ -10,6 +10,7 @@ interface LevelUpModalProps {
   newLevel: number;
   baseIncrease: Partial<PlayerStats>;
   bonusRoll: number;
+  currentStats?: PlayerStats;
   onApplyBonus: (stat: keyof PlayerStats) => void;
 }
 
@@ -19,6 +20,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   newLevel,
   baseIncrease,
   bonusRoll,
+  currentStats,
   onApplyBonus,
 }) => {
   const [diceRolling, setDiceRolling] = useState(true);
@@ -42,6 +44,9 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
 
   const handleSelectStat = (stat: keyof PlayerStats) => {
     if (diceRolling) return;
+    const val = currentStats ? (currentStats as any)[stat] || 0 : 0;
+    if (stat === 'speed' && val >= 20) return;
+    if (stat === 'jump' && val >= 14) return;
     soundService.playClick();
     onApplyBonus(stat);
   };
@@ -131,23 +136,31 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
 
         {/* Choices Grid */}
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
-          {statDetails.map(({ key, name, color }) => (
-            <button
-              key={key}
-              disabled={diceRolling}
-              onClick={() => handleSelectStat(key)}
-              className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all text-left flex justify-between items-center bg-white ${
-                diceRolling 
-                  ? 'opacity-50 cursor-not-allowed border-stone-200 text-stone-400' 
-                  : 'border-stone-200 text-stone-700 hover:border-amber-500 hover:bg-amber-50/20 active:scale-95'
-              }`}
-            >
-              <span>{name}</span>
-              {!diceRolling && (
-                <span className="font-mono text-emerald-600">+{bonusRoll}</span>
-              )}
-            </button>
-          ))}
+          {statDetails.map(({ key, name }) => {
+            const val = currentStats ? (currentStats as any)[key] || 0 : 0;
+            const isCapped = (key === 'speed' && val >= 20) || (key === 'jump' && val >= 14);
+            const isDisabled = diceRolling || isCapped;
+
+            return (
+              <button
+                key={key}
+                disabled={isDisabled}
+                onClick={() => handleSelectStat(key)}
+                className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all text-left flex justify-between items-center bg-white ${
+                  isDisabled 
+                    ? 'opacity-50 cursor-not-allowed border-stone-200 text-stone-400 bg-stone-100' 
+                    : 'border-stone-200 text-stone-700 hover:border-amber-500 hover:bg-amber-50/20 active:scale-95'
+                }`}
+              >
+                <span>{name}</span>
+                {isCapped ? (
+                  <span className="font-mono text-stone-400 text-[9px] font-extrabold uppercase">CAPPED</span>
+                ) : !diceRolling ? (
+                  <span className="font-mono text-emerald-600">+{bonusRoll}</span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       </motion.div>
     </div>

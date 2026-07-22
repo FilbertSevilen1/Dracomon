@@ -42,6 +42,8 @@ export interface InventoryItem {
   quantity: number;
 }
 
+export type TierType = 'Free' | 'Basic' | 'Premium';
+
 export interface SaveData {
   player: PlayerState;
   unlockedDraco: string[];
@@ -51,6 +53,8 @@ export interface SaveData {
   };
   inventory: InventoryItem[];
   settings: GameSettings;
+  tier?: TierType;
+  completedStages?: number[];
 }
 
 // Game active state mapping during play

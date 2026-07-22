@@ -40,11 +40,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [maxHp, setMaxHp] = useState(10);
   const [energy, setEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : 100;
   });
   const [maxEnergy, setMaxEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : 100;
   });
   const [gameState, setGameState] = useState<'playing' | 'paused' | 'gameover' | 'victory'>('playing');
 
@@ -283,7 +283,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                     🔒 ULTIMATE LOCKED (REQ. LV.5)
                   </span>
                 ) : (
-                  <>⚡ {selectedDraco === 'Jumpmon' ? 'Meteor Smackdown' : selectedDraco === 'Archermon' ? 'Arrow Shower' : selectedDraco === 'Shieldmon' ? 'Avatar' : selectedDraco === 'Assassinmon' ? 'Death of 1000 Knives' : 'Laser Beam'}</>
+                  <>⚡ {selectedDraco === 'Jumpmon' ? 'Meteor Smackdown' : selectedDraco === 'Archermon' ? 'Arrow Shower' : selectedDraco === 'Shieldmon' ? 'Avatar' : selectedDraco === 'Assassinmon' ? 'Death of 1000 Knives' : selectedDraco === 'Whitemon' ? 'Primal Roar' : selectedDraco === 'Magemon' ? 'Trio Orb Blast' : 'Laser Beam'}</>
                 )}
               </span>
               <span>{Math.floor(energy)}/{maxEnergy}</span>
