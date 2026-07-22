@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
 import { SaveData, TierType } from '../types/game';
-import { Shield, Zap, Lock, Sparkles, Coins, Award, X, Check, ArrowUpRight } from 'lucide-react';
+import { Shield, Zap, Lock, Sparkles, Coins, Award, X, Check, ArrowUpRight, Search } from 'lucide-react';
 import { soundService } from '../services/sound';
 
 interface DracoSelectionProps {
@@ -9,8 +9,9 @@ interface DracoSelectionProps {
   onSelect: (name: string) => void;
   onUnlock: (name: string, cost: number) => void;
   onLevelUpWithCoins: (name: string) => void;
-  onClose: () => void;
+  onClose?: () => void;
   onSwitchTier?: (tier: TierType) => void;
+  isFullPage?: boolean;
 }
 
 // Draco detailed descriptions and pricing
@@ -254,11 +255,19 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   onLevelUpWithCoins,
   onClose,
   onSwitchTier,
+  isFullPage = false,
 }) => {
   const equippedDraco = saveData.selectedDraco;
   const [selectedName, setSelectedName] = useState<string>(equippedDraco);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   const coins = saveData.player.coins;
   const currentTier = saveData.tier || 'Free';
+
+  const dracoNames = Object.keys(saveData.dracos);
+  const filteredDracos = dracoNames.filter((name) =>
+    name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (DRACO_META[name]?.role || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   const inspectedData = saveData.dracos[selectedName] || {
     level: 1,
@@ -283,33 +292,22 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   const levelUpCost = lvl * 100;
   const canLevelUp = isUnlocked && lvl < 15 && coins >= levelUpCost;
 
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-stone-900/50 backdrop-blur-md"
-    >
-      <motion.div
-        initial={{ scale: 0.96, y: 10 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.96, y: 10 }}
-        className="w-full max-w-5xl max-h-[92vh] flex flex-col border bg-white/95 border-stone-200 rounded-3xl shadow-2xl backdrop-blur-xl overflow-hidden"
-      >
-        {/* Header */}
-        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-stone-900 text-white rounded-2xl shadow-sm">
-              <Shield className="w-5 h-5 text-amber-400" />
-            </div>
-            <div>
-              <h2 className="text-xl font-bold tracking-tight text-stone-900 font-display">Draco Sanctuary</h2>
-              <p className="text-xs text-stone-500">Select & upgrade your battle companion</p>
-            </div>
+  const content = (
+    <div className={`w-full flex flex-col border bg-white border-stone-200/90 rounded-3xl shadow-xl overflow-hidden ${isFullPage ? 'min-h-[620px]' : 'max-h-[92vh]'}`}>
+      {/* Header */}
+      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
+        <div className="flex items-center gap-3">
+          <div className="p-2 bg-stone-900 text-white rounded-2xl shadow-sm">
+            <Shield className="w-5 h-5 text-amber-400" />
           </div>
+          <div>
+            <h2 className="text-xl font-bold tracking-tight text-stone-900 font-display">Draco Sanctuary</h2>
+            <p className="text-xs text-stone-500">Select & upgrade your battle companion</p>
+          </div>
+        </div>
 
-          {/* Account Tier Switcher */}
-          {onSwitchTier && (
+          {/* Account Tier Switcher (Hidden on Full Page / Heroes Page) */}
+          {!isFullPage && onSwitchTier && (
             <div className="flex items-center gap-1 p-1 bg-stone-100 border border-stone-200 rounded-xl">
               {(['Free', 'Basic', 'Premium'] as TierType[]).map((t) => (
                 <button
@@ -336,27 +334,43 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
               <span className="font-mono font-bold text-xs text-stone-800">{coins} Coins</span>
             </div>
-            <button
-              onClick={() => {
-                soundService.playClick();
-                onClose();
-              }}
-              className="p-1.5 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-full transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
+            {!isFullPage && onClose && (
+              <button
+                onClick={() => {
+                  soundService.playClick();
+                  onClose();
+                }}
+                className="p-1.5 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Content Layout - Split 2 Panel (No Scroll Needed!) */}
+        {/* Content Layout - Split 2 Panel */}
         <div className="grid grid-cols-1 md:grid-cols-12 flex-1 min-h-0 overflow-hidden">
-          {/* Left Panel: Roster List (All 7 Dracos visible at a glance) */}
-          <div className="md:col-span-4 border-r border-stone-100 bg-stone-50/40 p-4 flex flex-col justify-between space-y-1.5 overflow-hidden">
-            <div className="text-[11px] font-extrabold uppercase tracking-wider text-stone-400 px-2 mb-1">
-              Roster (7)
+          {/* Left Panel: Roster List with Filter by Name Input */}
+          <div className="md:col-span-4 border-r border-stone-100 bg-stone-50/40 p-4 flex flex-col justify-between space-y-2 overflow-hidden">
+            
+            {/* Filter Search Input */}
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              <input
+                type="text"
+                placeholder="Filter hero by name..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200 rounded-xl text-xs font-mono text-stone-800 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all shadow-sm"
+              />
             </div>
+
+            <div className="text-[11px] font-extrabold uppercase tracking-wider text-stone-400 px-1">
+              Roster ({filteredDracos.length})
+            </div>
+
             <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
-              {Object.keys(saveData.dracos).map((name) => {
+              {filteredDracos.map((name) => {
                 const dData = saveData.dracos[name];
                 const meta = DRACO_META[name];
                 const itemUnlocked = !!dData.unlocked;
@@ -617,6 +631,27 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
             </div>
           </div>
         </div>
+      </div>
+  );
+
+  if (isFullPage) {
+    return content;
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-stone-900/50 backdrop-blur-md"
+    >
+      <motion.div
+        initial={{ scale: 0.96, y: 10 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.96, y: 10 }}
+        className="w-full max-w-5xl"
+      >
+        {content}
       </motion.div>
     </motion.div>
   );

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { useGameState } from '../hooks/useGameState';
 import { DracoSelection } from '../components/DracoSelection';
 import { InventoryModal } from '../components/InventoryModal';
@@ -8,6 +9,7 @@ import { LevelUpModal } from '../components/LevelUpModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { VersionHistoryModal } from '../components/VersionHistoryModal';
 import { GameScreen } from '../components/GameScreen';
+import { Navbar } from '../components/Navbar';
 import { soundService } from '../services/sound';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -35,6 +37,7 @@ import {
   Globe,
   Award,
   Layers,
+  ScrollText,
 } from 'lucide-react';
 
 export default function Home() {
@@ -558,48 +561,7 @@ export default function Home() {
       )}
 
       {/* Navigation Header */}
-      {!isPlaying && (
-        <header className="sticky top-0 w-full border-b border-stone-200/70 bg-white/85 backdrop-blur-md px-6 md:px-12 py-3.5 flex items-center justify-between z-50 shadow-sm">
-        <div className="flex items-center gap-3">
-          <span className="text-xl md:text-2xl font-black tracking-tight text-stone-900 flex items-center gap-2">
-            🐉 DRACOMON <span className="text-amber-500 font-extrabold">RPG</span>
-          </span>
-        </div>
-
-        {/* Center Nav Links */}
-        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-stone-600">
-          <button onClick={() => scrollToSection('about')} className="hover:text-amber-600 transition-colors">About</button>
-          <button onClick={() => scrollToSection('membership')} className="hover:text-amber-600 transition-colors">Memberships</button>
-          <button onClick={() => scrollToSection('characters')} className="hover:text-amber-600 transition-colors">Heroes</button>
-          <button onClick={() => scrollToSection('realms')} className="hover:text-amber-600 transition-colors">Stages</button>
-        </nav>
-
-        {/* Right Utility Bar */}
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50/80 border border-amber-200/80 rounded-full text-xs font-mono font-bold text-amber-700 shadow-sm">
-            <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
-            <span>{coins}</span>
-          </div>
-
-          <button
-            onClick={() => { soundService.playClick(); setShowInventory(true); }}
-            className="p-2 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-stone-700 shadow-sm transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold"
-            title="Open Inventory"
-          >
-            <Briefcase className="w-4 h-4 text-amber-600" />
-            <span className="hidden sm:inline">Bag</span>
-          </button>
-
-          <button
-            onClick={() => { soundService.playClick(); setShowSettings(true); }}
-            className="p-2 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-stone-700 shadow-sm transition-all active:scale-95 flex items-center justify-center"
-            title="Settings"
-          >
-            <Settings className="w-4 h-4" />
-          </button>
-        </div>
-      </header>
-      )}
+      {!isPlaying && <Navbar onOpenInventory={() => setShowInventory(true)} />}
 
       {/* Main Container */}
       <main className="flex-1 w-full z-30">
@@ -708,6 +670,15 @@ export default function Home() {
                         <BookOpen className="w-4 h-4 text-amber-600" />
                         Character Story
                       </button>
+
+                      <Link
+                        href="/version"
+                        onClick={() => soundService.playClick()}
+                        className="px-5 py-4 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 rounded-2xl font-extrabold text-sm transition-all active:scale-95 flex items-center gap-2"
+                      >
+                        <ScrollText className="w-4 h-4 text-rose-600" />
+                        Patch Notes v0.1.0
+                      </Link>
 
                       <button
                         onClick={() => { soundService.playClick(); setShowControlsModal(true); }}
@@ -1188,18 +1159,19 @@ export default function Home() {
                     </p>
                   </div>
 
-                  <button
-                    onClick={() => { soundService.playClick(); setShowSelection(true); }}
-                    className="px-5 py-2.5 bg-stone-900 text-white rounded-2xl text-xs font-extrabold hover:bg-stone-800 transition-all flex items-center gap-1.5 self-start md:self-auto"
+                  <Link
+                    href="/heroes"
+                    onClick={() => soundService.playClick()}
+                    className="px-5 py-2.5 bg-stone-900 text-white rounded-2xl text-xs font-extrabold hover:bg-stone-800 transition-all flex items-center gap-1.5 self-start md:self-auto shadow-md active:scale-95"
                   >
-                    <span>Manage Roster Modal</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </button>
+                    <span>Manage Full Roster</span>
+                    <ArrowRight className="w-4 h-4 text-amber-400" />
+                  </Link>
                 </div>
 
-                {/* Detailed Character Story Cards Grid */}
+                {/* Detailed Character Story Cards Grid (Only 3 featured heroes) */}
                 <div className="grid md:grid-cols-3 gap-8 mt-10">
-                  {companionShowcase.map((item) => {
+                  {companionShowcase.slice(0, 3).map((item) => {
                     const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
                     const isSelected = activeDracoName === item.name;
                     const canAfford = coins >= item.cost;
@@ -1398,6 +1370,18 @@ export default function Home() {
                       </motion.div>
                     );
                   })}
+                </div>
+
+                {/* View All Roster CTA Button */}
+                <div className="mt-8 text-center">
+                  <Link
+                    href="/heroes"
+                    onClick={() => soundService.playClick()}
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl text-xs font-mono font-black shadow-lg transition-all active:scale-95 border border-stone-800"
+                  >
+                    <Sparkles className="w-4 h-4 text-amber-400" />
+                    <span>EXPLORE ALL 8 DRAGON GUARDIANS IN ROSTER SANCTUARY (/heroes) →</span>
+                  </Link>
                 </div>
               </section>
 
@@ -1647,11 +1631,11 @@ export default function Home() {
                     <div className="space-y-2 text-xs font-semibold text-stone-600 pt-2">
                       <div className="flex items-center gap-2">
                         <Mail className="w-4 h-4 text-amber-500" />
-                        <span>support@dracomon-rpg.dev</span>
+                        <span>sevilenfilbert@gmail.com</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Globe className="w-4 h-4 text-emerald-500" />
-                        <span>v1.2.0 Offline Singleplayer RPG</span>
+                        <span>Offline Singleplayer RPG</span>
                       </div>
                     </div>
                   </div>
@@ -2009,15 +1993,17 @@ export default function Home() {
             <div className="space-y-3">
               <h4 className="font-extrabold text-stone-900 uppercase tracking-wider font-mono">Release Info</h4>
               <p className="text-stone-400 text-[11px] font-mono">
-                Version: <strong className="text-stone-700">v1.2.0 Stable</strong> <br />
+                Version: <strong className="text-stone-700">v0.1.0 Gladiators Arise</strong> <br />
                 Stack: React 19, Next.js 15, Canvas 2D
               </p>
-              <button
-                onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 rounded-xl text-[11px] font-mono font-extrabold text-stone-700 transition-all"
+              <Link
+                href="/version"
+                onClick={() => soundService.playClick()}
+                className="px-4 py-2 bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-900 rounded-xl text-[11px] font-mono font-black transition-all flex items-center gap-1.5"
               >
-                ↑ Back To Top
-              </button>
+                <ScrollText className="w-3.5 h-3.5 text-rose-400" />
+                View Full Patch Notes (/version)
+              </Link>
             </div>
           </div>
 

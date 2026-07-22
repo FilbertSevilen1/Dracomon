@@ -48,6 +48,11 @@ export function useGameState() {
     setSaveData(prev => {
       const next = updater(prev);
       storageService.saveGame(next);
+      if (typeof window !== 'undefined') {
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: next }));
+          }, 0);
+        }
       return next;
     });
   }, []);
