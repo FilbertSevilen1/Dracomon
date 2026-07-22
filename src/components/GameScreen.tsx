@@ -124,6 +124,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     };
   }, [stageNum, selectedDraco]);
 
+  // Reset game state to 'playing' when stage changes (Next Level button)
+  useEffect(() => {
+    setGameState('playing');
+  }, [stageNum]);
+
   // Global Escape Key Listener: toggles Pause in-game, returns to camp on victory
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
