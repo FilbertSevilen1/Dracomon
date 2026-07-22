@@ -56,7 +56,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong';
   hp: number;
   maxHp: number;
   attack: number;
@@ -69,6 +69,12 @@ interface Enemy {
   stunnedTimer?: number;
   isSuspended?: boolean;
   suspendedTimer?: number;
+  isBonePile?: boolean;
+  respawnTimer?: number;
+  hasRevived?: boolean;
+  jumpCooldown?: number;
+  jumpCount?: number;
+  isLeaping?: boolean;
 }
 
 export class GameEngine {
@@ -83,6 +89,7 @@ export class GameEngine {
     onEnemyDefeat: (exp: number, coins: number) => void;
     onHpChange: (hp: number, maxHp: number) => void;
     onEnergyChange?: (energy: number, maxEnergy: number) => void;
+    onPauseToggle?: () => void;
     onStageClear: () => void;
     onPlayerDeath: () => void;
   };
@@ -91,6 +98,8 @@ export class GameEngine {
   private animationFrameId: number | null = null;
   private lastTime = 0;
   private isPaused = false;
+  private targetFps = 60;
+  private frameInterval = 1000 / 60; // 60 FPS cap (~16.67ms per frame)
 
   // Player Physics
   private px = 100;
@@ -159,6 +168,11 @@ export class GameEngine {
   private assassinmonTargetIndex = 0;
   private assassinmonTargets: Enemy[] = [];
 
+  // Assassinmon Dash State & Trail
+  private assassinmonDashActive = false;
+  private assassinmonDashTimer = 0;
+  private shadowAfterimages: { x: number; y: number; facing: number; alpha: number }[] = [];
+
   // Raiden Shogun Musou Slash Visual State
   private musouSlashActive = false;
   private musouSlashTimer = 0;
@@ -167,6 +181,33 @@ export class GameEngine {
   private musouTargetId = 0;
   private musouOriginalPx = 0;
   private musouOriginalPy = 0;
+
+  // Jumpmon Skill & Ultimate States
+  private jumpmonSpinActive = false;
+  private jumpmonSpinTimer = 0;
+  private jumpmonSpinAngle = 0;
+  private jumpmonMeteorActive = false;
+  private jumpmonMeteorState: 'idle' | 'charging' | 'plunging' | 'impact' = 'idle';
+  private jumpmonMeteorTimer = 0;
+  private jumpmonImpactTimer = 0;
+  private jumpmonImpactX = 0;
+  private jumpmonImpactY = 0;
+  private screenShake = 0;
+
+  // Archermon Ultimate Cutscene State
+  private archermonUltActive = false;
+  private archermonUltTimer = 0;
+
+  // Magemon Skill & Ultimate States
+  private magemonSpellIndex = 0;
+  private magemonUltActive = false;
+  private magemonUltTimer = 0;
+
+  // Jungle Level Mechanics State
+  private isClimbing = false;
+  private playerRootedTimer = 0;
+  private skeletonDeathTimer = 0;
+  private playerStunnedTimer = 0;
 
   // World parameters
   private gravity = 0.5;
@@ -203,6 +244,7 @@ export class GameEngine {
       onEnemyDefeat: (exp: number, coins: number) => void;
       onHpChange: (hp: number, maxHp: number) => void;
       onEnergyChange?: (energy: number, maxEnergy: number) => void;
+      onPauseToggle?: () => void;
       onStageClear: () => void;
       onPlayerDeath: () => void;
     }
@@ -240,6 +282,23 @@ export class GameEngine {
       return this.level.maps[idx].grid;
     }
     return this.level.grid || [];
+  }
+
+  private isEnemyInsideFrame(enemy: Enemy): boolean {
+    if (!enemy || enemy.hp <= 0) return false;
+    const cw = this.canvas ? this.canvas.width : 800;
+    const ch = this.canvas ? this.canvas.height : 600;
+    const sLeft = this.cameraX;
+    const sRight = this.cameraX + cw;
+    const sTop = this.cameraY;
+    const sBottom = this.cameraY + ch;
+
+    return (
+      enemy.x + enemy.width > sLeft &&
+      enemy.x < sRight &&
+      enemy.y + enemy.height > sTop &&
+      enemy.y < sBottom
+    );
   }
 
   private initLevelEntities(preservePlayerPos = false) {
@@ -561,6 +620,54 @@ export class GameEngine {
             animFrame: 0,
             name: 'PRIMORDIAL DRAGON KING'
           });
+        } else if (char === 'S') {
+          // Skeleton Archer
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex + 4,
+            y: ey + ts - 38,
+            vx: 0,
+            vy: 0,
+            width: 32,
+            height: 38,
+            type: 'skeleton_archer',
+            hp: 35,
+            maxHp: 35,
+            attack: 6,
+            defense: 3,
+            facing: -1,
+            shootCooldown: 100,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'Skeleton Archer',
+            isBonePile: false,
+            respawnTimer: 0,
+            hasRevived: false
+          });
+        } else if (char === 'K') {
+          // Primordial King Kong Boss
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex + 2,
+            y: ey + ts - 86,
+            vx: -0.9,
+            vy: 0,
+            width: 86,
+            height: 86,
+            type: 'king_kong',
+            hp: 950,
+            maxHp: 950,
+            attack: 18,
+            defense: 8,
+            facing: -1,
+            shootCooldown: 120,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'PRIMORDIAL KING KONG',
+            jumpCooldown: 120,
+            jumpCount: 0,
+            isLeaping: false
+          });
         }
       }
     }
@@ -580,7 +687,10 @@ export class GameEngine {
       e.preventDefault();
     }
 
-    if (e.key === ' ') {
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      this.callbacks.onPauseToggle?.();
+    } else if (e.key === ' ') {
       this.triggerUltimate();
     } else if (key === 'w' || e.key === 'ArrowUp') {
       this.jump();
@@ -598,7 +708,7 @@ export class GameEngine {
     this.keys[key] = false;
   };
 
-  public triggerAction(action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'down') {
+  public triggerAction(action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'ultimate' | 'down') {
     if (action === 'left') {
       this.keys['a'] = true;
       this.keys['d'] = false;
@@ -611,6 +721,8 @@ export class GameEngine {
       this.performAttack();
     } else if (action === 'special') {
       this.performSpecial();
+    } else if (action === 'ultimate') {
+      this.triggerUltimate();
     } else if (action === 'down') {
       this.keys['s'] = true;
     }
@@ -727,11 +839,24 @@ export class GameEngine {
       this.spawnDustParticles(slashX, slashY, 8, '#60a5fa');
     } else if (this.selectedDraco === 'Assassinmon') {
       soundService.playHit();
-      // Fast Shadow Slash
-      this.pvx += this.pFacing * 2.0;
-      this.checkMeleeHit(this.px - 16, this.py - 8, this.pWidth + 32, this.pHeight + 16, this.stats.attack);
-      this.spawnDustParticles(slashX, slashY, 7, '#c084fc');
-      this.attackCooldown = 15; // Faster attack speed!
+      // Fast Shadow Katana Slash
+      this.pvx += this.pFacing * 2.5;
+      this.checkMeleeHit(this.px - 16, this.py - 8, this.pWidth + 40, this.pHeight + 16, this.stats.attack);
+      this.spawnDustParticles(slashX, slashY, 8, '#c084fc');
+      // Spawn katana spark particles
+      for (let k = 0; k < 5; k++) {
+        this.particles.push({
+          x: slashX,
+          y: slashY + (Math.random() - 0.5) * 20,
+          vx: this.pFacing * (Math.random() * 4 + 2),
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 3 + 2,
+          color: '#ffffff',
+          life: 12,
+          maxLife: 12
+        });
+      }
+      this.attackCooldown = 14; // Fast katana attack speed!
     } else if (this.selectedDraco === 'Flymon') {
       soundService.playShoot();
       // Poison Needle Projectile
@@ -751,20 +876,21 @@ export class GameEngine {
       this.spawnDustParticles(slashX, slashY, 4, '#fda4af');
     } else if (this.selectedDraco === 'Whitemon') {
       soundService.playShoot();
-      // Throwing Axe Projectile
-      const axeVx = this.pFacing * (this.stats.speed + 5);
+      // Throwing Axe Projectile (Moderate speed for heavy thrown axe)
+      const axeVx = this.pFacing * 6.5;
       this.projectiles.push({
         x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 16,
         y: this.py + this.pHeight / 2 - 6,
         vx: axeVx,
-        vy: -1.5,
+        vy: 0.35,
         width: 20,
         height: 20,
         isEnemy: false,
-        damage: Math.floor(this.stats.attack * 1.1),
+        damage: Math.floor(this.stats.attack * 1.15),
         color: '#e2e8f0',
         type: 'axe'
       });
+      this.attackCooldown = 22; // Cadence for heavy throwing axe
       this.spawnDustParticles(slashX, slashY, 6, '#e2e8f0');
     } else if (this.selectedDraco === 'Magemon') {
       soundService.playShoot();
@@ -819,61 +945,114 @@ export class GameEngine {
         });
       }
     } else if (this.selectedDraco === 'Assassinmon') {
-      // Shadow Dash Strike
+      // Shadow Dash Strike with full Dash Animation & Afterimages
       soundService.playJump();
       this.specialCooldown = 180; // 3s cooldown
-      this.pInvulnerableFrames = 30; // 0.5s invulnerability
-      this.pvx = this.pFacing * 16; // high speed dash
-      this.checkMeleeHit(this.px - 30, this.py - 10, this.pWidth + 120, this.pHeight + 20, Math.floor(this.stats.attack * 2.2));
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'SHADOW STRIKE! 🥷', '#a855f7');
+      this.pInvulnerableFrames = 35; // ~0.6s invulnerability
+      this.assassinmonDashActive = true;
+      this.assassinmonDashTimer = 16; // 16 frames of shadow dash animation
+      this.pvx = this.pFacing * 20; // High speed dash burst
+      this.pvy = 0; // Lock vertical movement for horizontal shadow dash
 
-      // Shadow particle trail
-      for (let i = 0; i < 12; i++) {
+      this.checkMeleeHit(this.px - 30, this.py - 10, this.pWidth + 140, this.pHeight + 20, Math.floor(this.stats.attack * 2.4));
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'SHADOW DASH! 🥷💨', '#a855f7');
+
+      // Shadow dash initial particle burst
+      for (let i = 0; i < 18; i++) {
         this.particles.push({
           x: this.px + Math.random() * this.pWidth,
           y: this.py + Math.random() * this.pHeight,
-          vx: -this.pFacing * (Math.random() * 3 + 1),
-          vy: Math.random() * 3 - 1.5,
-          size: Math.random() * 4 + 2,
-          color: '#a855f7',
-          life: 18,
-          maxLife: 18
+          vx: -this.pFacing * (Math.random() * 6 + 2),
+          vy: (Math.random() - 0.5) * 4,
+          size: Math.random() * 6 + 2,
+          color: i % 2 === 0 ? '#a855f7' : '#c084fc',
+          life: 22,
+          maxLife: 22
         });
       }
     } else if (this.selectedDraco === 'Flymon') {
-      // Sonic Wind Slice & Hover Lift
+      // Mini Wind Gust - Float hover & launch mini wind gust wave that pushes back enemies!
       soundService.playJump();
-      this.pvy = -12.5; // upward float launch
+      this.pvy = -10; // Aerodynamic hover lift
       this.pGrounded = false;
       this.specialCooldown = 150; // 2.5s cooldown
 
-      // Shoot 2 wide wind blade waves
-      const waveSpeed = this.stats.speed + 6;
-      [-0.1, 0.1].forEach(angle => {
+      const gustDamage = Math.floor(this.stats.attack * 1.8);
+      const waveSpeed = this.stats.speed + 7;
+
+      // 1. Immediate instant push back for all enemies in front within 320px
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dx = enemy.x - this.px;
+        if ((this.pFacing === 1 && dx > -20 && dx < 320) || (this.pFacing === -1 && dx < 20 && dx > -320)) {
+          if (Math.abs(this.py - enemy.y) < 120) {
+            this.damageEnemy(enemy, gustDamage);
+            enemy.vx = this.pFacing * 14; // STRONG PUSH BACK KNOCKBACK!
+            enemy.vy = -4;
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#fda4af');
+            this.addFloatingText(enemy.x, enemy.y - 15, 'GUST PUSH BACK! 🌪️💨', '#f43f5e');
+          }
+        }
+      });
+
+      // 2. Spawn 3 expanding wind gust projectiles travelling forward
+      [-0.12, 0, 0.12].forEach(angle => {
         this.projectiles.push({
-          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 16,
-          y: this.py + this.pHeight / 2 - 3,
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 24,
+          y: this.py + this.pHeight / 2 - 12,
           vx: this.pFacing * waveSpeed * Math.cos(angle),
           vy: waveSpeed * Math.sin(angle),
-          width: 18,
-          height: 6,
+          width: 24,
+          height: 24,
           isEnemy: false,
-          damage: Math.floor(this.stats.attack * 1.3),
+          damage: gustDamage,
           color: '#fda4af',
-          type: 'arrow' // Reuse arrow drawing type
+          type: 'tornado'
         });
       });
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'SONIC TEMPEST! 🌪️', '#f43f5e');
+
+      // Swirling wind particles
+      for (let p = 0; p < 18; p++) {
+        this.particles.push({
+          x: this.px + (this.pFacing === 1 ? this.pWidth : 0),
+          y: this.py + Math.random() * this.pHeight,
+          vx: this.pFacing * (Math.random() * 8 + 4),
+          vy: (Math.random() - 0.5) * 6,
+          size: Math.random() * 6 + 3,
+          color: p % 2 === 0 ? '#fda4af' : '#ffffff',
+          life: 20,
+          maxLife: 20
+        });
+      }
     } else if (this.selectedDraco === 'Jumpmon') {
-      // Super Spin Jump - launches player high up and damages surrounding enemies
+      // Super Spin Jump - launches player high up and damages surrounding enemies with 360 Golden Flame Blade Spin
       soundService.playJump();
-      this.pvy = -this.stats.jump * 1.35;
+      this.jumpmonSpinActive = true;
+      this.jumpmonSpinTimer = 25;
+      this.jumpmonSpinAngle = 0;
+      this.pvy = -this.stats.jump * 1.4;
       this.pGrounded = false;
       this.specialCooldown = 180; // 3s cooldown
       this.isAttacking = true;
       this.attackDuration = 25;
-      this.checkMeleeHit(this.px - 20, this.py - 20, this.pWidth + 40, this.pHeight + 40, this.stats.attack * 1.5);
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'MEGA SPIN!', '#fbbf24');
+      this.checkMeleeHit(this.px - 30, this.py - 30, this.pWidth + 60, this.pHeight + 60, Math.floor(this.stats.attack * 1.6));
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'MEGA SPIN! ⚔️🔥', '#fbbf24');
+
+      // Burst of golden flame spin particles
+      for (let p = 0; p < 16; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 6 + 3,
+          color: p % 2 === 0 ? '#fbbf24' : '#f97316',
+          life: 20,
+          maxLife: 20
+        });
+      }
     } else if (this.selectedDraco === 'Archermon') {
       // Piercing Volley - fires 3 arrows in a spread
       soundService.playShoot();
@@ -914,29 +1093,47 @@ export class GameEngine {
         });
       }
     } else if (this.selectedDraco === 'Magemon') {
-      soundService.playShoot();
-      this.specialCooldown = 180; // 3.0s cooldown
+      if (this.pEnergy < 30) {
+        soundService.playHit();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'NOT ENOUGH ENERGY! (30 Req.) ⚡', '#ef4444');
+        return;
+      }
 
-      const spellChoice = Math.floor(Math.random() * 3);
-      this.castMagemonSpell(spellChoice);
+      // Deduct 30 energy per spell cast
+      this.pEnergy = Math.max(0, this.pEnergy - 30);
+      this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
+
+      soundService.playShoot();
+      this.specialCooldown = 60; // 1.0s cooldown (60 frames)
+
+      // Magemon Spell Rotation: Tornado (2) -> Sun Strike (1) -> Meteor (0)
+      const spellTypeMap = [2, 1, 0]; // 0 = Tornado, 1 = Sun Strike, 2 = Meteor
+      const targetSpellType = spellTypeMap[this.magemonSpellIndex];
+      this.castMagemonSpell(targetSpellType);
+
+      // Increment spell rotation index
+      this.magemonSpellIndex = (this.magemonSpellIndex + 1) % 3;
     }
   }
 
   private castMagemonSpell(spellType: number) {
-    // Find nearest opponent to target meteor and sun strike near enemy
+    // Find nearest alive opponent within 750px to target meteor and sun strike
     let nearestEnemy: Enemy | null = null;
     let minDistance = 9999;
     this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
       const dist = Math.abs(enemy.x - this.px);
-      if (dist < minDistance) {
+      if (dist < minDistance && dist < 750) {
         minDistance = dist;
         nearestEnemy = enemy;
       }
     });
 
+    const fallbackTargetX = this.px + (this.pFacing === 1 ? this.pWidth + 200 : -200);
+
     if (spellType === 0) {
-      // ☄️ Chaos Meteor: Spawns near opponent rather than fixed range!
-      const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : this.px + this.pFacing * 120;
+      // ☄️ Chaos Meteor: Spawns near opponent or 200px in front!
+      const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : fallbackTargetX;
       const targetY = nearestEnemy ? (nearestEnemy as Enemy).y : this.py;
       const startX = targetX - (this.pFacing * 100);
       const startY = Math.max(20, targetY - 160);
@@ -956,24 +1153,10 @@ export class GameEngine {
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'CHAOS METEOR! ☄️', '#f97316');
 
     } else if (spellType === 1) {
-      // ☀️ Sun Strike: Channels laser for 1.7s (102 frames) then explodes & deals damage during explosion phase!
-      const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : this.px + this.pFacing * 140;
-
-      this.projectiles.push({
-        x: targetX - 26,
-        y: 0,
-        vx: 0,
-        vy: 0,
-        width: 52,
-        height: this.canvas.height,
-        isEnemy: false,
-        damage: Math.floor(this.stats.attack * 3.5),
-        color: '#f59e0b',
-        type: 'sun_strike',
-        channelTimer: 102,
-        targetX: targetX
-      });
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'SUN STRIKE! ☀️', '#f59e0b');
+      // ☀️ Sun Strike: Channels solar beam on enemy or 200px in front!
+      const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : fallbackTargetX;
+      const targetY = nearestEnemy ? (nearestEnemy as Enemy).y : this.py;
+      this.castSunStrikeAt(targetX, targetY);
 
     } else {
       // 🌪️ Tornado: Swirling wind lifts enemies into air untargetable/suspended then drops down
@@ -992,6 +1175,25 @@ export class GameEngine {
       });
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'TORNADO! 🌪️', '#06b6d4');
     }
+  }
+
+  private castSunStrikeAt(targetX: number, targetY?: number) {
+    soundService.playShoot();
+    this.projectiles.push({
+      x: targetX - 26,
+      y: 0,
+      vx: 0,
+      vy: 0,
+      width: 52,
+      height: this.canvas.height,
+      isEnemy: false,
+      damage: Math.floor(this.stats.attack * 3.5),
+      color: '#f59e0b',
+      type: 'sun_strike',
+      channelTimer: 45, // ~0.75s charging beam before solar detonation
+      targetX: targetX
+    });
+    this.addFloatingText(targetX - 20, (targetY || this.py) - 15, 'SUN STRIKE! ☀️💥', '#f59e0b');
   }
 
   private checkMeleeHit(x: number, y: number, w: number, h: number, damage: number) {
@@ -1051,6 +1253,11 @@ export class GameEngine {
     }
   }
 
+  private getUltimateCost(): number {
+    if (this.selectedDraco === 'Magemon') return 150;
+    return this.getMaxEnergy();
+  }
+
   private triggerUltimate() {
     if (this.isPaused || this.pHP <= 0 || this.ultimateCinematicActive) return;
 
@@ -1061,7 +1268,7 @@ export class GameEngine {
       return;
     }
 
-    const cost = this.getMaxEnergy();
+    const cost = this.getUltimateCost();
     if (this.pEnergy >= cost) {
       this.pEnergy -= cost;
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
@@ -1082,59 +1289,60 @@ export class GameEngine {
 
     if (this.selectedDraco === 'Jumpmon') {
       soundService.playLevelUp();
+      this.jumpmonMeteorActive = true;
+      this.jumpmonMeteorState = 'charging';
+      this.jumpmonMeteorTimer = 30; // ~0.5s charging rise in mid-air
       this.pvy = -22; // Launch super high up!
       this.pGrounded = false;
-      this.isPlunging = true;
 
-      const groundY = this.py + this.pHeight;
+      // 1. CAMERA ZOOM IN (1.85x Zoom focused on Jumpmon)
+      this.cameraZoom = 1.85;
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
 
-      // Spawns 4 travelling ground lava shockwaves
-      [-1, 1].forEach(dir => {
-        for (let s = 1; s <= 2; s++) {
-          this.projectiles.push({
-            x: this.px + this.pWidth / 2,
-            y: groundY - 20,
-            vx: dir * (s * 5 + 3),
-            vy: 0,
-            width: 32,
-            height: 32,
-            isEnemy: false,
-            damage: Math.floor(this.stats.attack * 2.2),
-            color: '#f97316',
-            type: 'fireball'
-          });
-        }
-      });
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'METEOR SMACKDOWN! 🌋', '#ef4444');
 
-      // Target all enemies within 700px with erupting volcanic pillars
-      this.enemies.forEach(enemy => {
-        const dx = Math.abs(this.px - enemy.x);
-        if (dx < 700) {
-          this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.2));
-          enemy.stunnedTimer = 90; // 1.5s stun on impact!
-          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 20, '#f97316');
-          this.addFloatingText(enemy.x, enemy.y - 15, 'METEOR SMACKDOWN! 🌋💥', '#ef4444');
-
-          // Erupting fire pillar particles
-          for (let p = 0; p < 12; p++) {
-            this.particles.push({
-              x: enemy.x + enemy.width / 2 + (Math.random() - 0.5) * 30,
-              y: enemy.y + enemy.height,
-              vx: (Math.random() - 0.5) * 4,
-              vy: -Math.random() * 9 - 4,
-              size: Math.random() * 8 + 4,
-              color: p % 2 === 0 ? '#f97316' : '#fef08a',
-              life: 30,
-              maxLife: 30
-            });
-          }
-        }
-      });
+      // Golden Solar Flare Charge Aura Particles
+      for (let p = 0; p < 24; p++) {
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 40,
+          y: this.py + this.pHeight / 2 + (Math.random() - 0.5) * 40,
+          vx: (Math.random() - 0.5) * 6,
+          vy: -Math.random() * 8 - 2,
+          size: Math.random() * 8 + 4,
+          color: p % 2 === 0 ? '#f97316' : '#fef08a',
+          life: 25,
+          maxLife: 25
+        });
+      }
     }
     else if (this.selectedDraco === 'Archermon') {
-      this.arrowShowerActive = true;
-      this.arrowShowerDuration = 360; // 6 seconds (doubled duration!)
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'DOUBLE ARROW RAIN (6s)! 🏹⚡', '#10b981');
+      soundService.playLevelUp();
+      this.archermonUltActive = true;
+      this.archermonUltTimer = 35; // 35 frames (~0.6s) zoom-in sky shot cutscene
+
+      // 1. CAMERA ZOOM IN (1.85x Zoom focused on Archermon)
+      this.cameraZoom = 1.85;
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SKYWARD ARROW SHOT! 🏹✨', '#10b981');
+
+      // Emerald Wind Charge Aura Particles around Archermon's bow
+      for (let p = 0; p < 20; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 5 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 6 + 3,
+          color: p % 2 === 0 ? '#10b981' : '#34d399',
+          life: 20,
+          maxLife: 20
+        });
+      }
     }
     else if (this.selectedDraco === 'Shieldmon') {
       this.avatarActive = true;
@@ -1181,7 +1389,7 @@ export class GameEngine {
       this.assassinmonUltimateTimer = 0;
       this.musouSlashActive = true;
       this.pInvulnerableFrames = 100; // 1.6s invulnerable
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'MUSOU NO HITOTACHI! ⚡🗡️', '#c084fc');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SINGLE SLASH OF DEATH! 🗡️✨', '#c084fc');
     }
     else if (this.selectedDraco === 'Flymon') {
       soundService.playLevelUp();
@@ -1190,16 +1398,20 @@ export class GameEngine {
       this.pvy = -6;
       this.pGrounded = false;
 
-      // Find NEAREST HIGHEST HP enemy on screen!
+      // Find HIGHEST HP enemy strictly inside the visible screen frame!
       let bestEnemy: Enemy | null = null;
-      let bestScore = -1; // Score = HP * 10000 - distance
+      let maxHpOnScreen = -1;
+      let minDistanceOnScreen = 99999;
 
       this.enemies.forEach(enemy => {
-        const dist = Math.abs(this.px - enemy.x);
-        if (dist < 800) {
-          const score = enemy.hp * 10000 - dist;
-          if (score > bestScore) {
-            bestScore = score;
+        if (this.isEnemyInsideFrame(enemy)) {
+          const dist = Math.abs((this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2));
+          if (enemy.hp > maxHpOnScreen) {
+            maxHpOnScreen = enemy.hp;
+            minDistanceOnScreen = dist;
+            bestEnemy = enemy;
+          } else if (enemy.hp === maxHpOnScreen && dist < minDistanceOnScreen) {
+            minDistanceOnScreen = dist;
             bestEnemy = enemy;
           }
         }
@@ -1256,31 +1468,33 @@ export class GameEngine {
     }
     else if (this.selectedDraco === 'Magemon') {
       soundService.playLevelUp();
+      this.magemonUltActive = true;
+      this.magemonUltTimer = 55; // 55 frames (~0.9s) zoom-in cutscene
+
+      // 1. CAMERA ZOOM IN (1.85x Zoom focused on Magemon)
+      this.cameraZoom = 1.85;
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+      this.pvy = -6; // Float launch in mid-air
+      this.pGrounded = false;
+
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'TRIO ORB BLAST! 🔮✨', '#a855f7');
 
-      // Step A: Giant Cleave (1.5x size arc blade in facing direction)
-      const cleaveW = this.pWidth * 2.2;
-      const cleaveH = this.pHeight * 2.2;
-      const cleaveX = this.pFacing === 1 ? this.px + this.pWidth : this.px - cleaveW;
-
-      this.projectiles.push({
-        x: cleaveX,
-        y: this.py - 15,
-        vx: this.pFacing * 8.5,
-        vy: 0,
-        width: cleaveW,
-        height: cleaveH,
-        isEnemy: false,
-        damage: Math.floor(this.stats.attack * 3.0),
-        color: '#a855f7',
-        type: 'giant_cleave',
-        hitEnemyIds: []
-      } as any);
-
-      // Step B: Followed immediately by ALL 3 Special Skills in succession!
-      setTimeout(() => { this.castMagemonSpell(0); }, 100); // ☄️ Chaos Meteor
-      setTimeout(() => { this.castMagemonSpell(1); }, 300); // ☀️ Homing Sun Strike
-      setTimeout(() => { this.castMagemonSpell(2); }, 500); // 🌪️ Tornado
+      // Trio Arcane Floating Orbs Particle Burst around Magemon
+      for (let p = 0; p < 24; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 5 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 7 + 3,
+          color: p % 3 === 0 ? '#06b6d4' : p % 3 === 1 ? '#fbbf24' : '#ef4444',
+          life: 25,
+          maxLife: 25
+        });
+      }
     }
 
     this.birdX = this.px;
@@ -1392,6 +1606,39 @@ export class GameEngine {
         collected: false
       });
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'PRIMORDIAL GOD CONQUERED! 👑', '#f59e0b');
+    } else if (enemy.type === 'skeleton_archer') {
+      if (enemy.hasRevived) {
+        expReward = 0;
+        coinReward = 0;
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'REVIVED SKELETON (0 EXP)', '#94a3b8');
+      } else {
+        expReward = 15;
+        coinReward = 25;
+      }
+      enemy.isBonePile = true;
+      enemy.respawnTimer = 300; // 5 seconds
+      enemy.hp = 0;
+      soundService.playHit();
+      this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 14, '#e2e8f0');
+
+      if (expReward > 0) {
+        this.callbacks.onEnemyDefeat(expReward, coinReward);
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, `+${expReward} EXP`, '#3b82f6');
+      }
+      return;
+    } else if (enemy.type === 'king_kong') {
+      expReward = 550;
+      coinReward = 850;
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 10,
+        y: enemy.y + enemy.height / 2 - 10,
+        width: 20,
+        height: 20,
+        type: 'upgrade_stone',
+        amount: 3,
+        collected: false
+      });
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'KING KONG SLAIN! 🦍👑', '#f59e0b');
     }
 
     this.callbacks.onEnemyDefeat(expReward, coinReward);
@@ -1561,11 +1808,32 @@ export class GameEngine {
     return grid[row][col] === 'm';
   }
 
+  private getTileSymbol(x: number, y: number): string {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return '.';
+    const ts = this.level.tileSize;
+    const col = Math.floor(x / ts);
+    const row = Math.floor(y / ts);
+
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
+      return '.';
+    }
+
+    return grid[row][col];
+  }
+
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale'].includes(type);
+    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong'].includes(type);
   }
 
   private updatePhysics() {
+    // Lock player physics during Poison Swamp acid skeleton meltdown
+    if (this.skeletonDeathTimer > 0) {
+      this.pvx = 0;
+      this.pvy = 0;
+      return;
+    }
+
     // Synchronous Single Slash of Death Sequence (Raiden Shogun Musou no Hitotachi)
     if (this.assassinmonUltimateActive) {
       this.pvx = 0;
@@ -1604,12 +1872,12 @@ export class GameEngine {
         }
         soundService.playHit();
 
-        // Dark purple electro slash particles
+        // Dark purple slash particles
         this.spawnDustParticles(this.musouSlashX, this.musouSlashY, 25, '#c084fc');
-        this.addFloatingText(this.musouSlashX, this.musouSlashY - 15, 'MUSOU SLASH! ⚡🗡️', '#c084fc');
+        this.addFloatingText(this.musouSlashX, this.musouSlashY - 15, 'KATANA SLASH! 🗡️✨', '#c084fc');
       } 
       else if (this.assassinmonUltimateTimer === 18) {
-        // STEP 2: DELAYED ELECTRO DIMENSIONAL SHATTER EXPLOSION!
+        // STEP 2: DELAYED SHADOW DIMENSIONAL SHATTER EXPLOSION!
         soundService.playHit();
 
         // Massive explosion damage (6.5x Attack Damage!) -> Total 10.0x attack damage burst!
@@ -1620,7 +1888,7 @@ export class GameEngine {
           this.checkMeleeHit(this.musouSlashX - 40, this.musouSlashY - 40, 80, 80, Math.floor(this.stats.attack * 6.5));
         }
 
-        // Huge electro plasma explosion particles
+        // Huge shadow plasma explosion particles
         for (let p = 0; p < 30; p++) {
           this.particles.push({
             x: this.musouSlashX + (Math.random() - 0.5) * 50,
@@ -1628,13 +1896,13 @@ export class GameEngine {
             vx: (Math.random() - 0.5) * 10,
             vy: (Math.random() - 0.5) * 10,
             size: Math.random() * 9 + 4,
-            color: p % 3 === 0 ? '#c084fc' : p % 3 === 1 ? '#e879f9' : '#fef08a',
+            color: p % 3 === 0 ? '#c084fc' : p % 3 === 1 ? '#e879f9' : '#a855f7',
             life: 30,
             maxLife: 30
           });
         }
 
-        this.addFloatingText(this.musouSlashX, this.musouSlashY - 25, 'TORN TO PIECES! ⚡💥', '#ef4444');
+        this.addFloatingText(this.musouSlashX, this.musouSlashY - 25, 'TORN TO PIECES! 🗡️💥', '#ef4444');
       }
       else if (this.assassinmonUltimateTimer === 32) {
         // Reset camera zoom, restore original position & end ultimate sequence cleanly!
@@ -1648,6 +1916,471 @@ export class GameEngine {
       }
 
       return; // Skip normal gravity & walking physics during ultimate sequence!
+    }
+
+    // Decay shadow afterimages
+    for (let i = this.shadowAfterimages.length - 1; i >= 0; i--) {
+      this.shadowAfterimages[i].alpha -= 0.08;
+      if (this.shadowAfterimages[i].alpha <= 0) {
+        this.shadowAfterimages.splice(i, 1);
+      }
+    }
+
+    // Assassinmon Dash Animation physics & trail
+    if (this.assassinmonDashActive) {
+      this.assassinmonDashTimer--;
+      this.pvx = this.pFacing * 18;
+      this.pvy = 0; // maintain horizontal glide trajectory
+
+      // Store shadow afterimage ghost frame
+      this.shadowAfterimages.push({
+        x: this.px,
+        y: this.py,
+        facing: this.pFacing,
+        alpha: 0.75
+      });
+
+      // Hit enemies passed through during dash
+      this.checkMeleeHit(this.px - 10, this.py - 5, this.pWidth + 40, this.pHeight + 10, Math.floor(this.stats.attack * 0.4));
+
+      // Continuous shadow speed trail particles
+      if (this.frameCount % 2 === 0) {
+        this.particles.push({
+          x: this.px + (this.pFacing === 1 ? 0 : this.pWidth),
+          y: this.py + Math.random() * this.pHeight,
+          vx: -this.pFacing * (Math.random() * 4 + 3),
+          vy: (Math.random() - 0.5) * 2,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.5 ? '#c084fc' : '#e879f9',
+          life: 16,
+          maxLife: 16
+        });
+      }
+
+      if (this.assassinmonDashTimer <= 0) {
+        this.assassinmonDashActive = false;
+      }
+    }
+
+    // Jumpmon Mega Spin Skill physics & rotation update
+    if (this.jumpmonSpinActive) {
+      this.jumpmonSpinTimer--;
+      this.jumpmonSpinAngle += 0.55; // 360-degree rotation speed
+      // Emit spiraling flame particles while spinning
+      this.particles.push({
+        x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 30,
+        y: this.py + this.pHeight / 2 + (Math.random() - 0.5) * 30,
+        vx: (Math.random() - 0.5) * 4,
+        vy: (Math.random() - 0.5) * 4,
+        size: Math.random() * 5 + 2,
+        color: Math.random() > 0.5 ? '#fbbf24' : '#f97316',
+        life: 14,
+        maxLife: 14
+      });
+      if (this.jumpmonSpinTimer <= 0) {
+        this.jumpmonSpinActive = false;
+      }
+    }
+
+    // Jumpmon Meteor Smackdown Ultimate physics & camera zoom update
+    if (this.jumpmonMeteorActive) {
+      if (this.jumpmonMeteorState === 'charging') {
+        this.jumpmonMeteorTimer--;
+        // Camera tracks Jumpmon while zoomed in!
+        this.cameraZoomTargetX = this.px + this.pWidth / 2;
+        this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+        // Solar flare aura particles
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 20,
+          y: this.py + this.pHeight / 2 + (Math.random() - 0.5) * 20,
+          vx: (Math.random() - 0.5) * 3,
+          vy: Math.random() * 5 + 2,
+          size: Math.random() * 7 + 3,
+          color: '#f97316',
+          life: 18,
+          maxLife: 18
+        });
+
+        if (this.jumpmonMeteorTimer <= 0) {
+          // Transition to Plunge state!
+          this.jumpmonMeteorState = 'plunging';
+          this.pvy = 30; // Downward meteor launch speed!
+          this.isPlunging = true;
+        }
+      } else if (this.jumpmonMeteorState === 'plunging') {
+        // High speed meteor plunge down
+        this.pvy = 30;
+        this.cameraZoomTargetX = this.px + this.pWidth / 2;
+        this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+        // Flaming meteor tail
+        for (let p = 0; p < 3; p++) {
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 16,
+            y: this.py - 10,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 6 - 2,
+            size: Math.random() * 8 + 4,
+            color: p % 2 === 0 ? '#ef4444' : '#f97316',
+            life: 20,
+            maxLife: 20
+          });
+        }
+
+        // CHECK GROUND / BOTTOM IMPACT!
+        if (this.pGrounded || this.py + this.pHeight >= this.levelHeight - 32) {
+          // HIT THE GROUND -> EXPLODE!
+          this.jumpmonMeteorState = 'impact';
+          this.jumpmonImpactTimer = 30;
+          this.jumpmonImpactX = this.px + this.pWidth / 2;
+          this.jumpmonImpactY = this.py + this.pHeight;
+          this.isPlunging = false;
+
+          // 1. CAMERA SNAPS BACK & HUGE SCREEN SHAKE
+          this.cameraZoom = 1.0;
+          this.screenShake = 32;
+          soundService.playHit();
+
+          const groundY = this.py + this.pHeight;
+
+          // 2. Spawn 4 travelling ground lava shockwaves (left & right)
+          [-1, 1].forEach(dir => {
+            for (let s = 1; s <= 2; s++) {
+              this.projectiles.push({
+                x: this.px + this.pWidth / 2,
+                y: groundY - 20,
+                vx: dir * (s * 5 + 3),
+                vy: 0,
+                width: 32,
+                height: 32,
+                isEnemy: false,
+                damage: Math.floor(this.stats.attack * 2.2),
+                color: '#f97316',
+                type: 'fireball'
+              });
+            }
+          });
+
+          // 3. Erupting Volcanic Pillars & AoE Stun Damage on all enemies
+          this.enemies.forEach(enemy => {
+            const dx = Math.abs(this.px - enemy.x);
+            if (dx < 700) {
+              this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.2));
+              enemy.stunnedTimer = 90; // 1.5s stun!
+              this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 20, '#f97316');
+              this.addFloatingText(enemy.x, enemy.y - 15, 'METEOR IMPACT! 🌋💥', '#ef4444');
+
+              // Erupting fire pillar particles
+              for (let p = 0; p < 14; p++) {
+                this.particles.push({
+                  x: enemy.x + enemy.width / 2 + (Math.random() - 0.5) * 30,
+                  y: enemy.y + enemy.height,
+                  vx: (Math.random() - 0.5) * 5,
+                  vy: -Math.random() * 10 - 4,
+                  size: Math.random() * 9 + 4,
+                  color: p % 2 === 0 ? '#f97316' : '#fef08a',
+                  life: 30,
+                  maxLife: 30
+                });
+              }
+            }
+          });
+
+          // 4. Ground Explosion Particle Blast
+          for (let p = 0; p < 35; p++) {
+            const ang = Math.random() * Math.PI - Math.PI; // upward arc
+            const spd = Math.random() * 12 + 4;
+            this.particles.push({
+              x: this.jumpmonImpactX,
+              y: this.jumpmonImpactY,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd - 3,
+              size: Math.random() * 10 + 4,
+              color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#f97316' : '#fef08a',
+              life: 35,
+              maxLife: 35
+            });
+          }
+        }
+      } else if (this.jumpmonMeteorState === 'impact') {
+        this.jumpmonImpactTimer--;
+        if (this.jumpmonImpactTimer <= 0) {
+          this.jumpmonMeteorActive = false;
+          this.jumpmonMeteorState = 'idle';
+        }
+      }
+    }
+
+    // Archermon Skyward Arrow Shot Cutscene Physics Update
+    if (this.archermonUltActive) {
+      this.archermonUltTimer--;
+      this.pvx = 0; // Freeze horizontal walking during cutscene
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+      // Charge emerald wind gathering particles
+      if (this.frameCount % 2 === 0) {
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 30,
+          y: this.py + Math.random() * 20,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 6 - 4, // floating up
+          size: Math.random() * 5 + 3,
+          color: '#34d399',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      // Frame 18: RELEASE GIANT SKY ARROW TO THE CLOUDS!
+      if (this.archermonUltTimer === 18) {
+        soundService.playShoot();
+        // Spawn giant sky arrow shooting straight up
+        this.projectiles.push({
+          x: this.px + this.pWidth / 2 - 6,
+          y: this.py - 10,
+          vx: 0,
+          vy: -28, // Fast upward speed into the sky!
+          width: 12,
+          height: 32,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 2.5),
+          color: '#10b981',
+          type: 'arrow'
+        });
+
+        // Bow launch wind blast ring
+        this.spawnDustParticles(this.px + this.pWidth / 2, this.py, 16, '#34d399');
+      }
+
+      // Frame 0: CUTSCENE ENDS -> RESET CAMERA ZOOM & BEGIN RAINING ARROW SHOWER!
+      if (this.archermonUltTimer <= 0) {
+        this.archermonUltActive = false;
+        this.cameraZoom = 1.0;
+        this.screenShake = 16;
+        this.arrowShowerActive = true;
+        this.arrowShowerDuration = 360; // 6 seconds of raining arrow shower!
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'DOUBLE ARROW RAIN (6s)! 🏹⚡', '#10b981');
+      }
+    }
+
+    // Archermon Raining Arrow Shower Logic
+    if (this.arrowShowerActive) {
+      this.arrowShowerDuration--;
+
+      // Every 5 frames, spawn 2 raining arrows from top of viewport
+      if (this.frameCount % 5 === 0) {
+        soundService.playShoot();
+        const viewLeft = this.cameraX - 50;
+        const viewRight = this.cameraX + this.canvas.width + 50;
+
+        for (let a = 0; a < 2; a++) {
+          const spawnX = viewLeft + Math.random() * (viewRight - viewLeft);
+          this.projectiles.push({
+            x: spawnX,
+            y: this.cameraY - 30, // spawn high above camera
+            vx: (Math.random() - 0.5) * 2.5,
+            vy: Math.random() * 4 + 13, // rapid downward rain speed
+            width: 8,
+            height: 22,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 1.1),
+            color: a % 2 === 0 ? '#10b981' : '#34d399',
+            type: 'arrow'
+          });
+        }
+      }
+
+      if (this.arrowShowerDuration <= 0) {
+        this.arrowShowerActive = false;
+      }
+    }
+
+    // Magemon Ultimate Cutscene & Spell Bombardment Update
+    if (this.magemonUltActive) {
+      this.magemonUltTimer--;
+      this.pvx = 0;
+      this.pvy = 0; // Float in mid-air
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+      // Orbiting Trio Orbs around Magemon
+      for (let orb = 0; orb < 3; orb++) {
+        const angle = this.frameCount * 0.15 + (orb * Math.PI * 2) / 3;
+        const orbX = this.px + this.pWidth / 2 + Math.cos(angle) * 36;
+        const orbY = this.py + this.pHeight / 2 + Math.sin(angle) * 36;
+
+        this.particles.push({
+          x: orbX,
+          y: orbY,
+          vx: 0,
+          vy: 0,
+          size: 6,
+          color: orb === 0 ? '#06b6d4' : orb === 1 ? '#fbbf24' : '#ef4444',
+          life: 2,
+          maxLife: 2
+        });
+      }
+
+      // Frame 45: STEP 1 - CAST 2 GIANT TORNADOES (Sweeping left & right)
+      if (this.magemonUltTimer === 45) {
+        [-1, 1].forEach(dir => {
+          this.projectiles.push({
+            x: this.px + (dir === 1 ? this.pWidth : -24),
+            y: this.py - 10,
+            vx: dir * (this.stats.speed + 8),
+            vy: 0,
+            width: 32,
+            height: 32,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 1.8),
+            color: '#06b6d4',
+            type: 'tornado'
+          });
+        });
+      }
+
+      // Frame 30: STEP 2 - TARGET EVERY ENEMY IN THE AREA WITH SUN STRIKE BEAMS!
+      if (this.magemonUltTimer === 30) {
+        let targetsFound = 0;
+        this.enemies.forEach(enemy => {
+          if (enemy.hp > 0 && Math.abs(enemy.x - this.px) < 800) {
+            targetsFound++;
+            this.castSunStrikeAt(enemy.x + enemy.width / 2, enemy.y);
+          }
+        });
+        // If no enemies in area, cast sun strike 200px in front of Magemon
+        if (targetsFound === 0) {
+          const fallbackX = this.px + (this.pFacing === 1 ? this.pWidth + 200 : -200);
+          this.castSunStrikeAt(fallbackX, this.py);
+        }
+      }
+
+      // Frame 15: STEP 3 - CAST 3 GIANT CHAOS METEORS CRASHING DOWN
+      if (this.magemonUltTimer === 15) {
+        soundService.playHit();
+        [-150, 0, 150].forEach(offset => {
+          this.projectiles.push({
+            x: this.px + this.pFacing * 100 + offset - (this.pFacing * 80),
+            y: Math.max(20, this.py - 220),
+            vx: this.pFacing * 5.0,
+            vy: 7.5,
+            width: 44,
+            height: 44,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 3.2),
+            color: '#f97316',
+            type: 'meteor'
+          });
+        });
+      }
+
+      // Frame 0: CUTSCENE ENDS -> RESET CAMERA ZOOM & SCREEN SHAKE
+      if (this.magemonUltTimer <= 0) {
+        this.magemonUltActive = false;
+        this.cameraZoom = 1.0;
+        this.screenShake = 28;
+      }
+    }
+
+    // Shieldmon Avatar Area Aura push-back & stun effect
+    if (this.selectedDraco === 'Shieldmon' && this.avatarActive && this.frameCount % 10 === 0) {
+      const centerX = this.px + this.pWidth / 2;
+      const centerY = this.py + this.pHeight / 2;
+      const auraRadius = 160;
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dist = Math.hypot(enemy.x + enemy.width / 2 - centerX, enemy.y + enemy.height / 2 - centerY);
+        if (dist < auraRadius) {
+          // Push back & deal aura contact damage!
+          const pushAngle = Math.atan2(enemy.y + enemy.height / 2 - centerY, enemy.x + enemy.width / 2 - centerX);
+          enemy.vx = Math.cos(pushAngle) * 8;
+          enemy.vy = -3;
+          this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.6));
+          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 6, '#60a5fa');
+        }
+      });
+    }
+
+    // Player Stunned from King Kong 3rd Jump Seismic Ground Slam
+    if (this.playerStunnedTimer > 0) {
+      this.playerStunnedTimer--;
+      this.pvx = 0;
+      if (this.frameCount % 12 === 0) {
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'STUNNED! 💫', '#ef4444');
+      }
+      return;
+    }
+
+    // Player Rooted from Vine Trap ('T')
+    if (this.playerRootedTimer > 0) {
+      this.playerRootedTimer--;
+      this.pvx = 0;
+      if (this.pvy < 0) this.pvy = 0; // Disable jumping while rooted
+    }
+
+    // Tree Vine Climbing Check ('V')
+    const pxMid = this.px + this.pWidth / 2;
+    const pyMid = this.py + this.pHeight / 2;
+    const pyFeet = this.py + this.pHeight - 2;
+    const isOnVine = this.getTileSymbol(pxMid, pyMid) === 'V' || this.getTileSymbol(pxMid, pyFeet) === 'V';
+
+    if (isOnVine) {
+      const upPressed = this.keys['w'] || this.keys['arrowup'];
+      const downPressed = this.keys['s'] || this.keys['arrowdown'];
+
+      if (upPressed || downPressed) {
+        this.isClimbing = true;
+      }
+
+      if (this.isClimbing) {
+        this.pvy = 0;
+        if (upPressed) this.pvy = -4.5;
+        if (downPressed) this.pvy = 4.5;
+
+        if (this.keys[' ']) {
+          this.pvy = -this.stats.jump;
+          this.isClimbing = false;
+          soundService.playJump();
+        }
+      }
+    } else {
+      this.isClimbing = false;
+    }
+
+    // Vine Trap ('T') Contact Check
+    const touchedVineTrap = this.getTileSymbol(pxMid, pyFeet) === 'T';
+    if (touchedVineTrap && this.playerRootedTimer <= 0) {
+      this.playerRootedTimer = 120; // 2.0s Root!
+      soundService.playHit();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'ROOTED 2s! 🌿🔒', '#22c55e');
+      this.spawnDustParticles(pxMid, pyFeet, 14, '#15803d');
+    }
+
+    // Poison Swamp ('X') Contact Check (Insta-Kill + Acid Skeleton Death Animation)
+    const touchedSwamp = this.getTileSymbol(pxMid, pyFeet) === 'X' || this.getTileSymbol(this.px + 4, pyFeet) === 'X' || this.getTileSymbol(this.px + this.pWidth - 4, pyFeet) === 'X';
+    if (touchedSwamp && this.pHP > 0) {
+      this.pHP = 0;
+      this.skeletonDeathTimer = 90; // 1.5s melting acid skeleton animation
+      soundService.playHit();
+      this.callbacks.onHpChange?.(0, this.pMaxHP);
+      this.addFloatingText(pxMid, this.py - 20, 'TOXIC ACID SWAMP MELTDOWN! ☠️🧪', '#22c55e');
+
+      // Acid green bubble particles
+      for (let i = 0; i < 25; i++) {
+        this.particles.push({
+          x: pxMid + (Math.random() - 0.5) * 30,
+          y: pyFeet,
+          vx: (Math.random() - 0.5) * 5,
+          vy: -Math.random() * 6 - 2,
+          size: Math.random() * 8 + 4,
+          color: i % 2 === 0 ? '#22c55e' : '#86efac',
+          life: 30,
+          maxLife: 30
+        });
+      }
     }
 
     // Horizontal Movement
@@ -1883,11 +2616,11 @@ export class GameEngine {
     this.checkLandmineDetonation(this.px + this.pWidth / 2, this.py + this.pHeight - 4);
 
     // Hazard spikes/lava contact
-    const pxMid = this.px + this.pWidth / 2;
+    const pxMidHazard = this.px + this.pWidth / 2;
     const pyBottom = this.py + this.pHeight - 2;
-    const hazard = this.getHazard(pxMid, pyBottom) || this.getHazard(this.px + 4, pyBottom) || this.getHazard(this.px + this.pWidth - 4, pyBottom);
+    const hazard = this.getHazard(pxMidHazard, pyBottom) || this.getHazard(this.px + 4, pyBottom) || this.getHazard(this.px + this.pWidth - 4, pyBottom);
     if (hazard === 'spike') {
-      this.handlePlayerHit(5, pxMid);
+      this.handlePlayerHit(5, pxMidHazard);
     }
   }
 
@@ -2181,6 +2914,20 @@ export class GameEngine {
 
     // Enemies update
     this.enemies.forEach(enemy => {
+      if (enemy.type === 'skeleton_archer' && enemy.isBonePile) {
+        enemy.respawnTimer = (enemy.respawnTimer || 0) - 1;
+        enemy.hp = 0;
+        if (enemy.respawnTimer <= 0) {
+          enemy.isBonePile = false;
+          enemy.hp = enemy.maxHp;
+          enemy.hasRevived = true;
+          soundService.playLevelUp();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'SKELETON REVIVED! 💀⚡', '#e2e8f0');
+          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 16, '#e2e8f0');
+        }
+        return;
+      }
+
       if (enemy.stunnedTimer && enemy.stunnedTimer > 0) {
         enemy.stunnedTimer--;
         return; // Stunned enemies skip movement & attacks!
@@ -2385,6 +3132,89 @@ export class GameEngine {
                 type: 'arrow'
               });
             }
+          }
+        }
+      }
+
+      // Skeleton Archer & King Kong Boss AI
+      if (enemy.type === 'skeleton_archer') {
+        const dx = this.px - enemy.x;
+        const dy = this.py - enemy.y;
+        enemy.facing = dx > 0 ? 1 : -1;
+
+        if (Math.abs(dx) < 450 && Math.abs(dy) < 200) {
+          enemy.shootCooldown--;
+          if (enemy.shootCooldown <= 0) {
+            enemy.shootCooldown = 110;
+            soundService.playShoot();
+            this.projectiles.push({
+              x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 14,
+              y: enemy.y + enemy.height / 2 - 2,
+              vx: enemy.facing * 5.2,
+              vy: 0,
+              width: 14,
+              height: 4,
+              isEnemy: true,
+              damage: enemy.attack,
+              color: '#e2e8f0',
+              type: 'arrow'
+            });
+          }
+        }
+      } else if (enemy.type === 'king_kong') {
+        const dx = this.px - enemy.x;
+        enemy.facing = dx > 0 ? 1 : -1;
+
+        enemy.jumpCooldown = (enemy.jumpCooldown || 120) - 1;
+        if (enemy.jumpCooldown <= 0) {
+          enemy.jumpCooldown = 120; // Jump every 2s
+          enemy.vy = -14; // Leap high!
+          enemy.vx = enemy.facing * 5.5; // Leap towards player
+          enemy.isLeaping = true;
+          enemy.jumpCount = (enemy.jumpCount || 0) + 1;
+          soundService.playJump();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, `GORILLA LEAP! (${enemy.jumpCount}/3) 🦍`, '#f97316');
+        }
+
+        // When King Kong lands after gorilla leap
+        if (enemy.isLeaping && grounded) {
+          enemy.isLeaping = false;
+          soundService.playHit();
+
+          if ((enemy.jumpCount || 0) >= 3) {
+            // 3RD JUMP SEISMIC GROUND SLAM!
+            enemy.jumpCount = 0;
+
+            const onScreen = this.isEnemyInsideFrame(enemy);
+            if (onScreen) {
+              this.screenShake = 35;
+              this.checkMeleeHit(enemy.x - 120, enemy.y - 20, enemy.width + 240, enemy.height + 40, Math.floor(enemy.attack * 1.5));
+
+              for (let p = 0; p < 24; p++) {
+                this.particles.push({
+                  x: enemy.x + enemy.width / 2 + (Math.random() - 0.5) * 160,
+                  y: enemy.y + enemy.height,
+                  vx: (Math.random() - 0.5) * 6,
+                  vy: -Math.random() * 8 - 3,
+                  size: Math.random() * 8 + 3,
+                  color: p % 2 === 0 ? '#ef4444' : '#f97316',
+                  life: 25,
+                  maxLife: 25
+                });
+              }
+
+              // STUN CONDITION: Must be ON SCREEN and GROUNDED! (Jumping in mid-air dodges the stun)
+              if (this.pGrounded) {
+                this.playerStunnedTimer = 120; // 2.0s Player Stun!
+                this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SEISMIC GROUND SLAM! STUNNED 2s! 🦍💥', '#ef4444');
+              } else {
+                this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'AIR DODGED STUN! 🦘✨', '#38bdf8');
+              }
+            }
+          } else {
+            // Normal Jump 1 or 2 ground impact
+            this.checkMeleeHit(enemy.x - 40, enemy.y - 10, enemy.width + 80, enemy.height + 20, enemy.attack);
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 12, '#854d0e');
           }
         }
       }
@@ -2670,6 +3500,57 @@ export class GameEngine {
           this.ctx.lineTo(ex + ts / 2, ey + 10);
           this.ctx.lineTo(ex + ts - 6, ey + ts);
           this.ctx.closePath();
+          this.ctx.fill();
+        } else if (char === 'V') {
+          // Climbable Tree Vine
+          this.ctx.fillStyle = '#166534'; // dark vine strand
+          this.ctx.fillRect(ex + ts / 2 - 4, ey, 8, ts);
+          this.ctx.fillStyle = '#22c55e'; // vine highlight
+          this.ctx.fillRect(ex + ts / 2 - 1, ey, 3, ts);
+
+          // Hanging vine leaves
+          const wave = Math.sin(this.frameCount * 0.08 + r) * 3;
+          this.ctx.fillStyle = '#15803d';
+          this.ctx.beginPath();
+          this.ctx.arc(ex + ts / 2 - 8 + wave, ey + 10, 5, 0, Math.PI * 2);
+          this.ctx.arc(ex + ts / 2 + 8 + wave, ey + 26, 5, 0, Math.PI * 2);
+          this.ctx.fill();
+        } else if (char === 'X' && (this.level.name.includes('Jungle') || this.level.name.includes('Stage 10'))) {
+          // Toxic Poison Swamp
+          this.ctx.fillStyle = '#052e16'; // dark deep swamp bed
+          this.ctx.fillRect(ex, ey, ts, ts);
+
+          // Pulsing toxic green liquid
+          const pulseAlpha = 0.65 + Math.sin(this.frameCount * 0.1 + c) * 0.2;
+          this.ctx.fillStyle = `rgba(34, 197, 94, ${pulseAlpha})`;
+          this.ctx.fillRect(ex, ey + 6, ts, ts - 6);
+
+          // Acid surface bubbles
+          if ((this.frameCount + c * 7) % 30 < 15) {
+            this.ctx.fillStyle = '#86efac';
+            this.ctx.beginPath();
+            this.ctx.arc(ex + 10, ey + 10, 4, 0, Math.PI * 2);
+            this.ctx.arc(ex + 28, ey + 16, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        } else if (char === 'T' && (this.level.name.includes('Jungle') || this.level.name.includes('Stage 10'))) {
+          // Vine Trap with sharp thorns
+          this.ctx.fillStyle = '#14532d'; // dark vine coil base
+          this.ctx.fillRect(ex + 2, ey + ts - 10, ts - 4, 10);
+          this.ctx.fillStyle = '#22c55e';
+          this.ctx.beginPath();
+          this.ctx.arc(ex + ts / 2, ey + ts - 6, 8, Math.PI, 0);
+          this.ctx.fill();
+
+          // Thorny spikes
+          this.ctx.fillStyle = '#86efac';
+          this.ctx.beginPath();
+          this.ctx.moveTo(ex + 8, ey + ts - 10);
+          this.ctx.lineTo(ex + 12, ey + ts - 18);
+          this.ctx.lineTo(ex + 16, ey + ts - 10);
+          this.ctx.moveTo(ex + 24, ey + ts - 10);
+          this.ctx.lineTo(ex + 28, ey + ts - 18);
+          this.ctx.lineTo(ex + 32, ey + ts - 10);
           this.ctx.fill();
         } else if (char === 'T') {
           // Draw spring board trampoline
@@ -3514,6 +4395,108 @@ export class GameEngine {
         const hpPct = Math.max(0, enemy.hp / enemy.maxHp);
         this.ctx.fillStyle = '#38bdf8';
         this.ctx.fillRect(hbX, hbY, hbW * hpPct, 8);
+      } else if (enemy.type === 'skeleton_archer') {
+        if (enemy.isBonePile) {
+          // Collapsed Bone Pile on Floor
+          this.ctx.fillStyle = '#e2e8f0';
+          this.ctx.fillRect(enemy.x, enemy.y + enemy.height - 6, enemy.width, 6);
+          this.ctx.fillRect(enemy.x + 6, enemy.y + enemy.height - 10, enemy.width - 12, 4);
+
+          // Skull on bone pile
+          this.ctx.beginPath();
+          this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height - 12, 5, 0, Math.PI * 2);
+          this.ctx.fill();
+        } else {
+          // Ancient White Skeleton Archer
+          this.ctx.fillStyle = '#e2e8f0';
+          this.ctx.strokeStyle = '#94a3b8';
+          this.ctx.lineWidth = 1.5;
+
+          // Skull Head
+          this.ctx.beginPath();
+          this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + 10, 8, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Dark Eye Sockets
+          this.ctx.fillStyle = '#0f172a';
+          this.ctx.beginPath();
+          this.ctx.arc(enemy.x + enemy.width / 2 + (enemy.facing * 3) - 2, enemy.y + 9, 2, 0, Math.PI * 2);
+          this.ctx.arc(enemy.x + enemy.width / 2 + (enemy.facing * 3) + 3, enemy.y + 9, 2, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Bone Ribcage & Body
+          this.ctx.fillStyle = '#e2e8f0';
+          this.ctx.fillRect(enemy.x + enemy.width / 2 - 3, enemy.y + 18, 6, 14);
+          this.ctx.fillRect(enemy.x + 4, enemy.y + 22, enemy.width - 8, 3);
+          this.ctx.fillRect(enemy.x + 6, enemy.y + 27, enemy.width - 12, 3);
+
+          // Bone Bow
+          this.ctx.strokeStyle = '#cbd5e1';
+          this.ctx.lineWidth = 2.5;
+          const bowX = enemy.facing === 1 ? enemy.x + enemy.width - 2 : enemy.x + 2;
+          this.ctx.beginPath();
+          this.ctx.arc(bowX, enemy.y + 20, 10, -Math.PI / 2, Math.PI / 2, enemy.facing === -1);
+          this.ctx.stroke();
+        }
+      } else if (enemy.type === 'king_kong') {
+        // PRIMORDIAL KING KONG BOSS
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+
+        // Dark Gorilla Fur Body
+        this.ctx.fillStyle = '#1e293b';
+        this.ctx.strokeStyle = '#0f172a';
+        this.ctx.lineWidth = 3;
+        this.ctx.fillRect(bx, by, bw, bh);
+
+        // Silverback Fur Back Plate
+        this.ctx.fillStyle = '#94a3b8';
+        this.ctx.fillRect(bx + 12, by + 10, bw - 24, bh - 30);
+
+        // Gorilla Muscular Chest
+        this.ctx.fillStyle = '#475569';
+        this.ctx.fillRect(bx + 18, by + 28, bw - 36, bh - 40);
+
+        // Gorilla Head & Fangs
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.fillRect(bx + bw / 2 - 18, by + 6, 36, 24);
+
+        // Glowing Red Eyes
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.fillRect(bx + bw / 2 + (enemy.facing * 8) - 4, by + 12, 4, 4);
+        this.ctx.fillRect(bx + bw / 2 + (enemy.facing * 8) + 4, by + 12, 4, 4);
+
+        // Sharp Gorilla Fangs
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx + bw / 2 - 6, by + 24);
+        this.ctx.lineTo(bx + bw / 2 - 3, by + 29);
+        this.ctx.lineTo(bx + bw / 2, by + 24);
+        this.ctx.moveTo(bx + bw / 2 + 2, by + 24);
+        this.ctx.lineTo(bx + bw / 2 + 5, by + 29);
+        this.ctx.lineTo(bx + bw / 2 + 8, by + 24);
+        this.ctx.fill();
+
+        // Massive Heavy Fists
+        const fistX = enemy.facing === 1 ? bx + bw - 12 : bx - 6;
+        this.ctx.fillStyle = '#334155';
+        this.ctx.fillRect(fistX, by + bh - 28, 18, 24);
+
+        // KING KONG BOSS HP BAR OVERLAY
+        const hbW = bw + 40;
+        const hbX = bx - 20;
+        const hbY = by - 32;
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        this.ctx.fillRect(hbX, hbY, hbW, 10);
+        const hpPct = Math.max(0, enemy.hp / enemy.maxHp);
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.fillRect(hbX, hbY, hbW * hpPct, 10);
+        this.ctx.strokeStyle = '#eab308';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(hbX, hbY, hbW, 10);
       }
 
       // Draw standard HP bar overlay for regular enemies (excluding bosses)
@@ -3523,7 +4506,8 @@ export class GameEngine {
         enemy.type !== 'king_slime' &&
         enemy.type !== 'frost_wyvern' &&
         enemy.type !== 'shadow_overlord' &&
-        enemy.type !== 'dragon_king'
+        enemy.type !== 'dragon_king' &&
+        enemy.type !== 'king_kong'
       ) {
         const hpPercent = enemy.hp / enemy.maxHp;
         this.ctx.fillStyle = '#ef4444';
@@ -3579,7 +4563,33 @@ export class GameEngine {
     }
 
     // Draw Player
-    this.ctx.save();
+    if (this.skeletonDeathTimer <= 0) {
+      this.ctx.save();
+
+    // Jumpmon 360-degree Mega Spin rotation transform
+    const isSpinning = this.selectedDraco === 'Jumpmon' && this.jumpmonSpinActive;
+    if (isSpinning) {
+      const px = this.px;
+      const py = this.py;
+      const pw = this.pWidth;
+      const ph = this.pHeight;
+      this.ctx.translate(px + pw / 2, py + ph / 2);
+      this.ctx.rotate(this.jumpmonSpinAngle);
+      this.ctx.translate(-(px + pw / 2), -(py + ph / 2));
+
+      // Golden Flame Sword Spin Slash Ring around Jumpmon
+      this.ctx.strokeStyle = '#fbbf24';
+      this.ctx.lineWidth = 6;
+      this.ctx.beginPath();
+      this.ctx.arc(px + pw / 2, py + ph / 2, 34, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
+      this.ctx.lineWidth = 14;
+      this.ctx.beginPath();
+      this.ctx.arc(px + pw / 2, py + ph / 2, 38, 0, Math.PI * 2);
+      this.ctx.stroke();
+    }
 
     // Invulnerable blinking effect
     if (this.pInvulnerableFrames > 0 && Math.floor(this.pInvulnerableFrames / 4) % 2 === 0) {
@@ -3628,6 +4638,60 @@ export class GameEngine {
     const py = this.py;
     const pw = this.pWidth;
     const ph = this.pHeight;
+
+    // Render Shadow Afterimages (Ghost trail for Assassinmon dash)
+    if (this.shadowAfterimages.length > 0) {
+      this.shadowAfterimages.forEach(img => {
+        this.ctx.save();
+        this.ctx.globalAlpha = img.alpha * 0.55;
+        this.ctx.fillStyle = '#4c1d95'; // Dark shadow silhouette
+        this.ctx.strokeStyle = '#c084fc'; // Purple glowing outline
+        this.ctx.lineWidth = 2;
+
+        const bodyY = img.y;
+        this.ctx.beginPath();
+        this.ctx.arc(img.x + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(img.x + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(img.x + pw, bodyY + ph - 2, img.x + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(img.x + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(img.x, bodyY + ph - 2, img.x, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Speed trailing lines on afterimage
+        this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(img.x - img.facing * 10, bodyY + 12);
+        this.ctx.lineTo(img.x - img.facing * 35, bodyY + 12);
+        this.ctx.moveTo(img.x - img.facing * 5, bodyY + 24);
+        this.ctx.lineTo(img.x - img.facing * 30, bodyY + 24);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      });
+    }
+
+    // Shadow Dash Shroud & Speed Lines for Assassinmon
+    if (this.selectedDraco === 'Assassinmon' && this.assassinmonDashActive) {
+      this.ctx.save();
+      this.ctx.fillStyle = 'rgba(168, 85, 247, 0.25)';
+      this.ctx.beginPath();
+      this.ctx.ellipse(px + pw / 2, py + ph / 2, pw + 18, ph / 2 + 6, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.strokeStyle = 'rgba(232, 121, 249, 0.85)';
+      this.ctx.lineWidth = 3;
+      for (let s = 0; s < 4; s++) {
+        const sy = py + 6 + s * 9;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + (this.pFacing === 1 ? -15 : pw + 15), sy);
+        this.ctx.lineTo(px + (this.pFacing === 1 ? -50 : pw + 50), sy);
+        this.ctx.stroke();
+      }
+      this.ctx.restore();
+    }
 
     // 1. Ground Drop Shadow & Plunge Aura
     if (this.pGrounded) {
@@ -3833,28 +4897,68 @@ export class GameEngine {
         this.ctx.arc(0, 0, 28, -0.5, 0.5);
         this.ctx.stroke();
       } else if (this.selectedDraco === 'Assassinmon') {
-        // Assassinmon Purple Shadow Slash
-        this.ctx.fillStyle = '#1e1b4b';
-        this.ctx.fillRect(0, -5, 6, 10);
-        this.ctx.fillStyle = '#a855f7';
-        this.ctx.strokeStyle = '#c084fc';
+        // --- ASSASSINMON SHADOW KATANA SLASH ---
+        // Katana Handle (Tsuka) with purple wrap detail
+        this.ctx.fillStyle = '#1e1b4b'; // Dark midnight tsuka
+        this.ctx.fillRect(0, -3, 10, 6);
+        this.ctx.fillStyle = '#c084fc'; // Purple tsuka-ito wrap details
+        this.ctx.fillRect(2, -3, 2, 6);
+        this.ctx.fillRect(6, -3, 2, 6);
+
+        // Tsuba (Katana Handguard - Gold ornament)
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.fillRect(10, -7, 3, 14);
+
+        // Katana Blade (Long sharp steel katana blade with curved tip)
+        this.ctx.fillStyle = '#e2e8f0'; // Silver steel blade core
+        this.ctx.strokeStyle = '#c084fc'; // Purple shadow edge glow
         this.ctx.lineWidth = 1.5;
+
         this.ctx.beginPath();
-        this.ctx.moveTo(6, -4);
-        this.ctx.lineTo(24, -2);
-        this.ctx.lineTo(28, 0);
-        this.ctx.lineTo(24, 2);
-        this.ctx.lineTo(6, 4);
+        this.ctx.moveTo(13, -3);
+        this.ctx.lineTo(40, -4); // Long katana blade top curve
+        this.ctx.lineTo(46, 0);  // Kissaki (blade tip point)
+        this.ctx.lineTo(38, 3);  // Blade bottom edge
+        this.ctx.lineTo(13, 3);
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
 
-        // Trail blade arc
-        this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.45)';
-        this.ctx.lineWidth = 4;
+        // Shiny Hamon (Temper line along katana blade)
+        this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 30, -0.6, 0.6);
+        this.ctx.moveTo(14, -1);
+        this.ctx.lineTo(42, -2);
+        this.ctx.lineTo(44, 0);
+        this.ctx.lineTo(14, 1);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // DYNAMIC SHADOW KATANA SLASH ARC TRAIL
+        this.ctx.save();
+        this.ctx.rotate(-swingRad * 0.4);
+
+        // Crescent Slash Gradient
+        const grad = this.ctx.createRadialGradient(0, 0, 12, 0, 0, 50);
+        grad.addColorStop(0, 'rgba(192, 132, 252, 0.9)');
+        grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.5)');
+        grad.addColorStop(1, 'rgba(168, 85, 247, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 52, -1.1, 0.5);
+        this.ctx.lineTo(12, 0);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Razor White Leading Edge Arc
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 50, -1.0, 0.4);
         this.ctx.stroke();
+
+        this.ctx.restore();
       } else if (this.selectedDraco === 'Flymon') {
         // Flymon Poison Wasp Slash
         this.ctx.strokeStyle = '#fda4af';
@@ -3934,12 +5038,64 @@ export class GameEngine {
         this.ctx.fillRect(2, -12, 10, 24);
         this.ctx.strokeRect(2, -12, 10, 24);
       } else if (this.selectedDraco === 'Assassinmon') {
-        // Dual resting purple daggers
-        this.ctx.fillStyle = '#a855f7';
-        this.ctx.strokeStyle = '#1e1b4b';
-        this.ctx.lineWidth = 1;
-        this.ctx.fillRect(1, -6, 6, 2);
-        this.ctx.fillRect(1, 4, 6, 2);
+        if (this.assassinmonDashActive) {
+          // Ninja Shadow Dash Katana Thrust Pose
+          this.ctx.fillStyle = '#1e1b4b'; // Handle
+          this.ctx.fillRect(0, -3, 8, 6);
+          this.ctx.fillStyle = '#f59e0b'; // Gold Tsuba Guard
+          this.ctx.fillRect(8, -6, 2, 12);
+
+          // Extended Katana Blade pointing forward horizontally
+          this.ctx.fillStyle = '#e2e8f0';
+          this.ctx.strokeStyle = '#c084fc';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(10, -2);
+          this.ctx.lineTo(38, -3);
+          this.ctx.lineTo(44, 0);
+          this.ctx.lineTo(38, 3);
+          this.ctx.lineTo(10, 2);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // White Blade shine
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.fillRect(12, -1, 28, 2);
+
+          // Dash thrust shadow wave
+          this.ctx.fillStyle = 'rgba(232, 121, 249, 0.45)';
+          this.ctx.beginPath();
+          this.ctx.moveTo(44, 0);
+          this.ctx.lineTo(58, -12);
+          this.ctx.lineTo(58, 12);
+          this.ctx.closePath();
+          this.ctx.fill();
+        } else {
+          // Resting Sheathed Katana at Hip
+          this.ctx.fillStyle = '#1e1b4b'; // Tsuka handle
+          this.ctx.fillRect(0, -3, 8, 6);
+          this.ctx.fillStyle = '#c084fc'; // Wrap details
+          this.ctx.fillRect(2, -3, 2, 6);
+          this.ctx.fillRect(5, -3, 2, 6);
+
+          // Gold Tsuba guard
+          this.ctx.fillStyle = '#f59e0b';
+          this.ctx.fillRect(8, -6, 2, 12);
+
+          // Sheathed Katana Saya pointing diagonally
+          this.ctx.fillStyle = '#4c1d95';
+          this.ctx.strokeStyle = '#312e81';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(10, -2);
+          this.ctx.lineTo(24, 6);
+          this.ctx.lineTo(22, 9);
+          this.ctx.lineTo(10, 2);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+        }
       } else if (this.selectedDraco === 'Flymon') {
         // Small rose stinger
         this.ctx.fillStyle = '#f43f5e';
@@ -3964,24 +5120,152 @@ export class GameEngine {
     }
 
     this.ctx.restore(); // Restore player transform
+    }
+
+    // Jumpmon Meteor Ground Explosion Ring
+    if (this.jumpmonMeteorState === 'impact' && this.jumpmonImpactTimer > 0) {
+      const radius = (30 - this.jumpmonImpactTimer) * 15;
+      const alpha = this.jumpmonImpactTimer / 30;
+
+      this.ctx.save();
+      // Expanding Volcanic Fire Ring on Ground
+      this.ctx.strokeStyle = `rgba(249, 115, 22, ${alpha})`;
+      this.ctx.lineWidth = 18;
+      this.ctx.beginPath();
+      this.ctx.arc(this.jumpmonImpactX, this.jumpmonImpactY, radius, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.9})`;
+      this.ctx.lineWidth = 6;
+      this.ctx.beginPath();
+      this.ctx.arc(this.jumpmonImpactX, this.jumpmonImpactY, radius * 0.85, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.restore();
+    }
+
+    // Shieldmon Avatar State Protective Energy Aura Dome
+    if (this.selectedDraco === 'Shieldmon' && this.avatarActive) {
+      const centerX = this.px + this.pWidth / 2;
+      const centerY = this.py + this.pHeight / 2;
+      const radius = 160 + Math.sin(this.frameCount * 0.1) * 8; // pulsing 160px radius
+
+      this.ctx.save();
+      // Outer translucent blue energy dome fill
+      const domeGrad = this.ctx.createRadialGradient(centerX, centerY, 10, centerX, centerY, radius);
+      domeGrad.addColorStop(0, 'rgba(59, 130, 246, 0.35)');
+      domeGrad.addColorStop(0.7, 'rgba(96, 165, 250, 0.2)');
+      domeGrad.addColorStop(1, 'rgba(59, 130, 246, 0.0)');
+
+      this.ctx.fillStyle = domeGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Dual glowing energy ring borders
+      this.ctx.strokeStyle = '#60a5fa';
+      this.ctx.lineWidth = 4;
+      this.ctx.beginPath();
+      this.ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      this.ctx.lineWidth = 2;
+      this.ctx.setLineDash([12, 8]);
+      this.ctx.beginPath();
+      this.ctx.arc(centerX, centerY, radius - 8, this.frameCount * 0.05, Math.PI * 2 + this.frameCount * 0.05);
+      this.ctx.stroke();
+      this.ctx.restore();
+    }
+
+    // Toxic Acid Skeleton Death Animation (when player melted in Poison Swamp)
+    if (this.skeletonDeathTimer > 0) {
+      this.skeletonDeathTimer--;
+      if (this.skeletonDeathTimer === 0) {
+        this.callbacks.onPlayerDeath();
+      }
+      const alpha = Math.min(1.0, this.skeletonDeathTimer / 25);
+      this.ctx.save();
+      this.ctx.globalAlpha = alpha;
+
+      const sx = this.px + this.pWidth / 2;
+      const sy = this.py + this.pHeight;
+
+      // Sinking Acid Skull & Skeleton Bones
+      const sink = (90 - this.skeletonDeathTimer) * 0.25;
+
+      // Melting White Skeleton Skull
+      this.ctx.fillStyle = '#e2e8f0';
+      this.ctx.strokeStyle = '#94a3b8';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.arc(sx, sy - 18 + sink, 10, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Glowing Toxic Green Eye Sockets
+      this.ctx.fillStyle = '#22c55e';
+      this.ctx.fillRect(sx - 5, sy - 21 + sink, 4, 4);
+      this.ctx.fillRect(sx + 1, sy - 21 + sink, 4, 4);
+
+      // Ribcage Bones Sinking into Acid
+      this.ctx.fillStyle = '#e2e8f0';
+      this.ctx.fillRect(sx - 14, sy - 8 + sink, 28, 4);
+      this.ctx.fillRect(sx - 10, sy - 2 + sink, 20, 4);
+
+      // Erupting Toxic Acid Foam Bubbles
+      for (let b = 0; b < 6; b++) {
+        this.ctx.fillStyle = b % 2 === 0 ? '#86efac' : '#22c55e';
+        this.ctx.beginPath();
+        this.ctx.arc(
+          sx + Math.sin(this.frameCount * 0.2 + b) * 18,
+          sy - (b * 5) - (this.frameCount % 15),
+          Math.random() * 4 + 2,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fill();
+      }
+      this.ctx.restore();
+    }
+
+    // Vine Trap Root Coil effect around player feet when rooted
+    if (this.playerRootedTimer > 0) {
+      this.ctx.save();
+      this.ctx.strokeStyle = '#22c55e';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(this.px + this.pWidth / 2, this.py + this.pHeight - 4, 16, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = '#86efac';
+      this.ctx.fillRect(this.px + this.pWidth / 2 - 12, this.py + this.pHeight - 8, 4, 8);
+      this.ctx.fillRect(this.px + this.pWidth / 2 + 8, this.py + this.pHeight - 8, 4, 8);
+      this.ctx.restore();
+    }
 
     // Render Health & Ultimate Energy bars floating above the player's head!
-    const hpPct = Math.max(0, Math.min(1, this.pHP / this.pMaxHP));
-    const energyPct = Math.max(0, Math.min(1, this.pEnergy / this.getMaxEnergy()));
+    if (this.skeletonDeathTimer <= 0) {
+      const px = this.px;
+      const py = this.py;
+      const pw = this.pWidth;
 
-    // Draw mini HP bar container
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    this.ctx.fillRect(px, py - 14, pw, 4);
-    // Draw mini HP bar fill (Color shifts red -> orange -> green)
-    this.ctx.fillStyle = hpPct < 0.25 ? '#ef4444' : hpPct < 0.5 ? '#f59e0b' : '#10b981';
-    this.ctx.fillRect(px, py - 14, pw * hpPct, 4);
+      const hpPct = Math.max(0, Math.min(1, this.pHP / this.pMaxHP));
+      const energyPct = Math.max(0, Math.min(1, this.pEnergy / this.getMaxEnergy()));
 
-    // Draw mini Energy bar container
-    this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
-    this.ctx.fillRect(px, py - 8, pw, 3);
-    // Draw mini Energy bar fill (Glows amber when fully charged)
-    this.ctx.fillStyle = energyPct >= 1.0 ? '#fbbf24' : '#eab308';
-    this.ctx.fillRect(px, py - 8, pw * energyPct, 3);
+      // Draw mini HP bar container
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      this.ctx.fillRect(px, py - 14, pw, 4);
+      // Draw mini HP bar fill (Color shifts red -> orange -> green)
+      this.ctx.fillStyle = hpPct < 0.25 ? '#ef4444' : hpPct < 0.5 ? '#f59e0b' : '#10b981';
+      this.ctx.fillRect(px, py - 14, pw * hpPct, 4);
+
+      // Draw mini Energy bar container
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+      this.ctx.fillRect(px, py - 8, pw, 3);
+      // Draw mini Energy bar fill (Glows amber when fully charged)
+      this.ctx.fillStyle = energyPct >= 1.0 ? '#fbbf24' : '#eab308';
+      this.ctx.fillRect(px, py - 8, pw * energyPct, 3);
+    }
 
     // Draw Flymon Targeted Laser Beam (can be blocked by platform!)
     if (this.laserBeamActive && this.flymonLaserEndPos) {
@@ -4039,45 +5323,64 @@ export class GameEngine {
       this.ctx.fillStyle = 'rgba(12, 5, 26, 0.88)';
       this.ctx.fillRect(0, 0, w, h);
 
-      // 2. Giant Electro Diagonal Slash Line (Top-Left to Bottom-Right through target)
-      const slashAngle = -Math.PI / 6; // 30-degree diagonal slash cut
-      const slashLen = 600;
+      // 2. Animated Katana Slash Cut (Bottom-Left to Top-Right through target)
+      const p1x = tx - 320; // Bottom-Left X
+      const p1y = ty + 220; // Bottom-Left Y
+      const p2x = tx + 320; // Top-Right X
+      const p2y = ty - 220; // Top-Right Y
 
-      const p1x = tx - Math.cos(slashAngle) * (slashLen / 2);
-      const p1y = ty - Math.sin(slashAngle) * (slashLen / 2);
-      const p2x = tx + Math.cos(slashAngle) * (slashLen / 2);
-      const p2y = ty + Math.sin(slashAngle) * (slashLen / 2);
+      // Slash Animation Progress (animates from 0.05 to 1.0 during frames 1..14)
+      const slashProgress = Math.max(0.05, Math.min(1.0, this.assassinmonUltimateTimer / 14));
 
-      // Outer Electro Glow Arc
-      this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.6)';
-      this.ctx.lineWidth = 42;
+      // Current cutting tip coordinates as Katana slashes from Bottom-Left to Top-Right
+      const curX = p1x + (p2x - p1x) * slashProgress;
+      const curY = p1y + (p2y - p1y) * slashProgress;
+
+      // Outer Purple Energy Glow Arc
+      this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.65)';
+      this.ctx.lineWidth = 40;
       this.ctx.beginPath();
       this.ctx.moveTo(p1x, p1y);
-      this.ctx.lineTo(p2x, p2y);
+      this.ctx.lineTo(curX, curY);
       this.ctx.stroke();
 
-      // Middle Purple Energy Beam
+      // Middle Dark Purple Energy Beam
       this.ctx.strokeStyle = '#a855f7';
-      this.ctx.lineWidth = 20;
+      this.ctx.lineWidth = 18;
       this.ctx.beginPath();
       this.ctx.moveTo(p1x, p1y);
-      this.ctx.lineTo(p2x, p2y);
+      this.ctx.lineTo(curX, curY);
       this.ctx.stroke();
 
       // Core Pure White Blade Cut Line
       this.ctx.strokeStyle = '#ffffff';
-      this.ctx.lineWidth = 8;
+      this.ctx.lineWidth = 7;
       this.ctx.beginPath();
       this.ctx.moveTo(p1x, p1y);
-      this.ctx.lineTo(p2x, p2y);
+      this.ctx.lineTo(curX, curY);
       this.ctx.stroke();
 
-      // 3. Electric Lightning Tendrils Branching From Slash Line
+      // Leading Blade Tip Flare (cutting edge flash)
+      if (slashProgress < 1.0) {
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(curX, curY, 14, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = 'rgba(232, 121, 249, 0.7)';
+        this.ctx.beginPath();
+        this.ctx.arc(curX, curY, 24, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // 3. Shadow Tendrils & Rift Energy Branching From Slash Line
       this.ctx.strokeStyle = '#e879f9';
       this.ctx.lineWidth = 2.5;
-      for (let b = -3; b <= 3; b++) {
-        const bx = tx + b * 60;
-        const by = ty + b * 35;
+      const activeBranches = Math.floor(slashProgress * 7);
+      for (let b = 0; b < activeBranches; b++) {
+        const tVal = (b + 1) / 8;
+        const bx = p1x + (p2x - p1x) * tVal;
+        const by = p1y + (p2y - p1y) * tVal;
         const offset = Math.sin(this.frameCount * 0.8 + b) * 24;
 
         this.ctx.beginPath();
@@ -4086,7 +5389,7 @@ export class GameEngine {
         this.ctx.stroke();
       }
 
-      // 4. Electro Dimensional Sigil Ring at Target Center
+      // 4. Shadow Katana Dimensional Sigil Ring at Target Center
       const ringR = 28 + Math.sin(this.frameCount * 0.5) * 4;
       this.ctx.strokeStyle = '#c084fc';
       this.ctx.lineWidth = 3;
@@ -4094,11 +5397,21 @@ export class GameEngine {
       this.ctx.arc(tx, ty, ringR, 0, Math.PI * 2);
       this.ctx.stroke();
 
-      // Lightning symbol in center
-      this.ctx.fillStyle = '#fef08a';
-      this.ctx.font = 'bold 24px monospace';
+      // Crossed Katana Slash Lines in center (No Electric Logo)
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.moveTo(tx - 12, ty - 12);
+      this.ctx.lineTo(tx + 12, ty + 12);
+      this.ctx.moveTo(tx + 12, ty - 12);
+      this.ctx.lineTo(tx - 12, ty + 12);
+      this.ctx.stroke();
+
+      // Shadow Katana emblem symbol in center
+      this.ctx.fillStyle = '#c084fc';
+      this.ctx.font = 'bold 22px monospace';
       this.ctx.textAlign = 'center';
-      this.ctx.fillText('⚡', tx, ty + 8);
+      this.ctx.fillText('🗡️', tx, ty + 7);
 
       this.ctx.restore();
     }
@@ -4135,8 +5448,23 @@ export class GameEngine {
   }
 
   // CORE ENGINE RUNNER
-  private run = () => {
+  private run = (timestamp?: number) => {
     if (this.isPaused) return;
+
+    this.animationFrameId = requestAnimationFrame(this.run);
+
+    const now = timestamp || performance.now();
+    const elapsed = now - this.lastTime;
+
+    if (elapsed < this.frameInterval - 1) {
+      return;
+    }
+
+    if (elapsed > 1000) {
+      this.lastTime = now;
+    } else {
+      this.lastTime = now - (elapsed % this.frameInterval);
+    }
 
     this.frameCount++;
 
@@ -4166,7 +5494,6 @@ export class GameEngine {
       }
 
       this.draw();
-      this.animationFrameId = requestAnimationFrame(this.run);
       return;
     }
 
@@ -4215,9 +5542,23 @@ export class GameEngine {
         const startY = this.py + this.pHeight / 2;
 
         let endX = startX + this.pFacing * 650;
-        let endY = startY + 450; // Angled downwards by default
+        let endY = startY + 450;
 
-        if (this.flymonLaserTargetEnemy && this.flymonLaserTargetEnemy.hp > 0) {
+        if (!this.flymonLaserTargetEnemy || !this.isEnemyInsideFrame(this.flymonLaserTargetEnemy)) {
+          // Dynamically re-scan for highest HP enemy strictly inside the visible screen frame
+          let best: Enemy | null = null;
+          let maxHP = -1;
+
+          this.enemies.forEach(e => {
+            if (this.isEnemyInsideFrame(e) && e.hp > maxHP) {
+              maxHP = e.hp;
+              best = e;
+            }
+          });
+          this.flymonLaserTargetEnemy = best;
+        }
+
+        if (this.flymonLaserTargetEnemy && this.isEnemyInsideFrame(this.flymonLaserTargetEnemy)) {
           endX = this.flymonLaserTargetEnemy.x + this.flymonLaserTargetEnemy.width / 2;
           endY = this.flymonLaserTargetEnemy.y + this.flymonLaserTargetEnemy.height / 2;
           this.pFacing = endX > startX ? 1 : -1;
@@ -4312,8 +5653,6 @@ export class GameEngine {
     this.cameraY = 0; // standard 2D side scroller fixed height camera
 
     this.draw();
-
-    this.animationFrameId = requestAnimationFrame(this.run);
   };
 
   public pause() {

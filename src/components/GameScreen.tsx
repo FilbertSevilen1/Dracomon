@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { GameEngine } from '../game/GameEngine';
 import { SaveData, PlayerStats } from '../types/game';
-import { Pause, RotateCcw, Home, Settings, Briefcase, Zap, Heart, Sword, Shield, Play } from 'lucide-react';
+import { Pause, RotateCcw, Home, Settings, Briefcase, Zap, Heart, Sword, Shield, Play, Maximize, Minimize } from 'lucide-react';
 import { soundService } from '../services/sound';
 
 interface GameScreenProps {
@@ -33,18 +33,20 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   onUsePotion,
 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
 
   // Local UI states synced from game engine events
   const [hp, setHp] = useState(10);
   const [maxHp, setMaxHp] = useState(10);
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [energy, setEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : 100;
   });
   const [maxEnergy, setMaxEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : 100;
   });
   const [gameState, setGameState] = useState<'playing' | 'paused' | 'gameover' | 'victory'>('playing');
 
@@ -57,6 +59,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const requiredExp = level * 30;
   const expPercent = Math.min(100, Math.max(0, (exp / requiredExp) * 100));
   const hpPercent = Math.min(100, Math.max(0, (hp / maxHp) * 100));
+  const ultCost = selectedDraco === 'Magemon' ? 150 : maxEnergy;
 
   // Keep callbacks stable using a mutable ref to prevent GameEngine recreation during React state updates
   const callbacksRef = useRef({ onCoinCollect, onItemCollect, onEnemyDefeat, onStageClear });
@@ -100,6 +103,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           setEnergy(currentEnergy);
           setMaxEnergy(totalEnergy);
         },
+        onPauseToggle: () => handlePauseToggle(),
         onStageClear: () => {
           setGameState('victory');
           callbacksRef.current.onStageClear();
@@ -117,6 +121,18 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       engine.destroy();
     };
   }, [stageNum, selectedDraco]);
+
+  // Global Escape Key Listener to toggle Pause Menu
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        handlePauseToggle();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [gameState]);
 
   // Handle updates to stats while active in-game (from items usage e.g. Upgrade stone or potion)
   useEffect(() => {
@@ -150,7 +166,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const handleRestart = () => {
     soundService.playClick();
     setGameState('playing');
-    const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : 100;
+    const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : selectedDraco === 'Whitemon' ? 120 : selectedDraco === 'Magemon' ? 300 : 100;
     setEnergy(defaultMaxEnergy); // Reset UI energy state to 100% full
     
     // Re-initialize level
@@ -187,6 +203,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             setEnergy(currentEnergy);
             setMaxEnergy(totalEnergy);
           },
+          onPauseToggle: () => handlePauseToggle(),
           onStageClear: () => {
             setGameState('victory');
             onStageClear();
@@ -200,6 +217,35 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
   };
 
+  const handleToggleFullscreen = () => {
+    soundService.playClick();
+    if (!document.fullscreenElement) {
+      if (containerRef.current?.requestFullscreen) {
+        containerRef.current.requestFullscreen().catch(() => {});
+      } else if ((containerRef.current as any)?.webkitRequestFullscreen) {
+        (containerRef.current as any).webkitRequestFullscreen();
+      }
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      } else if ((document as any).webkitExitFullscreen) {
+        (document as any).webkitExitFullscreen();
+      }
+    }
+  };
+
+  useEffect(() => {
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+    document.addEventListener('webkitfullscreenchange', handleFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFsChange);
+      document.removeEventListener('webkitfullscreenchange', handleFsChange);
+    };
+  }, []);
+
   const handleQuickHeal = () => {
     if (activePotionCount > 0) {
       onUsePotion(selectedDraco, engineRef);
@@ -207,7 +253,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   };
 
   // Button Action handlers for on-screen joystick overlays (mobile touch support)
-  const triggerMobileAction = (action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'down') => {
+  const triggerMobileAction = (action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'ultimate' | 'down') => {
     engineRef.current?.triggerAction(action);
   };
 
@@ -215,8 +261,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     engineRef.current?.stopAction(action);
   };
 
+  const isUltimateReady = level >= 5 && energy >= ultCost;
+
   return (
-    <div className="w-full flex flex-col items-center select-none">
+    <div ref={containerRef} className={`w-full flex flex-col items-center select-none ${isFullscreen ? 'fixed inset-0 bg-stone-950 z-50 p-2 overflow-y-auto justify-between' : ''}`}>
       {/* HUD Bar */}
       <div className="w-full max-w-4xl flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border border-stone-200/60 rounded-2xl mb-4 shadow-sm">
         {/* Left Side: Companion Avatar & Level */}
@@ -338,6 +386,14 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             title="Pause Game"
           >
             <Pause className="w-4 h-4" />
+          </button>
+
+          <button
+            onClick={handleToggleFullscreen}
+            className="p-2 rounded-xl border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
+          >
+            {isFullscreen ? <Minimize className="w-4 h-4 text-amber-600" /> : <Maximize className="w-4 h-4 text-stone-700" />}
           </button>
         </div>
       </div>
@@ -488,26 +544,26 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       </div>
 
       {/* Mobile Touch Controller Panel */}
-      <div className="w-full max-w-xl grid grid-cols-2 gap-8 mt-6 p-4 border border-stone-200 bg-white/50 backdrop-blur-md rounded-3xl shadow-inner select-none select-none">
+      <div className="w-full max-w-2xl grid grid-cols-2 gap-4 mt-6 p-4 border border-stone-200 bg-white/70 backdrop-blur-md rounded-3xl shadow-lg select-none">
         {/* Left Side: Joystick D-Pad */}
-        <div className="flex items-center justify-center gap-3">
+        <div className="flex items-center justify-center gap-2">
           <button
             onMouseDown={() => triggerMobileAction('left')}
             onMouseUp={() => stopMobileAction('left')}
             onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('left'); }}
             onTouchEnd={() => stopMobileAction('left')}
-            className="w-14 h-14 bg-stone-900 border border-stone-800 rounded-2xl flex items-center justify-center text-white active:bg-stone-700 transition-all font-mono font-bold select-none"
+            className="w-14 h-14 bg-stone-900 border-2 border-stone-700 rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-md select-none"
           >
             ◀
           </button>
           
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2">
             <button
               onMouseDown={() => triggerMobileAction('down')}
               onMouseUp={() => stopMobileAction('down')}
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('down'); }}
               onTouchEnd={() => stopMobileAction('down')}
-              className="w-14 h-14 bg-stone-900 border border-stone-800 rounded-2xl flex items-center justify-center text-white active:bg-stone-700 transition-all font-mono font-bold select-none"
+              className="w-14 h-14 bg-stone-900 border-2 border-stone-700 rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-md select-none"
             >
               ▼
             </button>
@@ -518,40 +574,56 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             onMouseUp={() => stopMobileAction('right')}
             onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('right'); }}
             onTouchEnd={() => stopMobileAction('right')}
-            className="w-14 h-14 bg-stone-900 border border-stone-800 rounded-2xl flex items-center justify-center text-white active:bg-stone-700 transition-all font-mono font-bold select-none"
+            className="w-14 h-14 bg-stone-900 border-2 border-stone-700 rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-md select-none"
           >
             ▶
           </button>
         </div>
 
-        {/* Right Side: Skill Buttons */}
-        <div className="flex items-center justify-center gap-4">
+        {/* Right Side: Skill & Action Buttons */}
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
           {/* Jump */}
           <button
             onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('jump'); }}
             onMouseDown={() => triggerMobileAction('jump')}
-            className="w-14 h-14 bg-amber-500 border border-amber-400 rounded-full flex flex-col items-center justify-center text-white font-semibold text-xs active:bg-amber-600 transition-all shadow-md select-none"
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-500 border-2 border-amber-400 rounded-full flex flex-col items-center justify-center text-white font-black text-[10px] sm:text-xs active:bg-amber-600 active:scale-95 transition-all shadow-md select-none"
           >
-            <span>LEAP</span>
+            <span>JUMP</span>
           </button>
 
-          {/* Special */}
+          {/* Special Skill */}
           <button
             onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('special'); }}
             onMouseDown={() => triggerMobileAction('special')}
-            className="w-12 h-12 bg-purple-600 border border-purple-500 rounded-full flex flex-col items-center justify-center text-white font-semibold text-[10px] active:bg-purple-700 transition-all shadow-md select-none"
+            className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-600 border-2 border-purple-500 rounded-full flex flex-col items-center justify-center text-white font-black text-[9px] sm:text-[10px] active:bg-purple-700 active:scale-95 transition-all shadow-md select-none"
           >
             <Zap className="w-3.5 h-3.5" />
             <span>SKILL</span>
+          </button>
+
+          {/* Ultimate */}
+          <button
+            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('ultimate'); }}
+            onMouseDown={() => triggerMobileAction('ultimate')}
+            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-lg select-none border-2 ${
+              isUltimateReady
+                ? 'bg-amber-400 border-amber-300 text-amber-950 animate-pulse shadow-[0_0_12px_#fbbf24]'
+                : level < 5
+                ? 'bg-stone-800 border-stone-700 text-stone-500 cursor-not-allowed'
+                : 'bg-indigo-950 border-purple-500 text-purple-300'
+            }`}
+          >
+            <Zap className={`w-3.5 h-3.5 ${isUltimateReady ? 'text-amber-950 fill-amber-950' : 'text-purple-300 fill-purple-300'}`} />
+            <span>ULT</span>
           </button>
 
           {/* Attack */}
           <button
             onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('attack'); }}
             onMouseDown={() => triggerMobileAction('attack')}
-            className="w-16 h-16 bg-rose-500 border border-rose-400 rounded-full flex flex-col items-center justify-center text-white font-bold text-sm active:bg-rose-600 transition-all shadow-lg select-none"
+            className="w-14 h-14 sm:w-16 sm:h-16 bg-rose-500 border-2 border-rose-400 rounded-full flex flex-col items-center justify-center text-white font-black text-xs sm:text-sm active:bg-rose-600 active:scale-95 transition-all shadow-lg select-none"
           >
-            <Sword className="w-5 h-5 mb-0.5" />
+            <Sword className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
             <span>SLAY</span>
           </button>
         </div>

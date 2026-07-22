@@ -252,12 +252,12 @@ export default function Home() {
       title: 'Shadow Stalker Assassin',
       cost: 300,
       role: 'Stealth / Burst DPS',
-      lore: 'Born in the pitch-black obsidian caves of Mystic Ruins, Assassinmon is a shadow assassin wielding twin daggers. Specialized in silent shadow-steps and high speed strike combinations.',
-      signatureSkill: 'Shadow Dash Strike (Invulnerable Dash)',
-      ultimateSkill: 'Single Slash of Death (Musou Electro Shatter)',
+      lore: 'Born in the pitch-black obsidian caves of Mystic Ruins, Assassinmon is a shadow assassin wielding a shadow Katana. Specialized in silent shadow-steps and high speed dash strike combinations.',
+      signatureSkill: 'Shadow Dash Strike (Invulnerable Dash Animation)',
+      ultimateSkill: 'Single Slash of Death (Shadow Dimensional Shatter)',
       color: 'purple',
       tagColor: 'bg-purple-100 text-purple-900 border-purple-300 font-mono',
-      attackType: 'Melee Shadow Dagger Slash',
+      attackType: 'Melee Shadow Katana Slash',
       hp: saveData.dracos['Assassinmon']?.hp || 15,
       atk: saveData.dracos['Assassinmon']?.attack || 8,
       def: saveData.dracos['Assassinmon']?.defense || 2,
@@ -477,6 +477,16 @@ export default function Home() {
       desc: 'Low gravity floating, water currents, moving anchors, scallop traps, and Leviathan Orca Killer Whale boss.',
       boss: 'Killer Whale',
       color: 'cyan'
+    },
+    {
+      num: 10,
+      name: 'Jungle Sanctuary',
+      difficulty: 'JUNGLE WORLD',
+      diffClass: 'bg-emerald-500 text-stone-950 font-black border-emerald-300',
+      borderHover: 'hover:border-emerald-500 hover:bg-emerald-500/10 ring-2 ring-emerald-400/30',
+      desc: 'Climbable tree vines, 2s root vine traps, instant-death toxic poison swamp chasm with melting acid skeleton animation, reviving skeleton archers, and the Primordial King Kong Boss with 3-jump 2s seismic stun ground slam!',
+      boss: 'King Kong',
+      color: 'emerald'
     }
   ];
 
@@ -1001,40 +1011,43 @@ export default function Home() {
                             : 'border-stone-200 bg-stone-50/70 opacity-90'
                         } shadow-md hover:shadow-xl transition-all flex flex-col justify-between relative overflow-hidden`}
                       >
-                        {/* Header Status Badge */}
-                        <div className="absolute top-5 right-5 z-10">
-                          {isSelected ? (
-                            <span className="px-2.5 py-1 text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500 text-stone-950 rounded-md shadow-sm flex items-center gap-1 border border-amber-400">
-                              <Sparkles className="w-3 h-3 text-stone-950 fill-stone-950" /> [ EQUIPPED ]
-                            </span>
-                          ) : isUnlocked ? (
-                            <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 rounded-md flex items-center gap-1">
-                              <Check className="w-3 h-3 text-emerald-600" /> [ UNLOCKED ]
-                            </span>
-                          ) : (
-                            <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-stone-200 text-stone-700 border border-stone-300 rounded-md flex items-center gap-1">
-                              <Lock className="w-3 h-3 text-stone-500" /> [ LOCKED ]
-                            </span>
-                          )}
-                        </div>
-
                         <div>
-                          {/* Companion Header */}
-                          <div className="flex items-center gap-4">
-                            <div className={`w-18 h-18 rounded-2xl ${isUnlocked ? 'bg-stone-100 border-stone-200' : 'bg-stone-200/60 border-stone-300'} border flex items-center justify-center p-2 shadow-inner relative`}>
+                          {/* Card Top Badges Bar */}
+                          <div className="flex items-center justify-between gap-2 mb-3">
+                            <span className={`inline-block px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-md border ${item.tagColor}`}>
+                              {item.title}
+                            </span>
+
+                            <div className="shrink-0">
+                              {isSelected ? (
+                                <span className="px-2.5 py-1 text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500 text-stone-950 rounded-md shadow-sm flex items-center gap-1 border border-amber-400">
+                                  <Sparkles className="w-3 h-3 text-stone-950 fill-stone-950" /> [ EQUIPPED ]
+                                </span>
+                              ) : isUnlocked ? (
+                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 rounded-md flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-600" /> [ UNLOCKED ]
+                                </span>
+                              ) : (
+                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-stone-200 text-stone-700 border border-stone-300 rounded-md flex items-center gap-1">
+                                  <Lock className="w-3 h-3 text-stone-500" /> [ LOCKED ]
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          {/* Companion Avatar & Name Profile */}
+                          <div className="flex items-center gap-3.5">
+                            <div className={`w-16 h-16 shrink-0 rounded-2xl ${isUnlocked ? 'bg-stone-100 border-stone-200' : 'bg-stone-200/60 border-stone-300'} border flex items-center justify-center p-2 shadow-inner relative`}>
                               {item.svg}
                               {!isUnlocked && (
                                 <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-[1px] rounded-2xl flex items-center justify-center">
-                                  <Lock className="w-6 h-6 text-stone-700" />
+                                  <Lock className="w-5 h-5 text-stone-700" />
                                 </div>
                               )}
                             </div>
                             <div>
-                              <span className={`inline-block px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-md border ${item.tagColor}`}>
-                                {item.title}
-                              </span>
-                              <h3 className="text-xl font-black text-stone-900 mt-1">{item.name}</h3>
-                              <span className="text-[10px] font-semibold text-stone-400">{item.role}</span>
+                              <h3 className="text-2xl font-black text-stone-900 leading-tight">{item.name}</h3>
+                              <span className="text-xs font-semibold text-stone-400 block mt-0.5">{item.role}</span>
                             </div>
                           </div>
 
