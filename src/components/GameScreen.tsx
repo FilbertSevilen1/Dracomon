@@ -129,21 +129,36 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     setGameState('playing');
   }, [stageNum]);
 
-  // Global Escape Key Listener: toggles Pause in-game, returns to camp on victory
+  // Global Key Listener: context-aware per game state
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        if (gameState === 'victory') {
+        if (gameState === 'victory' || gameState === 'gameover') {
           soundService.playClick();
           onQuit();
         } else {
-          handlePauseToggle();
+          handlePauseToggle(); // toggles pause/resume
         }
-      } else if (e.key === 'Enter' && gameState === 'victory') {
+      } else if (e.key === 'Enter') {
+        if (gameState === 'victory') {
+          e.preventDefault();
+          soundService.playClick();
+          onNextLevel();
+        } else if (gameState === 'gameover') {
+          e.preventDefault();
+          handleRestart();
+        } else if (gameState === 'paused') {
+          e.preventDefault();
+          handlePauseToggle(); // resume
+        }
+      } else if (e.key.toLowerCase() === 'r' && gameState === 'paused') {
+        e.preventDefault();
+        handleRestart();
+      } else if (e.key.toLowerCase() === 'q' && gameState === 'paused') {
         e.preventDefault();
         soundService.playClick();
-        onNextLevel();
+        onQuit();
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
@@ -433,30 +448,31 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-stone-950/70 backdrop-blur-sm flex flex-col items-center justify-center z-10"
             >
-              <div className="w-72 bg-white rounded-3xl p-6 border border-stone-200 shadow-xl text-center space-y-4">
+              <div className="w-80 bg-white rounded-3xl p-6 border border-stone-200 shadow-xl text-center space-y-4">
                 <h3 className="text-xl font-bold text-stone-950 font-display">Adventure Suspended</h3>
                 <p className="text-xs text-stone-400 leading-normal">Your journey is paused. Equip items or change options.</p>
 
                 <div className="flex flex-col gap-2 mt-4">
                   <button
+                    autoFocus
                     onClick={handlePauseToggle}
-                    className="w-full py-2.5 px-4 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-stone-900 text-white rounded-xl text-sm font-bold hover:bg-stone-800 active:scale-95 transition-all flex items-center justify-between"
                   >
-                    <Play className="w-3.5 h-3.5" />
-                    Resume Adventure
+                    <span className="flex items-center gap-2"><Play className="w-3.5 h-3.5" /> Resume Adventure</span>
+                    <span className="text-[10px] font-mono bg-stone-700 px-2 py-0.5 rounded-lg">ESC / ENTER</span>
                   </button>
 
                   <button
                     onClick={handleRestart}
-                    className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 transition-all border border-stone-200 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 active:scale-95 transition-all border border-stone-200 flex items-center justify-between"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Restart Level
+                    <span className="flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" /> Restart Level</span>
+                    <span className="text-[10px] font-mono bg-stone-200 px-2 py-0.5 rounded-lg">R</span>
                   </button>
 
                   <button
                     onClick={() => { soundService.playClick(); openSettings(); }}
-                    className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 transition-all border border-stone-200 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 active:scale-95 transition-all border border-stone-200 flex items-center justify-center gap-2"
                   >
                     <Settings className="w-3.5 h-3.5" />
                     Settings
@@ -464,10 +480,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
                   <button
                     onClick={() => { soundService.playClick(); onQuit(); }}
-                    className="w-full py-2.5 px-4 bg-white text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-50 transition-all border border-rose-200 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 bg-white text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-50 active:scale-95 transition-all border border-rose-200 flex items-center justify-between"
                   >
-                    <Home className="w-3.5 h-3.5" />
-                    Return to Camp
+                    <span className="flex items-center gap-2"><Home className="w-3.5 h-3.5" /> Return to Camp</span>
+                    <span className="text-[10px] font-mono bg-rose-100 text-rose-400 px-2 py-0.5 rounded-lg">Q</span>
                   </button>
                 </div>
               </div>
@@ -482,7 +498,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-red-950/70 backdrop-blur-sm flex flex-col items-center justify-center z-10"
             >
-              <div className="w-72 bg-white rounded-3xl p-6 border border-red-200 shadow-xl text-center space-y-4">
+              <div className="w-80 bg-white rounded-3xl p-6 border border-red-200 shadow-xl text-center space-y-4">
                 <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center text-xl mx-auto">
                   💀
                 </div>
@@ -493,19 +509,20 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
                 <div className="flex flex-col gap-2 mt-4">
                   <button
+                    autoFocus
                     onClick={handleRestart}
-                    className="w-full py-2.5 px-4 bg-rose-500 text-white rounded-xl text-xs font-bold hover:bg-rose-600 transition-all flex items-center justify-center gap-2"
+                    className="w-full py-3 px-4 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600 active:scale-95 transition-all flex items-center justify-between"
                   >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    Try Again
+                    <span className="flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" /> Try Again</span>
+                    <span className="text-[10px] font-mono bg-rose-700/50 px-2 py-0.5 rounded-lg">ENTER</span>
                   </button>
 
                   <button
                     onClick={() => { soundService.playClick(); onQuit(); }}
-                    className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 transition-all border border-stone-200 flex items-center justify-center gap-2"
+                    className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 active:scale-95 transition-all border border-stone-200 flex items-center justify-between"
                   >
-                    <Home className="w-3.5 h-3.5" />
-                    Return to Camp
+                    <span className="flex items-center gap-2"><Home className="w-3.5 h-3.5" /> Return to Camp</span>
+                    <span className="text-[10px] font-mono bg-stone-300 px-2 py-0.5 rounded-lg">ESC</span>
                   </button>
                 </div>
               </div>
