@@ -572,6 +572,10 @@ export default function Home() {
                 onItemCollect={collectItem}
                 onEnemyDefeat={handleEnemyDefeated}
                 onStageClear={() => markStageCleared(currentStage)}
+                onNextLevel={() => {
+                  markStageCleared(currentStage);
+                  setCurrentStage(Math.min(currentStage + 1, 10));
+                }}
                 onQuit={() => {
                   setIsPlaying(false);
                   window.scrollTo(0, 0);

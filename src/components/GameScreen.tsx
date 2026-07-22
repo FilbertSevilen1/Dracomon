@@ -12,6 +12,7 @@ interface GameScreenProps {
   onItemCollect: (itemId: string) => void;
   onEnemyDefeat: (exp: number, coins: number) => void;
   onStageClear: () => void;
+  onNextLevel: () => void;
   onQuit: () => void;
   openSettings: () => void;
   openInventory: () => void;
@@ -26,6 +27,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   onItemCollect,
   onEnemyDefeat,
   onStageClear,
+  onNextLevel,
   onQuit,
   openSettings,
   openInventory,
@@ -122,12 +124,21 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     };
   }, [stageNum, selectedDraco]);
 
-  // Global Escape Key Listener to toggle Pause Menu
+  // Global Escape Key Listener: toggles Pause in-game, returns to camp on victory
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        handlePauseToggle();
+        if (gameState === 'victory') {
+          soundService.playClick();
+          onQuit();
+        } else {
+          handlePauseToggle();
+        }
+      } else if (e.key === 'Enter' && gameState === 'victory') {
+        e.preventDefault();
+        soundService.playClick();
+        onNextLevel();
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
@@ -504,21 +515,31 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               exit={{ opacity: 0 }}
               className="absolute inset-0 bg-emerald-950/70 backdrop-blur-sm flex flex-col items-center justify-center z-10"
             >
-              <div className="w-72 bg-white rounded-3xl p-6 border border-emerald-200 shadow-xl text-center space-y-4">
+              <div className="w-80 bg-white rounded-3xl p-6 border border-emerald-200 shadow-xl text-center space-y-4">
                 <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center text-xl mx-auto animate-bounce">
                   ✨
                 </div>
-                <h3 className="text-xl font-bold text-emerald-950 font-display">Portal Cleared</h3>
+                <h3 className="text-xl font-bold text-emerald-950 font-display">Stage Cleared!</h3>
                 <p className="text-xs text-stone-400 leading-normal">
                   Excellent work! The next portal is ready to explore.
                 </p>
 
                 <div className="flex flex-col gap-2 mt-4">
                   <button
-                    onClick={() => { soundService.playClick(); onQuit(); }}
-                    className="w-full py-2.5 px-4 bg-stone-900 text-white rounded-xl text-xs font-bold hover:bg-stone-800 transition-all"
+                    autoFocus
+                    onClick={() => { soundService.playClick(); onNextLevel(); }}
+                    className="w-full py-3 px-4 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-between"
                   >
-                    Return to Camp
+                    <span>Next Level</span>
+                    <span className="text-[10px] font-mono bg-emerald-700/50 px-2 py-0.5 rounded-lg">ENTER</span>
+                  </button>
+
+                  <button
+                    onClick={() => { soundService.playClick(); onQuit(); }}
+                    className="w-full py-2.5 px-4 bg-stone-100 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-200 active:scale-95 transition-all border border-stone-200 flex items-center justify-between"
+                  >
+                    <span>Return to Camp</span>
+                    <span className="text-[10px] font-mono bg-stone-300 px-2 py-0.5 rounded-lg">ESC</span>
                   </button>
                 </div>
               </div>
