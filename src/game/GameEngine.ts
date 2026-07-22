@@ -144,6 +144,30 @@ export class GameEngine {
   private laserBeamActive = false;
   private laserBeamDuration = 0;
 
+  // Camera Zoom & Cut State
+  private cameraZoom = 1.0;
+  private cameraZoomTargetX = 0;
+  private cameraZoomTargetY = 0;
+
+  // Flymon Laser State
+  private flymonLaserTargetEnemy: Enemy | null = null;
+  private flymonLaserEndPos: { x: number; y: number } | null = null;
+
+  // Assassinmon Ultimate Sequence State
+  private assassinmonUltimateActive = false;
+  private assassinmonUltimateTimer = 0;
+  private assassinmonTargetIndex = 0;
+  private assassinmonTargets: Enemy[] = [];
+
+  // Raiden Shogun Musou Slash Visual State
+  private musouSlashActive = false;
+  private musouSlashTimer = 0;
+  private musouSlashX = 0;
+  private musouSlashY = 0;
+  private musouTargetId = 0;
+  private musouOriginalPx = 0;
+  private musouOriginalPy = 0;
+
   // World parameters
   private gravity = 0.5;
   private friction = 0.82;
@@ -978,6 +1002,11 @@ export class GameEngine {
         y < enemy.y + enemy.height &&
         y + h > enemy.y
       ) {
+        // Shieldmon Avatar state & charge stuns enemies for 2 seconds!
+        if (this.avatarActive || (this.selectedDraco === 'Shieldmon' && this.shieldActive)) {
+          enemy.stunnedTimer = 120; // 2.0s Stun!
+          this.addFloatingText(enemy.x, enemy.y - 15, 'STUNNED 2s! 💫', '#60a5fa');
+        }
         this.damageEnemy(enemy, damage);
       }
     });
@@ -1001,7 +1030,7 @@ export class GameEngine {
       case 'Jumpmon': return 'Meteor Smackdown';
       case 'Archermon': return 'Arrow Shower';
       case 'Shieldmon': return 'Avatar';
-      case 'Assassinmon': return 'Death of Thousand Knives';
+      case 'Assassinmon': return 'Single Slash of Death';
       case 'Flymon': return 'Laser Beam';
       case 'Whitemon': return 'Primal Roar';
       case 'Magemon': return 'Trio Orb Blast';
@@ -1014,7 +1043,7 @@ export class GameEngine {
       case 'Jumpmon': return 'FEEL THE SUN\'S POWER! METEOR SMACKDOWN!!!';
       case 'Archermon': return 'BLIND THE HEAVENS! ARROW SHOWER!!!';
       case 'Shieldmon': return 'UNBREAKABLE WILL! AVATAR STATE!!!';
-      case 'Assassinmon': return 'DIE BY A THOUSAND CUTS! DEATH OF THOUSAND KNIVES!!!';
+      case 'Assassinmon': return 'ONE SLASH... ONE KILL! SINGLE SLASH OF DEATH!!!';
       case 'Flymon': return 'HYPER CHARGED LASER! LAZER BEAM!!!';
       case 'Whitemon': return 'BEHOLD THE PRIMAL ROAR! FAMILIAR RAMPAGE!!!';
       case 'Magemon': return 'BEHOLD THE ANCIENT SPELLS! TRIO ORB BLAST!!!';
@@ -1052,63 +1081,134 @@ export class GameEngine {
     this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, `${this.getUltimateName().toUpperCase()}!!! 💥`, '#ef4444');
 
     if (this.selectedDraco === 'Jumpmon') {
-      this.pvy = -16;
+      soundService.playLevelUp();
+      this.pvy = -22; // Launch super high up!
       this.pGrounded = false;
       this.isPlunging = true;
 
-      this.enemies.forEach(enemy => {
-        const dx = Math.abs(this.px - enemy.x);
-        if (dx < 600) {
-          this.damageEnemy(enemy, Math.floor(this.stats.attack * 3.5));
-          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#f97316');
+      const groundY = this.py + this.pHeight;
+
+      // Spawns 4 travelling ground lava shockwaves
+      [-1, 1].forEach(dir => {
+        for (let s = 1; s <= 2; s++) {
+          this.projectiles.push({
+            x: this.px + this.pWidth / 2,
+            y: groundY - 20,
+            vx: dir * (s * 5 + 3),
+            vy: 0,
+            width: 32,
+            height: 32,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 2.2),
+            color: '#f97316',
+            type: 'fireball'
+          });
         }
       });
-      // Spawn rain of meteor sparks
-      for (let i = 0; i < 20; i++) {
-        this.particles.push({
-          x: this.px + Math.random() * 400 - 200,
-          y: this.py - 100 - Math.random() * 200,
-          vx: Math.random() * 2 - 1,
-          vy: Math.random() * 8 + 4,
-          size: Math.random() * 10 + 5,
-          color: '#f97316',
-          life: 30,
-          maxLife: 30
-        });
-      }
+
+      // Target all enemies within 700px with erupting volcanic pillars
+      this.enemies.forEach(enemy => {
+        const dx = Math.abs(this.px - enemy.x);
+        if (dx < 700) {
+          this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.2));
+          enemy.stunnedTimer = 90; // 1.5s stun on impact!
+          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 20, '#f97316');
+          this.addFloatingText(enemy.x, enemy.y - 15, 'METEOR SMACKDOWN! 🌋💥', '#ef4444');
+
+          // Erupting fire pillar particles
+          for (let p = 0; p < 12; p++) {
+            this.particles.push({
+              x: enemy.x + enemy.width / 2 + (Math.random() - 0.5) * 30,
+              y: enemy.y + enemy.height,
+              vx: (Math.random() - 0.5) * 4,
+              vy: -Math.random() * 9 - 4,
+              size: Math.random() * 8 + 4,
+              color: p % 2 === 0 ? '#f97316' : '#fef08a',
+              life: 30,
+              maxLife: 30
+            });
+          }
+        }
+      });
     }
     else if (this.selectedDraco === 'Archermon') {
       this.arrowShowerActive = true;
-      this.arrowShowerDuration = 180; // 3 seconds
+      this.arrowShowerDuration = 360; // 6 seconds (doubled duration!)
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'DOUBLE ARROW RAIN (6s)! 🏹⚡', '#10b981');
     }
     else if (this.selectedDraco === 'Shieldmon') {
       this.avatarActive = true;
-      this.avatarDuration = 180; // 3 seconds
-      this.pInvulnerableFrames = 180;
+      this.avatarDuration = 240; // 4 seconds
+      this.pInvulnerableFrames = 240;
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'AVATAR STATE! 🛡️⚡', '#60a5fa');
+
+      // Immediate shockwave that stuns all nearby enemies for 2 seconds!
+      this.enemies.forEach(enemy => {
+        if (Math.abs(this.px - enemy.x) < 350) {
+          enemy.stunnedTimer = 120; // 2.0s Stun!
+          this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.5));
+          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#3b82f6');
+          this.addFloatingText(enemy.x, enemy.y - 15, 'STUNNED 2s! 💫', '#60a5fa');
+        }
+      });
     }
     else if (this.selectedDraco === 'Assassinmon') {
-      const visibleEnemies = this.enemies.filter(e => Math.abs(this.px - e.x) < 500);
-      if (visibleEnemies.length === 0) {
+      soundService.playLevelUp();
+      let bestTarget: Enemy | null = null;
+      let minDistance = 9999;
+
+      this.enemies.forEach(e => {
+        const dist = Math.abs(this.px - e.x);
+        if (dist < 750 && dist < minDistance && e.hp > 0) {
+          minDistance = dist;
+          bestTarget = e;
+        }
+      });
+
+      if (!bestTarget) {
         this.addFloatingText(this.px, this.py - 10, 'NO ENEMIES IN RANGE!', '#94a3b8');
         return;
       }
-      this.pInvulnerableFrames = 90;
-      visibleEnemies.forEach((enemy, idx) => {
-        setTimeout(() => {
-          if (enemy.hp > 0) {
-            this.px = enemy.x + (Math.random() < 0.5 ? -35 : enemy.width + 15);
-            this.py = enemy.y;
-            this.pFacing = this.px < enemy.x ? 1 : -1;
-            this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.8));
-            soundService.playHit();
-            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 10, '#a855f7');
-          }
-        }, idx * 100);
-      });
+
+      this.musouOriginalPx = this.px;
+      this.musouOriginalPy = this.py;
+      this.musouTargetId = (bestTarget as Enemy).id;
+      this.musouSlashX = (bestTarget as Enemy).x + (bestTarget as Enemy).width / 2;
+      this.musouSlashY = (bestTarget as Enemy).y + (bestTarget as Enemy).height / 2;
+
+      this.assassinmonTargets = [bestTarget];
+      this.assassinmonUltimateActive = true;
+      this.assassinmonUltimateTimer = 0;
+      this.musouSlashActive = true;
+      this.pInvulnerableFrames = 100; // 1.6s invulnerable
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'MUSOU NO HITOTACHI! ⚡🗡️', '#c084fc');
     }
     else if (this.selectedDraco === 'Flymon') {
+      soundService.playLevelUp();
+      // Jump to TOP of the level!
+      this.py = 35;
+      this.pvy = -6;
+      this.pGrounded = false;
+
+      // Find NEAREST HIGHEST HP enemy on screen!
+      let bestEnemy: Enemy | null = null;
+      let bestScore = -1; // Score = HP * 10000 - distance
+
+      this.enemies.forEach(enemy => {
+        const dist = Math.abs(this.px - enemy.x);
+        if (dist < 800) {
+          const score = enemy.hp * 10000 - dist;
+          if (score > bestScore) {
+            bestScore = score;
+            bestEnemy = enemy;
+          }
+        }
+      });
+
+      this.flymonLaserTargetEnemy = bestEnemy;
       this.laserBeamActive = true;
-      this.laserBeamDuration = 45; // 0.75 seconds
+      this.laserBeamDuration = 90; // 1.5 seconds continuous beam
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SKY HIGH ANGLED HYPER LASER! 🛸⚡', '#f43f5e');
     }
     else if (this.selectedDraco === 'Whitemon') {
       soundService.playLevelUp();
@@ -1466,6 +1566,90 @@ export class GameEngine {
   }
 
   private updatePhysics() {
+    // Synchronous Single Slash of Death Sequence (Raiden Shogun Musou no Hitotachi)
+    if (this.assassinmonUltimateActive) {
+      this.pvx = 0;
+      this.pvy = 0; // Freeze physics during slash sequence
+      this.assassinmonUltimateTimer++;
+
+      // Find target by stored ID or fallback to stored coordinates
+      const target = this.enemies.find(e => e.id === this.musouTargetId);
+      if (target && target.hp > 0) {
+        this.musouSlashX = target.x + target.width / 2;
+        this.musouSlashY = target.y + target.height / 2;
+      }
+
+      if (this.assassinmonUltimateTimer === 1) {
+        // STEP 1: Teleport near target safely (checking solid block collision)
+        let safePx = this.musouSlashX - 35;
+        if (this.isSolid(safePx, this.py)) {
+          safePx = this.musouSlashX + 15;
+        }
+        this.px = safePx;
+        if (target) {
+          this.py = target.y;
+          this.pFacing = this.px < target.x ? 1 : -1;
+        }
+
+        // Camera Zoom-In Cut on target
+        this.cameraZoom = 1.85;
+        this.cameraZoomTargetX = this.musouSlashX;
+        this.cameraZoomTargetY = this.musouSlashY;
+
+        // Initial Death Slash Hit (3.5x Attack Damage)
+        if (target && target.hp > 0) {
+          this.damageEnemy(target, Math.floor(this.stats.attack * 3.5));
+        } else {
+          this.checkMeleeHit(this.musouSlashX - 30, this.musouSlashY - 30, 60, 60, Math.floor(this.stats.attack * 3.5));
+        }
+        soundService.playHit();
+
+        // Dark purple electro slash particles
+        this.spawnDustParticles(this.musouSlashX, this.musouSlashY, 25, '#c084fc');
+        this.addFloatingText(this.musouSlashX, this.musouSlashY - 15, 'MUSOU SLASH! ⚡🗡️', '#c084fc');
+      } 
+      else if (this.assassinmonUltimateTimer === 18) {
+        // STEP 2: DELAYED ELECTRO DIMENSIONAL SHATTER EXPLOSION!
+        soundService.playHit();
+
+        // Massive explosion damage (6.5x Attack Damage!) -> Total 10.0x attack damage burst!
+        if (target && target.hp > 0) {
+          this.damageEnemy(target, Math.floor(this.stats.attack * 6.5));
+          target.stunnedTimer = 120; // 2.0s Stun!
+        } else {
+          this.checkMeleeHit(this.musouSlashX - 40, this.musouSlashY - 40, 80, 80, Math.floor(this.stats.attack * 6.5));
+        }
+
+        // Huge electro plasma explosion particles
+        for (let p = 0; p < 30; p++) {
+          this.particles.push({
+            x: this.musouSlashX + (Math.random() - 0.5) * 50,
+            y: this.musouSlashY + (Math.random() - 0.5) * 50,
+            vx: (Math.random() - 0.5) * 10,
+            vy: (Math.random() - 0.5) * 10,
+            size: Math.random() * 9 + 4,
+            color: p % 3 === 0 ? '#c084fc' : p % 3 === 1 ? '#e879f9' : '#fef08a',
+            life: 30,
+            maxLife: 30
+          });
+        }
+
+        this.addFloatingText(this.musouSlashX, this.musouSlashY - 25, 'TORN TO PIECES! ⚡💥', '#ef4444');
+      }
+      else if (this.assassinmonUltimateTimer === 32) {
+        // Reset camera zoom, restore original position & end ultimate sequence cleanly!
+        this.px = this.musouOriginalPx;
+        this.py = this.musouOriginalPy;
+        this.pvx = 0;
+        this.pvy = 0;
+        this.musouSlashActive = false;
+        this.cameraZoom = 1.0;
+        this.assassinmonUltimateActive = false;
+      }
+
+      return; // Skip normal gravity & walking physics during ultimate sequence!
+    }
+
     // Horizontal Movement
     let speedMultiplier = 1.0;
 
@@ -2423,13 +2607,19 @@ export class GameEngine {
     this.ctx.restore();
 
     this.ctx.save();
-    // Translate context based on camera
+    // Translate context based on camera & zoom cuts
     if (this.ultimateCinematicActive) {
       const centerX = this.px + this.pWidth / 2;
       const centerY = this.py + this.pHeight / 2;
       this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
       this.ctx.scale(2.2, 2.2); // 2.2x zoom-in focus
       this.ctx.translate(-centerX, -centerY);
+    } else if (this.cameraZoom !== 1.0) {
+      const focusX = this.cameraZoomTargetX || (this.px + this.pWidth / 2);
+      const focusY = this.cameraZoomTargetY || (this.py + this.pHeight / 2);
+      this.ctx.translate(this.canvas.width / 2, this.canvas.height / 2);
+      this.ctx.scale(this.cameraZoom, this.cameraZoom);
+      this.ctx.translate(-focusX, -focusY);
     } else {
       this.ctx.translate(-this.cameraX, -this.cameraY);
     }
@@ -3793,19 +3983,36 @@ export class GameEngine {
     this.ctx.fillStyle = energyPct >= 1.0 ? '#fbbf24' : '#eab308';
     this.ctx.fillRect(px, py - 8, pw * energyPct, 3);
 
-    // Draw Laser Beam inside camera translate
-    if (this.laserBeamActive) {
+    // Draw Flymon Targeted Laser Beam (can be blocked by platform!)
+    if (this.laserBeamActive && this.flymonLaserEndPos) {
       this.ctx.save();
-      const beamX = this.pFacing === 1 ? this.px + this.pWidth : 0;
-      const beamW = this.pFacing === 1 ? this.levelWidth - beamX : this.px;
+      const startX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
+      const startY = this.py + this.pHeight / 2;
+      const endX = this.flymonLaserEndPos.x;
+      const endY = this.flymonLaserEndPos.y;
 
-      // Glowing pink outer energy
-      this.ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
-      this.ctx.fillRect(beamX, this.py + 10, beamW, 24);
+      // Outer Glowing Rose Laser Beam Line
+      this.ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
+      this.ctx.lineWidth = 24;
+      this.ctx.beginPath();
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(endX, endY);
+      this.ctx.stroke();
 
-      // Inner white hot core laser
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(beamX, this.py + 16, beamW, 12);
+      // Core Hot White Laser Line
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 10;
+      this.ctx.beginPath();
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(endX, endY);
+      this.ctx.stroke();
+
+      // Platform / Enemy Impact Burn Sigil
+      this.ctx.fillStyle = '#fda4af';
+      this.ctx.beginPath();
+      this.ctx.arc(endX, endY, 14, 0, Math.PI * 2);
+      this.ctx.fill();
+
       this.ctx.restore();
     }
 
@@ -3819,6 +4026,82 @@ export class GameEngine {
       this.ctx.fillText(ft.text, ft.x, ft.y);
       this.ctx.restore();
     });
+
+    // RAIDEN SHOGUN MUSOU NO HITOTACHI SCREEN OVERLAY
+    if (this.musouSlashActive) {
+      const w = this.canvas.width;
+      const h = this.canvas.height;
+      const tx = this.musouSlashX || this.px;
+      const ty = this.musouSlashY || this.py;
+
+      this.ctx.save();
+      // 1. Dark Void Dimensional Background Overlay
+      this.ctx.fillStyle = 'rgba(12, 5, 26, 0.88)';
+      this.ctx.fillRect(0, 0, w, h);
+
+      // 2. Giant Electro Diagonal Slash Line (Top-Left to Bottom-Right through target)
+      const slashAngle = -Math.PI / 6; // 30-degree diagonal slash cut
+      const slashLen = 600;
+
+      const p1x = tx - Math.cos(slashAngle) * (slashLen / 2);
+      const p1y = ty - Math.sin(slashAngle) * (slashLen / 2);
+      const p2x = tx + Math.cos(slashAngle) * (slashLen / 2);
+      const p2y = ty + Math.sin(slashAngle) * (slashLen / 2);
+
+      // Outer Electro Glow Arc
+      this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.6)';
+      this.ctx.lineWidth = 42;
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1x, p1y);
+      this.ctx.lineTo(p2x, p2y);
+      this.ctx.stroke();
+
+      // Middle Purple Energy Beam
+      this.ctx.strokeStyle = '#a855f7';
+      this.ctx.lineWidth = 20;
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1x, p1y);
+      this.ctx.lineTo(p2x, p2y);
+      this.ctx.stroke();
+
+      // Core Pure White Blade Cut Line
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 8;
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1x, p1y);
+      this.ctx.lineTo(p2x, p2y);
+      this.ctx.stroke();
+
+      // 3. Electric Lightning Tendrils Branching From Slash Line
+      this.ctx.strokeStyle = '#e879f9';
+      this.ctx.lineWidth = 2.5;
+      for (let b = -3; b <= 3; b++) {
+        const bx = tx + b * 60;
+        const by = ty + b * 35;
+        const offset = Math.sin(this.frameCount * 0.8 + b) * 24;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx, by);
+        this.ctx.lineTo(bx + (b % 2 === 0 ? 30 : -30), by + offset);
+        this.ctx.stroke();
+      }
+
+      // 4. Electro Dimensional Sigil Ring at Target Center
+      const ringR = 28 + Math.sin(this.frameCount * 0.5) * 4;
+      this.ctx.strokeStyle = '#c084fc';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(tx, ty, ringR, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Lightning symbol in center
+      this.ctx.fillStyle = '#fef08a';
+      this.ctx.font = 'bold 24px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('⚡', tx, ty + 8);
+
+      this.ctx.restore();
+    }
 
     this.ctx.restore(); // Restore Camera transform
 
@@ -3894,24 +4177,74 @@ export class GameEngine {
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
     }
 
-    // Arrow Shower skill ticking (rain down arrows)
+    // Arrow Shower skill ticking (rain down arrows across wide screen area at double rate and double damage)
     if (this.arrowShowerActive) {
       this.arrowShowerDuration--;
       if (this.arrowShowerDuration <= 0) {
         this.arrowShowerActive = false;
-      } else if (this.frameCount % 6 === 0) {
-        const rx = this.px - 320 + Math.random() * 640;
+      } else if (this.frameCount % 3 === 0) { // DOUBLE FALL RATE!
+        const rx = this.px - 380 + Math.random() * 760;
         this.projectiles.push({
           x: rx,
-          y: this.py - 240,
-          vx: Math.random() * 1 - 0.5,
-          vy: 8.5,
-          width: 8,
-          height: 18,
+          y: Math.max(0, this.py - 320),
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: 14.0, // Rapid fall speed!
+          width: 9,
+          height: 22,
           isEnemy: false,
-          damage: Math.floor(this.stats.attack * 0.75),
+          damage: Math.floor(this.stats.attack * 1.6), // DOUBLE DAMAGE!
           color: '#10b981',
           type: 'arrow'
+        });
+      }
+    }
+
+    // Flymon Laser skill ticking (jump to top of level + angled piercing laser to nearest highest HP enemy)
+    if (this.laserBeamActive) {
+      this.laserBeamDuration--;
+      if (this.laserBeamDuration <= 0) {
+        this.laserBeamActive = false;
+        this.flymonLaserTargetEnemy = null;
+        this.flymonLaserEndPos = null;
+      } else {
+        // Hold Flymon at top of level
+        this.pvy = 0;
+        this.py = Math.max(30, Math.min(60, this.py));
+
+        const startX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
+        const startY = this.py + this.pHeight / 2;
+
+        let endX = startX + this.pFacing * 650;
+        let endY = startY + 450; // Angled downwards by default
+
+        if (this.flymonLaserTargetEnemy && this.flymonLaserTargetEnemy.hp > 0) {
+          endX = this.flymonLaserTargetEnemy.x + this.flymonLaserTargetEnemy.width / 2;
+          endY = this.flymonLaserTargetEnemy.y + this.flymonLaserTargetEnemy.height / 2;
+          this.pFacing = endX > startX ? 1 : -1;
+        }
+
+        // Piercing Laser Beam: directly reaches target through all platforms!
+        this.flymonLaserEndPos = { x: endX, y: endY };
+
+        // Continuous high damage to target enemy
+        if (this.flymonLaserTargetEnemy && this.flymonLaserTargetEnemy.hp > 0) {
+          this.damageEnemy(this.flymonLaserTargetEnemy, Math.floor(this.stats.attack * 0.50));
+          if (this.frameCount % 3 === 0) {
+            this.spawnDustParticles(endX, endY, 8, '#f43f5e');
+          }
+        }
+
+        // Also damage any other enemies along the laser beam path!
+        this.enemies.forEach(enemy => {
+          if (enemy.id !== this.flymonLaserTargetEnemy?.id && enemy.hp > 0) {
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            // Distance from point to line segment
+            const lineDist = Math.abs((endY - startY) * ex - (endX - startX) * ey + endX * startY - endY * startX) / (Math.hypot(endY - startY, endX - startX) || 1);
+            if (lineDist < 30) {
+              this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.35));
+            }
+          }
         });
       }
     }

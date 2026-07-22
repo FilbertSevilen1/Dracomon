@@ -283,7 +283,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                     🔒 ULTIMATE LOCKED (REQ. LV.5)
                   </span>
                 ) : (
-                  <>⚡ {selectedDraco === 'Jumpmon' ? 'Meteor Smackdown' : selectedDraco === 'Archermon' ? 'Arrow Shower' : selectedDraco === 'Shieldmon' ? 'Avatar' : selectedDraco === 'Assassinmon' ? 'Death of 1000 Knives' : selectedDraco === 'Whitemon' ? 'Primal Roar' : selectedDraco === 'Magemon' ? 'Trio Orb Blast' : 'Laser Beam'}</>
+                  <>⚡ {selectedDraco === 'Jumpmon' ? 'Meteor Smackdown' : selectedDraco === 'Archermon' ? 'Arrow Shower' : selectedDraco === 'Shieldmon' ? 'Avatar' : selectedDraco === 'Assassinmon' ? 'Single Slash of Death' : selectedDraco === 'Whitemon' ? 'Primal Roar' : selectedDraco === 'Magemon' ? 'Trio Orb Blast' : 'Laser Beam'}</>
                 )}
               </span>
               <span>{Math.floor(energy)}/{maxEnergy}</span>

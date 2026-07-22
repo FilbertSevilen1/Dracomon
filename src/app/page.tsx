@@ -253,7 +253,7 @@ export default function Home() {
       role: 'Stealth / Burst DPS',
       lore: 'Born in the pitch-black obsidian caves of Mystic Ruins, Assassinmon is a shadow assassin wielding twin daggers. Specialized in silent shadow-steps and high speed strike combinations.',
       signatureSkill: 'Shadow Dash Strike (Invulnerable Dash)',
-      ultimateSkill: 'Shadow Void Assassination (Instant Quad-Slash)',
+      ultimateSkill: 'Single Slash of Death (Musou Electro Shatter)',
       color: 'purple',
       tagColor: 'bg-purple-100 text-purple-900 border-purple-300 font-mono',
       attackType: 'Melee Shadow Dagger Slash',
@@ -509,57 +509,32 @@ export default function Home() {
         </div>
 
         {/* Center Nav Links */}
-        <nav className="hidden lg:flex items-center gap-6 text-xs font-bold text-stone-600">
-          <button onClick={() => scrollToSection('hero')} className="hover:text-amber-600 transition-colors">Overview</button>
-          <button onClick={() => scrollToSection('about')} className="hover:text-amber-600 transition-colors">About Realm</button>
-          <button onClick={() => scrollToSection('characters')} className="hover:text-amber-600 transition-colors">Character Lore</button>
-          <button onClick={() => scrollToSection('realms')} className="hover:text-amber-600 transition-colors">Campaign Stages</button>
-          <button onClick={() => scrollToSection('membership')} className="hover:text-amber-600 transition-colors flex items-center gap-1">
-            <Award className="w-3.5 h-3.5 text-amber-500" /> Membership Tiers
-          </button>
-          <button onClick={() => scrollToSection('faq')} className="hover:text-amber-600 transition-colors">FAQ</button>
-          <button onClick={() => scrollToSection('contact')} className="hover:text-amber-600 transition-colors">Guild Contact</button>
+        <nav className="hidden md:flex items-center gap-8 text-xs font-bold text-stone-600">
+          <button onClick={() => scrollToSection('about')} className="hover:text-amber-600 transition-colors">About</button>
+          <button onClick={() => scrollToSection('characters')} className="hover:text-amber-600 transition-colors">Heroes</button>
+          <button onClick={() => scrollToSection('realms')} className="hover:text-amber-600 transition-colors">Stages</button>
+          <button onClick={() => scrollToSection('membership')} className="hover:text-amber-600 transition-colors">Memberships</button>
         </nav>
 
         {/* Right Utility Bar */}
         <div className="flex items-center gap-3">
-          <button
-            onClick={() => { soundService.playClick(); setShowVersionHistory(true); }}
-            className="px-3 py-1.5 bg-amber-400 text-stone-950 rounded-xl text-xs font-mono font-black border border-amber-300 shadow-sm hover:bg-amber-300 transition-all active:scale-95 flex items-center gap-1"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>v0.0.3</span>
-          </button>
-
-          <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 border border-stone-200 rounded-full text-xs font-semibold text-stone-700 shadow-sm">
-            <span className="text-stone-400">Partner:</span>
-            <span className="font-bold text-stone-900">{activeDracoName} (Lv.{activeLevel})</span>
-          </div>
-
-          <div className="flex items-center gap-1 px-3 py-1.5 bg-amber-50 border border-amber-200 rounded-full text-xs font-mono font-bold text-amber-700 shadow-sm">
+          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-50/80 border border-amber-200/80 rounded-full text-xs font-mono font-bold text-amber-700 shadow-sm">
             <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
             <span>{coins}</span>
           </div>
 
           <button
-            onClick={() => { soundService.playCoin(); }}
-            className="p-2 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-amber-600 shadow-sm transition-all active:scale-95 flex items-center justify-center"
-            title="Test Sound SFX"
-          >
-            <Volume2 className="w-4 h-4" />
-          </button>
-
-          <button
             onClick={() => { soundService.playClick(); setShowInventory(true); }}
-            className="p-2 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-stone-600 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+            className="p-2 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-stone-700 shadow-sm transition-all active:scale-95 flex items-center gap-1.5 text-xs font-bold"
             title="Open Inventory"
           >
-            <Briefcase className="w-4 h-4" />
+            <Briefcase className="w-4 h-4 text-amber-600" />
+            <span className="hidden sm:inline">Bag</span>
           </button>
 
           <button
             onClick={() => { soundService.playClick(); setShowSettings(true); }}
-            className="p-2 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-stone-600 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+            className="p-2 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-stone-700 shadow-sm transition-all active:scale-95 flex items-center justify-center"
             title="Settings"
           >
             <Settings className="w-4 h-4" />
