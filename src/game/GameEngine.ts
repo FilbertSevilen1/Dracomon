@@ -187,7 +187,7 @@ export class GameEngine {
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Could not get 2D canvas context');
     this.ctx = context;
-    
+
     this.level = getLevel(stageNum);
     this.selectedDraco = selectedDraco;
     this.stats = stats;
@@ -201,7 +201,7 @@ export class GameEngine {
 
     this.initLevelEntities();
     this.setupInputListeners();
-    
+
     this.lastTime = performance.now();
     this.run();
 
@@ -775,12 +775,12 @@ export class GameEngine {
       this.shieldActive = true;
       this.shieldDuration = 120; // 2 seconds at 60fps
       this.specialCooldown = 300; // 5s cooldown
-      
+
       // CHARGE ULTIMATE DASH INITIATION!
       this.pvx = this.pFacing * 14; // heavy horizontal ram launch
       this.checkMeleeHit(this.px - 20, this.py, this.pWidth + 60, this.pHeight, this.stats.attack * 2.0); // high contact damage
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'SHIELD CHARGE! 🛡️', '#60a5fa');
-      
+
       // Spawn charging shield particles
       for (let i = 0; i < 15; i++) {
         this.particles.push({
@@ -802,7 +802,7 @@ export class GameEngine {
       this.pvx = this.pFacing * 16; // high speed dash
       this.checkMeleeHit(this.px - 30, this.py - 10, this.pWidth + 120, this.pHeight + 20, Math.floor(this.stats.attack * 2.2));
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'SHADOW STRIKE! 🥷', '#a855f7');
-      
+
       // Shadow particle trail
       for (let i = 0; i < 12; i++) {
         this.particles.push({
@@ -822,7 +822,7 @@ export class GameEngine {
       this.pvy = -12.5; // upward float launch
       this.pGrounded = false;
       this.specialCooldown = 150; // 2.5s cooldown
-      
+
       // Shoot 2 wide wind blade waves
       const waveSpeed = this.stats.speed + 6;
       [-0.1, 0.1].forEach(angle => {
@@ -892,7 +892,7 @@ export class GameEngine {
     } else if (this.selectedDraco === 'Magemon') {
       soundService.playShoot();
       this.specialCooldown = 180; // 3.0s cooldown
-      
+
       const spellChoice = Math.floor(Math.random() * 3);
       this.castMagemonSpell(spellChoice);
     }
@@ -930,7 +930,7 @@ export class GameEngine {
         type: 'meteor'
       });
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'CHAOS METEOR! ☄️', '#f97316');
-      
+
     } else if (spellType === 1) {
       // ☀️ Sun Strike: Channels laser for 1.7s (102 frames) then explodes & deals damage during explosion phase!
       const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : this.px + this.pFacing * 140;
@@ -1055,7 +1055,7 @@ export class GameEngine {
       this.pvy = -16;
       this.pGrounded = false;
       this.isPlunging = true;
-      
+
       this.enemies.forEach(enemy => {
         const dx = Math.abs(this.px - enemy.x);
         if (dx < 600) {
@@ -1076,16 +1076,16 @@ export class GameEngine {
           maxLife: 30
         });
       }
-    } 
+    }
     else if (this.selectedDraco === 'Archermon') {
       this.arrowShowerActive = true;
       this.arrowShowerDuration = 180; // 3 seconds
-    } 
+    }
     else if (this.selectedDraco === 'Shieldmon') {
       this.avatarActive = true;
       this.avatarDuration = 180; // 3 seconds
       this.pInvulnerableFrames = 180;
-    } 
+    }
     else if (this.selectedDraco === 'Assassinmon') {
       const visibleEnemies = this.enemies.filter(e => Math.abs(this.px - e.x) < 500);
       if (visibleEnemies.length === 0) {
@@ -1105,7 +1105,7 @@ export class GameEngine {
           }
         }, idx * 100);
       });
-    } 
+    }
     else if (this.selectedDraco === 'Flymon') {
       this.laserBeamActive = true;
       this.laserBeamDuration = 45; // 0.75 seconds
@@ -1113,7 +1113,7 @@ export class GameEngine {
     else if (this.selectedDraco === 'Whitemon') {
       soundService.playLevelUp();
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'PRIMAL ROAR! 🦁🔊', '#ef4444');
-      
+
       // Launch travelling sound wave projectiles forward in front
       // Damage & Stun happen ON HIT as the sound wave hits each enemy!
       for (let w = 0; w < 4; w++) {
@@ -1182,7 +1182,7 @@ export class GameEngine {
       setTimeout(() => { this.castMagemonSpell(1); }, 300); // ☀️ Homing Sun Strike
       setTimeout(() => { this.castMagemonSpell(2); }, 500); // 🌪️ Tornado
     }
-    
+
     this.birdX = this.px;
     this.birdY = this.py - 50;
   }
@@ -1297,7 +1297,7 @@ export class GameEngine {
     this.callbacks.onEnemyDefeat(expReward, coinReward);
     this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, `+${expReward} EXP`, '#3b82f6');
     this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, `+${coinReward} Coins`, '#eab308');
-    
+
     // Gain energy per kill
     if (!this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
       this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + 15);
@@ -1313,7 +1313,7 @@ export class GameEngine {
       if (otherBosses.length === 0) {
         soundService.playLevelUp();
         this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 60, 'VICTORY! STAGE CLEARED! 🌌', '#a855f7');
-        
+
         // Spawn huge fireworks particles at player!
         for (let i = 0; i < 40; i++) {
           this.particles.push({
@@ -1472,10 +1472,10 @@ export class GameEngine {
     // Shieldmon Special Charge Phase (First 30 frames / 0.5s of block)
     if (this.selectedDraco === 'Shieldmon' && this.shieldActive && this.shieldDuration > 90) {
       this.pvx = this.pFacing * 9.5;
-      
+
       // Damage enemies along the dash path
       this.checkMeleeHit(this.px - 10, this.py, this.pWidth + 20, this.pHeight, Math.floor(this.stats.attack * 0.45));
-      
+
       // Spawn trail particles
       if (this.frameCount % 2 === 0) {
         this.particles.push({
@@ -1680,7 +1680,7 @@ export class GameEngine {
       this.pGrounded = false;
       this.jumpCount = 1;
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'BOING! 🌀', '#38bdf8');
-      
+
       for (let i = 0; i < 8; i++) {
         this.particles.push({
           x: this.px + this.pWidth / 2,
@@ -1741,7 +1741,7 @@ export class GameEngine {
       if ((proj as any).type === 'bomb') {
         // Bomb Physics (Gravity and bouncing)
         proj.vy = (proj.vy || 0) + 0.24;
-        
+
         // Move X
         const nextX = proj.x + proj.vx;
         if (this.isSolid(nextX, proj.y) || nextX < 0 || nextX > this.levelWidth) {
@@ -1778,14 +1778,14 @@ export class GameEngine {
                 maxLife: 25
               });
             }
-            
+
             // Check player overlap for splash damage
             const dx = Math.abs(this.px + this.pWidth / 2 - (proj.x + proj.width / 2));
             const dy = Math.abs(this.py + this.pHeight / 2 - (proj.y + proj.height / 2));
             if (dx < 70 && dy < 70) {
               this.handlePlayerHit(proj.damage, proj.x);
             }
-            
+
             this.projectiles.splice(index, 1);
             return;
           }
@@ -1865,10 +1865,10 @@ export class GameEngine {
           // EXPLOSION PHASE: Deals damage continuously during explosion frames!
           if ((proj as any).isExploding) {
             (proj as any).explosionTimer--;
-            
+
             // Deal damage during explosion phase
             this.checkMeleeHit(proj.targetX! - 26, 0, 52, this.canvas.height, Math.ceil(proj.damage / 4));
-            
+
             // Explosion flare particles
             for (let i = 0; i < 3; i++) {
               this.particles.push({
@@ -2209,15 +2209,15 @@ export class GameEngine {
       if (enemy.type === 'bomb_thrower') {
         const dx = this.px - enemy.x;
         const dy = this.py - enemy.y;
-        
+
         enemy.facing = dx > 0 ? 1 : -1;
-        
+
         if (Math.abs(dx) < 360 && Math.abs(dy) < 180) {
           enemy.shootCooldown--;
           if (enemy.shootCooldown <= 0) {
             enemy.shootCooldown = 120; // 2 seconds
             soundService.playShoot();
-            
+
             // Spawn bomb projectile with upward arc!
             this.projectiles.push({
               x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 12,
@@ -2398,7 +2398,7 @@ export class GameEngine {
   // DRAW GAME
   private draw() {
     const ts = this.level.tileSize;
-    
+
     // Clear canvas
     this.ctx.fillStyle = this.level.theme.skyColor;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -2499,7 +2499,7 @@ export class GameEngine {
           // Draw mini landmine indicator
           this.ctx.fillStyle = '#1e293b'; // slate dark base
           this.ctx.fillRect(ex + 10, ey + ts - 6, ts - 20, 6);
-          
+
           // Blinking light
           const blink = Math.floor(this.frameCount / 12) % 2 === 0;
           this.ctx.fillStyle = blink ? '#ef4444' : '#7f1d1d';
@@ -2509,7 +2509,7 @@ export class GameEngine {
           const skewerOffset = Math.sin((this.frameCount + c * 3) * 0.05) * (ts * 0.65);
           this.ctx.fillStyle = '#64748b'; // slate metal
           this.ctx.fillRect(ex + 14, ey + ts - 4 - skewerOffset, 12, ts + skewerOffset);
-          
+
           // Draw sharp skewer tip
           this.ctx.fillStyle = '#94a3b8';
           this.ctx.beginPath();
@@ -2534,7 +2534,7 @@ export class GameEngine {
           const cycle = (this.frameCount + c * 5) % 180;
           this.ctx.fillStyle = '#374151'; // dark volcanic stone base
           this.ctx.fillRect(ex + 4, ey + ts - 8, ts - 8, 8);
-          
+
           if (cycle > 110 && cycle <= 130) {
             // warning sparkles
             if (this.frameCount % 4 === 0) {
@@ -2556,10 +2556,10 @@ export class GameEngine {
             fireGrad.addColorStop(0, '#ef4444');
             fireGrad.addColorStop(0.5, '#f97316');
             fireGrad.addColorStop(1, 'rgba(251, 191, 36, 0.1)');
-            
+
             this.ctx.fillStyle = fireGrad;
             this.ctx.fillRect(ex + 8, ey + ts - colHeight, ts - 16, colHeight);
-            
+
             // Continuous player check
             if (
               this.px < ex + ts - 8 &&
@@ -2569,7 +2569,7 @@ export class GameEngine {
             ) {
               this.handlePlayerHit(2, ex + ts / 2);
             }
-            
+
             if (this.frameCount % 2 === 0) {
               this.particles.push({
                 x: ex + 8 + Math.random() * (ts - 16),
@@ -2589,12 +2589,12 @@ export class GameEngine {
           this.ctx.save();
           this.ctx.translate(ex + ts / 2, ey + ts / 2);
           this.ctx.rotate(angle);
-          
+
           const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 24);
           grad.addColorStop(0, '#38bdf8');
           grad.addColorStop(0.5, '#0284c7');
           grad.addColorStop(1, 'rgba(2, 132, 199, 0)');
-          
+
           this.ctx.fillStyle = grad;
           this.ctx.beginPath();
           this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
@@ -2615,12 +2615,12 @@ export class GameEngine {
             this.ctx.save();
             this.ctx.translate(ex + ts / 2, ey + ts / 2);
             this.ctx.rotate(angle);
-            
+
             const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 24);
             grad.addColorStop(0, '#a855f7');
             grad.addColorStop(0.5, '#6366f1');
             grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
-            
+
             this.ctx.fillStyle = grad;
             this.ctx.beginPath();
             this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
@@ -2694,7 +2694,7 @@ export class GameEngine {
     // Draw Projectiles
     this.projectiles.forEach(proj => {
       this.ctx.fillStyle = proj.color;
-      
+
       if (proj.type === 'fireball') {
         // Glowing orange fireball circles
         const bounce = Math.sin(this.frameCount * 0.2 + proj.x) * 2;
@@ -2727,7 +2727,7 @@ export class GameEngine {
         const isFacingRight = proj.vx >= 0;
         const startAngle = isFacingRight ? -Math.PI / 2.5 : Math.PI / 2.5;
         const endAngle = isFacingRight ? Math.PI / 2.5 : (Math.PI * 3) / 2.5;
-        
+
         // Outer directional travelling sound wave arc
         this.ctx.beginPath();
         this.ctx.arc(proj.x + proj.width / 2, proj.y + proj.height / 2, waveRadius, startAngle, endAngle);
@@ -2868,7 +2868,7 @@ export class GameEngine {
           const yOff = (i * 10 + (this.frameCount * 3)) % proj.height;
           // progress goes 0 at top to 1 at bottom
           const progress = yOff / proj.height;
-          // w is widest at top (46px) and narrowest at bottom tip (12px)
+          // w is widest at top (46px) and narrowest at bottom tip (12px).
           const w = 12 + (1 - progress) * 34;
           const rotAngle = Math.sin(this.frameCount * 0.25 + i * 0.5) * 0.35;
 
@@ -2891,7 +2891,7 @@ export class GameEngine {
         this.ctx.fillStyle = '#a855f7';
         this.ctx.strokeStyle = '#c084fc';
         this.ctx.lineWidth = 4;
-        
+
         // Arc blade crescent shape
         this.ctx.beginPath();
         this.ctx.arc(proj.x + proj.width / 2, proj.y + proj.height / 2, proj.width / 2, -Math.PI / 3, Math.PI / 3);
@@ -2932,10 +2932,10 @@ export class GameEngine {
 
         this.ctx.beginPath();
         this.ctx.ellipse(
-          enemy.x + enemy.width / 2, 
-          enemy.y + enemy.height / 2 + squish / 2, 
-          enemy.width / 2, 
-          enemy.height / 2 - squish / 2, 
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height / 2 + squish / 2,
+          enemy.width / 2,
+          enemy.height / 2 - squish / 2,
           0, 0, Math.PI * 2
         );
         this.ctx.fill();
@@ -2983,10 +2983,10 @@ export class GameEngine {
         this.ctx.fillStyle = '#ea580c';
         this.ctx.strokeStyle = '#7c2d12';
         this.ctx.lineWidth = 2;
-        
+
         // Body block
         this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-        
+
         // Cracks of lava
         this.ctx.fillStyle = '#facc15';
         this.ctx.fillRect(enemy.x + 8, enemy.y + 12, 4, 18);
@@ -3001,7 +3001,7 @@ export class GameEngine {
         this.ctx.fillStyle = '#1e1b4b';
         this.ctx.strokeStyle = '#e11d48'; // red outline
         this.ctx.lineWidth = 3;
-        
+
         this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
 
         // Glowing red horns/wings
@@ -3051,10 +3051,10 @@ export class GameEngine {
 
         this.ctx.beginPath();
         this.ctx.ellipse(
-          enemy.x + enemy.width / 2, 
-          enemy.y + enemy.height / 2 + squish / 2, 
-          enemy.width / 2, 
-          enemy.height / 2 - squish / 2, 
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height / 2 + squish / 2,
+          enemy.width / 2,
+          enemy.height / 2 - squish / 2,
           0, 0, Math.PI * 2
         );
         this.ctx.fill();
@@ -3390,7 +3390,7 @@ export class GameEngine {
 
     // Draw Player
     this.ctx.save();
-    
+
     // Invulnerable blinking effect
     if (this.pInvulnerableFrames > 0 && Math.floor(this.pInvulnerableFrames / 4) % 2 === 0) {
       this.ctx.globalAlpha = 0.3;
@@ -3493,7 +3493,7 @@ export class GameEngine {
       const wingX = this.pFacing === 1 ? px + 6 : px + pw - 6;
       this.ctx.ellipse(wingX - this.pFacing * 12, py + 16 + buzz, 14, 6, -this.pFacing * Math.PI / 6, 0, Math.PI * 2);
       this.ctx.fill();
-      
+
       this.ctx.beginPath();
       this.ctx.ellipse(wingX - this.pFacing * 16, py + 22 - buzz, 10, 5, -this.pFacing * Math.PI / 4, 0, Math.PI * 2);
       this.ctx.fill();
@@ -3778,7 +3778,7 @@ export class GameEngine {
     // Render Health & Ultimate Energy bars floating above the player's head!
     const hpPct = Math.max(0, Math.min(1, this.pHP / this.pMaxHP));
     const energyPct = Math.max(0, Math.min(1, this.pEnergy / this.getMaxEnergy()));
-    
+
     // Draw mini HP bar container
     this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
     this.ctx.fillRect(px, py - 14, pw, 4);
@@ -3798,11 +3798,11 @@ export class GameEngine {
       this.ctx.save();
       const beamX = this.pFacing === 1 ? this.px + this.pWidth : 0;
       const beamW = this.pFacing === 1 ? this.levelWidth - beamX : this.px;
-      
+
       // Glowing pink outer energy
       this.ctx.fillStyle = 'rgba(244, 63, 94, 0.4)';
       this.ctx.fillRect(beamX, this.py + 10, beamW, 24);
-      
+
       // Inner white hot core laser
       this.ctx.fillStyle = '#ffffff';
       this.ctx.fillRect(beamX, this.py + 16, beamW, 12);
@@ -3860,7 +3860,7 @@ export class GameEngine {
     // Cinematic Freeze Sequence
     if (this.ultimateCinematicActive) {
       this.ultimateCinematicDuration--;
-      
+
       // Spawn magic charging aura particles around player
       if (this.frameCount % 3 === 0) {
         this.particles.push({
@@ -3874,14 +3874,14 @@ export class GameEngine {
           maxLife: 25
         });
       }
-      
+
       this.updateParticles();
-      
+
       if (this.ultimateCinematicDuration <= 0) {
         this.ultimateCinematicActive = false;
         this.unleashUltimate();
       }
-      
+
       this.draw();
       this.animationFrameId = requestAnimationFrame(this.run);
       return;
@@ -3934,7 +3934,7 @@ export class GameEngine {
         const bw = this.pFacing === 1 ? this.levelWidth - bx : this.px;
         const by = this.py + 10;
         const bh = 24;
-        
+
         this.enemies.forEach(enemy => {
           if (
             enemy.x < bx + bw &&
@@ -3948,12 +3948,12 @@ export class GameEngine {
         });
       }
     }
-    
+
     // Update active timers
     if (this.attackCooldown > 0) this.attackCooldown--;
     if (this.specialCooldown > 0) this.specialCooldown--;
     if (this.pInvulnerableFrames > 0) this.pInvulnerableFrames--;
-    
+
     if (this.isAttacking) {
       this.attackDuration--;
       if (this.attackDuration <= 0) this.isAttacking = false;
