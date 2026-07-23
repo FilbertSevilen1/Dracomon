@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   ArrowLeft,
@@ -20,21 +21,14 @@ import {
 import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
 import { Navbar } from '../../components/Navbar';
-import { GameScreen } from '../../components/GameScreen';
 import { InventoryModal } from '../../components/InventoryModal';
 import { SettingsModal } from '../../components/SettingsModal';
 
 export default function MapsPage() {
+  const router = useRouter();
   const {
     saveData,
-    isPlaying,
-    setIsPlaying,
-    currentStage,
     setCurrentStage,
-    collectCoins,
-    collectItem,
-    handleEnemyDefeated,
-    markStageCleared,
     usePotion,
     useUpgradeStone,
     buyItem,
@@ -49,8 +43,6 @@ export default function MapsPage() {
 
   const currentTier = saveData.tier || 'Free';
   const maxUnlockedStage = saveData.player.level || 1;
-
-  const activePotionCount = saveData.inventory.find(i => i.id === 'potion')?.quantity || 0;
 
   const STAGES = [
     {
@@ -161,127 +153,94 @@ export default function MapsPage() {
       <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-emerald-100/50 rounded-full blur-3xl -z-10" />
 
       {/* Navigation Header */}
-      {!isPlaying && <Navbar onOpenInventory={() => setShowInventory(true)} />}
+      <Navbar onOpenInventory={() => setShowInventory(true)} />
 
-      {/* IN-GAME GAMEPLAY SCREEN OVERLAY (Starts right here on /maps!) */}
-      {isPlaying ? (
-        <motion.div
-          key="maps-game-screen-wrapper"
-          initial={{ opacity: 0, scale: 0.96 }}
-          animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.96 }}
-          className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-stone-950/95 backdrop-blur-xl p-[2.5vh] p-[2.5vw] overflow-hidden select-none"
-        >
-          <div className="w-[90vw] h-[90vh] max-w-full max-h-full rounded-3xl border-2 border-stone-800/80 shadow-[0_0_60px_rgba(0,0,0,0.9)] overflow-hidden relative bg-stone-950 flex flex-col">
-            <GameScreen
-              saveData={saveData}
-              stageNum={currentStage}
-              onCoinCollect={collectCoins}
-              onItemCollect={collectItem}
-              onEnemyDefeat={handleEnemyDefeated}
-              onStageClear={() => markStageCleared(currentStage)}
-              onNextLevel={() => {
-                markStageCleared(currentStage);
-                setCurrentStage(Math.min(currentStage + 1, 11));
-              }}
-              onQuit={() => {
-                setIsPlaying(false);
-              }}
-              openSettings={() => setShowSettings(true)}
-              openInventory={() => setShowInventory(true)}
-              activePotionCount={activePotionCount}
-              onUsePotion={usePotion}
-            />
+      {/* Main Content Container */}
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
+        {/* Page Title Banner */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-8">
+          <div>
+            <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
+              Campaign <span className="text-rose-500">Maps & Stages</span>
+            </h1>
+            <p className="text-xs md:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
+              Discover all 11 campaign stages across Volcanic Peaks, Underwater Abyss, Jungle Vine Swamps, and the Gladiator Arena.
+              Launch any unlocked stage directly into campaign action!
+            </p>
           </div>
-        </motion.div>
-      ) : (
-        /* Main Content Container */
-        <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
-          {/* Page Title Banner */}
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-8">
-            <div>
-              <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
-                Campaign <span className="text-rose-500">Maps & Stages</span>
-              </h1>
-              <p className="text-xs md:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
-                Discover all 11 campaign stages across Volcanic Peaks, Underwater Abyss, Jungle Vine Swamps, and the Gladiator Arena.
-                Launch any unlocked stage directly into campaign action!
-              </p>
-            </div>
-          </div>
+        </div>
 
-          {/* 11 Stage Cards Grid */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {STAGES.map((stg) => {
-              const isUnlocked = stg.num <= maxUnlockedStage || currentTier === 'Premium' || currentTier === 'Basic';
+        {/* 11 Stage Cards Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {STAGES.map((stg) => {
+            const isUnlocked = stg.num <= maxUnlockedStage || currentTier === 'Premium' || currentTier === 'Basic';
 
-              return (
-                <motion.div
-                  key={stg.num}
-                  whileHover={{ y: -5 }}
-                  className={`p-7 rounded-3xl border transition-all flex flex-col justify-between ${
-                    isUnlocked
-                      ? 'bg-white border-stone-200/90 hover:border-amber-400 hover:shadow-xl shadow-md'
-                      : 'bg-stone-50/70 border-stone-200/80 opacity-80'
-                  }`}
-                >
-                  <div>
-                    {/* Top Badges */}
-                    <div className="flex items-center justify-between gap-2 mb-3">
-                      <span className="text-xs font-mono font-black text-stone-500 uppercase">
-                        STAGE {stg.num}
-                      </span>
-                      <span className={`px-2.5 py-0.5 text-[9px] uppercase tracking-wider rounded-md border ${stg.diffClass}`}>
-                        {stg.difficulty}
-                      </span>
-                    </div>
-
-                    {/* Stage Title */}
-                    <div className="flex items-center gap-3">
-                      <span className="text-3xl p-2 bg-stone-100 rounded-2xl border border-stone-200 shadow-inner">
-                        {stg.icon}
-                      </span>
-                      <div>
-                        <h3 className="text-2xl font-black text-stone-900 leading-tight">{stg.name}</h3>
-                        <span className="text-xs font-bold text-rose-600 block mt-0.5 flex items-center gap-1">
-                          <Skull className="w-3.5 h-3.5" /> Boss: {stg.boss}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Stage Description */}
-                    <p className="mt-4 text-xs text-stone-600 leading-relaxed p-3.5 bg-stone-50 border border-stone-200/60 rounded-2xl">
-                      {stg.desc}
-                    </p>
+            return (
+              <motion.div
+                key={stg.num}
+                whileHover={{ y: -5 }}
+                className={`p-7 rounded-3xl border transition-all flex flex-col justify-between ${
+                  isUnlocked
+                    ? 'bg-white border-stone-200/90 hover:border-amber-400 hover:shadow-xl shadow-md'
+                    : 'bg-stone-50/70 border-stone-200/80 opacity-80'
+                }`}
+              >
+                <div>
+                  {/* Top Badges */}
+                  <div className="flex items-center justify-between gap-2 mb-3">
+                    <span className="text-xs font-mono font-black text-stone-500 uppercase">
+                      STAGE {stg.num}
+                    </span>
+                    <span className={`px-2.5 py-0.5 text-[9px] uppercase tracking-wider rounded-md border ${stg.diffClass}`}>
+                      {stg.difficulty}
+                    </span>
                   </div>
 
-                  {/* Play Button (Starts level directly on /maps without redirecting!) */}
-                  <div className="mt-6">
-                    {isUnlocked ? (
-                      <button
-                        onClick={() => {
-                          soundService.playClick();
-                          setCurrentStage(stg.num);
-                          setIsPlaying(true);
-                        }}
-                        className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
-                      >
-                        <Play className="w-4 h-4 text-amber-400 fill-amber-400" />
-                        <span>PLAY STAGE {stg.num} NOW</span>
-                      </button>
-                    ) : (
-                      <div className="w-full py-3 bg-stone-100 text-stone-400 rounded-2xl font-bold text-xs border border-stone-200 flex items-center justify-center gap-1.5 cursor-not-allowed">
-                        <Lock className="w-4 h-4 text-stone-400" />
-                        <span>CLEAR STAGE {stg.num - 1} TO UNLOCK</span>
-                      </div>
-                    )}
+                  {/* Stage Title */}
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl p-2 bg-stone-100 rounded-2xl border border-stone-200 shadow-inner">
+                      {stg.icon}
+                    </span>
+                    <div>
+                      <h3 className="text-2xl font-black text-stone-900 leading-tight">{stg.name}</h3>
+                      <span className="text-xs font-bold text-rose-600 block mt-0.5 flex items-center gap-1">
+                        <Skull className="w-3.5 h-3.5" /> Boss: {stg.boss}
+                      </span>
+                    </div>
                   </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </main>
-      )}
+
+                  {/* Stage Description */}
+                  <p className="mt-4 text-xs text-stone-600 leading-relaxed p-3.5 bg-stone-50 border border-stone-200/60 rounded-2xl">
+                    {stg.desc}
+                  </p>
+                </div>
+
+                {/* Play Button */}
+                <div className="mt-6">
+                  {isUnlocked ? (
+                    <button
+                      onClick={() => {
+                        soundService.playClick();
+                        setCurrentStage(stg.num);
+                        router.push(`/play?stage=${stg.num}`);
+                      }}
+                      className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                    >
+                      <Play className="w-4 h-4 text-amber-400 fill-amber-400" />
+                      <span>PLAY STAGE {stg.num} NOW</span>
+                    </button>
+                  ) : (
+                    <div className="w-full py-3 bg-stone-100 text-stone-400 rounded-2xl font-bold text-xs border border-stone-200 flex items-center justify-center gap-1.5 cursor-not-allowed">
+                      <Lock className="w-4 h-4 text-stone-400" />
+                      <span>CLEAR STAGE {stg.num - 1} TO UNLOCK</span>
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            );
+          })}
+        </div>
+      </main>
 
       {/* Inventory Bag */}
       {showInventory && (
@@ -307,20 +266,18 @@ export default function MapsPage() {
       )}
 
       {/* Page Footer */}
-      {!isPlaying && (
-        <footer className="w-full border-t border-stone-200 bg-white py-6 px-6 md:px-12 text-center text-xs font-mono text-stone-500 z-10">
-          <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-            <span>© {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1</span>
-            <Link
-              href="/"
-              onClick={() => soundService.playClick()}
-              className="text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
-            >
-              <span>Return Home</span>
-            </Link>
-          </div>
-        </footer>
-      )}
+      <footer className="w-full border-t border-stone-200 bg-white py-6 px-6 md:px-12 text-center text-xs font-mono text-stone-500 z-10">
+        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
+          <span>© {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1</span>
+          <Link
+            href="/"
+            onClick={() => soundService.playClick()}
+            className="text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
+          >
+            <span>Return Home</span>
+          </Link>
+        </div>
+      </footer>
     </div>
   );
 }

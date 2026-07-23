@@ -39,7 +39,10 @@ import {
   ScrollText,
 } from 'lucide-react';
 
+import { useRouter } from 'next/navigation';
+
 export default function Home() {
+  const router = useRouter();
   const {
     saveData,
     isPlaying,
@@ -120,8 +123,7 @@ export default function Home() {
     soundService.playClick();
     setCurrentStage(stageNum);
     setShowStageSelector(false);
-    setIsPlaying(true);
-    window.scrollTo(0, 0);
+    router.push(`/play?stage=${stageNum}`);
   };
 
   // Sound triggers for landing page companion click
@@ -621,46 +623,12 @@ export default function Home() {
       )}
 
       {/* Navigation Header */}
-      {!isPlaying && <Navbar onOpenInventory={() => setShowInventory(true)} />}
+      <Navbar onOpenInventory={() => setShowInventory(true)} />
 
       {/* Main Container */}
       <main className="flex-1 w-full z-30">
-        <AnimatePresence mode="wait">
-          {isPlaying ? (
-            // IN-GAME SCREEN VIEW (10% Smaller Framed Viewport)
-            <motion.div
-              key="game-screen-wrapper"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-stone-950 overflow-hidden select-none p-0 m-0"
-            >
-              <div className="w-full h-full max-w-[1920px] mx-auto rounded-none border-0 overflow-hidden relative bg-stone-950 flex flex-col">
-                <GameScreen
-                  saveData={saveData}
-                  stageNum={currentStage}
-                  onCoinCollect={collectCoins}
-                  onItemCollect={collectItem}
-                  onEnemyDefeat={handleEnemyDefeated}
-                  onStageClear={() => markStageCleared(currentStage)}
-                  onNextLevel={() => {
-                    markStageCleared(currentStage);
-                    setCurrentStage(Math.min(currentStage + 1, 11));
-                  }}
-                  onQuit={() => {
-                    setIsPlaying(false);
-                    window.scrollTo(0, 0);
-                  }}
-                  openSettings={() => setShowSettings(true)}
-                  openInventory={() => setShowInventory(true)}
-                  activePotionCount={activePotionCount}
-                  onUsePotion={usePotion}
-                />
-              </div>
-            </motion.div>
-          ) : (
-            // FULL GAME WEBSITE LANDING VIEW
-            <div className="w-full space-y-24 py-8">
+        {/* FULL GAME WEBSITE LANDING VIEW */}
+        <div className="w-full space-y-24 py-8">
               
               {/* HERO BANNER SECTION */}
               <section id="hero" className="w-full min-h-[85vh] max-w-6xl mx-auto px-6 md:px-12 pt-6 flex items-center">
@@ -1783,8 +1751,6 @@ export default function Home() {
 
 
             </div>
-          )}
-        </AnimatePresence>
       </main>
 
       {/* Stage Selector Modal */}
@@ -2032,8 +1998,7 @@ export default function Home() {
       </AnimatePresence>
 
       {/* AAA FOOTER */}
-      {!isPlaying && (
-        <footer className="w-full border-t border-stone-200 bg-white/70 backdrop-blur-md pt-12 pb-8 z-40 select-none font-sans">
+      <footer className="w-full border-t border-stone-200 bg-white/70 backdrop-blur-md pt-12 pb-8 z-40 select-none font-sans">
           <div className="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-4 gap-8 text-left text-xs">
             <div className="space-y-3">
               <span className="text-lg font-black text-stone-900 flex items-center gap-1 font-display">
@@ -2085,7 +2050,6 @@ export default function Home() {
             © {new Date().getFullYear()} Dracomon RPG Realm. All rights reserved. Offline Save Persistence Enabled.
           </div>
         </footer>
-      )}
     </div>
   );
 }
