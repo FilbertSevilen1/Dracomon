@@ -37,7 +37,6 @@ export class ProjectileManager {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const proj = this.projectiles[i];
 
-      // Standard projectile movement
       if (proj.life !== undefined) {
         proj.life--;
         if (proj.life <= 0) {
@@ -60,7 +59,6 @@ export class ProjectileManager {
           continue;
         }
       } else if (proj.type === 'sun_strike') {
-        // Sun strike handling...
       } else {
         proj.x += proj.vx;
         proj.y += proj.vy;

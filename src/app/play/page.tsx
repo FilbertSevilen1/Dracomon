@@ -68,7 +68,7 @@ function PlayContent() {
         />
       </div>
 
-      {/* Inventory Bag Modal */}
+      {}
       {showInventory && (
         <InventoryModal
           saveData={saveData}
@@ -79,7 +79,7 @@ function PlayContent() {
         />
       )}
 
-      {/* Settings Modal */}
+      {}
       {showSettings && (
         <SettingsModal
           saveData={saveData}

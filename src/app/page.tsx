@@ -70,7 +70,6 @@ export default function Home() {
     markStageCleared,
   } = useGameState();
 
-  // Modal open states
   const [showSelection, setShowSelection] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -80,35 +79,30 @@ export default function Home() {
   const [stagePage, setStagePage] = useState(0);
   const [realmPage, setRealmPage] = useState(0);
 
-  // Contact form state
   const [contactName, setContactName] = useState('');
   const [contactEmail, setContactEmail] = useState('');
   const [contactMessage, setContactMessage] = useState('');
   const [contactSubmitted, setContactSubmitted] = useState(false);
 
-  // FAQ open accordion state
   const [openFaq, setOpenFaq] = useState<number | null>(0);
 
-  // Active companion specs
   const activeDracoName = saveData.selectedDraco;
   const activeDraco = saveData.dracos[activeDracoName];
   const activeLevel = activeDraco?.level || 1;
   const coins = saveData.player.coins;
 
-  // Retrieve active potions
   const potionItem = saveData.inventory.find(i => i.id === 'potion');
   const activePotionCount = potionItem ? potionItem.quantity : 0;
 
-  // Auto scroll to top when toggling game screen or stage page
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [isPlaying, stagePage]);
 
   const isStageUnlocked = (stageNum: number) => {
     if (saveData.tier === 'Basic' || saveData.tier === 'Premium') {
-      return true; // Basic and Premium membership tiers unlock all maps immediately!
+      return true;
     }
-    if (stageNum === 1) return true; // Stage 1 unlocked by default for Free Tier
+    if (stageNum === 1) return true;
     const completed = saveData.completedStages || [];
     return completed.includes(stageNum) || completed.includes(stageNum - 1);
   };
@@ -126,14 +120,12 @@ export default function Home() {
     router.push(`/play?stage=${stageNum}`);
   };
 
-  // Sound triggers for landing page companion click
   const triggerCompanionJump = (name: string) => {
     if (name === 'Jumpmon') soundService.playJump();
     if (name === 'Archermon') soundService.playShoot();
     if (name === 'Shieldmon') soundService.playBlock();
   };
 
-  // Handler for direct selection/unlock from Hero floating islands & quick bar
   const handleHeroSelectDraco = (name: string, cost: number) => {
     const isUnlocked = saveData.dracos[name]?.unlocked ?? (name === 'Jumpmon');
     if (isUnlocked) {
@@ -163,7 +155,6 @@ export default function Home() {
     }, 4000);
   };
 
-  // Companion specs list with deep story lore & attributes
   const companionShowcase = [
     {
       name: 'Jumpmon',
@@ -459,7 +450,6 @@ export default function Home() {
     },
   ];
 
-  // FAQ List
   const faqs = [
     {
       q: 'How do I drop down through floating platforms?',
@@ -483,7 +473,6 @@ export default function Home() {
     },
   ];
 
-  // Campaign Stages Card Metadata for paginated campaign maps selection
   const STAGE_CARDS = [
     {
       num: 1,
@@ -611,8 +600,8 @@ export default function Home() {
 
   return (
     <div className={`min-h-screen ${isPlaying ? 'bg-stone-950 overflow-hidden' : 'bg-stone-50 bg-grid'} text-stone-900 flex flex-col justify-between font-display relative overflow-hidden scroll-smooth`}>
-      
-      {/* Dynamic background lighting accents */}
+
+      {}
       {!isPlaying && (
         <>
           <div className="absolute top-0 right-0 w-[55rem] h-[55rem] bg-amber-200/25 rounded-full blur-3xl -z-10 animate-blob-drift-1" />
@@ -622,18 +611,18 @@ export default function Home() {
         </>
       )}
 
-      {/* Navigation Header */}
+      {}
       <Navbar onOpenInventory={() => setShowInventory(true)} />
 
-      {/* Main Container */}
+      {}
       <main className="flex-1 w-full z-30">
-        {/* FULL GAME WEBSITE LANDING VIEW */}
+        {}
         <div className="w-full space-y-24 py-8">
-              
-              {/* HERO BANNER SECTION */}
+
+              {}
               <section id="hero" className="w-full min-h-[85vh] max-w-6xl mx-auto px-6 md:px-12 pt-6 flex items-center">
                 <div className="grid md:grid-cols-12 gap-8 items-center">
-                  {/* Hero Left Content */}
+                  {}
                   <div className="md:col-span-7 space-y-6 text-left">
                     <h1 className="text-4xl md:text-6xl font-black tracking-tight text-stone-900 leading-tight font-display">
                       Evolve Your Companion. <br />
@@ -641,12 +630,12 @@ export default function Home() {
                         Conquer Floating Realms
                       </span>
                     </h1>
-                    
+
                     <p className="text-stone-600 text-sm md:text-base leading-relaxed max-w-xl">
                       Leap across floating platform islands, master real-time weapon swing arcs, collect sacred upgrade stones, and synthesize the ultimate dragon warrior.
                     </p>
 
-                    {/* Quick Partner Selector in Hero */}
+                    {}
                     <div className="pt-2">
                       <span className="text-[11px] font-mono font-bold text-stone-500 block mb-2 uppercase tracking-widest">
                         ► Select Active Partner:
@@ -681,7 +670,7 @@ export default function Home() {
                       </div>
                     </div>
 
-                    {/* Hero Action Buttons */}
+                    {}
                     <div className="flex flex-wrap items-center gap-4 pt-2">
                       <button
                         onClick={() => { soundService.playClick(); setShowStageSelector(true); }}
@@ -708,7 +697,7 @@ export default function Home() {
                       </button>
                     </div>
 
-                    {/* Features summary */}
+                    {}
                     <div className="grid grid-cols-3 gap-4 pt-4 border-t border-stone-200/60 max-w-lg text-xs font-semibold text-stone-500">
                       <div className="flex items-center gap-1.5">
                         <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
@@ -725,9 +714,9 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Hero Right Interactive Floating Islands (Non-overlapping 8-Point Ring Constellation) */}
+                  {}
                   <div className="md:col-span-5 flex justify-center items-center h-[500px] relative select-none w-full px-2">
-                    {/* Floating Island 1: Jumpmon (Top-Left) */}
+                    {}
                     <motion.div
                       className={`absolute top-2 left-2 md:left-4 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Jumpmon' ? 'scale-105' : ''
@@ -757,7 +746,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 2: Magemon (Top-Center) */}
+                    {}
                     <motion.div
                       className={`absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Magemon' ? 'scale-105' : ''
@@ -791,7 +780,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 3: Archermon (Top-Right) */}
+                    {}
                     <motion.div
                       className={`absolute top-2 right-2 md:right-4 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Archermon' ? 'scale-105' : ''
@@ -825,7 +814,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 4: Shieldmon (Mid-Left) */}
+                    {}
                     <motion.div
                       className={`absolute top-[175px] left-0 md:left-2 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Shieldmon' ? 'scale-105' : ''
@@ -859,7 +848,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 5: Shadowmon (Mid-Right) */}
+                    {}
                     <motion.div
                       className={`absolute top-[175px] right-0 md:right-2 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Shadowmon' ? 'scale-110' : ''
@@ -893,7 +882,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 6: Assassinmon (Bottom-Left) */}
+                    {}
                     <motion.div
                       className={`absolute bottom-2 left-2 md:left-4 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Assassinmon' ? 'scale-105' : ''
@@ -927,7 +916,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 7: Whitemon (Bottom-Center) */}
+                    {}
                     <motion.div
                       className={`absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Whitemon' ? 'scale-105' : ''
@@ -961,7 +950,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 8: Flymon (Bottom-Right) */}
+                    {}
                     <motion.div
                       className={`absolute bottom-2 right-2 md:right-4 flex flex-col items-center cursor-pointer group z-20 ${
                         activeDracoName === 'Flymon' ? 'scale-105' : ''
@@ -995,7 +984,7 @@ export default function Home() {
                       </div>
                     </motion.div>
 
-                    {/* Floating Island 9: Bombamon (Center Core) */}
+                    {}
                     <motion.div
                       className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group z-30 ${
                         activeDracoName === 'Bombamon' ? 'scale-110' : ''
@@ -1032,7 +1021,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* ABOUT THE REALM & GAME LORE */}
+              {}
               <section id="about" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">About The Dracony Realm</h2>
@@ -1041,7 +1030,7 @@ export default function Home() {
                   </p>
                 </div>
 
-                {/* 4 Feature Pillars */}
+                {}
                 <div className="grid md:grid-cols-4 gap-6 mt-12">
                   <div className="p-6 bg-white border border-stone-200 rounded-3xl shadow-sm space-y-3 hover:shadow-md transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
@@ -1085,7 +1074,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* MEMBERSHIP TIERS SECTION (Above Heroes Section) */}
+              {}
               <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-16 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
@@ -1095,7 +1084,7 @@ export default function Home() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8 mt-12">
-                  {/* Free Tier */}
+                  {}
                   <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
                     saveData.tier === 'Free' || !saveData.tier
                       ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
@@ -1129,7 +1118,7 @@ export default function Home() {
                     </button>
                   </div>
 
-                  {/* Basic Tier */}
+                  {}
                   <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
                     saveData.tier === 'Basic'
                       ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
@@ -1163,7 +1152,7 @@ export default function Home() {
                     </button>
                   </div>
 
-                  {/* Premium Tier */}
+                  {}
                   <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
                     saveData.tier === 'Premium'
                       ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
@@ -1199,7 +1188,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* CHARACTER STORY & LORE SECTION */}
+              {}
               <section id="characters" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
                   <div>
@@ -1219,7 +1208,7 @@ export default function Home() {
                   </Link>
                 </div>
 
-                {/* Detailed Character Story Cards Grid (Only 3 featured heroes) */}
+                {}
                 <div className="grid md:grid-cols-3 gap-8 mt-10">
                   {companionShowcase.slice(0, 3).map((item) => {
                     const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
@@ -1239,7 +1228,7 @@ export default function Home() {
                         } shadow-md hover:shadow-xl transition-all flex flex-col justify-between relative overflow-hidden`}
                       >
                         <div>
-                          {/* Card Top Badges Bar */}
+                          {}
                           <div className="flex items-center justify-between gap-2 mb-3">
                             <span className={`inline-block px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-md border ${item.tagColor}`}>
                               {item.title}
@@ -1262,7 +1251,7 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {/* Companion Avatar & Name Profile */}
+                          {}
                           <div className="flex items-center gap-3.5">
                             <div className={`w-16 h-16 shrink-0 rounded-2xl ${isUnlocked ? 'bg-stone-100 border-stone-200' : 'bg-stone-200/60 border-stone-300'} border flex items-center justify-center p-2 shadow-inner relative`}>
                               {item.svg}
@@ -1278,12 +1267,12 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {/* Character Story Paragraph */}
+                          {}
                           <div className="mt-4 p-3.5 bg-stone-50/80 border border-stone-100 rounded-2xl text-xs leading-relaxed text-stone-600">
                             <p>{item.lore}</p>
                           </div>
 
-                          {/* Signature & Ultimate Ability */}
+                          {}
                           <div className="mt-3 space-y-1.5 text-xs">
                             <div className="flex justify-between text-stone-600">
                               <span className="font-semibold">Attack Style:</span>
@@ -1302,7 +1291,7 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {/* Attribute Stats Grid */}
+                          {}
                           <div className="grid grid-cols-5 gap-1.5 mt-4 pt-3 border-t border-stone-100 text-center font-mono">
                             <div className="p-1.5 bg-stone-50 rounded-xl">
                               <span className="text-[8px] text-stone-400 block font-sans">HP</span>
@@ -1327,7 +1316,7 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {/* Action Button */}
+                        {}
                         {isSelected ? (
                           <div className="space-y-2 mt-5">
                             <button
@@ -1422,7 +1411,7 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* View All Roster CTA Button */}
+                {}
                 <div className="mt-8 text-center">
                   <Link
                     href="/heroes"
@@ -1435,7 +1424,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* CAMPAIGN STAGES SECTION */}
+              {}
               <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                   <div>
@@ -1445,7 +1434,7 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {/* Pagination Header Controls */}
+                  {}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       onClick={() => {
@@ -1473,7 +1462,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Paginated Stage Cards Grid (3 cards per page) */}
+                {}
                 <div className="grid md:grid-cols-3 gap-6">
                   {STAGE_CARDS.slice(realmPage * 3, (realmPage + 1) * 3).map((stage) => {
                     const unlocked = isStageUnlocked(stage.num);
@@ -1489,7 +1478,7 @@ export default function Home() {
                             : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
                         } ${!unlocked ? 'opacity-90' : ''}`}
                       >
-                        {/* Lock Overlay Badge if locked */}
+                        {}
                         {!unlocked && (
                           <div className="absolute inset-0 z-20 bg-stone-900/65 backdrop-blur-[2px] p-6 flex flex-col items-center justify-center text-center text-white space-y-2 rounded-3xl">
                             <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-lg shadow-inner">
@@ -1551,7 +1540,7 @@ export default function Home() {
                   })}
                 </div>
 
-                {/* Bottom Page Indicator Dots */}
+                {}
                 <div className="mt-8 flex items-center justify-center gap-2">
                   {Array.from({ length: Math.ceil(STAGE_CARDS.length / 3) }).map((_, idx) => (
                     <button
@@ -1571,7 +1560,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* FREQUENTLY ASKED QUESTIONS SECTION */}
+              {}
               <section id="faq" className="w-full max-w-4xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
                 <div className="text-center space-y-2 mb-8">
                   <h2 className="text-3xl md:text-4xl font-black text-stone-900">Frequently Asked Questions</h2>
@@ -1617,7 +1606,7 @@ export default function Home() {
                 </div>
               </section>
 
-              {/* SUPPORT THE DEVELOPER SECTION (BCA Transfer Info - Editable) */}
+              {}
               <section id="support" className="w-full max-w-4xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60 select-none">
                 <div className="bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-purple-500/10 border border-purple-200/60 rounded-3xl p-8 md:p-10 shadow-md flex flex-col md:flex-row items-center justify-between gap-8">
                   <div className="space-y-3 text-left md:max-w-md">
@@ -1629,44 +1618,15 @@ export default function Home() {
                       If you enjoyed playing Dracomon, consider supporting the developers! Your donations help us add new characters, mechanics, and stages to the realm.
                     </p>
                   </div>
-                  
-                  {/* <div className="w-full md:w-auto min-w-[290px] bg-white border border-purple-200/60 rounded-2xl p-5 shadow-sm space-y-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-xl bg-purple-50 flex items-center justify-center font-bold text-lg text-purple-600 shadow-inner">
-                        🏦
-                      </div>
-                      <div className="text-left">
-                        <span className="text-[9px] font-bold text-stone-400 uppercase tracking-wider font-mono">Transfer Method</span>
-                        <h4 className="font-bold text-xs text-stone-700">Bank Central Asia (BCA)</h4>
-                      </div>
-                    </div>
-                    <div className="p-3.5 bg-stone-50 border border-stone-100 rounded-xl font-mono text-center relative">
-                      <div className="text-stone-400 text-[9px] uppercase font-bold tracking-wider mb-1">Account Number</div>
-                      <div className="text-stone-950 font-black text-base tracking-widest select-all">
-                        5271835648
-                      </div>
-                      <div className="text-stone-500 text-[10px] font-bold mt-1.5">
-                        A/N: IGNATIUS FILBERT SEVILEN
-                      </div>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText('5271835648');
-                          soundService.playCoin();
-                          alert('BCA Account Number (5271835648) copied to clipboard!');
-                        }}
-                        className="mt-3.5 w-full py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-[10px] font-bold uppercase transition-all shadow-sm active:scale-95 flex items-center justify-center gap-1.5"
-                      >
-                        📋 Copy Account No.
-                      </button>
-                    </div>
-                  </div> */}
+
+                  {}
                 </div>
               </section>
 
-              {/* CONTACT & GUILD SECTION */}
+              {}
               <section id="contact" className="w-full max-w-4xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
                 <div className="grid md:grid-cols-12 gap-8 items-center bg-white border border-stone-200 rounded-3xl p-8 md:p-10 shadow-lg">
-                  {/* Left Column info */}
+                  {}
                   <div className="md:col-span-5 space-y-4 text-left">
                     <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
                       <MessageSquare className="w-6 h-6" />
@@ -1687,7 +1647,7 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* Right Form */}
+                  {}
                   <div className="md:col-span-7">
                     {contactSubmitted ? (
                       <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
@@ -1748,12 +1708,10 @@ export default function Home() {
                 </div>
               </section>
 
-
-
             </div>
       </main>
 
-      {/* Stage Selector Modal */}
+      {}
       <AnimatePresence>
         {showStageSelector && (
           <motion.div
@@ -1811,7 +1769,7 @@ export default function Home() {
                 })}
               </div>
 
-              {/* Pagination Controls */}
+              {}
               <div className="mt-8 flex items-center justify-between border-t border-stone-100 pt-5">
                 <div className="flex items-center gap-2">
                   {Array.from({ length: pageCount }).map((_, idx) => (
@@ -1831,7 +1789,7 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
-                
+
                 <div className="flex items-center gap-3">
                   <button
                     onClick={() => { soundService.playClick(); setShowStageSelector(false); }}
@@ -1846,7 +1804,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* Controls & How to Play Modal */}
+      {}
       <AnimatePresence>
         {showControlsModal && (
           <motion.div
@@ -1942,9 +1900,9 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* OVERLAY PORTALS */}
+      {}
       <AnimatePresence>
-        {/* Roster selection */}
+        {}
         {showSelection && (
           <DracoSelection
             saveData={saveData}
@@ -1959,7 +1917,7 @@ export default function Home() {
           />
         )}
 
-        {/* Inventory Bag */}
+        {}
         {showInventory && (
           <InventoryModal
             saveData={saveData}
@@ -1970,7 +1928,7 @@ export default function Home() {
           />
         )}
 
-        {/* Level Up selection */}
+        {}
         {showLevelUp && levelUpInfo && (
           <LevelUpModal
             key={`${levelUpInfo.dracoName}-${levelUpInfo.oldLevel}-${levelUpInfo.newLevel}-${pendingLevelUps.length}`}
@@ -1984,7 +1942,7 @@ export default function Home() {
           />
         )}
 
-        {/* Settings options */}
+        {}
         {showSettings && (
           <SettingsModal
             saveData={saveData}
@@ -1997,7 +1955,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {/* AAA FOOTER */}
+      {}
       <footer className="w-full border-t border-stone-200 bg-white/70 backdrop-blur-md pt-12 pb-8 z-40 select-none font-sans">
           <div className="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-4 gap-8 text-left text-xs">
             <div className="space-y-3">

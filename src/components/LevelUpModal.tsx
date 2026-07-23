@@ -28,7 +28,6 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   const [diceRolling, setDiceRolling] = useState(true);
   const [currentDiceVal, setCurrentDiceVal] = useState(1);
 
-  // Animate the dice roll for a few frames before settling on the actual bonusRoll
   useEffect(() => {
     setDiceRolling(true);
     setCurrentDiceVal(1);
@@ -72,11 +71,11 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
         animate={{ scale: 1, rotate: 0, y: 0 }}
         className="w-full max-w-lg border border-yellow-200 bg-white/95 rounded-3xl p-8 shadow-2xl relative overflow-hidden text-center"
       >
-        {/* Decorative corner glows */}
+        {}
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl" />
         <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl" />
 
-        {/* Level Up Title Badge */}
+        {}
         <div className="mx-auto w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-4 border border-amber-200 shadow-sm animate-bounce">
           <Award className="w-8 h-8 text-amber-600" />
         </div>
@@ -92,14 +91,14 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           {dracoName} reached Level {newLevel}!
         </p>
 
-        {/* Level change */}
+        {}
         <div className="mt-2 flex items-center justify-center gap-3 text-stone-400 font-bold text-sm">
           <span>Lv.{oldLevel}</span>
           <span>→</span>
           <span className="text-amber-500 font-extrabold text-lg">Lv.{newLevel}</span>
         </div>
 
-        {/* Base Increases */}
+        {}
         <div className="mt-6 p-4 rounded-2xl border border-stone-100 bg-stone-50/50 max-w-sm mx-auto text-left space-y-2">
           <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">Base Stat Upgrades:</h4>
           <div className="grid grid-cols-2 gap-2 text-xs font-mono font-bold text-stone-700">
@@ -122,7 +121,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           </div>
         </div>
 
-        {/* Rolling Dice Bonus */}
+        {}
         <div className="mt-8 mb-6 flex flex-col items-center justify-center p-4 border border-dashed border-amber-200 rounded-2xl bg-amber-50/30 max-w-xs mx-auto">
           <div className="flex items-center gap-2 mb-2 text-amber-800 text-xs font-bold">
             <Dices className="w-4 h-4 animate-spin" />
@@ -136,7 +135,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           >
             +{currentDiceVal}
           </motion.div>
-          
+
           {!diceRolling && (
             <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-2">
               Select one stat to apply this +{bonusRoll} bonus!
@@ -144,7 +143,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           )}
         </div>
 
-        {/* Choices Grid */}
+        {}
         <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
           {statDetails.map(({ key, name }) => {
             const val = currentStats ? (currentStats as any)[key] || 0 : 0;
@@ -157,8 +156,8 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                 disabled={isDisabled}
                 onClick={() => handleSelectStat(key)}
                 className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all text-left flex justify-between items-center bg-white ${
-                  isDisabled 
-                    ? 'opacity-50 cursor-not-allowed border-stone-200 text-stone-400 bg-stone-100' 
+                  isDisabled
+                    ? 'opacity-50 cursor-not-allowed border-stone-200 text-stone-400 bg-stone-100'
                     : 'border-stone-200 text-stone-700 hover:border-amber-500 hover:bg-amber-50/20 active:scale-95'
                 }`}
               >

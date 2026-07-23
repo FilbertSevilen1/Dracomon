@@ -14,7 +14,6 @@ interface DracoSelectionProps {
   isFullPage?: boolean;
 }
 
-// Draco detailed descriptions and pricing
 const DRACO_META: {
   [key: string]: {
     role: string;
@@ -129,7 +128,6 @@ const DRACO_META: {
   },
 };
 
-// Render Draco SVGs efficiently without Framer Motion ticker overhead
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
 
@@ -137,17 +135,17 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
         <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.2)" />
-        {/* Lightning Wings */}
+        {}
         <path d="M 28 44 Q 6 16 30 28 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="1.5" />
         <path d="M 72 44 Q 94 16 70 28 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="1.5" />
-        {/* Body & Electric Horns */}
+        {}
         <rect x="34" y="34" width="32" height="42" rx="10" fill="#facc15" stroke="#ca8a04" strokeWidth="2.5" />
         <path d="M 34 34 L 26 14 L 38 24 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.5" />
         <path d="M 66 34 L 74 14 L 62 24 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.5" />
-        {/* Glowing Cyan Eyes */}
+        {}
         <rect x="42" y="44" width="5" height="4" fill="#06b6d4" />
         <rect x="53" y="44" width="5" height="4" fill="#06b6d4" />
-        {/* Thunder Bolt Emblem on Chest */}
+        {}
         <path d="M 52 52 L 44 64 L 50 64 L 47 74 L 56 60 L 50 60 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.2" />
       </svg>
     );
@@ -157,17 +155,17 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
         <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.2)" />
-        {/* Dragon Wings with Flame Edges */}
+        {}
         <path d="M 28 44 Q 8 20 32 30 Z" fill="#ea580c" stroke="#c2410c" strokeWidth="1.5" />
         <path d="M 72 44 Q 92 20 68 30 Z" fill="#ea580c" stroke="#c2410c" strokeWidth="1.5" />
-        {/* Body & Horns */}
+        {}
         <rect x="34" y="34" width="32" height="42" rx="10" fill="#f97316" stroke="#c2410c" strokeWidth="2.5" />
         <path d="M 36 34 L 28 20 L 42 28 Z" fill="#b91c1c" />
         <path d="M 64 34 L 72 20 L 58 28 Z" fill="#b91c1c" />
-        {/* Glowing Eyes */}
+        {}
         <rect x="42" y="44" width="5" height="4" fill="#fef08a" />
         <rect x="53" y="44" width="5" height="4" fill="#fef08a" />
-        {/* Bomb Emblem on Chest */}
+        {}
         <circle cx="50" cy="62" r="8" fill="#18181b" stroke="#f97316" strokeWidth="1.5" />
         <path d="M 50 54 L 52 50 L 55 52" fill="none" stroke="#f59e0b" strokeWidth="1.5" />
         <circle cx="56" cy="51" r="1.5" fill="#ef4444" />
@@ -293,7 +291,6 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
     );
   }
 
-  // Flymon
   return (
     <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
       <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.1)" />
@@ -356,7 +353,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
 
   const content = (
     <div className={`w-full flex flex-col ${isFullPage ? 'min-h-[500px]' : 'bg-white border border-stone-200/90 rounded-3xl shadow-xl overflow-hidden max-h-[92vh]'}`}>
-      {/* Header (Only shown in Modal view) */}
+      {}
       {!isFullPage && (
         <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
           <div className="flex items-center gap-3">
@@ -369,7 +366,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
             </div>
           </div>
 
-          {/* Account Tier Switcher */}
+          {}
           {onSwitchTier && (
             <div className="flex items-center gap-1 p-1 bg-stone-100 border border-stone-200 rounded-xl">
               {(['Free', 'Basic', 'Premium'] as TierType[]).map((t) => (
@@ -412,12 +409,12 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
         </div>
       )}
 
-      {/* Content Layout - Split 2 Panel (60% Grid List Left | 40% Details Right) */}
+      {}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 items-start">
-        {/* Left Panel (60% width on Desktop, Bottom on Mobile): Ultra-Compact Character Avatars Grid */}
+        {}
         <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col space-y-4">
-          
-          {/* Filter Search Input & Header */}
+
+          {}
           <div className="flex items-center justify-between gap-3">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -434,7 +431,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
             </div>
           </div>
 
-          {/* Clean Borderless Avatar Grid */}
+          {}
           <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 max-h-[500px] overflow-y-auto pr-1">
             {filteredDracos.map((name) => {
               const dData = saveData.dracos[name];
@@ -452,7 +449,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   }}
                   className="flex flex-col items-center justify-center p-1.5 rounded-2xl transition-all group relative cursor-pointer select-none"
                 >
-                  {/* Status Indicator Badge */}
+                  {}
                   {itemEquipped ? (
                     <span className="absolute top-1 right-2 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-sm z-10" title="Active Companion" />
                   ) : !itemUnlocked ? (
@@ -461,7 +458,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     </span>
                   ) : null}
 
-                  {/* Character Avatar Icon */}
+                  {}
                   <div
                     className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all ${
                       isSelected
@@ -476,7 +473,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     <DracoArtwork name={name} animated={isSelected} size={44} />
                   </div>
 
-                  {/* Character Name & Level Label */}
+                  {}
                   <span className={`text-xs font-bold font-display mt-1.5 truncate max-w-full text-center ${isSelected ? 'text-amber-600 font-extrabold' : 'text-stone-800'}`}>
                     {name}
                   </span>
@@ -489,9 +486,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
           </div>
         </div>
 
-        {/* Right Panel (40% width on Desktop, Top on Mobile): Detailed Inspect Showcase */}
+        {}
         <div className="order-1 lg:order-2 lg:col-span-5 p-5 sm:p-6 rounded-3xl bg-white border border-stone-200/80 shadow-md flex flex-col justify-between space-y-4">
-            {/* Top Showcase Header */}
+            {}
             <div className={`flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 rounded-2xl transition-all ${
               isEquipped
                 ? 'bg-emerald-50/40 border-2 border-emerald-500 shadow-sm'
@@ -516,7 +513,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 </div>
               </div>
 
-              {/* Main Action Button (Equip / Unlock) */}
+              {}
               <div className="w-full xl:w-auto shrink-0 mt-1 xl:mt-0">
                 {isUnlocked ? (
                   <button
@@ -563,7 +560,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               </div>
             </div>
 
-            {/* Stats & Upgrade Bar */}
+            {}
             <div className="p-4 rounded-2xl bg-stone-50/50 border border-stone-100">
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xs font-bold text-stone-800 flex items-center gap-1">
@@ -602,9 +599,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 )}
               </div>
 
-              {/* 2x2 Compact Stat Bars */}
+              {}
               <div className="grid grid-cols-2 gap-3 text-xs">
-                {/* HP */}
+                {}
                 <div>
                   <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
                     <span>HP</span>
@@ -618,7 +615,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   </div>
                 </div>
 
-                {/* Attack */}
+                {}
                 <div>
                   <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
                     <span>Attack</span>
@@ -632,7 +629,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   </div>
                 </div>
 
-                {/* Defense */}
+                {}
                 <div>
                   <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
                     <span>Defense</span>
@@ -646,7 +643,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   </div>
                 </div>
 
-                {/* Speed */}
+                {}
                 <div>
                   <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
                     <span>Speed</span>
@@ -662,9 +659,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               </div>
             </div>
 
-            {/* Abilities Section (2-Column) */}
+            {}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Special Skill Box */}
+              {}
               <div className="p-3 bg-stone-50 rounded-2xl border border-stone-100">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
                   <Sparkles className="w-3.5 h-3.5 text-stone-900" />
@@ -674,7 +671,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 <p className="text-[11px] text-stone-600 mt-1 leading-normal">{inspectedMeta.abilityDesc}</p>
               </div>
 
-              {/* Ultimate Skill Box */}
+              {}
               <div className="p-3 bg-amber-50/80 rounded-2xl border border-amber-200/70">
                 <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
                   <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />

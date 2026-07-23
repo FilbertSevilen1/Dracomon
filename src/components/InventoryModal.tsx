@@ -43,7 +43,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   const dracoDetails = saveData.dracos[selectedDraco];
   const coins = saveData.player.coins;
 
-  // Inventory quantities
   const potionItem = saveData.inventory.find(i => i.id === 'potion');
   const potionQty = potionItem ? potionItem.quantity : 0;
 
@@ -54,9 +53,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     if (potionQty <= 0) return;
     const success = onUsePotion(selectedDraco);
     if (success) {
-      // Confetti light spray
     } else {
-      // HP is already maxed or failed
       soundService.playClick();
     }
   };
@@ -65,10 +62,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     if (stoneQty <= 0) return;
     const success = onUseUpgradeStone(selectedDraco, stat);
     if (success && stoneQty - 1 <= 0) {
-      // Close the picker only when stones run out
       setStoneUpgrading(false);
     }
-    // If stones remain, stay in upgrade panel so player can keep upgrading
   };
 
   const handleBuy = (itemId: 'potion' | 'upgrade_stone', cost: number) => {
@@ -97,7 +92,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
         exit={{ scale: 0.95, y: 15 }}
         className="w-full max-w-2xl overflow-hidden border bg-white/95 border-stone-200 rounded-3xl shadow-2xl backdrop-blur-xl"
       >
-        {/* Header Tabs */}
+        {}
         <div className="flex items-center justify-between px-8 py-5 border-b border-stone-100">
           <div className="flex items-center gap-6">
             <button
@@ -121,14 +116,14 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
               Mystic Shop
             </button>
           </div>
-          
+
           <div className="flex items-center gap-2 px-3 py-1.5 bg-stone-50 rounded-full border border-stone-100 shadow-sm text-sm">
             <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
             <span className="font-mono font-bold text-stone-700">{coins} Coins</span>
           </div>
         </div>
 
-        {/* Content Body */}
+        {}
         <div className="p-8 min-h-[320px]">
           <AnimatePresence mode="wait">
             {activeTab === 'inventory' ? (
@@ -140,7 +135,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                 className="space-y-6"
               >
                 {stoneUpgrading ? (
-                  // UPGRADE PANEL
                   <div className="space-y-4">
                     <div className="flex justify-between items-center bg-purple-50 border border-purple-100 p-4 rounded-2xl">
                       <div>
@@ -193,9 +187,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                     </div>
                   </div>
                 ) : (
-                  // GENERAL BAG DISPLAY
                   <div className="grid grid-cols-2 gap-4">
-                    {/* Healing Potion Card */}
+                    {}
                     <div className="p-5 border border-stone-200 rounded-2xl flex flex-col justify-between bg-white shadow-sm">
                       <div>
                         <div className="flex justify-between items-start">
@@ -222,7 +215,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                       </button>
                     </div>
 
-                    {/* Upgrade Stone Card */}
+                    {}
                     <div className="p-5 border border-stone-200 rounded-2xl flex flex-col justify-between bg-white shadow-sm">
                       <div>
                         <div className="flex justify-between items-start">
@@ -260,7 +253,6 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                 )}
               </motion.div>
             ) : (
-              // SHOP TAB
               <motion.div
                 key="shop-panel"
                 initial={{ opacity: 0, y: 5 }}
@@ -307,7 +299,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
           </AnimatePresence>
         </div>
 
-        {/* Footer */}
+        {}
         <div className="flex justify-end px-8 py-4 bg-stone-50 border-t border-stone-100">
           <button
             onClick={() => {

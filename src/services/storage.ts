@@ -21,7 +21,7 @@ export const DEFAULT_ITEMS: InventoryItem[] = [
 
 export const DEFAULT_SAVE_DATA: SaveData = {
   player: {
-    coins: 50, // Give them 50 coins to start so they can experience the shop early
+    coins: 50,
     level: 1,
     totalExp: 0,
   },
@@ -58,7 +58,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       hp: 26,
       attack: 3,
       defense: 9,
-      speed: 6, // Boosted speed from 3 to 6
+      speed: 6,
       jump: 10,
       range: 1,
       unlocked: false,
@@ -168,16 +168,14 @@ export const storageService = {
         this.saveGame(DEFAULT_SAVE_DATA);
         return DEFAULT_SAVE_DATA;
       }
-      
+
       const parsed = JSON.parse(dataStr);
-      // Run quick validation to ensure schema matches
+
       if (parsed && parsed.player && parsed.dracos && parsed.settings) {
-        // Fallback for missing fields (backward compatibility)
         if (!parsed.inventory) parsed.inventory = [];
         if (!parsed.settings.sfxVolume) parsed.settings.sfxVolume = 80;
         if (!parsed.tier) parsed.tier = 'Free';
 
-        // Auto-migrate spelling from Assasinmon to Assassinmon
         if (parsed.dracos.Assasinmon) {
           parsed.dracos.Assassinmon = {
             ...parsed.dracos.Assasinmon,
@@ -191,7 +189,6 @@ export const storageService = {
           parsed.unlockedDraco = parsed.unlockedDraco.map((name: string) => name === 'Assasinmon' ? 'Assassinmon' : name);
         }
 
-        // Auto-migrate new characters if they don't exist in saved dracos
         if (!parsed.dracos.Assassinmon) {
           parsed.dracos.Assassinmon = {
             level: 1,
@@ -291,14 +288,12 @@ export const storageService = {
           };
         }
 
-        // Auto-initialize energyRegen on all characters
         Object.keys(parsed.dracos).forEach(key => {
           if (parsed.dracos[key] && (parsed.dracos[key] as any).energyRegen === undefined) {
             (parsed.dracos[key] as any).energyRegen = 1.0;
           }
         });
 
-        // Auto-migrate jump stats if old save data had low jump power
         if (parsed.dracos.Archermon && (parsed.dracos.Archermon.jump < 9.5)) {
           parsed.dracos.Archermon.jump = 10.5;
         }
@@ -307,7 +302,7 @@ export const storageService = {
             parsed.dracos.Shieldmon.jump = 10.0;
           }
           if (parsed.dracos.Shieldmon.speed <= 3) {
-            parsed.dracos.Shieldmon.speed = 6; // Boost old Shieldmon speed saves
+            parsed.dracos.Shieldmon.speed = 6;
           }
         }
         if (parsed.dracos.Jumpmon && (parsed.dracos.Jumpmon.jump < 10.0)) {

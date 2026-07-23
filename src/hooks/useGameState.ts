@@ -19,17 +19,14 @@ export function useGameState() {
     bonusRoll: number;
   } | null>(null);
 
-  // Store ref of sound options to avoid circular updates
   const settingsRef = useRef(saveData.settings);
   settingsRef.current = saveData.settings;
 
-  // Initialize and load save data
   useEffect(() => {
     const handleUpdate = () => {
       const freshData = storageService.loadGame();
       setSaveData(freshData);
-      
-      // Sync current character's max HP
+
       const selected = freshData.selectedDraco;
       const activeDraco = freshData.dracos[selected];
       if (activeDraco && activeDraco.hp) {
@@ -48,13 +45,11 @@ export function useGameState() {
     };
   }, []);
 
-  // Sync volumes when settings change
   useEffect(() => {
     const settings = saveData.settings;
     soundService.updateVolumes(settings.volume, settings.sfxVolume ?? 80, settings.music);
   }, [saveData.settings]);
 
-  // Helper to save state updates and trigger Local Storage persistence
   const updateSaveState = useCallback((updater: (prev: SaveData) => SaveData) => {
     setSaveData(prev => {
       const next = updater(prev);
@@ -68,7 +63,6 @@ export function useGameState() {
     });
   }, []);
 
-  // Update game settings
   const updateSettings = useCallback((music: boolean, volume: number, sfxVolume: number) => {
     updateSaveState(prev => ({
       ...prev,
@@ -81,7 +75,6 @@ export function useGameState() {
     }));
   }, [updateSaveState]);
 
-  // Select Draco
   const selectDraco = useCallback((name: string) => {
     updateSaveState(prev => {
       const draco = prev.dracos[name];
@@ -96,7 +89,6 @@ export function useGameState() {
     });
   }, [updateSaveState]);
 
-  // Unlock Draco
   const unlockDraco = useCallback((name: string, cost: number) => {
     updateSaveState(prev => {
       const draco = prev.dracos[name] || DEFAULT_SAVE_DATA.dracos[name];
@@ -122,7 +114,6 @@ export function useGameState() {
     });
   }, [updateSaveState]);
 
-  // Collect coins in level
   const collectCoins = useCallback((amount: number) => {
     updateSaveState(prev => ({
       ...prev,
@@ -133,19 +124,18 @@ export function useGameState() {
     }));
   }, [updateSaveState]);
 
-  // Add Item to Inventory
   const collectItem = useCallback((itemId: string) => {
     updateSaveState(prev => {
       const existingItem = prev.inventory.find(i => i.id === itemId);
       let newInventory = [...prev.inventory];
-      
+
       if (existingItem) {
-        newInventory = newInventory.map(i => 
+        newInventory = newInventory.map(i =>
           i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i
         );
       } else {
-        const itemDetails = 
-          itemId === 'potion' 
+        const itemDetails =
+          itemId === 'potion'
             ? { id: 'potion', name: 'Healing Potion', type: 'potion' as const, description: 'Restores 15 HP immediately.', quantity: 1 }
             : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +0.1.', quantity: 1 };
         newInventory.push(itemDetails);
@@ -158,7 +148,6 @@ export function useGameState() {
     });
   }, [updateSaveState]);
 
-  // Use Healing Potion
   const usePotion = useCallback((dracoName: string, activeEngineRef?: any) => {
     let used = false;
     const potion = saveData.inventory.find(i => i.id === 'potion');
@@ -174,7 +163,7 @@ export function useGameState() {
         soundService.playLevelUp();
         updateSaveState(prev => ({
           ...prev,
-          inventory: prev.inventory.map(i => 
+          inventory: prev.inventory.map(i =>
             i.id === 'potion' ? { ...i, quantity: i.quantity - 1 } : i
           ).filter(i => i.quantity > 0)
         }));
@@ -183,7 +172,6 @@ export function useGameState() {
     return used;
   }, [saveData.inventory, updateSaveState]);
 
-  // Use Upgrade Stone to increase a stat permanently
   const useUpgradeStone = useCallback((dracoName: string, stat: keyof PlayerStats) => {
     let success = false;
     updateSaveState(prev => {
@@ -193,8 +181,8 @@ export function useGameState() {
         if (draco && draco.unlocked) {
           const updatedDracos = JSON.parse(JSON.stringify(prev.dracos));
           const oldVal = (updatedDracos[dracoName] as any)[stat] || 0;
-          if (stat === 'speed' && oldVal >= 20) return prev; // Speed capped at 20
-          if (stat === 'jump' && oldVal >= 14) return prev; // Jump capped at 14
+          if (stat === 'speed' && oldVal >= 20) return prev;
+          if (stat === 'jump' && oldVal >= 14) return prev;
 
           let newVal = oldVal + 0.1;
           if (stat === 'speed') newVal = Math.min(20, newVal);
@@ -202,11 +190,11 @@ export function useGameState() {
 
           soundService.playLevelUp();
           (updatedDracos[dracoName] as any)[stat] = newVal;
-          
+
           success = true;
           return {
             ...prev,
-            inventory: prev.inventory.map(i => 
+            inventory: prev.inventory.map(i =>
               i.id === 'upgrade_stone' ? { ...i, quantity: i.quantity - 1 } : i
             ).filter(i => i.quantity > 0),
             dracos: updatedDracos
@@ -218,24 +206,23 @@ export function useGameState() {
     return success;
   }, [updateSaveState]);
 
-  // Buy Item from shop
   const buyItem = useCallback((itemId: 'potion' | 'upgrade_stone', cost: number) => {
     let success = false;
     updateSaveState(prev => {
       if (prev.player.coins >= cost) {
         soundService.playCoin();
         success = true;
-        
+
         const existingItem = prev.inventory.find(i => i.id === itemId);
         let newInventory = [...prev.inventory];
-        
+
         if (existingItem) {
-          newInventory = newInventory.map(i => 
+          newInventory = newInventory.map(i =>
             i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i
           );
         } else {
-          const itemDetails = 
-            itemId === 'potion' 
+          const itemDetails =
+            itemId === 'potion'
               ? { id: 'potion', name: 'Healing Potion', type: 'potion' as const, description: 'Restores 15 HP immediately.', quantity: 1 }
               : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +0.1.', quantity: 1 };
           newInventory.push(itemDetails);
@@ -263,7 +250,6 @@ export function useGameState() {
     bonusRoll: number;
   }[]>([]);
 
-  // Complete level / Gain EXP and handle levels up
   const handleEnemyDefeated = useCallback((expGain: number, coinsGain: number) => {
     updateSaveState(prev => {
       const activeName = prev.selectedDraco;
@@ -272,7 +258,7 @@ export function useGameState() {
 
       const newCoins = prev.player.coins + coinsGain;
       const totalPlayerExp = prev.player.totalExp + expGain;
-      
+
       let currentExp = (draco.exp || 0) + expGain;
       let currentLevel = draco.level || 1;
       let requiredExp = currentLevel * 30;
@@ -300,7 +286,7 @@ export function useGameState() {
         currentLevel = Math.min(15, currentLevel + 1);
         requiredExp = currentLevel * 30;
 
-        const roll = Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10; // 0.1-1.0 random dice bonus
+        const roll = Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10;
         newPendingItems.push({
           dracoName: activeName,
           oldLevel: oldLvl,
@@ -309,7 +295,6 @@ export function useGameState() {
           bonusRoll: roll
         });
 
-        // Apply base stats for this level up immediately during combat
         const dStats = updatedDracos[activeName];
         if (dStats) {
           dStats.hp = (dStats.hp || 10) + (baseIncrease.hp || 0);
@@ -344,10 +329,9 @@ export function useGameState() {
     });
   }, [updateSaveState]);
 
-  // Apply chosen Level Up Bonus to stats
   const applyLevelUpBonus = useCallback((stat: keyof PlayerStats) => {
     if (!levelUpInfo) return;
-    
+
     updateSaveState(prev => {
       const activeName = levelUpInfo.dracoName;
       const updatedDracos = { ...prev.dracos };
@@ -355,7 +339,6 @@ export function useGameState() {
 
       if (draco) {
         if (stat === 'energyRegen') {
-          // Add 10% of bonusRoll to energyRegen, capped at 10.0 (1000% rate limit)
           const currentRegen = draco.energyRegen || 1.0;
           draco.energyRegen = Math.min(10.0, currentRegen + 0.1 * levelUpInfo.bonusRoll);
         } else {
@@ -388,14 +371,13 @@ export function useGameState() {
     });
   }, [levelUpInfo, updateSaveState]);
 
-  // Level Up Draco With Coins
   const levelUpDracoWithCoins = useCallback((name: string) => {
     let success = false;
     updateSaveState(prev => {
       const draco = prev.dracos[name];
       if (!draco) return prev;
       const currentLvl = draco.level || 1;
-      if (currentLvl >= 15) return prev; // Capped at Level 15
+      if (currentLvl >= 15) return prev;
       const cost = currentLvl * 100;
       if (prev.player.coins >= cost) {
         soundService.playLevelUp();
@@ -408,13 +390,13 @@ export function useGameState() {
           d.defense = (d.defense || 1) + 1;
           d.speed = Math.min(20, (d.speed || 1) + 1);
           d.jump = Math.min(14, (d.jump || 10) + 1);
-          
+
           if (name === prev.selectedDraco) {
             setPlayerHP(d.hp);
             setPlayerMaxHP(d.hp);
           }
 
-          const bonusRoll = Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10; // 0.1-1.0
+          const bonusRoll = Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10;
           const item = {
             dracoName: name,
             oldLevel: currentLvl,
@@ -444,7 +426,6 @@ export function useGameState() {
     return success;
   }, [updateSaveState]);
 
-  // Reset Save Data
   const resetGameSave = useCallback(() => {
     const freshData = storageService.resetGame();
     setSaveData(freshData);
@@ -453,12 +434,10 @@ export function useGameState() {
     soundService.playClick();
   }, []);
 
-  // Export Save String
   const exportSave = useCallback(() => {
     return storageService.exportSave(saveData);
   }, [saveData]);
 
-  // Import Save Data
   const importSave = useCallback((encodedData: string) => {
     const imported = storageService.importSave(encodedData);
     if (imported) {
@@ -473,7 +452,6 @@ export function useGameState() {
     return false;
   }, []);
 
-  // Switch Account Tier (Free, Basic, Premium)
   const switchTier = useCallback((newTier: TierType) => {
     soundService.playClick();
     updateSaveState(prev => {
@@ -489,7 +467,7 @@ export function useGameState() {
             const targetLevel = Math.max(5, d.level || 1);
             const levelDiff = targetLevel - (d.level || 1);
             d.level = targetLevel;
-            // Splitted 1 to all attributes per level up (+4 bonus to all attributes for Lv.5)
+
             const boost = Math.max(4, levelDiff * 1);
             d.hp = (d.hp || 18) + boost;
             d.attack = (d.attack || 4) + boost;
@@ -502,7 +480,7 @@ export function useGameState() {
             const targetLevel = Math.max(10, d.level || 1);
             const levelDiff = targetLevel - (d.level || 1);
             d.level = targetLevel;
-            // Splitted 1 to all attributes per level up (+9 bonus to all attributes for Lv.10)
+
             const boost = Math.max(9, levelDiff * 1);
             d.hp = (d.hp || 18) + boost;
             d.attack = (d.attack || 4) + boost;

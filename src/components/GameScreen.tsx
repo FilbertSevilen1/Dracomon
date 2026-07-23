@@ -38,7 +38,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
 
-  // Local UI states synced from game engine events
   const [hp, setHp] = useState(10);
   const [maxHp, setMaxHp] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -55,7 +54,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const selectedDraco = saveData.selectedDraco;
   const dracoStats = saveData.dracos[selectedDraco];
 
-  // Resolve stats with safety defaults
   const level = dracoStats?.level || 1;
   const exp = dracoStats?.exp || 0;
   const requiredExp = level * 30;
@@ -63,20 +61,16 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const hpPercent = Math.min(100, Math.max(0, (hp / maxHp) * 100));
   const ultCost = selectedDraco === 'Magemon' ? 150 : maxEnergy;
 
-  // Keep callbacks stable using a mutable ref to prevent GameEngine recreation during React state updates
   const callbacksRef = useRef({ onCoinCollect, onItemCollect, onEnemyDefeat, onStageClear });
   useEffect(() => {
     callbacksRef.current = { onCoinCollect, onItemCollect, onEnemyDefeat, onStageClear };
   });
 
-  // Initialize Canvas Game Engine
   useEffect(() => {
     if (!canvasRef.current) return;
 
-    // Set level-specific music tracks in sound service
     soundService.setStageMusic(stageNum);
 
-    // Retrieve active Draco stats
     const stats: PlayerStats = {
       hp: dracoStats?.hp || 18,
       attack: dracoStats?.attack || 4,
@@ -124,12 +118,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     };
   }, [stageNum, selectedDraco]);
 
-  // Reset game state to 'playing' when stage changes (Next Level button)
   useEffect(() => {
     setGameState('playing');
   }, [stageNum]);
 
-  // Global Key Listener: context-aware per game state
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -138,7 +130,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           soundService.playClick();
           onQuit();
         } else {
-          handlePauseToggle(); // toggles pause/resume
+          handlePauseToggle();
         }
       } else if (e.key === 'Enter') {
         if (gameState === 'victory') {
@@ -150,7 +142,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           handleRestart();
         } else if (gameState === 'paused') {
           e.preventDefault();
-          handlePauseToggle(); // resume
+          handlePauseToggle();
         }
       } else if (e.key.toLowerCase() === 'r' && gameState === 'paused') {
         e.preventDefault();
@@ -168,7 +160,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [gameState, activePotionCount, selectedDraco]);
 
-  // Handle updates to stats while active in-game (from items usage e.g. Upgrade stone or potion)
   useEffect(() => {
     if (engineRef.current && dracoStats) {
       const stats: PlayerStats = {
@@ -185,7 +176,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
   }, [dracoStats]);
 
-  // Pause / Resume triggers
   const handlePauseToggle = () => {
     soundService.playClick();
     if (gameState === 'playing') {
@@ -201,13 +191,12 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     soundService.playClick();
     setGameState('playing');
     const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : selectedDraco === 'Whitemon' ? 120 : selectedDraco === 'Magemon' ? 300 : selectedDraco === 'Bombamon' ? 120 : selectedDraco === 'Thundermon' ? 200 : 100;
-    setEnergy(defaultMaxEnergy); // Reset UI energy state to 100% full
+    setEnergy(defaultMaxEnergy);
 
-    // Re-initialize level
     if (engineRef.current) {
       engineRef.current.destroy();
     }
-    // Simple state reset triggers
+
     const stats: PlayerStats = {
       hp: dracoStats?.hp || 18,
       attack: dracoStats?.attack || 4,
@@ -218,7 +207,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       energyRegen: (dracoStats as any)?.energyRegen || 1.0,
       level: dracoStats?.level || 1,
     } as any;
-    
+
     if (canvasRef.current) {
       engineRef.current = new GameEngine(
         canvasRef.current,
@@ -280,7 +269,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     };
   }, []);
 
-  // Dynamic Canvas Resolution Scaling matching Device (capped at 1920px max width)
   useEffect(() => {
     const updateCanvasDimensions = () => {
       if (canvasRef.current && containerRef.current) {
@@ -305,7 +293,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
   };
 
-  // Button Action handlers for on-screen joystick overlays (mobile touch support)
   const triggerMobileAction = (action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'ultimate' | 'down') => {
     engineRef.current?.triggerAction(action);
   };
@@ -318,7 +305,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   return (
     <div ref={containerRef} className="w-full h-full z-50 bg-stone-950 overflow-hidden select-none relative flex justify-center items-center">
-      {/* 100% Full Viewport Canvas (Dynamic device resolution, max 1920px width) */}
+      {}
       <div className="w-full h-full max-w-[1920px] mx-auto relative overflow-hidden flex items-center justify-center bg-stone-950 z-10">
         <canvas
           ref={canvasRef}
@@ -326,9 +313,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         />
       </div>
 
-      {/* Transparent Floating Overlapping Top HUD Header Bar */}
+      {}
       <div className="absolute top-1 left-1 right-1 sm:top-3 sm:left-4 sm:right-4 max-w-[1920px] mx-auto z-30 flex items-center justify-between pointer-events-none gap-1 sm:gap-2">
-        {/* Left Side: Companion Avatar & Level & EXP */}
+        {}
         <div className="flex items-center gap-1.5 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
           <div className="relative shrink-0">
             <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-stone-800/90 flex items-center justify-center border border-stone-700 font-display text-xs sm:text-base">
@@ -342,7 +329,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             <div className="font-bold text-[10px] sm:text-sm text-stone-100 leading-none flex items-center gap-1 truncate">
               <span className="truncate">{selectedDraco}</span>
             </div>
-            {/* EXP Bar */}
+            {}
             <div className="w-12 sm:w-24 mt-0.5 sm:mt-1">
               <div className="flex justify-between text-[6px] sm:text-[8px] font-bold text-stone-400 font-mono">
                 <span>EXP</span>
@@ -358,9 +345,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </div>
         </div>
 
-        {/* Center: Space-Saving Circular Health & Energy Gauges */}
+        {}
         <div className="flex items-center gap-1 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
-          {/* Circular Health Gauge */}
+          {}
           <div className="flex flex-col items-center justify-center relative group" title={`Health: ${hp}/${maxHp}`}>
             <div className="relative w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
@@ -390,7 +377,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             </div>
           </div>
 
-          {/* Circular Laser Beam / Energy Gauge */}
+          {}
           <div className="flex flex-col items-center justify-center relative group" title={`Laser/Energy: ${Math.floor(energy)}/${maxEnergy}`}>
             <div className="relative w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
@@ -421,14 +408,14 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </div>
         </div>
 
-        {/* Right Side: Gold, Potion Inventory, Bag, Pause, Fullscreen */}
+        {}
         <div className="flex items-center gap-0.5 sm:gap-1.5 pointer-events-auto bg-stone-950/80 backdrop-blur-md p-1 sm:p-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
-          {/* Gold */}
+          {}
           <div className="flex items-center gap-0.5 px-1.5 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[9px] sm:text-xs font-mono font-bold text-amber-400 shadow-sm">
             🪙 <span>{saveData.player.coins}</span>
           </div>
 
-          {/* Potion inventory */}
+          {}
           <button
             onClick={handleQuickHeal}
             disabled={activePotionCount <= 0}
@@ -447,7 +434,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             )}
           </button>
 
-          {/* Bag Inventory */}
+          {}
           <button
             onClick={() => { soundService.playClick(); openInventory(); }}
             className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-300 shadow-sm transition-all active:scale-95"
@@ -456,7 +443,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             <Briefcase className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
 
-          {/* Pause */}
+          {}
           <button
             onClick={handlePauseToggle}
             className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-white shadow-sm transition-all active:scale-95"
@@ -465,7 +452,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             <Pause className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
 
-          {/* Fullscreen */}
+          {}
           <button
             onClick={handleToggleFullscreen}
             className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-amber-400 shadow-sm transition-all active:scale-95 flex items-center justify-center"
@@ -476,9 +463,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         </div>
       </div>
 
-      {/* OVERLAYS (Pause / Defeat / Victory) */}
+      {}
       <AnimatePresence>
-        {/* Pause Menu Overlay */}
+        {}
         {gameState === 'paused' && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -528,7 +515,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </motion.div>
         )}
 
-        {/* Game Over Defeat Overlay */}
+        {}
         {gameState === 'gameover' && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -567,7 +554,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </motion.div>
         )}
 
-        {/* Stage Cleared Victory Overlay */}
+        {}
         {gameState === 'victory' && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -607,9 +594,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         )}
       </AnimatePresence>
 
-      {/* Floating In-Game Mobile / On-Screen Action Controls Overlay */}
+      {}
       <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 z-20 flex items-end justify-between pointer-events-none">
-        {/* Left Side: Joystick D-Pad */}
+        {}
         <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
           <button
             onMouseDown={() => triggerMobileAction('left')}
@@ -620,7 +607,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           >
             ◀
           </button>
-          
+
           <button
             onMouseDown={() => triggerMobileAction('down')}
             onMouseUp={() => stopMobileAction('down')}
@@ -642,11 +629,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </button>
         </div>
 
-        {/* Right Side: Action Buttons (Top: Jump & Slay, Bottom: Skill & Ult) */}
+        {}
         <div className="pointer-events-auto flex flex-col gap-2.5 items-end select-none">
-          {/* Top Row: Jump (left) & Slay (right) */}
+          {}
           <div className="flex items-center gap-3 justify-end">
-            {/* Jump */}
+            {}
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('jump'); }}
               onMouseDown={() => triggerMobileAction('jump')}
@@ -655,7 +642,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               <span>JUMP</span>
             </button>
 
-            {/* Slay */}
+            {}
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('attack'); }}
               onMouseDown={() => triggerMobileAction('attack')}
@@ -666,9 +653,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             </button>
           </div>
 
-          {/* Bottom Row: Skill (left) & Ult (right) */}
+          {}
           <div className="flex items-center gap-3 justify-end">
-            {/* Skill */}
+            {}
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('special'); }}
               onMouseDown={() => triggerMobileAction('special')}
@@ -678,7 +665,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               <span>SKILL</span>
             </button>
 
-            {/* Ultimate */}
+            {}
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('ultimate'); }}
               onMouseDown={() => triggerMobileAction('ultimate')}

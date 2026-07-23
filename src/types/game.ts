@@ -28,10 +28,10 @@ export interface PlayerState {
 }
 
 export interface GameSettings {
-  volume: number;      // General master or music volume (0-100)
-  music: boolean;      // Music toggle
-  sfxVolume: number;   // SFX volume (0-100)
-  fullscreen: boolean; // Fullscreen toggle
+  volume: number;
+  music: boolean;
+  sfxVolume: number;
+  fullscreen: boolean;
 }
 
 export interface InventoryItem {
@@ -57,7 +57,6 @@ export interface SaveData {
   completedStages?: number[];
 }
 
-// Game active state mapping during play
 export interface PlaySessionState {
   currentHP: number;
   maxHP: number;

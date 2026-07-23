@@ -11,7 +11,6 @@ import { SaveData } from '../types/game';
 import { SettingsModal } from './SettingsModal';
 import { AnimatePresence } from 'framer-motion';
 
-
 interface NavbarProps {
   onOpenInventory?: () => void;
 }
@@ -93,7 +92,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
   return (
     <>
       <header className="sticky top-0 w-full border-b border-stone-200/80 bg-white/90 backdrop-blur-md px-4 md:px-8 py-3 flex items-center justify-between z-50 shadow-sm select-none">
-      {/* Brand Logo */}
+      {}
       <div className="flex items-center gap-3">
         <Link
           href="/"
@@ -105,7 +104,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
         </Link>
       </div>
 
-      {/* Center Nav Links */}
+      {}
       <nav className="hidden md:flex items-center gap-6 text-xs font-bold text-stone-600">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
@@ -127,9 +126,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
         })}
       </nav>
 
-      {/* Right Utility Bar */}
+      {}
       <div className="flex items-center gap-2.5">
-        {/* Selected Hero Badge */}
+        {}
         <Link
           href="/heroes"
           onClick={() => soundService.playClick()}
@@ -141,7 +140,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           <span className="text-[10px] text-amber-300 font-black">Lv.{activeLevel}</span>
         </Link>
 
-        {/* Membership Tier Badge */}
+        {}
         <Link
           href="/membership"
           onClick={() => soundService.playClick()}
@@ -157,13 +156,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           <span>{currentTier.toUpperCase()} TIER</span>
         </Link>
 
-        {/* Coins Balance */}
+        {}
         <div className="hidden sm:flex items-center gap-1.5 px-3 py-1 bg-amber-50/90 border border-amber-200 rounded-full text-xs font-mono font-bold text-amber-700 shadow-sm">
           <Coins className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
           <span>{coins}</span>
         </div>
 
-        {/* Inventory Bag Button */}
+        {}
         {onOpenInventory && (
           <button
             onClick={() => {
@@ -177,7 +176,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           </button>
         )}
 
-        {/* Settings Button */}
+        {}
         <button
           onClick={() => {
             soundService.playClick();
@@ -191,7 +190,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
       </div>
       </header>
 
-      {/* Settings Modal */}
+      {}
       <AnimatePresence>
         {showSettings && (
           <SettingsModal

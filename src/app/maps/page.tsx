@@ -148,16 +148,16 @@ export default function MapsPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-display flex flex-col justify-between relative overflow-hidden select-none">
-      {/* Background Lighting */}
+      {}
       <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-rose-100/50 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-emerald-100/50 rounded-full blur-3xl -z-10" />
 
-      {/* Navigation Header */}
+      {}
       <Navbar onOpenInventory={() => setShowInventory(true)} />
 
-      {/* Main Content Container */}
+      {}
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
-        {/* Page Title Banner */}
+        {}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-8">
           <div>
             <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
@@ -170,7 +170,7 @@ export default function MapsPage() {
           </div>
         </div>
 
-        {/* 11 Stage Cards Grid */}
+        {}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {STAGES.map((stg) => {
             const isUnlocked = stg.num <= maxUnlockedStage || currentTier === 'Premium' || currentTier === 'Basic';
@@ -186,7 +186,7 @@ export default function MapsPage() {
                 }`}
               >
                 <div>
-                  {/* Top Badges */}
+                  {}
                   <div className="flex items-center justify-between gap-2 mb-3">
                     <span className="text-xs font-mono font-black text-stone-500 uppercase">
                       STAGE {stg.num}
@@ -196,7 +196,7 @@ export default function MapsPage() {
                     </span>
                   </div>
 
-                  {/* Stage Title */}
+                  {}
                   <div className="flex items-center gap-3">
                     <span className="text-3xl p-2 bg-stone-100 rounded-2xl border border-stone-200 shadow-inner">
                       {stg.icon}
@@ -209,13 +209,13 @@ export default function MapsPage() {
                     </div>
                   </div>
 
-                  {/* Stage Description */}
+                  {}
                   <p className="mt-4 text-xs text-stone-600 leading-relaxed p-3.5 bg-stone-50 border border-stone-200/60 rounded-2xl">
                     {stg.desc}
                   </p>
                 </div>
 
-                {/* Play Button */}
+                {}
                 <div className="mt-6">
                   {isUnlocked ? (
                     <button
@@ -242,7 +242,7 @@ export default function MapsPage() {
         </div>
       </main>
 
-      {/* Inventory Bag */}
+      {}
       {showInventory && (
         <InventoryModal
           saveData={saveData}
@@ -253,7 +253,7 @@ export default function MapsPage() {
         />
       )}
 
-      {/* Settings Options */}
+      {}
       {showSettings && (
         <SettingsModal
           saveData={saveData}
@@ -265,7 +265,7 @@ export default function MapsPage() {
         />
       )}
 
-      {/* Page Footer */}
+      {}
       <footer className="w-full border-t border-stone-200 bg-white py-6 px-6 md:px-12 text-center text-xs font-mono text-stone-500 z-10">
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span>© {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1</span>

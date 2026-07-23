@@ -25,16 +25,16 @@ export default function MembershipPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-display flex flex-col justify-between relative overflow-hidden select-none">
-      {/* Background Lighting */}
+      {}
       <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-purple-100/50 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-amber-100/50 rounded-full blur-3xl -z-10" />
 
-      {/* Navigation Header */}
+      {}
       <Navbar />
 
-      {/* Main Content Container */}
+      {}
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
-        {/* Page Title Banner */}
+        {}
         <div className="text-center md:text-left border-b border-stone-200 pb-8 space-y-2">
           <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
             Membership <span className="text-purple-600">& Power Perks</span>
@@ -44,9 +44,9 @@ export default function MembershipPage() {
           </p>
         </div>
 
-        {/* 3 Tier Cards Grid */}
+        {}
         <div className="grid md:grid-cols-3 gap-8">
-          {/* Free Tier */}
+          {}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
             currentTier === 'Free'
               ? 'bg-white border-stone-300 ring-2 ring-stone-400/30 shadow-lg'
@@ -83,7 +83,7 @@ export default function MembershipPage() {
             </button>
           </div>
 
-          {/* Basic Tier */}
+          {}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
             currentTier === 'Basic'
               ? 'bg-emerald-50/40 border-emerald-300 ring-2 ring-emerald-400/30 shadow-lg'
@@ -120,7 +120,7 @@ export default function MembershipPage() {
             </button>
           </div>
 
-          {/* Premium Tier */}
+          {}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
             currentTier === 'Premium'
               ? 'bg-purple-50/40 border-purple-300 ring-2 ring-purple-400/30 shadow-lg'
@@ -159,7 +159,7 @@ export default function MembershipPage() {
         </div>
       </main>
 
-      {/* Page Footer */}
+      {}
       <footer className="w-full border-t border-stone-200 bg-white py-6 px-6 md:px-12 text-center text-xs font-mono text-stone-500 z-10">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span>© {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1</span>

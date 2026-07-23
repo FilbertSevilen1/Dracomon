@@ -230,7 +230,6 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  // Only the latest version ('0.1.8') is opened by default!
   const [openVersion, setOpenVersion] = useState<string | null>('0.1.8');
 
   const toggleVersion = (version: string) => {
@@ -240,18 +239,18 @@ export default function VersionPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-display flex flex-col justify-between relative overflow-hidden select-none">
-      
-      {/* Background Ambient Accents */}
+
+      {}
       <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-rose-100/50 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-indigo-100/50 rounded-full blur-3xl -z-10" />
 
-      {/* Navigation Header */}
+      {}
       <Navbar />
 
-      {/* Main Content Container */}
+      {}
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
-        
-        {/* Page Hero Header */}
+
+        {}
         <div className="space-y-3 text-center md:text-left border-b border-stone-200 pb-8">
           <h1 className="text-3xl md:text-5xl font-black tracking-tight text-stone-900 font-display">
             Patch Notes <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 bg-clip-text text-transparent">& Updates</span>
@@ -262,7 +261,7 @@ export default function VersionPage() {
           </p>
         </div>
 
-        {/* Expansion Panels List */}
+        {}
         <div className="space-y-4">
           {VERSION_LOGS.map((log) => {
             const isOpen = openVersion === log.version;
@@ -276,7 +275,7 @@ export default function VersionPage() {
                     : 'bg-white/90 border-stone-200/90 hover:border-stone-300 hover:shadow-md'
                 }`}
               >
-                {/* Accordion Header Bar */}
+                {}
                 <button
                   onClick={() => toggleVersion(log.version)}
                   className={`w-full px-6 py-5 flex items-center justify-between gap-4 text-left transition-colors ${
@@ -307,7 +306,7 @@ export default function VersionPage() {
                   </div>
                 </button>
 
-                {/* Expanded Accordion Body */}
+                {}
                 <AnimatePresence>
                   {isOpen && (
                     <motion.div
@@ -317,12 +316,12 @@ export default function VersionPage() {
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       className="border-t border-stone-100 bg-stone-50/70 px-6 py-6"
                     >
-                      {/* Summary Quote */}
+                      {}
                       <div className="mb-5 p-3.5 rounded-2xl bg-white border border-stone-200/80 text-xs text-stone-600 italic font-mono shadow-sm">
                         "{log.summary}"
                       </div>
 
-                      {/* Highlights List */}
+                      {}
                       <ul className="space-y-3">
                         {log.highlights.map((item, idx) => (
                           <li key={idx} className="flex items-start gap-3 text-xs text-stone-700 leading-relaxed font-semibold">
@@ -340,7 +339,7 @@ export default function VersionPage() {
         </div>
       </main>
 
-      {/* Page Footer */}
+      {}
       <footer className="w-full border-t border-stone-200 bg-white py-6 px-6 md:px-12 text-center text-xs font-mono text-stone-500 z-10">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <span>© {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1</span>

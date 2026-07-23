@@ -89,7 +89,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <h2 className="text-2xl font-bold tracking-tight text-stone-900 font-display">Options Menu</h2>
         <p className="text-xs text-stone-500 mt-1">Configure audio synthesizer volume and save file configurations.</p>
 
-        {/* Audio Controls */}
+        {}
         <div className="mt-6 space-y-4">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-stone-700 uppercase tracking-wide">Background Music</span>
@@ -137,7 +137,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        {/* Save Data Operations */}
+        {}
         <div className="mt-8 pt-6 border-t border-stone-100 space-y-4">
           <h3 className="text-xs font-bold text-stone-400 uppercase tracking-wider">Save Data Manager</h3>
 
@@ -162,7 +162,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
             </button>
           </div>
 
-          {/* Import Section */}
+          {}
           <div className="space-y-2">
             <span className="text-[11px] font-bold text-stone-500 block">Import Backup Key:</span>
             <div className="flex gap-2">
@@ -189,7 +189,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
         </div>
 
-        {/* Action Close */}
+        {}
         <div className="mt-8 flex justify-end">
           <button
             onClick={() => {
@@ -202,7 +202,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </button>
         </div>
 
-        {/* Confirm Reset Alert Overlay */}
+        {}
         <AnimatePresence>
           {showConfirmReset && (
             <motion.div

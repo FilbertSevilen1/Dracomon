@@ -24,7 +24,7 @@ export class ParticleManager {
 
   public addParticle(p: Particle) {
     if (this.particles.length >= 100) {
-      this.particles.shift(); // Hard cap at 100 particles max for silky-smooth performance!
+      this.particles.shift();
     }
     this.particles.push(p);
   }
@@ -67,9 +67,6 @@ export class ParticleManager {
     }
   }
 
-  /**
-   * Spawns an optimized Inferno Fire burst.
-   */
   public spawnInfernoBurst(x: number, y: number, count: number = 14) {
     const fireColors = ['#ffffff', '#fef08a', '#f97316', '#ef4444'];
     const num = Math.min(count, 16);
@@ -246,7 +243,6 @@ export class ParticleManager {
         ctx.rotate(p.rotation);
       }
 
-      // Fast soft glow halo (NO shadowBlur!)
       if (p.glowColor) {
         ctx.fillStyle = p.glowColor;
         ctx.globalAlpha = baseAlpha * 0.3;
@@ -270,7 +266,6 @@ export class ParticleManager {
           ctx.lineTo(cos * r, sin * r);
         }
         ctx.stroke();
-
       } else if (p.shape === 'star') {
         ctx.beginPath();
         ctx.moveTo(0, -r);
@@ -280,7 +275,6 @@ export class ParticleManager {
         ctx.quadraticCurveTo(0, 0, 0, -r);
         ctx.closePath();
         ctx.fill();
-
       } else if (p.shape === 'flame') {
         ctx.beginPath();
         ctx.moveTo(0, -r * 1.3);
@@ -289,7 +283,6 @@ export class ParticleManager {
         ctx.quadraticCurveTo(-r * 0.8, -r * 0.2, 0, -r * 1.3);
         ctx.closePath();
         ctx.fill();
-
       } else if (p.shape === 'bubble') {
         ctx.beginPath();
         ctx.arc(0, 0, r, 0, Math.PI * 2);
@@ -299,7 +292,6 @@ export class ParticleManager {
         ctx.beginPath();
         ctx.arc(-r * 0.3, -r * 0.3, Math.max(0.8, r * 0.25), 0, Math.PI * 2);
         ctx.fill();
-
       } else if (p.shape === 'spark') {
         ctx.beginPath();
         ctx.moveTo(0, -r * 1.2);
@@ -308,7 +300,6 @@ export class ParticleManager {
         ctx.lineTo(-r * 0.4, 0);
         ctx.closePath();
         ctx.fill();
-
       } else {
         ctx.beginPath();
         ctx.arc(0, 0, r, 0, Math.PI * 2);

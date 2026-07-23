@@ -4,8 +4,7 @@ class SoundService {
   private musicNodes: { osc: OscillatorNode; gain: GainNode }[] = [];
   private currentStep = 0;
   private currentStageNum = 1;
-  
-  // Volume controls (0 - 1)
+
   private musicVolume = 0.5;
   private sfxVolume = 0.6;
   private isMuted = false;
@@ -13,7 +12,7 @@ class SoundService {
 
   public setStageMusic(stageNum: number) {
     this.currentStageNum = stageNum;
-    // Restart BGM if already playing to immediately transition to the new stage's sound profile
+
     if (this.musicInterval) {
       this.stopBGM();
       this.playBGM();
@@ -44,7 +43,6 @@ class SoundService {
     }
   }
 
-  // PLAY SFX: Click
   public playClick() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -66,7 +64,6 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.08);
   }
 
-  // PLAY SFX: Jump
   public playJump() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -88,7 +85,6 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.15);
   }
 
-  // PLAY SFX: Coin
   public playCoin() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -112,11 +108,10 @@ class SoundService {
     };
 
     const now = this.ctx.currentTime;
-    playBeep(987.77, now, 0.08); // B5
-    playBeep(1318.51, now + 0.08, 0.18); // E6
+    playBeep(987.77, now, 0.08);
+    playBeep(1318.51, now + 0.08, 0.18);
   }
 
-  // PLAY SFX: Hit
   public playHit() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -138,7 +133,6 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.2);
   }
 
-  // PLAY SFX: Shoot
   public playShoot() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -160,7 +154,6 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.2);
   }
 
-  // PLAY SFX: Block
   public playBlock() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -182,7 +175,6 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.12);
   }
 
-  // PLAY SFX: Level Up
   public playLevelUp() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -206,13 +198,12 @@ class SoundService {
     };
 
     const now = this.ctx.currentTime;
-    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50]; // C4, E4, G4, C5, E5, G5, C6
+    const notes = [261.63, 329.63, 392.00, 523.25, 659.25, 783.99, 1046.50];
     notes.forEach((freq, index) => {
       playNote(freq, now + index * 0.08, 0.3);
     });
   }
 
-  // PLAY SFX: Grim Reaper Scythe Death 💀⚔️
   public playScytheDeath() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -222,7 +213,6 @@ class SoundService {
     const subOsc = this.ctx.createOscillator();
     const gain = this.ctx.createGain();
 
-    // Dark spectral blade slice sound
     osc.type = 'sawtooth';
     osc.frequency.setValueAtTime(440, now);
     osc.frequency.exponentialRampToValueAtTime(45, now + 0.4);
@@ -244,14 +234,12 @@ class SoundService {
     subOsc.stop(now + 0.5);
   }
 
-  // PLAY SFX: Divine Thunderbolt Electrocution Death ⚡💥
   public playThunderboltDeath() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
     const now = this.ctx.currentTime;
-    
-    // 1. High-voltage lightning crackle noise
+
     const bufferSize = this.ctx.sampleRate * 0.35;
     const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
     const output = buffer.getChannelData(0);
@@ -275,7 +263,6 @@ class SoundService {
     noiseFilter.connect(noiseGain);
     noiseGain.connect(this.ctx.destination);
 
-    // 2. Heavy thunder bass boom thud
     const osc = this.ctx.createOscillator();
     const oscGain = this.ctx.createGain();
     osc.type = 'square';
@@ -294,7 +281,6 @@ class SoundService {
     osc.stop(now + 0.4);
   }
 
-  // PLAY SFX: Molten Lava / Acid Meltdown Death 🌋☠️
   public playLavaDeath() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -307,7 +293,6 @@ class SoundService {
     osc.frequency.setValueAtTime(360, now);
     osc.frequency.exponentialRampToValueAtTime(50, now + 0.6);
 
-    // Low-pass sizzle filter
     const filter = this.ctx.createBiquadFilter();
     filter.type = 'lowpass';
     filter.frequency.setValueAtTime(800, now);
@@ -324,7 +309,6 @@ class SoundService {
     osc.stop(now + 0.6);
   }
 
-  // PLAY SFX: Sub-Zero Flash Freeze Ice Death 🧊❄️
   public playIceDeath() {
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
@@ -349,109 +333,99 @@ class SoundService {
       osc.stop(now + offset + dur);
     };
 
-    // Glassy crystal shattering chime cascade (Sub-Zero Freeze)
-    playCrystalChime(1567.98, 0, 0.25);   // G6
-    playCrystalChime(1318.51, 0.06, 0.25); // E6
-    playCrystalChime(1046.50, 0.12, 0.3);  // C6
-    playCrystalChime(783.99, 0.18, 0.35);  // G5
+    playCrystalChime(1567.98, 0, 0.25);
+    playCrystalChime(1318.51, 0.06, 0.25);
+    playCrystalChime(1046.50, 0.12, 0.3);
+    playCrystalChime(783.99, 0.18, 0.35);
   }
 
-  // BGM: Procedural Music Loop
   public playBGM() {
     this.initCtx();
     if (!this.ctx || this.musicInterval || !this.isMusicEnabled || this.isMuted) return;
 
-    // Stage-specific Chord Progressions, Tempos and Synthesizer Waveforms
     let progressions = [
-      [261.63, 329.63, 392.00, 523.25], // C4, E4, G4, C5 (C Major)
-      [174.61, 220.00, 261.63, 349.23], // F3, A3, C4, F4 (F Major)
-      [196.00, 246.94, 293.66, 392.00], // G3, B3, D4, G4 (G Major)
-      [261.63, 329.63, 392.00, 523.25], // C4, E4, G4, C5 (C Major)
+      [261.63, 329.63, 392.00, 523.25],
+      [174.61, 220.00, 261.63, 349.23],
+      [196.00, 246.94, 293.66, 392.00],
+      [261.63, 329.63, 392.00, 523.25],
     ];
-    let tempo = 120; // Default Stage 1 tempo
+    let tempo = 120;
     let leadWaveform: OscillatorType = 'sine';
     let bassWaveform: OscillatorType = 'sine';
 
     if (this.currentStageNum === 2) {
-      // Stage 2 (Goblin Woods) - Creepy/Mysterious minor feel
       progressions = [
-        [220.00, 261.63, 329.63, 440.00], // A3, C4, E4, A4 (A Minor)
-        [174.61, 220.00, 261.63, 349.23], // F3, A3, C4, F4 (F Major)
-        [293.66, 349.23, 440.00, 587.33], // D4, F4, A4, D5 (D Minor)
-        [246.94, 293.66, 392.00, 493.88], // B3, D4, G4, B4 (G Major)
+        [220.00, 261.63, 329.63, 440.00],
+        [174.61, 220.00, 261.63, 349.23],
+        [293.66, 349.23, 440.00, 587.33],
+        [246.94, 293.66, 392.00, 493.88],
       ];
       tempo = 135;
       leadWaveform = 'triangle';
       bassWaveform = 'sine';
     } else if (this.currentStageNum === 3) {
-      // Stage 3 (Volcanic Peak) - Fiery/Aggressive Phrygian/Minor feel
       progressions = [
-        [164.81, 196.00, 246.94, 329.63], // E3, G3, B3, E4 (E Minor)
-        [174.61, 220.00, 261.63, 349.23], // F3, A3, C4, F4 (F Major)
-        [196.00, 233.08, 293.66, 392.00], // G3, Bb3, D4, G4 (G Minor)
-        [164.81, 196.00, 246.94, 329.63], // E3, G3, B3, E4 (E Minor)
+        [164.81, 196.00, 246.94, 329.63],
+        [174.61, 220.00, 261.63, 349.23],
+        [196.00, 233.08, 293.66, 392.00],
+        [164.81, 196.00, 246.94, 329.63],
       ];
       tempo = 160;
       leadWaveform = 'sawtooth';
       bassWaveform = 'triangle';
     } else if (this.currentStageNum === 4) {
-      // Stage 4 (Frozen Citadel) - Slow, chilling atmospheric bells
       progressions = [
-        [293.66, 349.23, 440.00, 587.33], // D4, F4, A4, D5 (D Dorian)
-        [392.00, 493.88, 587.33, 783.99], // G4, B4, D5, G5 (G Major)
-        [440.00, 523.25, 659.25, 880.00], // A4, C5, E5, A5 (A Minor)
-        [293.66, 349.23, 440.00, 587.33], // D4, F4, A4, D5 (D Dorian)
+        [293.66, 349.23, 440.00, 587.33],
+        [392.00, 493.88, 587.33, 783.99],
+        [440.00, 523.25, 659.25, 880.00],
+        [293.66, 349.23, 440.00, 587.33],
       ];
       tempo = 105;
       leadWaveform = 'sine';
       bassWaveform = 'sine';
     } else if (this.currentStageNum === 5) {
-      // Stage 5 (Shadow Abyss) - Heavy, pulsing synth bass
       progressions = [
-        [138.59, 164.81, 207.65, 277.18], // C#3, E3, G#3, C#4 (C# Minor)
-        [220.00, 277.18, 329.63, 440.00], // A3, C#4, E4, A4 (A Major)
-        [207.65, 246.94, 311.13, 415.30], // G#3, B3, D#4, G#4 (G# Minor)
-        [138.59, 164.81, 207.65, 277.18], // C#3, E3, G#3, C#4 (C# Minor)
+        [138.59, 164.81, 207.65, 277.18],
+        [220.00, 277.18, 329.63, 440.00],
+        [207.65, 246.94, 311.13, 415.30],
+        [138.59, 164.81, 207.65, 277.18],
       ];
       tempo = 142;
       leadWaveform = 'square';
       bassWaveform = 'square';
     } else if (this.currentStageNum === 6) {
-      // Stage 6 (Celestial Temple) - Epic, fast melodic speed run
       progressions = [
-        [369.99, 466.16, 554.37, 739.99], // F#4, A#4, C#5, F#5 (F# Major)
-        [311.13, 369.99, 466.16, 622.25], // D#4, F#4, A#4, D#5 (D# Minor)
-        [277.18, 329.63, 415.30, 554.37], // C#4, E4, G#4, C#5 (C# Major)
-        [246.94, 293.66, 392.00, 493.88], // B3, D4, G4, B4 (B Major)
+        [369.99, 466.16, 554.37, 739.99],
+        [311.13, 369.99, 466.16, 622.25],
+        [277.18, 329.63, 415.30, 554.37],
+        [246.94, 293.66, 392.00, 493.88],
       ];
       tempo = 165;
       leadWaveform = 'sawtooth';
       bassWaveform = 'triangle';
     } else if (this.currentStageNum === 7) {
-      // Stage 7 (Sky Heavens) - Bright energetic high-altitude BGM
       progressions = [
-        [293.66, 349.23, 440.00, 587.33], // D Minor
-        [329.63, 392.00, 493.88, 659.25], // E Minor
-        [349.23, 440.00, 523.25, 698.46], // F Major
-        [392.00, 493.88, 587.33, 783.99], // G Major
+        [293.66, 349.23, 440.00, 587.33],
+        [329.63, 392.00, 493.88, 659.25],
+        [349.23, 440.00, 523.25, 698.46],
+        [392.00, 493.88, 587.33, 783.99],
       ];
       tempo = 150;
       leadWaveform = 'triangle';
       bassWaveform = 'sine';
     } else if (this.currentStageNum === 8) {
-      // Stage 8 (Primordial Core - Final Dragon King) - Doom volcanic dark boss BGM
       progressions = [
-        [164.81, 196.00, 246.94, 329.63], // E Minor
-        [155.56, 196.00, 233.08, 311.13], // Eb Minor
-        [146.83, 174.61, 220.00, 293.66], // D Minor
-        [164.81, 196.00, 246.94, 329.63], // E Minor
+        [164.81, 196.00, 246.94, 329.63],
+        [155.56, 196.00, 233.08, 311.13],
+        [146.83, 174.61, 220.00, 293.66],
+        [164.81, 196.00, 246.94, 329.63],
       ];
       tempo = 175;
       leadWaveform = 'sawtooth';
       bassWaveform = 'square';
     }
 
-    const stepDuration = 60 / tempo; // duration in seconds per step
+    const stepDuration = 60 / tempo;
 
     this.musicInterval = setInterval(() => {
       this.initCtx();
@@ -459,8 +433,7 @@ class SoundService {
 
       const chordIndex = Math.floor(this.currentStep / 8) % progressions.length;
       const noteIndex = this.currentStep % 4;
-      
-      // Melody note
+
       const baseChord = progressions[chordIndex];
       const freq = baseChord[noteIndex];
 
@@ -470,7 +443,6 @@ class SoundService {
       osc.type = leadWaveform;
       osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
 
-      // Volume is soft and fades smoothly
       const leadVolumeMult = leadWaveform === 'sawtooth' || leadWaveform === 'square' ? 0.08 : 0.15;
       gain.gain.setValueAtTime(this.musicVolume * leadVolumeMult, this.ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + stepDuration - 0.02);
@@ -481,19 +453,17 @@ class SoundService {
       osc.start();
       osc.stop(this.ctx.currentTime + stepDuration);
 
-      // Save references in case we want to stop immediately
       this.musicNodes.push({ osc, gain });
       if (this.musicNodes.length > 10) {
         this.musicNodes.shift();
       }
 
-      // Simple bass line on step 0 and 4
       if (this.currentStep % 4 === 0) {
         const bassOsc = this.ctx.createOscillator();
         const bassGain = this.ctx.createGain();
 
         bassOsc.type = bassWaveform;
-        bassOsc.frequency.setValueAtTime(baseChord[0] / 2, this.ctx.currentTime); // Octave down
+        bassOsc.frequency.setValueAtTime(baseChord[0] / 2, this.ctx.currentTime);
 
         const bassVolumeMult = bassWaveform === 'square' || (bassWaveform as string) === 'sawtooth' ? 0.12 : 0.22;
         bassGain.gain.setValueAtTime(this.musicVolume * bassVolumeMult, this.ctx.currentTime);

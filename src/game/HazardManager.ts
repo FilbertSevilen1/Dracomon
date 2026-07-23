@@ -1,16 +1,13 @@
 import { soundService } from '../services/sound';
 
 export interface HazardState {
-  skeletonDeathTimer: number;      // Poison Swamp / Molten Lava Acid Meltdown
-  frozenDeathTimer: number;        // Sub-Zero Flash Freeze
-  electrocutionDeathTimer: number;  // Divine Thunderbolt Electrocution
-  reaperDeathTimer: number;        // Grim Reaper Scythe Slash
+  skeletonDeathTimer: number;
+  frozenDeathTimer: number;
+  electrocutionDeathTimer: number;
+  reaperDeathTimer: number;
 }
 
 export class HazardManager {
-  /**
-   * Evaluates hazard tile triggers ('X' for Poison Swamp, '*' for Hazard Pools)
-   */
   public static checkHazardContact(
     pxMid: number,
     pyFeet: number,
@@ -34,7 +31,6 @@ export class HazardManager {
   } {
     if (pHP <= 0) return { triggered: false };
 
-    // 1. Poison Swamp ('X') Contact Check (Acid Skeleton Death Animation)
     const touchedSwamp =
       getTileSymbol(pxMid, pyFeet) === 'X' ||
       getTileSymbol(px + 4, pyFeet) === 'X' ||
@@ -42,7 +38,7 @@ export class HazardManager {
 
     if (touchedSwamp) {
       onPlayerHpZero();
-      soundService.playLavaDeath(); // Sizzling acid meltdown SFX 🌋☠️
+      soundService.playLavaDeath();
       addFloatingText(pxMid, py - 20, 'TOXIC ACID SWAMP MELTDOWN! ☠️🧪', '#22c55e');
       spawnParticles(pxMid, pyFeet, '#22c55e', 25);
 
@@ -53,7 +49,6 @@ export class HazardManager {
       };
     }
 
-    // 2. Molten Lava / Freezing Point / Electric Field / Reaper Scythe ('*') Contact Check
     const touchedHazardPool =
       getTileSymbol(pxMid, pyFeet) === '*' ||
       getTileSymbol(px + 4, pyFeet) === '*' ||
@@ -63,7 +58,7 @@ export class HazardManager {
       onPlayerHpZero();
 
       if (isUnderwater) {
-        soundService.playLavaDeath(); // Sizzling / splash SFX
+        soundService.playLavaDeath();
         addFloatingText(pxMid, py - 20, 'SUCKED INTO WHIRLPOOL! 🌀💀', '#06b6d4');
         spawnParticles(pxMid, pyFeet, '#06b6d4', 25);
 
@@ -73,8 +68,7 @@ export class HazardManager {
           skeletonDeathTimer: 90
         };
       } else if (themeType === 'shadow') {
-        // REAPER SCYTHE DEATH ZONE 💀⚔️
-        soundService.playScytheDeath(); // Grim Reaper Scythe SFX
+        soundService.playScytheDeath();
         addFloatingText(pxMid, py - 20, 'REAPED BY DEATH! 💀⚔️', '#a855f7');
         spawnParticles(pxMid, pyFeet, '#a855f7', 30);
 
@@ -84,8 +78,7 @@ export class HazardManager {
           reaperDeathTimer: 90
         };
       } else if (themeType === 'temple') {
-        // INSTANT ELECTROCUTION DEATH (Divine Thunderbolt ⚡💥)
-        soundService.playThunderboltDeath(); // Divine Thunderbolt SFX
+        soundService.playThunderboltDeath();
         addFloatingText(pxMid, py - 20, 'DIVINE THUNDERBOLT ELECTROCUTION! ⚡💥', '#eab308');
         spawnParticles(pxMid, pyFeet, '#eab308', 30);
 
@@ -95,8 +88,7 @@ export class HazardManager {
           electrocutionDeathTimer: 90
         };
       } else if (themeType === 'ice') {
-        // INSTANT SUB-ZERO FREEZE DEATH 🧊❄️
-        soundService.playIceDeath(); // Sub-Zero Flash Freeze SFX
+        soundService.playIceDeath();
         addFloatingText(pxMid, py - 20, 'SUB-ZERO FLASH FREEZE! 🧊❄️', '#38bdf8');
         spawnParticles(pxMid, pyFeet, '#38bdf8', 25);
 
@@ -106,8 +98,7 @@ export class HazardManager {
           frozenDeathTimer: 999999
         };
       } else {
-        // MOLTEN LAVA MELTDOWN DEATH 🌋🔥
-        soundService.playLavaDeath(); // Molten Lava Sizzle SFX
+        soundService.playLavaDeath();
         addFloatingText(pxMid, py - 20, 'MOLTEN LAVA MELTED! 🌋🔥', '#ef4444');
         spawnParticles(pxMid, pyFeet, '#ef4444', 25);
 
