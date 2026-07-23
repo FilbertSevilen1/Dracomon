@@ -146,9 +146,9 @@ export default function MapsPage() {
     {
       num: 11,
       name: 'Gladiator Arena',
-      difficulty: 'SURVIVAL DEFENSE (2 MIN)',
+      difficulty: 'SURVIVAL DEFENSE (3 MIN)',
       diffClass: 'bg-rose-600 text-white font-black border-rose-400',
-      desc: 'Roman Colosseum defense map! Endless gladiator enemy waves spawn for 2 full minutes. Survive the 120s timer to spawn the Exit Portal!',
+      desc: 'Roman Colosseum defense map! Endless gladiator enemy waves spawn for 3 full minutes. Survive the 180s timer to spawn the Exit Portal!',
       boss: 'Immortal Gladiator Champion',
       icon: '🛡️',
     },
