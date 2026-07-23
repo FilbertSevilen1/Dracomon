@@ -117,11 +117,41 @@ const DRACO_META: {
     colorClass: 'text-orange-600 border-orange-300 bg-orange-50',
     bgGradient: 'from-orange-500 via-red-600 to-amber-500',
   },
+  Thundermon: {
+    role: 'Thunder / Electrotackle',
+    abilityName: 'Electrotackle',
+    abilityDesc: 'Dash forward to unblocked enemy. Explodes electricity on hit & leaves 4s electric charged platform path (300px) that deals damage & 0.2s ministuns.',
+    ultimateName: 'Raigeki',
+    ultimateDesc: 'Strikes lightning on all enemies within 800px radius, stunning for 1.0s. Defeated targets disintegrate into bone piles! (200 Energy)',
+    cost: 400,
+    colorClass: 'text-yellow-600 border-yellow-300 bg-yellow-50',
+    bgGradient: 'from-yellow-400 via-amber-500 to-cyan-500',
+  },
 };
 
 // Render Draco SVGs efficiently without Framer Motion ticker overhead
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
+
+  if (name === 'Thundermon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.2)" />
+        {/* Lightning Wings */}
+        <path d="M 28 44 Q 6 16 30 28 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="1.5" />
+        <path d="M 72 44 Q 94 16 70 28 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="1.5" />
+        {/* Body & Electric Horns */}
+        <rect x="34" y="34" width="32" height="42" rx="10" fill="#facc15" stroke="#ca8a04" strokeWidth="2.5" />
+        <path d="M 34 34 L 26 14 L 38 24 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.5" />
+        <path d="M 66 34 L 74 14 L 62 24 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.5" />
+        {/* Glowing Cyan Eyes */}
+        <rect x="42" y="44" width="5" height="4" fill="#06b6d4" />
+        <rect x="53" y="44" width="5" height="4" fill="#06b6d4" />
+        {/* Thunder Bolt Emblem on Chest */}
+        <path d="M 52 52 L 44 64 L 50 64 L 47 74 L 56 60 L 50 60 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.2" />
+      </svg>
+    );
+  }
 
   if (name === 'Bombamon') {
     return (
@@ -462,7 +492,11 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
         {/* Right Panel (40% width on Desktop, Top on Mobile): Detailed Inspect Showcase */}
         <div className="order-1 lg:order-2 lg:col-span-5 p-5 sm:p-6 rounded-3xl bg-white border border-stone-200/80 shadow-md flex flex-col justify-between space-y-4">
             {/* Top Showcase Header */}
-            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 rounded-2xl bg-stone-50/80 border border-stone-100">
+            <div className={`flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 rounded-2xl transition-all ${
+              isEquipped
+                ? 'bg-emerald-50/40 border-2 border-emerald-500 shadow-sm'
+                : 'bg-stone-50/80 border border-stone-100'
+            }`}>
               <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 <div
                   className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${inspectedMeta.bgGradient} p-1 shadow-md flex items-center justify-center flex-shrink-0`}
@@ -474,11 +508,6 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 flex-wrap">
                     <h3 className="text-lg font-bold text-stone-900 font-display truncate">{selectedName}</h3>
-                    {isEquipped && (
-                      <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700 bg-emerald-100 rounded-full shrink-0">
-                        EQUIPPED
-                      </span>
-                    )}
                   </div>
                   <p className="text-xs font-semibold text-stone-500 mt-0.5 truncate">{inspectedMeta.role}</p>
                   <p className="text-[11px] text-stone-400 mt-0.5 truncate">

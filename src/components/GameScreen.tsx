@@ -44,11 +44,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [energy, setEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : 100;
   });
   const [maxEnergy, setMaxEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : 100;
   });
   const [gameState, setGameState] = useState<'playing' | 'paused' | 'gameover' | 'victory'>('playing');
 
@@ -200,9 +200,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const handleRestart = () => {
     soundService.playClick();
     setGameState('playing');
-    const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : selectedDraco === 'Whitemon' ? 120 : selectedDraco === 'Magemon' ? 300 : selectedDraco === 'Bombamon' ? 120 : 100;
+    const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : selectedDraco === 'Whitemon' ? 120 : selectedDraco === 'Magemon' ? 300 : selectedDraco === 'Bombamon' ? 120 : selectedDraco === 'Thundermon' ? 200 : 100;
     setEnergy(defaultMaxEnergy); // Reset UI energy state to 100% full
-    
+
     // Re-initialize level
     if (engineRef.current) {
       engineRef.current.destroy();
@@ -332,7 +332,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
           <div className="relative shrink-0">
             <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-stone-800/90 flex items-center justify-center border border-stone-700 font-display text-xs sm:text-base">
-              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : selectedDraco === 'Flymon' ? '🐝' : selectedDraco === 'Whitemon' ? '🦅' : selectedDraco === 'Magemon' ? '🧙' : selectedDraco === 'Bombamon' ? '💣' : '🐲'}
+              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : selectedDraco === 'Flymon' ? '🐝' : selectedDraco === 'Whitemon' ? '🦅' : selectedDraco === 'Magemon' ? '🧙' : selectedDraco === 'Bombamon' ? '💣' : selectedDraco === 'Thundermon' ? '⚡' : '🐲'}
             </div>
             <div className="absolute -bottom-1 -right-1 bg-amber-500 border border-stone-900 text-stone-950 text-[7px] sm:text-[9px] font-extrabold font-mono px-0.5 sm:px-1 py-0.2 rounded">
               Lv.{level}

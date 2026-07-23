@@ -136,6 +136,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Thundermon: {
+      level: 1,
+      exp: 0,
+      hp: 22,
+      attack: 9,
+      defense: 3,
+      speed: 7.5,
+      jump: 11,
+      range: 6,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -260,6 +272,20 @@ export const storageService = {
             speed: 7,
             jump: 11,
             range: 8,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Thundermon) {
+          parsed.dracos.Thundermon = {
+            level: 1,
+            exp: 0,
+            hp: 22,
+            attack: 9,
+            defense: 3,
+            speed: 7.5,
+            jump: 11,
+            range: 6,
             unlocked: false,
             energyRegen: 1.0,
           };

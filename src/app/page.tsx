@@ -425,6 +425,36 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Thundermon',
+      title: 'Storm Lord of Thunder',
+      cost: 400,
+      role: 'Thunder / Electrotackle',
+      lore: 'Born from celestial thunderbolts at Sky Heavens. Thundermon charges electric spheres and dashes into unblocked enemies, exploding lightning on contact and leaving a 4s electric charged platform path (300px) that deals continuous damage & 0.2s ministuns. Calls upon Raigeki to strike thunderbolts on all foes within 800px, stunning for 1.0s and turning defeated targets into bone piles!',
+      signatureSkill: 'Electrotackle (Lightning Dash & 4s 300px Electric Platform Path)',
+      ultimateSkill: 'Raigeki (200 Energy • 800px Radius Thunderbolts • 1.0s Stun • Bone Pile Death)',
+      color: 'yellow',
+      tagColor: 'bg-yellow-100 text-yellow-950 border-yellow-300 font-mono',
+      attackType: 'Electric Sphere Area Charge',
+      hp: saveData.dracos['Thundermon']?.hp || 22,
+      atk: saveData.dracos['Thundermon']?.attack || 9,
+      def: saveData.dracos['Thundermon']?.defense || 3,
+      spd: saveData.dracos['Thundermon']?.speed || 7.5,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
+          <path d="M 28 44 Q 6 16 30 28 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="1.5" />
+          <path d="M 72 44 Q 94 16 70 28 Z" fill="#eab308" stroke="#ca8a04" strokeWidth="1.5" />
+          <rect x="34" y="34" width="32" height="42" rx="10" fill="#facc15" stroke="#ca8a04" strokeWidth="2.5" />
+          <path d="M 34 34 L 26 14 L 38 24 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.5" />
+          <path d="M 66 34 L 74 14 L 62 24 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.5" />
+          <rect x="42" y="44" width="5" height="4" fill="#06b6d4" />
+          <rect x="53" y="44" width="5" height="4" fill="#06b6d4" />
+          <path d="M 52 52 L 44 64 L 50 64 L 47 74 L 56 60 L 50 60 Z" fill="#06b6d4" stroke="#0891b2" strokeWidth="1.2" />
+        </svg>
+      ),
+    },
   ];
 
   // FAQ List

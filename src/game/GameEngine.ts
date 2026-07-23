@@ -92,6 +92,9 @@ interface Enemy {
   isLeaping?: boolean;
   isImmortal?: boolean;
   stunTimer?: number;
+  chargeCooldownTimer?: number;
+  chargeTimer?: number;
+  isCharging?: boolean;
   damageAcc?: number;
   burnTimer?: number;
   burnLingerTimer?: number;
@@ -237,6 +240,15 @@ export class GameEngine {
   private magemonSpellIndex = 0;
   private magemonUltActive = false;
   private magemonUltTimer = 0;
+
+  // Thundermon Skill & Ultimate States
+  private thundermonDashActive = false;
+  private thundermonDashTimer = 0;
+  private thundermonChargeActive = false;
+  private thundermonChargeTimer = 0;
+  private thundermonUltActive = false;
+  private thundermonUltTimer = 0;
+  private raigekiTargets: { enemy: Enemy; strikeTimer: number; struck: boolean }[] = [];
 
   // Jungle & Hazard Mechanics State
   private isClimbing = false;
@@ -1119,6 +1131,38 @@ export class GameEngine {
           maxLife: 14
         });
       }
+    } else if (this.selectedDraco === 'Thundermon') {
+      soundService.playShoot();
+      // Charge Electric Ball in front: Area damage (Animation Cancellable!)
+      this.attackDuration = 10;
+      this.attackCooldown = 18; // Short cooldown allowing rapid animation cancel
+      const ballX = this.px + (this.pFacing === 1 ? this.pWidth + 16 : -24);
+      const ballY = this.py + this.pHeight / 2;
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dist = Math.hypot((enemy.x + enemy.width / 2) - ballX, (enemy.y + enemy.height / 2) - ballY);
+        if (dist < 65) {
+          this.damageEnemy(enemy, Math.floor(this.stats.attack * 1.25));
+          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#06b6d4');
+        }
+      });
+
+      // Electric Sphere Spark Particles
+      for (let p = 0; p < 12; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 5 + 2;
+        this.particles.push({
+          x: ballX,
+          y: ballY,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 5 + 2,
+          color: p % 2 === 0 ? '#06b6d4' : '#facc15',
+          life: 16,
+          maxLife: 16
+        });
+      }
     } else {
       // Jumpmon Melee Sword Swing
       soundService.playHit();
@@ -1435,6 +1479,110 @@ export class GameEngine {
           maxLife: 16
         });
       }
+    } else if (this.selectedDraco === 'Thundermon') {
+      // ELECTROTACKLE: High-speed dash into nearest enemy within 800px not blocked by ground or platform + 4s 110px Electric Charged Platform Path
+      soundService.playJump();
+      this.specialCooldown = 180; // 3.0s cooldown
+      this.pInvulnerableFrames = 25; // ~0.4s invulnerability
+      this.thundermonDashActive = true;
+      this.thundermonDashTimer = 18; // ~0.3s dash duration
+
+      const playerCenterX = this.px + this.pWidth / 2;
+      const playerCenterY = this.py + this.pHeight / 2;
+      const ts = this.level.tileSize;
+
+      // Raycast check: checks if any solid ground '#' or platform '=' blocks the path between player and target enemy
+      const isPathBlocked = (x1: number, y1: number, x2: number, y2: number): boolean => {
+        const dist = Math.hypot(x2 - x1, y2 - y1);
+        const steps = Math.max(3, Math.floor(dist / 16));
+        const grid = this.getActiveGrid();
+        if (!grid || grid.length === 0) return false;
+
+        const enemyRow = Math.floor(y2 / ts);
+        const enemyCol = Math.floor(x2 / ts);
+
+        for (let i = 1; i < steps; i++) {
+          const t = i / steps;
+          const cx = x1 + (x2 - x1) * t;
+          const cy = y1 + (y2 - y1) * t;
+          const r = Math.floor(cy / ts);
+          const c = Math.floor(cx / ts);
+
+          if (r >= 0 && r < grid.length && c >= 0 && c < (grid[0]?.length || 0)) {
+            // Skip the enemy's own standing tile
+            if (r === enemyRow && c === enemyCol) continue;
+            const tile = grid[r][c];
+            if (tile === '#' || tile === '=') {
+              return true;
+            }
+          }
+        }
+        return false;
+      };
+
+      // Find nearest enemy within 800px that is NOT blocked by ground or platform
+      let targetEnemy: Enemy | null = null;
+      let minDistance = 9999;
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const enemyCenterX = enemy.x + enemy.width / 2;
+        const enemyCenterY = enemy.y + enemy.height / 2;
+        const dist = Math.hypot(enemyCenterX - playerCenterX, enemyCenterY - playerCenterY);
+
+        if (dist <= 800 && dist < minDistance) {
+          if (!isPathBlocked(playerCenterX, playerCenterY, enemyCenterX, enemyCenterY)) {
+            minDistance = dist;
+            targetEnemy = enemy;
+          }
+        }
+      });
+
+      const dashDir = targetEnemy ? (((targetEnemy as Enemy).x + (targetEnemy as Enemy).width / 2) > playerCenterX ? 1 : -1) : this.pFacing;
+      this.pFacing = dashDir;
+
+      if (targetEnemy) {
+        const dx = ((targetEnemy as Enemy).x + (targetEnemy as Enemy).width / 2) - playerCenterX;
+        const dy = ((targetEnemy as Enemy).y + (targetEnemy as Enemy).height / 2) - playerCenterY;
+        const dist = Math.hypot(dx, dy);
+        if (dist > 0) {
+          this.pvx = (dx / dist) * 22.0;
+          this.pvy = (dy / dist) * 12.0;
+        }
+      } else {
+        this.pvx = dashDir * 22.0;
+      }
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'ELECTROTACKLE! ⚡💨', '#06b6d4');
+
+      // Spawn 4-second Electric Charged Ground Zone on platform passed (smaller 110px area)
+      this.groundBurnZones.push({
+        id: this.groundBurnIdCounter++,
+        x: this.px + (dashDir === 1 ? -30 : -80),
+        y: this.py + this.pHeight - 6,
+        width: 110,
+        height: 16,
+        timer: 240, // 4 seconds lingering
+        duration: 240,
+        isElectric: true
+      } as any);
+
+      // Initial melee contact check on dash start
+      this.checkMeleeHit(this.px - 20, this.py - 10, this.pWidth + 100, this.pHeight + 20, Math.floor(this.stats.attack * 2.6));
+
+      // Electric spark trail particles
+      for (let p = 0; p < 22; p++) {
+        this.particles.push({
+          x: this.px + Math.random() * this.pWidth,
+          y: this.py + Math.random() * this.pHeight,
+          vx: -dashDir * (Math.random() * 8 + 3),
+          vy: (Math.random() - 0.5) * 6,
+          size: Math.random() * 6 + 3,
+          color: p % 2 === 0 ? '#06b6d4' : '#facc15',
+          life: 20,
+          maxLife: 20
+        });
+      }
     }
   }
 
@@ -1555,6 +1703,7 @@ export class GameEngine {
       case 'Whitemon': return 120;
       case 'Magemon': return 300;
       case 'Shadowmon': return 120;
+      case 'Thundermon': return 200;
       default: return 100;
     }
   }
@@ -1569,6 +1718,7 @@ export class GameEngine {
       case 'Whitemon': return 'Primal Roar';
       case 'Magemon': return 'Trio Orb Blast';
       case 'Shadowmon': return 'Soul Blast';
+      case 'Thundermon': return 'Raigeki';
       default: return 'Ultimate';
     }
   }
@@ -1583,6 +1733,7 @@ export class GameEngine {
       case 'Whitemon': return 'Hear the primal roar of the wild!';
       case 'Magemon': return 'Behold the elemental devastation of the stars!';
       case 'Shadowmon': return 'Gather, dark souls... SOUL BLAST!';
+      case 'Thundermon': return 'Feel the wrath of the heavens... RAIGEKI! ⚡⚡';
       default: return 'Unleash full power!';
     }
   }
@@ -1590,6 +1741,7 @@ export class GameEngine {
   private getUltimateCost(): number {
     if (this.selectedDraco === 'Shadowmon') return 120;
     if (this.selectedDraco === 'Magemon') return 150;
+    if (this.selectedDraco === 'Thundermon') return 200;
     return this.getMaxEnergy();
   }
 
@@ -1903,6 +2055,43 @@ export class GameEngine {
         });
       }
     }
+    else if (this.selectedDraco === 'Thundermon') {
+      // RAIGEKI ULTIMATE: Staggered 0.1s delayed thunderbolt strikes on enemies under 800 radius, stuns 1s, turns killed foes into bone piles!
+      soundService.playLevelUp();
+      this.thundermonUltActive = true;
+
+      // Normal Camera Zoom (1.0x) during Raigeki
+      this.cameraZoom = 1.0;
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+      this.screenShake = 35;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'RAIGEKI THUNDERBOLTS! ⚡🌩️', '#06b6d4');
+
+      // Find all alive enemies in 800px radius and sort by distance from player
+      const playerCenterX = this.px + this.pWidth / 2;
+      const playerCenterY = this.py + this.pHeight / 2;
+      const maxRadius = 800;
+
+      const validEnemies = this.enemies
+        .filter(enemy => enemy.hp > 0 && Math.hypot((enemy.x + enemy.width / 2) - playerCenterX, (enemy.y + enemy.height / 2) - playerCenterY) <= maxRadius)
+        .sort((a, b) => {
+          const distA = Math.hypot((a.x + a.width / 2) - playerCenterX, (a.y + a.height / 2) - playerCenterY);
+          const distB = Math.hypot((b.x + b.width / 2) - playerCenterX, (b.y + b.height / 2) - playerCenterY);
+          return distA - distB;
+        });
+
+      // 6 frames delay per enemy hit = 0.1s staggering!
+      const delayPerHit = 6;
+      this.raigekiTargets = validEnemies.map((enemy, idx) => ({
+        enemy,
+        strikeTimer: idx * delayPerHit,
+        struck: false
+      }));
+
+      // Total duration = initial delay + total staggered strikes + 45 frames lingering
+      this.thundermonUltTimer = Math.max(65, validEnemies.length * delayPerHit + 45);
+    }
 
     this.birdX = this.px;
     this.birdY = this.py - 50;
@@ -1915,22 +2104,6 @@ export class GameEngine {
 
     if (enemy.isImmortal) {
       enemy.hp = Math.max(1, enemy.hp - damageDealt); // Cannot drop below 1 HP!
-      
-      if ((enemy.stunTimer || 0) <= 0) {
-        enemy.damageAcc = (enemy.damageAcc || 0) + damageDealt;
-
-        // Stun Threshold (Every 45 damage accumulated stuns Immortal Gladiator for 1s = 60 frames)
-        if (enemy.damageAcc >= 45) {
-          enemy.damageAcc = 0;
-          enemy.stunTimer = 60; // 1 second stun!
-          enemy.vx = 0;
-          enemy.vy = 0;
-          soundService.playHit();
-          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, 'STUNNED! 💫', '#fef08a');
-          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
-        }
-      }
-
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${damageDealt} [IMMORTAL 🛡️]`, '#fbbf24');
     } else {
       enemy.hp -= damageDealt;
@@ -3100,6 +3273,67 @@ export class GameEngine {
       if (this.shieldmonDashTimer <= 0) {
         this.shieldmonDashActive = false;
         (this as any).shieldmonDashHitIds = null;
+      }
+    }
+
+    // Thundermon Special: Electrotackle Dash Burst & Explosion on enemy contact
+    if (this.thundermonDashActive) {
+      this.thundermonDashTimer--;
+
+      // Spawn electric dash trail particles
+      if (this.frameCount % 2 === 0) {
+        this.particles.push({
+          x: this.px + Math.random() * this.pWidth,
+          y: this.py + Math.random() * this.pHeight,
+          vx: -this.pFacing * (Math.random() * 6 + 2),
+          vy: (Math.random() - 0.5) * 4,
+          size: Math.random() * 6 + 3,
+          color: Math.random() > 0.5 ? '#06b6d4' : '#facc15',
+          life: 14,
+          maxLife: 14
+        });
+      }
+
+      // Check contact explosion with enemies during dash
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dx = Math.abs((enemy.x + enemy.width / 2) - (this.px + this.pWidth / 2));
+        const dy = Math.abs((enemy.y + enemy.height / 2) - (this.py + this.pHeight / 2));
+        if (dx < 50 && dy < 50) {
+          const hitSet = (this as any).thundermonDashHitIds || ((this as any).thundermonDashHitIds = new Set());
+          if (!hitSet.has(enemy.id)) {
+            hitSet.add(enemy.id);
+            this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.8));
+            if (!enemy.isImmortal && enemy.type !== 'immortal_gladiator') {
+              enemy.stunnedTimer = 30; // 0.5s Stun on impact!
+            }
+
+            soundService.playHit();
+            this.screenShake = 20;
+            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, 'ELECTRIC EXPLOSION! ⚡💥', '#06b6d4');
+
+            // Electric explosion burst particles
+            for (let p = 0; p < 18; p++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = Math.random() * 8 + 3;
+              this.particles.push({
+                x: enemy.x + enemy.width / 2,
+                y: enemy.y + enemy.height / 2,
+                vx: Math.cos(ang) * spd,
+                vy: Math.sin(ang) * spd,
+                size: Math.random() * 6 + 3,
+                color: p % 2 === 0 ? '#06b6d4' : '#facc15',
+                life: 20,
+                maxLife: 20
+              });
+            }
+          }
+        }
+      });
+
+      if (this.thundermonDashTimer <= 0) {
+        this.thundermonDashActive = false;
+        (this as any).thundermonDashHitIds = null;
       }
     }
 
@@ -4590,22 +4824,34 @@ export class GameEngine {
         }
       }
 
-      // Skeleton Archer & King Kong Boss AI
+      // Skeleton Archer & King Kong Boss & Immortal Gladiator AI
       if (enemy.type === 'skeleton_archer') {
         const dx = this.px - enemy.x;
         const dy = this.py - enemy.y;
         enemy.facing = dx > 0 ? 1 : -1;
 
-        if (Math.abs(dx) < 450 && Math.abs(dy) < 200) {
+        if (Math.abs(dx) < 550 && Math.abs(dy) < 300) {
           enemy.shootCooldown--;
           if (enemy.shootCooldown <= 0) {
             enemy.shootCooldown = 110;
             soundService.playShoot();
+
+            // Aim arrow directly towards player's current location!
+            const startX = enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 14;
+            const startY = enemy.y + enemy.height / 2 - 2;
+            const targetX = this.px + this.pWidth / 2;
+            const targetY = this.py + this.pHeight / 2;
+
+            const dirX = targetX - startX;
+            const dirY = targetY - startY;
+            const dist = Math.hypot(dirX, dirY) || 1;
+            const arrowSpeed = 5.5;
+
             this.projectiles.push({
-              x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 14,
-              y: enemy.y + enemy.height / 2 - 2,
-              vx: enemy.facing * 5.2,
-              vy: 0,
+              x: startX,
+              y: startY,
+              vx: (dirX / dist) * arrowSpeed,
+              vy: (dirY / dist) * arrowSpeed,
               width: 14,
               height: 4,
               isEnemy: true,
@@ -4614,6 +4860,44 @@ export class GameEngine {
               type: 'arrow'
             });
           }
+        }
+      } else if (enemy.type === 'immortal_gladiator' || enemy.isImmortal) {
+        // Immortal Gladiator AI: Charge every 3 seconds for 1 second!
+        enemy.chargeCooldownTimer = (enemy.chargeCooldownTimer ?? 180) - 1;
+
+        if (enemy.chargeCooldownTimer <= 0) {
+          enemy.chargeCooldownTimer = 180; // 3 seconds interval
+          enemy.chargeTimer = 60; // 1 second charge
+          soundService.playJump();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 25, 'GLADIATOR RUSH CHARGE! 🛡️💨', '#ef4444');
+        }
+
+        if ((enemy.chargeTimer || 0) > 0) {
+          enemy.chargeTimer!--;
+          enemy.isCharging = true;
+
+          const dx = this.px - enemy.x;
+          enemy.facing = dx > 0 ? 1 : -1;
+          enemy.vx = enemy.facing * 7.5; // High-speed rush charge!
+
+          // Red charging spark particles
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: enemy.x + (enemy.facing === 1 ? 0 : enemy.width),
+              y: enemy.y + Math.random() * enemy.height,
+              vx: -enemy.facing * (Math.random() * 4 + 2),
+              vy: (Math.random() - 0.5) * 3,
+              size: Math.random() * 5 + 2,
+              color: '#ef4444',
+              life: 14,
+              maxLife: 14
+            });
+          }
+        } else {
+          enemy.isCharging = false;
+          const dx = this.px - enemy.x;
+          enemy.facing = dx > 0 ? 1 : -1;
+          enemy.vx = enemy.facing * 2.2; // Normal pursuit speed
         }
       } else if (enemy.type === 'king_kong') {
         const dx = this.px - enemy.x;
@@ -4712,6 +4996,13 @@ export class GameEngine {
         this.py + this.pHeight > enemy.y
       ) {
         this.handlePlayerHit(enemy.attack, enemy.x + enemy.width / 2);
+
+        // If hit by Immortal Gladiator while it is charging -> Stun player for 1 second (60 frames)!
+        if ((enemy.isImmortal || enemy.type === 'immortal_gladiator') && enemy.isCharging) {
+          this.playerStunnedTimer = 60; // 1.0s Player Stun!
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'GLADIATOR RUSH STUN! STUNNED 1.0s! 🛡️💥', '#ef4444');
+          soundService.playHit();
+        }
       }
     });
 
@@ -4839,25 +5130,100 @@ export class GameEngine {
       }
     }
 
-    // Ground Burn Zones tick & enemy burn contact check
+    // Thundermon Raigeki Ultimate Cutscene & Staggered 0.1s Thunderbolts Tracking
+    if (this.thundermonUltActive) {
+      this.pInvulnerableFrames = 65;
+      this.thundermonUltTimer--;
+
+      // Continuous wide camera tracking on Thundermon during Raigeki
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+      // Process staggered 0.1s (6 frames) thunderbolt hits!
+      this.raigekiTargets.forEach(target => {
+        if (!target.struck) {
+          if (target.strikeTimer <= 0) {
+            target.struck = true;
+            const enemy = target.enemy;
+            if (enemy.hp <= 0 && !enemy.isBonePile) return;
+
+            soundService.playHit();
+            this.screenShake = 25;
+
+            // Apply Raigeki ultimate damage & 1.0s stun
+            const ultDmg = Math.floor(this.stats.attack * 3.8);
+            this.damageEnemy(enemy, ultDmg);
+            enemy.stunnedTimer = 60; // 1.0s Stun!
+
+            // If successfully killed enemy: turn into bone pile animation!
+            if (enemy.hp <= 0) {
+              enemy.isBonePile = true;
+              this.addFloatingText(enemy.x, enemy.y - 15, 'DISINTEGRATED TO BONES! ⚡🦴', '#facc15');
+
+              // Bone pile debris particles
+              for (let b = 0; b < 16; b++) {
+                this.particles.push({
+                  x: enemy.x + enemy.width / 2,
+                  y: enemy.y + enemy.height / 2,
+                  vx: (Math.random() - 0.5) * 6,
+                  vy: -Math.random() * 6 - 2,
+                  size: Math.random() * 5 + 3,
+                  color: b % 2 === 0 ? '#e2e8f0' : '#facc15',
+                  life: 30,
+                  maxLife: 30
+                });
+              }
+            }
+
+            // Sky Thunderbolts particle burst for this hit
+            for (let l = 0; l < 25; l++) {
+              this.particles.push({
+                x: enemy.x + enemy.width / 2 + (Math.random() - 0.5) * 20,
+                y: Math.random() * (enemy.y + enemy.height),
+                vx: (Math.random() - 0.5) * 3,
+                vy: Math.random() * 12 + 6,
+                size: Math.random() * 6 + 3,
+                color: l % 2 === 0 ? '#06b6d4' : '#ffffff',
+                life: 18,
+                maxLife: 18
+              });
+            }
+          } else {
+            target.strikeTimer--;
+          }
+        }
+      });
+
+      // Restore camera zoom when Raigeki finishes!
+      if (this.thundermonUltTimer <= 0) {
+        this.thundermonUltActive = false;
+        this.cameraZoom = 1.0;
+        this.screenShake = 20;
+        this.raigekiTargets = [];
+      }
+    }
+
+    // Ground Burn & Electric Charged Zones tick & enemy contact check
     this.groundBurnZones.forEach(zone => {
       zone.timer--;
 
-      // Spawn fiery ground particles
+      const isElectric = (zone as any).isElectric;
+
+      // Spawn ground particles (fire or electric sparks)
       if (this.frameCount % 4 === 0) {
         this.particles.push({
           x: zone.x + Math.random() * zone.width,
           y: zone.y + zone.height - Math.random() * 8,
-          vx: (Math.random() - 0.5) * 2,
+          vx: (Math.random() - 0.5) * 3,
           vy: -Math.random() * 4 - 1,
           size: Math.random() * 6 + 3,
-          color: Math.random() > 0.5 ? '#f97316' : '#fef08a',
+          color: isElectric ? (Math.random() > 0.5 ? '#06b6d4' : '#facc15') : (Math.random() > 0.5 ? '#f97316' : '#fef08a'),
           life: 18,
           maxLife: 18
         });
       }
 
-      // Check enemies standing in ground burn area
+      // Check enemies standing in ground zone area
       this.enemies.forEach(enemy => {
         if (enemy.hp <= 0) return;
         if (
@@ -4866,14 +5232,24 @@ export class GameEngine {
           enemy.y + enemy.height >= zone.y - 12 &&
           enemy.y <= zone.y + zone.height + 24
         ) {
-          enemy.burnTimer = 30;
-          enemy.burnLingerTimer = 120; // 2 seconds linger outside burn area
+          if (isElectric) {
+            // Electric Zone: Periodic electric tick damage & 0.2s mini-stun every 1s (60 frames)
+            enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
+            if (enemy.burnTickTimer % 30 === 0) {
+              this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.6)));
+              enemy.stunnedTimer = 12; // 0.2s Mini-Stun!
+              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'ELECTROCUTED! ⚡', '#06b6d4');
+            }
+          } else {
+            enemy.burnTimer = 30;
+            enemy.burnLingerTimer = 120; // 2 seconds linger outside burn area
 
-          // Periodic burn tick damage every 30 frames (0.5 seconds)
-          enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
-          if (enemy.burnTickTimer % 30 === 0) {
-            this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.5)));
-            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'BURN! 🔥', '#ea580c');
+            // Periodic burn tick damage every 30 frames (0.5 seconds)
+            enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
+            if (enemy.burnTickTimer % 30 === 0) {
+              this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.5)));
+              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'BURN! 🔥', '#ea580c');
+            }
           }
         }
       });
@@ -5177,9 +5553,10 @@ export class GameEngine {
         const ex = c * ts;
         const ey = r * ts;
 
-        // Skip drawn tiles outside camera viewport view to optimize
-        if (ex + ts < this.cameraX - 40 || ex > this.cameraX + this.canvas.width + 120) continue;
-        if (ey + ts < this.cameraY - 40 || ey > this.cameraY + this.canvas.height + 40) continue;
+        // Skip drawn tiles outside camera viewport view to optimize (accounting for camera zoom-out)
+        const zoomPadding = this.cameraZoom < 1.0 ? 500 : 60;
+        if (ex + ts < this.cameraX - zoomPadding || ex > this.cameraX + this.canvas.width + zoomPadding) continue;
+        if (ey + ts < this.cameraY - zoomPadding || ey > this.cameraY + this.canvas.height + zoomPadding) continue;
 
         if (char === '#') {
           // Solid Block
@@ -6630,6 +7007,15 @@ export class GameEngine {
         this.ctx.fillRect(bx, by, bw, bh);
         this.ctx.strokeRect(bx, by, bw, bh);
 
+        // Red glowing charge aura when charging
+        if (enemy.isCharging) {
+          this.ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+          this.ctx.fillRect(bx - 8, by - 8, bw + 16, bh + 16);
+          this.ctx.strokeStyle = '#ef4444';
+          this.ctx.lineWidth = 3.5;
+          this.ctx.strokeRect(bx - 8, by - 8, bw + 16, bh + 16);
+        }
+
         // Gold Skull Horns & Visor
         this.ctx.fillStyle = '#fef08a';
         this.ctx.beginPath();
@@ -6884,6 +7270,11 @@ export class GameEngine {
       accentColor = '#c2410c'; // Flame Red / Dark Orange
       bellyColor = '#fef08a'; // Bright Yellow
       detailColor = '#ef4444'; // Red Accents
+    } else if (this.selectedDraco === 'Thundermon') {
+      mainColor = '#facc15'; // Bright Electric Yellow
+      accentColor = '#ca8a04'; // Golden Yellow
+      bellyColor = '#fef08a'; // Light Yellow
+      detailColor = '#06b6d4'; // Glowing Cyan Eyes & Thunderbolts
     }
 
     const px = this.px;
@@ -7499,38 +7890,173 @@ export class GameEngine {
       this.ctx.restore();
     }
 
-    // Bombamon Ground Burn Zones Rendering (Flaming platforms flush on surface)
+    // Bombamon & Thundermon Ground Zones Rendering (Flaming or Electric platforms flush on surface)
     this.groundBurnZones.forEach(zone => {
       this.ctx.save();
       const alpha = Math.min(1.0, zone.timer / 20);
       this.ctx.globalAlpha = alpha;
 
-      // Fiery ground base gradient overlay sitting flush on top of platform surface
-      const burnGrad = this.ctx.createLinearGradient(zone.x, zone.y - 8, zone.x, zone.y + 6);
-      burnGrad.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
-      burnGrad.addColorStop(0.4, 'rgba(249, 115, 22, 0.75)');
-      burnGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+      const isElectric = (zone as any).isElectric;
 
-      this.ctx.fillStyle = burnGrad;
-      this.ctx.fillRect(zone.x, zone.y - 4, zone.width, 8);
+      if (isElectric) {
+        // Electric ground base gradient sitting flush on top of platform surface
+        const elecGrad = this.ctx.createLinearGradient(zone.x, zone.y - 8, zone.x, zone.y + 6);
+        elecGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        elecGrad.addColorStop(0.4, 'rgba(6, 182, 212, 0.85)');
+        elecGrad.addColorStop(1, 'rgba(250, 204, 21, 0.0)');
 
-      // Flickering animated flame tongues along the burned platform surface rising UPWARDS
-      const numFlames = Math.floor(zone.width / 10);
-      for (let f = 0; f < numFlames; f++) {
-        const fx = zone.x + f * 10 + 5;
-        const fh = 10 + Math.sin(this.frameCount * 0.4 + f * 1.5) * 6;
+        this.ctx.fillStyle = elecGrad;
+        this.ctx.fillRect(zone.x, zone.y - 4, zone.width, 8);
 
-        this.ctx.fillStyle = f % 2 === 0 ? '#f97316' : '#fef08a';
-        this.ctx.beginPath();
-        this.ctx.moveTo(fx - 5, zone.y + 2);
-        this.ctx.lineTo(fx, zone.y - fh);
-        this.ctx.lineTo(fx + 5, zone.y + 2);
-        this.ctx.closePath();
-        this.ctx.fill();
+        // Electric lightning arcs along the platform surface
+        const numArcs = Math.floor(zone.width / 12);
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        for (let a = 0; a < numArcs; a++) {
+          const ax = zone.x + a * 12 + 6;
+          const ah = 8 + Math.sin(this.frameCount * 0.6 + a * 2) * 5;
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(ax - 6, zone.y + 2);
+          this.ctx.lineTo(ax, zone.y - ah);
+          this.ctx.lineTo(ax + 6, zone.y + 2);
+          this.ctx.stroke();
+        }
+      } else {
+        // Fiery ground base gradient overlay sitting flush on top of platform surface
+        const burnGrad = this.ctx.createLinearGradient(zone.x, zone.y - 8, zone.x, zone.y + 6);
+        burnGrad.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
+        burnGrad.addColorStop(0.4, 'rgba(249, 115, 22, 0.75)');
+        burnGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+        this.ctx.fillStyle = burnGrad;
+        this.ctx.fillRect(zone.x, zone.y - 4, zone.width, 8);
+
+        // Flickering animated flame tongues along the burned platform surface rising UPWARDS
+        const numFlames = Math.floor(zone.width / 10);
+        for (let f = 0; f < numFlames; f++) {
+          const fx = zone.x + f * 10 + 5;
+          const fh = 10 + Math.sin(this.frameCount * 0.4 + f * 1.5) * 6;
+
+          this.ctx.fillStyle = f % 2 === 0 ? '#f97316' : '#fef08a';
+          this.ctx.beginPath();
+          this.ctx.moveTo(fx - 5, zone.y + 2);
+          this.ctx.lineTo(fx, zone.y - fh);
+          this.ctx.lineTo(fx + 5, zone.y + 2);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
       }
 
       this.ctx.restore();
     });
+
+    // Thundermon Raigeki Sky Thunderbolt Strikes Animation (Divine Electrocution Death Lightning)
+    if (this.thundermonUltActive) {
+      this.ctx.save();
+
+      // Blinding white/cyan flash in first frames of Raigeki
+      if (this.thundermonUltTimer > 45) {
+        const flashAlpha = (this.thundermonUltTimer - 45) / 15;
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha * 0.65})`;
+        this.ctx.fillRect(this.cameraX - 100, this.cameraY - 100, (this.canvas.width || 800) + 200, (this.canvas.height || 600) + 200);
+      } else if (this.frameCount % 4 === 0 || this.frameCount % 4 === 1) {
+        this.ctx.fillStyle = 'rgba(6, 182, 212, 0.18)';
+        this.ctx.fillRect(this.cameraX - 100, this.cameraY - 100, (this.canvas.width || 800) + 200, (this.canvas.height || 600) + 200);
+      }
+
+      const playerCenterX = this.px + this.pWidth / 2;
+      const playerCenterY = this.py + this.pHeight / 2;
+
+      this.enemies.forEach((enemy, idx) => {
+        if (enemy.hp <= 0 && !enemy.isBonePile) return;
+        const enemyX = enemy.x + enemy.width / 2;
+        const enemyY = enemy.y + enemy.height / 2;
+        const dist = Math.hypot(enemyX - playerCenterX, enemyY - playerCenterY);
+
+        if (dist <= 800) {
+          const skyY = Math.max(0, this.cameraY - 300);
+          this.ctx.save();
+
+          // 1. MASSIVE DIVINE THUNDERBOLT OUTER GLOW COLUMN sitting over target
+          this.ctx.fillStyle = 'rgba(234, 179, 8, 0.35)';
+          this.ctx.fillRect(enemyX - 25, skyY, 50, enemyY - skyY + 30);
+
+          // 2. CORE LIGHTNING BOLT WITH ZIGZAG PATH FROM SKY TO ENEMY (Matching Death Animation Lightning!)
+          this.ctx.strokeStyle = 'rgba(254, 240, 138, 0.95)';
+          this.ctx.lineWidth = 6;
+          this.ctx.beginPath();
+          this.ctx.moveTo(enemyX, skyY);
+
+          const segments = 8;
+          const totalY = enemyY - skyY;
+          const segH = totalY / segments;
+
+          for (let s = 1; s <= segments; s++) {
+            const segY = skyY + s * segH;
+            const jitter = (Math.sin(this.frameCount * 0.5 + s * 2.3 + idx) * 22) * (1 - (s / segments) * 0.3);
+            this.ctx.lineTo(enemyX + jitter, segY);
+          }
+          this.ctx.stroke();
+
+          // 3. INNER WHITE-HOT CORE LIGHTNING BOLT
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.moveTo(enemyX, skyY);
+          for (let s = 1; s <= segments; s++) {
+            const segY = skyY + s * segH;
+            const jitter = (Math.sin(this.frameCount * 0.5 + s * 2.3 + idx) * 14) * (1 - (s / segments) * 0.3);
+            this.ctx.lineTo(enemyX + jitter, segY);
+          }
+          this.ctx.stroke();
+
+          // 4. ELECTRIC CRACKLING AURA RADIAL ARCS AROUND ENEMY BODY (Matching Death Animation Lightning!)
+          for (let a = 0; a < 6; a++) {
+            const arcAngle = (this.frameCount * 0.4 + a * Math.PI / 3);
+            const arcR = 18 + Math.sin(this.frameCount * 0.6 + a) * 8;
+            const ax = enemyX + Math.cos(arcAngle) * arcR;
+            const ay = enemyY + Math.sin(arcAngle) * arcR;
+
+            this.ctx.strokeStyle = a % 2 === 0 ? '#fef08a' : '#38bdf8';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(enemyX, enemyY);
+            const midX = (enemyX + ax) / 2 + (Math.random() - 0.5) * 12;
+            const midY = (enemyY + ay) / 2 + (Math.random() - 0.5) * 12;
+            this.ctx.lineTo(midX, midY);
+            this.ctx.lineTo(ax, ay);
+            this.ctx.stroke();
+          }
+
+          // 5. FLICKERING ELECTROCUTED SILHOUETTE & SKELETON BONES FLASHING THROUGH ENEMY BODY
+          if (this.frameCount % 4 < 2) {
+            this.ctx.fillStyle = 'rgba(234, 179, 8, 0.7)';
+            this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+            this.ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+            this.ctx.fillRect(enemyX - 1, enemy.y + 4, 2, enemy.height - 8); // spine
+            this.ctx.fillRect(enemy.x + 4, enemyY - 2, enemy.width - 8, 3); // ribs
+          }
+
+          // 6. Lightning Impact Shockwave Base Circle
+          this.ctx.fillStyle = 'rgba(6, 182, 212, 0.45)';
+          this.ctx.beginPath();
+          this.ctx.ellipse(enemyX, enemyY + enemy.height / 2, 38, 14, 0, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#facc15';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.ellipse(enemyX, enemyY + enemy.height / 2, 26, 9, 0, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        }
+      });
+
+      this.ctx.restore();
+    }
 
     // Bombamon Carpet Bombing Sky Fire Shower Stream
     if (this.carpetBombingActive) {

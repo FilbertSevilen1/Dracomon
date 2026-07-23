@@ -372,11 +372,13 @@ export class StageGimmickManager {
             soundService.playThunderboltDeath();
           }
 
-          // Stun enemies in column ABOVE groundY
+          // Stun enemies in column ABOVE groundY (except Immortal Gladiator)
           enemies.forEach((enemy) => {
             const enemyFeet = enemy.y + enemy.height;
             if (enemy.hp > 0 && Math.abs((enemy.x + enemy.width / 2) - tb.x) < 56 && enemyFeet <= groundY + 15) {
-              enemy.stunTimer = 60;
+              if (enemy.type !== 'immortal_gladiator') {
+                enemy.stunTimer = 60;
+              }
             }
           });
         }
@@ -697,7 +699,9 @@ export class StageGimmickManager {
                 if (isBoss) {
                   // Boss is EXEMPT from instant crush destruction! Takes impact damage & stun instead
                   enemy.hp = Math.max(1, enemy.hp - 60);
-                  enemy.stunTimer = 60;
+                  if (enemy.type !== 'immortal_gladiator') {
+                    enemy.stunTimer = 60;
+                  }
                   callbacks.addFloatingText(ex, enemy.y - 15, 'BOSS METEOR IMPACT -60 HP! ☄️💥', '#ef4444');
                   callbacks.spawnParticles(ex, ey, '#f97316', 10);
                 } else {

@@ -30,6 +30,34 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.1.8',
+    date: 'July 23, 2026',
+    tag: 'Thunder Tempest & Gladiator Overhaul!',
+    badgeColor: 'bg-emerald-500 text-stone-950 font-black shadow-sm',
+    summary: 'Polishes Thundermon moveset with non-blocked 800px raycast dashes and 0.1s staggered Raigeki thunderbolts, overhauls Immortal Gladiator with 3s interval charges and stun immunity, and updates targeted Skeleton Archer aiming.',
+    highlights: [
+      'Thundermon Electrotackle Polish: High-speed dash now targets nearest enemy within 800px not blocked by ground/platforms, with a smaller 110px electric ground zone and enemy contact explosion.',
+      'Raigeki Staggered Thunderbolt Tempest: Raigeki strikes enemies one by one with a 0.1s staggered delay, featuring Divine Electrocution death lightning, bone pile disintegrations, and normal camera tracking.',
+      'Thundermon Basic Attack Balance: Removed mini-stun from basic attack while keeping rapid animation cancellation.',
+      'Immortal Gladiator Overhaul: Immortal Gladiator is now immune to stuns, charging every 3 seconds for 1 second with a glowing crimson rush aura and 1.0s player stun on impact.',
+      'Skeleton Archer Targeted Aim: Skeleton Archer arrows now calculate directional velocity vector aiming directly at player current location.',
+      'Heroes UI Polish: Equipped hero showcase card now features a green border container instead of an inline text badge.',
+    ],
+  },
+  {
+    version: '0.1.7',
+    date: 'July 23, 2026',
+    tag: 'Thundermon Unleashed!',
+    badgeColor: 'bg-yellow-500 text-stone-950 font-black shadow-sm',
+    summary: 'Introduces Thundermon, the storm dragon hero featuring Electric Ball basic attack with animation cancellation, Electrotackle dash skill with 4s 300px electric charged platform paths, and 200-Energy Raigeki ultimate.',
+    highlights: [
+      'New Hero - Thundermon: Electric dragon hero featuring Electric Ball basic attack, Electrotackle dash skill, and 200-Energy Raigeki ultimate.',
+      'Basic Attack - Electric Ball Charge: Charges an electric ball in front dealing area damage. After 2s, applies 0.5s mini-stuns and can be used to cancel attack animations.',
+      'Special Skill - Electrotackle: High-speed dash into front or nearest unblocked enemy, exploding electricity on impact. The platform passed becomes electric-charged for 4s (300px span) dealing damage & 0.2s ministuns every 1s.',
+      'Ultimate Skill - Raigeki (200 Energy): Strikes celestial thunderbolts on all enemies within 800px radius, stunning for 1.0s. Defeated targets disintegrate into bone piles!',
+    ],
+  },
+  {
     version: '0.1.6',
     date: 'July 23, 2026',
     tag: 'Economy Rebalance & Bug Fixes',
@@ -202,8 +230,8 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  // Only the latest version ('0.1.5') is opened by default!
-  const [openVersion, setOpenVersion] = useState<string | null>('0.1.6');
+  // Only the latest version ('0.1.8') is opened by default!
+  const [openVersion, setOpenVersion] = useState<string | null>('0.1.8');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();
