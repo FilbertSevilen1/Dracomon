@@ -14,7 +14,7 @@ export const DEFAULT_ITEMS: InventoryItem[] = [
     id: 'upgrade_stone',
     name: 'Upgrade Stone',
     type: 'upgrade_stone',
-    description: 'Permanently increases any single stat of your selected Draco by +1.',
+    description: 'Permanently increases any single stat of your selected Draco by +0.1.',
     quantity: 1,
   },
 ];

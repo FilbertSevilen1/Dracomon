@@ -147,7 +147,7 @@ export function useGameState() {
         const itemDetails = 
           itemId === 'potion' 
             ? { id: 'potion', name: 'Healing Potion', type: 'potion' as const, description: 'Restores 15 HP immediately.', quantity: 1 }
-            : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +1.', quantity: 1 };
+            : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +0.1.', quantity: 1 };
         newInventory.push(itemDetails);
       }
 
@@ -196,7 +196,7 @@ export function useGameState() {
           if (stat === 'speed' && oldVal >= 20) return prev; // Speed capped at 20
           if (stat === 'jump' && oldVal >= 14) return prev; // Jump capped at 14
 
-          let newVal = oldVal + 1;
+          let newVal = oldVal + 0.1;
           if (stat === 'speed') newVal = Math.min(20, newVal);
           if (stat === 'jump') newVal = Math.min(14, newVal);
 
@@ -237,7 +237,7 @@ export function useGameState() {
           const itemDetails = 
             itemId === 'potion' 
               ? { id: 'potion', name: 'Healing Potion', type: 'potion' as const, description: 'Restores 15 HP immediately.', quantity: 1 }
-              : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +1.', quantity: 1 };
+              : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +0.1.', quantity: 1 };
           newInventory.push(itemDetails);
         }
 
@@ -300,7 +300,7 @@ export function useGameState() {
         currentLevel = Math.min(15, currentLevel + 1);
         requiredExp = currentLevel * 30;
 
-        const roll = Math.floor(Math.random() * 2) + 1; // 1-2 random dice bonus (max +2)
+        const roll = Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10; // 0.1-1.0 random dice bonus
         newPendingItems.push({
           dracoName: activeName,
           oldLevel: oldLvl,
@@ -414,7 +414,7 @@ export function useGameState() {
             setPlayerMaxHP(d.hp);
           }
 
-          const bonusRoll = Math.floor(Math.random() * 2) + 1; // 1-2 (max +2)
+          const bonusRoll = Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10; // 0.1-1.0
           const item = {
             dracoName: name,
             oldLevel: currentLvl,

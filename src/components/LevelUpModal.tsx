@@ -34,7 +34,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
     setCurrentDiceVal(1);
     let count = 0;
     const interval = setInterval(() => {
-      setCurrentDiceVal(Math.floor(Math.random() * 2) + 1);
+      setCurrentDiceVal(Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10);
       count++;
       if (count > 12) {
         clearInterval(interval);

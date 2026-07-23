@@ -23,7 +23,7 @@ const SHOP_ITEMS = [
   {
     id: 'upgrade_stone',
     name: 'Upgrade Stone',
-    description: 'Consume to permanently increase any chosen stat of your active Draco by +1.',
+    description: 'Consume to permanently increase any chosen stat of your active Draco by +0.1.',
     cost: 50,
     icon: '🔮'
   }
@@ -148,7 +148,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                           <Sparkles className="w-4 h-4 text-purple-600 animate-spin" />
                           Apply Upgrade Stone
                         </h4>
-                        <p className="text-xs text-purple-600">Select which stat of your {selectedDraco} to upgrade permanently by +1.</p>
+                        <p className="text-xs text-purple-600">Select which stat of your {selectedDraco} to upgrade permanently by +0.1.</p>
                       </div>
                       <button
                         onClick={() => { soundService.playClick(); setStoneUpgrading(false); }}
@@ -184,7 +184,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                               </span>
                             ) : (
                               <span className="text-xs font-mono font-bold mt-2 text-stone-500">
-                                Current: <span className="text-stone-950 font-bold">{currentVal}</span> → <span className="text-purple-600 font-bold">{currentVal + 1}</span>
+                                Current: <span className="text-stone-950 font-bold">{currentVal}</span> → <span className="text-purple-600 font-bold">{Math.round((currentVal + 0.1) * 10) / 10}</span>
                               </span>
                             )}
                           </button>
@@ -233,7 +233,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                         </div>
                         <h3 className="font-bold text-stone-800 text-lg mt-3">Upgrade Stone</h3>
                         <p className="text-xs text-stone-400 mt-1 leading-relaxed">
-                          Permanently increases a chosen stat of your selected Draco (HP, Attack, Defense, Speed, Jump, Range) by +1.
+                          Permanently increases a chosen stat of your selected Draco (HP, Attack, Defense, Speed, Jump, Range) by +0.1.
                         </p>
                       </div>
                       <button
