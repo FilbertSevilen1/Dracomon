@@ -25,16 +25,27 @@ export function useGameState() {
 
   // Initialize and load save data
   useEffect(() => {
-    const loadedData = storageService.loadGame();
-    setSaveData(loadedData);
-    
-    // Sync current character's max HP
-    const selected = loadedData.selectedDraco;
-    const activeDraco = loadedData.dracos[selected];
-    if (activeDraco && activeDraco.hp) {
-      setPlayerHP(activeDraco.hp);
-      setPlayerMaxHP(activeDraco.hp);
-    }
+    const handleUpdate = () => {
+      const freshData = storageService.loadGame();
+      setSaveData(freshData);
+      
+      // Sync current character's max HP
+      const selected = freshData.selectedDraco;
+      const activeDraco = freshData.dracos[selected];
+      if (activeDraco && activeDraco.hp) {
+        setPlayerHP(activeDraco.hp);
+        setPlayerMaxHP(activeDraco.hp);
+      }
+    };
+
+    handleUpdate();
+
+    window.addEventListener('dracomon_save_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('dracomon_save_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
   }, []);
 
   // Sync volumes when settings change

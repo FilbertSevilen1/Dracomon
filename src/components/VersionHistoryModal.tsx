@@ -18,8 +18,33 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
-    version: '0.1.0',
+    version: '0.1.2',
     date: 'Latest Update (Current)',
+    tag: 'Mobile & Gameplay Polish',
+    badgeColor: 'bg-cyan-500 text-white font-black shadow-sm',
+    highlights: [
+      'Enhanced Game Screen UI: Implemented cleaner HUD overlay layouts, persistent settings access, and optimized canvas framing.',
+      'Death Zone Visual Animations: Added animated warning indicators, red hazard pulses, and custom particle cues when entering lethal zones.',
+      'Mobile Input & Responsive Controls: Introduced full touchscreen virtual joysticks, active jump/attack buttons, and improved layout scaling for mobile devices.',
+      'Global Options Navigation: Integrated a persistent Settings Modal directly in the main navigation header for seamless audio and save file management.',
+    ],
+  },
+  {
+    version: '0.1.1',
+    date: 'July 2026',
+    tag: 'Refined Realms',
+    badgeColor: 'bg-amber-500 text-stone-950 font-black shadow-sm',
+    highlights: [
+      'New Page - /heroes: Full-page Draco Sanctuary roster manager with 2-panel inspect layout and real-time hero name filter.',
+      'New Page - /maps: Dedicated campaign stage showcase for all 11 stages. Clicking Play now launches the level directly without redirecting.',
+      'New Page - /membership: Interactive tier selection (Free / Basic / Premium) with live membership badge in the Navbar.',
+      'New Page - /version: Dedicated patch notes page with expandable accordion panels.',
+      'Enhanced Navbar: Persistent top bar across all pages showing active hero badge (name + level), active membership tier, and live coin balance.',
+    ],
+  },
+  {
+    version: '0.1.0',
+    date: 'July 2026',
     tag: 'Gladiators Arise!',
     badgeColor: 'bg-rose-500 text-white font-black shadow-sm',
     highlights: [
@@ -105,14 +130,14 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({ onClos
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-stone-800 bg-stone-900/80">
           <div className="flex items-center gap-3">
-            <div className="p-2.5 bg-rose-950/80 border border-rose-700 text-rose-400 rounded-2xl">
+            <div className="p-2.5 bg-cyan-950/80 border border-cyan-700 text-cyan-400 rounded-2xl">
               <ScrollText className="w-5 h-5" />
             </div>
             <div>
               <h2 className="text-xl font-black text-white font-mono flex items-center gap-2">
-                Patch Notes & Release Log <span className="text-xs px-2.5 py-0.5 rounded-full bg-rose-500 text-white font-black">v0.1.0</span>
+                Patch Notes & Release Log <span className="text-xs px-2.5 py-0.5 rounded-full bg-cyan-500 text-white font-black">v0.1.2</span>
               </h2>
-              <p className="text-xs text-stone-400">Complete update timeline from v0.0.1 Genesis to v0.1.0 Gladiators Arise.</p>
+              <p className="text-xs text-stone-400">Complete update timeline from v0.0.1 Genesis to v0.1.2 Mobile & Gameplay Polish.</p>
             </div>
           </div>
           <button
@@ -129,8 +154,8 @@ export const VersionHistoryModal: React.FC<VersionHistoryModalProps> = ({ onClos
             <div
               key={log.version}
               className={`p-5 rounded-2xl border ${
-                log.version === '0.1.0'
-                  ? 'bg-rose-950/40 border-rose-800/80 ring-2 ring-rose-500/20'
+                log.version === '0.1.2'
+                  ? 'bg-cyan-950/40 border-cyan-800/80 ring-2 ring-cyan-500/20'
                   : 'bg-stone-800/50 border-stone-700/60'
               }`}
             >

@@ -570,12 +570,12 @@ export default function Home() {
             // IN-GAME SCREEN VIEW (10% Smaller Framed Viewport)
             <motion.div
               key="game-screen-wrapper"
-              initial={{ opacity: 0, scale: 0.96 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.96 }}
-              className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-stone-950/95 backdrop-blur-xl p-[2.5vh] p-[2.5vw] overflow-hidden select-none"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 w-screen h-screen z-50 flex items-center justify-center bg-stone-950 overflow-hidden select-none p-0 m-0"
             >
-              <div className="w-[90vw] h-[90vh] max-w-full max-h-full rounded-3xl border-2 border-stone-800/80 shadow-[0_0_60px_rgba(0,0,0,0.9)] overflow-hidden relative bg-stone-950 flex flex-col">
+              <div className="w-full h-full max-w-[1920px] mx-auto rounded-none border-0 overflow-hidden relative bg-stone-950 flex flex-col">
                 <GameScreen
                   saveData={saveData}
                   stageNum={currentStage}
@@ -670,15 +670,6 @@ export default function Home() {
                         <BookOpen className="w-4 h-4 text-amber-600" />
                         Character Story
                       </button>
-
-                      <Link
-                        href="/version"
-                        onClick={() => soundService.playClick()}
-                        className="px-5 py-4 bg-rose-50 border border-rose-200 hover:bg-rose-100 text-rose-800 rounded-2xl font-extrabold text-sm transition-all active:scale-95 flex items-center gap-2"
-                      >
-                        <ScrollText className="w-4 h-4 text-rose-600" />
-                        Patch Notes v0.1.0
-                      </Link>
 
                       <button
                         onClick={() => { soundService.playClick(); setShowControlsModal(true); }}

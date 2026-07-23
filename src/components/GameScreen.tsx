@@ -280,6 +280,25 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     };
   }, []);
 
+  // Dynamic Canvas Resolution Scaling matching Device (capped at 1920px max width)
+  useEffect(() => {
+    const updateCanvasDimensions = () => {
+      if (canvasRef.current && containerRef.current) {
+        const rect = containerRef.current.getBoundingClientRect();
+        const displayW = Math.min(1920, Math.floor(rect.width || window.innerWidth));
+        const displayH = Math.floor(rect.height || window.innerHeight);
+        if (displayW > 0 && displayH > 0) {
+          canvasRef.current.width = displayW;
+          canvasRef.current.height = displayH;
+        }
+      }
+    };
+
+    updateCanvasDimensions();
+    window.addEventListener('resize', updateCanvasDimensions);
+    return () => window.removeEventListener('resize', updateCanvasDimensions);
+  }, []);
+
   const handleQuickHeal = () => {
     if (activePotionCount > 0) {
       onUsePotion(selectedDraco, engineRef);
@@ -298,33 +317,38 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const isUltimateReady = level >= 5 && energy >= ultCost;
 
   return (
-    <div ref={containerRef} className="w-full h-full z-50 bg-stone-950 overflow-hidden select-none relative flex flex-col justify-between">
-      {/* Top Fixed HUD Header Bar (Does NOT block or overlap canvas) */}
-      <div className="w-full shrink-0 z-20 flex items-center justify-between px-3 py-2 sm:px-4 sm:py-2.5 bg-stone-900 border-b border-stone-800 text-white pointer-events-auto shadow-md">
-        {/* Left Side: Companion Avatar & Level */}
-        <div className="flex items-center gap-2.5 sm:gap-3">
-          <div className="relative">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-xl bg-stone-800 flex items-center justify-center border border-stone-700 font-display text-base sm:text-lg">
-              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : '🐝'}
+    <div ref={containerRef} className="w-full h-full z-50 bg-stone-950 overflow-hidden select-none relative flex justify-center items-center">
+      {/* 100% Full Viewport Canvas (Dynamic device resolution, max 1920px width) */}
+      <div className="w-full h-full max-w-[1920px] mx-auto relative overflow-hidden flex items-center justify-center bg-stone-950 z-10">
+        <canvas
+          ref={canvasRef}
+          className="w-full h-full block bg-stone-950"
+        />
+      </div>
+
+      {/* Transparent Floating Overlapping Top HUD Header Bar */}
+      <div className="absolute top-1 left-1 right-1 sm:top-3 sm:left-4 sm:right-4 max-w-[1920px] mx-auto z-30 flex items-center justify-between pointer-events-none gap-1 sm:gap-2">
+        {/* Left Side: Companion Avatar & Level & EXP */}
+        <div className="flex items-center gap-1.5 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
+          <div className="relative shrink-0">
+            <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-stone-800/90 flex items-center justify-center border border-stone-700 font-display text-xs sm:text-base">
+              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : selectedDraco === 'Flymon' ? '🐝' : selectedDraco === 'Whitemon' ? '🦅' : selectedDraco === 'Magemon' ? '🧙' : '🐲'}
             </div>
-            <div className="absolute -bottom-1 -right-1 bg-amber-500 border border-stone-900 text-stone-950 text-[9px] font-extrabold font-mono px-1.5 py-0.5 rounded">
+            <div className="absolute -bottom-1 -right-1 bg-amber-500 border border-stone-900 text-stone-950 text-[7px] sm:text-[9px] font-extrabold font-mono px-0.5 sm:px-1 py-0.2 rounded">
               Lv.{level}
             </div>
           </div>
-          <div>
-            <div className="font-bold text-xs sm:text-sm text-stone-100 leading-none flex items-center gap-1.5">
-              {selectedDraco}
-              <span className="text-[9px] uppercase font-semibold text-stone-400 hidden sm:inline">
-                {selectedDraco === 'Jumpmon' ? 'Leaper' : selectedDraco === 'Archermon' ? 'Ranger' : selectedDraco === 'Shieldmon' ? 'Guardian' : selectedDraco === 'Assassinmon' ? 'Assassin' : 'Aerialist'}
-              </span>
+          <div className="min-w-0 hidden min-[360px]:block">
+            <div className="font-bold text-[10px] sm:text-sm text-stone-100 leading-none flex items-center gap-1 truncate">
+              <span className="truncate">{selectedDraco}</span>
             </div>
             {/* EXP Bar */}
-            <div className="w-24 sm:w-32 mt-1">
-              <div className="flex justify-between text-[8px] font-bold text-stone-400 font-mono">
+            <div className="w-12 sm:w-24 mt-0.5 sm:mt-1">
+              <div className="flex justify-between text-[6px] sm:text-[8px] font-bold text-stone-400 font-mono">
                 <span>EXP</span>
                 <span>{exp}/{requiredExp}</span>
               </div>
-              <div className="w-full h-1 bg-stone-800 rounded-full mt-0.5 overflow-hidden">
+              <div className="w-full h-0.5 sm:h-1 bg-stone-800 rounded-full mt-0.5 overflow-hidden">
                 <div
                   className="h-full bg-blue-500 rounded-full transition-all duration-300"
                   style={{ width: `${expPercent}%` }}
@@ -334,113 +358,123 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </div>
         </div>
 
-        {/* Center: HP & Ultimate Status Bars */}
-        <div className="flex-1 max-w-xs mx-3 sm:mx-6 space-y-1 sm:space-y-1.5">
-          {/* Health Bar */}
-          <div>
-            <div className="flex justify-between items-center text-[9px] sm:text-[10px] font-bold text-stone-300 font-mono mb-0.5">
-              <span className="flex items-center gap-1">
-                <Heart className="w-3 h-3 text-rose-500 fill-rose-500" />
-                HEALTH
-              </span>
-              <span>{hp}/{maxHp}</span>
-            </div>
-            <div className="h-2 sm:h-2.5 w-full bg-stone-800 border border-stone-700/50 rounded-full overflow-hidden relative shadow-inner">
-              <motion.div
-                initial={{ width: '100%' }}
-                animate={{ width: `${hpPercent}%` }}
-                className={`h-full rounded-full ${
-                  hpPercent < 25 ? 'bg-red-500 animate-pulse' : hpPercent < 50 ? 'bg-amber-400' : 'bg-rose-500'
-                }`}
-              />
+        {/* Center: Space-Saving Circular Health & Energy Gauges */}
+        <div className="flex items-center gap-1 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
+          {/* Circular Health Gauge */}
+          <div className="flex flex-col items-center justify-center relative group" title={`Health: ${hp}/${maxHp}`}>
+            <div className="relative w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
+                <path
+                  className="text-stone-800/90"
+                  strokeWidth="3.5"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className={hpPercent < 25 ? "text-red-500 animate-pulse" : hpPercent < 50 ? "text-amber-400" : "text-rose-500"}
+                  strokeDasharray={`${hpPercent}, 100`}
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+                <Heart className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-rose-500 fill-rose-500 mb-0.5" />
+                <span className="text-[7px] sm:text-[9px] font-black font-mono text-white tracking-tighter">
+                  {hp}/{maxHp}
+                </span>
+              </div>
             </div>
           </div>
 
-          {/* Ultimate Energy Bar */}
-          <div>
-            <div className="flex justify-between items-center text-[9px] sm:text-[10px] font-bold text-stone-300 font-mono mb-0.5">
-              <span className="flex items-center gap-1 text-amber-400 truncate max-w-[170px] sm:max-w-none">
-                {level < 5 ? (
-                  <span className="text-purple-400 flex items-center gap-1 font-bold text-[8px] sm:text-[10px]">
-                    🔒 ULT LOCKED (LV.5)
-                  </span>
-                ) : (
-                  <>⚡ {selectedDraco === 'Jumpmon' ? 'Meteor Smackdown' : selectedDraco === 'Archermon' ? 'Arrow Shower' : selectedDraco === 'Shieldmon' ? 'Avatar' : selectedDraco === 'Assassinmon' ? 'Single Slash of Death' : selectedDraco === 'Whitemon' ? 'Primal Roar' : selectedDraco === 'Magemon' ? 'Trio Orb Blast' : 'Laser Beam'}</>
-                )}
-              </span>
-              <span>{Math.floor(energy)}/{maxEnergy}</span>
-            </div>
-            <div className="h-2 sm:h-2.5 w-full bg-stone-800 border border-stone-700/50 rounded-full overflow-hidden relative shadow-inner">
-              <motion.div
-                initial={{ width: '0%' }}
-                animate={{ width: `${level < 5 ? 0 : Math.min(100, (energy / maxEnergy) * 100)}%` }}
-                className={`h-full rounded-full ${
-                  level < 5 ? 'bg-stone-600' : energy >= maxEnergy ? 'bg-amber-400 shadow-[0_0_8px_#fbbf24] animate-pulse border border-amber-300' : 'bg-amber-500'
-                }`}
-              />
+          {/* Circular Laser Beam / Energy Gauge */}
+          <div className="flex flex-col items-center justify-center relative group" title={`Laser/Energy: ${Math.floor(energy)}/${maxEnergy}`}>
+            <div className="relative w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center">
+              <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
+                <path
+                  className="text-stone-800/90"
+                  strokeWidth="3.5"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+                <path
+                  className={level < 5 ? "text-stone-600" : energy >= maxEnergy ? "text-amber-400 shadow-[0_0_8px_#fbbf24] animate-pulse" : "text-amber-500"}
+                  strokeDasharray={`${level < 5 ? 0 : Math.min(100, (energy / maxEnergy) * 100)}, 100`}
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                  stroke="currentColor"
+                  fill="none"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                />
+              </svg>
+              <div className="absolute inset-0 flex flex-col items-center justify-center leading-none">
+                <Zap className={`w-2.5 h-2.5 sm:w-3 sm:h-3 mb-0.5 ${energy >= maxEnergy ? 'text-amber-300 fill-amber-300' : 'text-amber-400'}`} />
+                <span className="text-[7px] sm:text-[9px] font-black font-mono text-amber-300 tracking-tighter">
+                  {Math.floor(energy)}/{maxEnergy}
+                </span>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Right Side: Inventory triggers, Settings, Pause */}
-        <div className="flex items-center gap-1.5 sm:gap-2.5">
-          <div className="flex items-center gap-1 px-2.5 py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-xs font-mono font-bold text-amber-400 shadow-sm">
+        {/* Right Side: Gold, Potion Inventory, Bag, Pause, Fullscreen */}
+        <div className="flex items-center gap-0.5 sm:gap-1.5 pointer-events-auto bg-stone-950/80 backdrop-blur-md p-1 sm:p-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
+          {/* Gold */}
+          <div className="flex items-center gap-0.5 px-1.5 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[9px] sm:text-xs font-mono font-bold text-amber-400 shadow-sm">
             🪙 <span>{saveData.player.coins}</span>
           </div>
 
+          {/* Potion inventory */}
           <button
             onClick={handleQuickHeal}
             disabled={activePotionCount <= 0}
-            className={`p-1.5 sm:p-2 rounded-xl border flex items-center justify-center relative transition-all active:scale-95 ${
+            className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl border flex items-center justify-center relative transition-all active:scale-95 ${
               activePotionCount > 0
                 ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/50 shadow-sm'
                 : 'bg-stone-800 border-stone-700 text-stone-600 cursor-not-allowed'
             }`}
             title={`Use Potion [H] (${activePotionCount} left)`}
           >
-            <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Heart className="w-3 h-3 sm:w-4 sm:h-4" />
             {activePotionCount > 0 && (
-              <span className="absolute -top-1.5 -right-1.5 bg-rose-500 border border-stone-900 text-white text-[9px] font-bold font-mono px-1 rounded-full">
+              <span className="absolute -top-1 -right-1 bg-rose-500 border border-stone-900 text-white text-[7px] sm:text-[9px] font-bold font-mono px-0.5 sm:px-1 rounded-full">
                 {activePotionCount}
               </span>
             )}
           </button>
 
+          {/* Bag Inventory */}
           <button
             onClick={() => { soundService.playClick(); openInventory(); }}
-            className="p-1.5 sm:p-2 rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-300 shadow-sm transition-all active:scale-95"
+            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-300 shadow-sm transition-all active:scale-95"
             title="Open Bag"
           >
-            <Briefcase className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Briefcase className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
 
+          {/* Pause */}
           <button
             onClick={handlePauseToggle}
-            className="p-1.5 sm:p-2 rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-white shadow-sm transition-all active:scale-95"
+            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-white shadow-sm transition-all active:scale-95"
             title="Pause Game"
           >
-            <Pause className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+            <Pause className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
 
+          {/* Fullscreen */}
           <button
             onClick={handleToggleFullscreen}
-            className="p-1.5 sm:p-2 rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-amber-400 shadow-sm transition-all active:scale-95 flex items-center justify-center"
+            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-amber-400 shadow-sm transition-all active:scale-95 flex items-center justify-center"
             title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
           >
-            {isFullscreen ? <Minimize className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <Maximize className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
+            {isFullscreen ? <Minimize className="w-3 h-3 sm:w-4 sm:h-4" /> : <Maximize className="w-3 h-3 sm:w-4 sm:h-4" />}
           </button>
         </div>
       </div>
-
-      {/* Center Canvas View Area */}
-      <div className="flex-1 w-full h-full relative flex items-center justify-center bg-stone-950 overflow-hidden">
-        {/* Canvas */}
-        <canvas
-          ref={canvasRef}
-          width={800}
-          height={480}
-          className="w-full h-full object-contain block bg-stone-950"
-        />
 
       {/* OVERLAYS (Pause / Defeat / Victory) */}
       <AnimatePresence>
@@ -608,56 +642,61 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </button>
         </div>
 
-        {/* Right Side: Skill & Action Buttons */}
-        <div className="pointer-events-auto flex items-center gap-2 sm:gap-3">
-          {/* Jump */}
-          <button
-            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('jump'); }}
-            onMouseDown={() => triggerMobileAction('jump')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-500/90 border-2 border-amber-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[10px] sm:text-xs active:bg-amber-600 active:scale-95 transition-all shadow-xl select-none"
-          >
-            <span>JUMP</span>
-          </button>
+        {/* Right Side: Action Buttons (Top: Jump & Slay, Bottom: Skill & Ult) */}
+        <div className="pointer-events-auto flex flex-col gap-2.5 items-end select-none">
+          {/* Top Row: Jump (left) & Slay (right) */}
+          <div className="flex items-center gap-3 justify-end">
+            {/* Jump */}
+            <button
+              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('jump'); }}
+              onMouseDown={() => triggerMobileAction('jump')}
+              className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-500/90 border-2 border-amber-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[10px] sm:text-xs active:bg-amber-600 active:scale-95 transition-all shadow-xl"
+            >
+              <span>JUMP</span>
+            </button>
 
-          {/* Special Skill */}
-          <button
-            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('special'); }}
-            onMouseDown={() => triggerMobileAction('special')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-600/90 border-2 border-purple-500 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[9px] sm:text-[10px] active:bg-purple-700 active:scale-95 transition-all shadow-xl select-none"
-          >
-            <Zap className="w-3.5 h-3.5" />
-            <span>SKILL</span>
-          </button>
+            {/* Slay */}
+            <button
+              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('attack'); }}
+              onMouseDown={() => triggerMobileAction('attack')}
+              className="w-13 h-13 sm:w-15 sm:h-15 bg-rose-500/90 border-2 border-rose-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-xs sm:text-sm active:bg-rose-600 active:scale-95 transition-all shadow-xl"
+            >
+              <Sword className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
+              <span>SLAY</span>
+            </button>
+          </div>
 
-          {/* Ultimate */}
-          <button
-            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('ultimate'); }}
-            onMouseDown={() => triggerMobileAction('ultimate')}
-            className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-xl select-none border-2 backdrop-blur-md ${
-              isUltimateReady
-                ? 'bg-amber-400/90 border-amber-300 text-amber-950 animate-pulse shadow-[0_0_14px_#fbbf24]'
-                : level < 5
-                ? 'bg-stone-900/80 border-stone-800 text-stone-600 cursor-not-allowed'
-                : 'bg-indigo-950/90 border-purple-500 text-purple-300'
-            }`}
-          >
-            <Zap className={`w-3.5 h-3.5 ${isUltimateReady ? 'text-amber-950 fill-amber-950' : 'text-purple-300 fill-purple-300'}`} />
-            <span>ULT</span>
-          </button>
+          {/* Bottom Row: Skill (left) & Ult (right) */}
+          <div className="flex items-center gap-3 justify-end">
+            {/* Skill */}
+            <button
+              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('special'); }}
+              onMouseDown={() => triggerMobileAction('special')}
+              className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-600/90 border-2 border-purple-500 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[9px] sm:text-[10px] active:bg-purple-700 active:scale-95 transition-all shadow-xl"
+            >
+              <Zap className="w-3.5 h-3.5" />
+              <span>SKILL</span>
+            </button>
 
-          {/* Attack */}
-          <button
-            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('attack'); }}
-            onMouseDown={() => triggerMobileAction('attack')}
-            className="w-14 h-14 sm:w-16 sm:h-16 bg-rose-500/90 border-2 border-rose-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-xs sm:text-sm active:bg-rose-600 active:scale-95 transition-all shadow-xl select-none"
-          >
-            <Sword className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
-            <span>SLAY</span>
-          </button>
+            {/* Ultimate */}
+            <button
+              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('ultimate'); }}
+              onMouseDown={() => triggerMobileAction('ultimate')}
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-xl border-2 backdrop-blur-md ${
+                isUltimateReady
+                  ? 'bg-amber-400/90 border-amber-300 text-amber-950 animate-pulse shadow-[0_0_14px_#fbbf24]'
+                  : level < 5
+                  ? 'bg-stone-900/80 border-stone-800 text-stone-600 cursor-not-allowed'
+                  : 'bg-indigo-950/90 border-purple-500 text-purple-300'
+              }`}
+            >
+              <Zap className={`w-3.5 h-3.5 ${isUltimateReady ? 'text-amber-950 fill-amber-950' : 'text-purple-300 fill-purple-300'}`} />
+              <span>ULT</span>
+            </button>
+          </div>
         </div>
       </div>
     </div>
-  </div>
   );
 };
 export default GameScreen;

@@ -30,9 +30,22 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.1.2',
+    date: 'July 23, 2026',
+    tag: 'Mobile & Gameplay Polish (Current)',
+    badgeColor: 'bg-cyan-500 text-white font-black shadow-sm',
+    summary: 'Enhanced the overall game screen with Death Zone animations, premium feedback, and optimized controls support for mobile players.',
+    highlights: [
+      'Enhanced Game Screen UI: Implemented cleaner HUD overlay layouts, persistent settings access, and optimized canvas framing.',
+      'Death Zone Visual Animations: Added animated warning indicators, red hazard pulses, and custom particle cues when entering lethal zones.',
+      'Mobile Input & Responsive Controls: Introduced full touchscreen virtual joysticks, active jump/attack buttons, and improved layout scaling for mobile devices.',
+      'Global Options Navigation: Integrated a persistent Settings Modal directly in the main navigation header for seamless audio and save file management.',
+    ],
+  },
+  {
     version: '0.1.1',
     date: 'July 22, 2026',
-    tag: 'Refined Realms (Current)',
+    tag: 'Refined Realms',
     badgeColor: 'bg-amber-500 text-stone-950 font-black shadow-sm',
     summary: 'Expanded the Dracomon web portal with dedicated pages for Heroes, Maps, Membership, and Patch Notes — all with a unified premium UI.',
     highlights: [
@@ -127,8 +140,8 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  // Only the latest version ('0.1.1') is opened by default!
-  const [openVersion, setOpenVersion] = useState<string | null>('0.1.1');
+  // Only the latest version ('0.1.2') is opened by default!
+  const [openVersion, setOpenVersion] = useState<string | null>('0.1.2');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();

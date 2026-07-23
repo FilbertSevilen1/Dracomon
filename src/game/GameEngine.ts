@@ -8,6 +8,7 @@ interface FloatingText {
   text: string;
   color: string;
   life: number; // 0 to 100
+  isUltimate?: boolean;
 }
 
 interface Particle {
@@ -212,10 +213,13 @@ export class GameEngine {
   private magemonUltActive = false;
   private magemonUltTimer = 0;
 
-  // Jungle Level Mechanics State
+  // Jungle & Hazard Mechanics State
   private isClimbing = false;
   private playerRootedTimer = 0;
   private skeletonDeathTimer = 0;
+  private frozenDeathTimer = 0;
+  private electrocutionDeathTimer = 0;
+  private reaperDeathTimer = 0;
   private playerStunnedTimer = 0;
 
   // World parameters
@@ -2267,7 +2271,7 @@ export class GameEngine {
       return;
     }
 
-    // Synchronous Single Slash of Death Sequence (Raiden Shogun Musou no Hitotachi)
+    // Synchronous Single Slash of Death Sequence (Assassinmon Ultimate Area Katana Cut)
     if (this.assassinmonUltimateActive) {
       this.pvx = 0;
       this.pvy = 0; // Freeze physics during slash sequence
@@ -2279,6 +2283,8 @@ export class GameEngine {
         this.musouSlashX = target.x + target.width / 2;
         this.musouSlashY = target.y + target.height / 2;
       }
+
+      const areaRadius = 240; // 240px Area Damage Radius!
 
       if (this.assassinmonUltimateTimer === 1) {
         // STEP 1: Teleport near target safely (checking solid block collision)
@@ -2292,52 +2298,85 @@ export class GameEngine {
           this.pFacing = this.px < target.x ? 1 : -1;
         }
 
-        // Camera Zoom-In Cut on target
+        // Camera Zoom-In Cut on target area
         this.cameraZoom = 1.85;
         this.cameraZoomTargetX = this.musouSlashX;
         this.cameraZoomTargetY = this.musouSlashY;
 
-        // Initial Death Slash Hit (3.5x Attack Damage)
-        if (target && target.hp > 0) {
-          this.damageEnemy(target, Math.floor(this.stats.attack * 3.5));
-        } else {
-          this.checkMeleeHit(this.musouSlashX - 30, this.musouSlashY - 30, 60, 60, Math.floor(this.stats.attack * 3.5));
-        }
-        soundService.playHit();
+        // Initial Area Katana Slash Hit (3.5x Attack Damage to ALL enemies in 240px radius)
+        let hitCount = 0;
+        this.enemies.forEach(enemy => {
+          if (enemy.hp > 0) {
+            const dist = Math.hypot(enemy.x + enemy.width / 2 - this.musouSlashX, enemy.y + enemy.height / 2 - this.musouSlashY);
+            if (dist <= areaRadius) {
+              hitCount++;
+              this.damageEnemy(enemy, Math.floor(this.stats.attack * 3.5));
+              this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 16, '#c084fc');
+            }
+          }
+        });
 
-        // Dark purple slash particles
-        this.spawnDustParticles(this.musouSlashX, this.musouSlashY, 25, '#c084fc');
-        this.addFloatingText(this.musouSlashX, this.musouSlashY - 15, 'KATANA SLASH! 🗡️✨', '#c084fc');
+        soundService.playHit();
+        this.addFloatingText(this.musouSlashX, this.musouSlashY - 15, `AREA KATANA SLASH (${hitCount} ENEMIES)! 🗡️✨`, '#c084fc');
       } 
-      else if (this.assassinmonUltimateTimer === 18) {
-        // STEP 2: DELAYED SHADOW DIMENSIONAL SHATTER EXPLOSION!
-        soundService.playHit();
-
-        // Massive explosion damage (6.5x Attack Damage!) -> Total 10.0x attack damage burst!
-        if (target && target.hp > 0) {
-          this.damageEnemy(target, Math.floor(this.stats.attack * 6.5));
-          target.stunnedTimer = 120; // 2.0s Stun!
-        } else {
-          this.checkMeleeHit(this.musouSlashX - 40, this.musouSlashY - 40, 80, 80, Math.floor(this.stats.attack * 6.5));
+      else if (this.assassinmonUltimateTimer >= 10 && this.assassinmonUltimateTimer <= 22) {
+        // STEP 2: FLASHING AFTER-SLASH CHARGE & SLASH CUTS PHASE!
+        if (this.assassinmonUltimateTimer % 3 === 0) {
+          soundService.playHit();
+          this.screenShake = 16;
+          // Spawn flashing katana blade sparks around area
+          for (let p = 0; p < 8; p++) {
+            this.particles.push({
+              x: this.musouSlashX + (Math.random() - 0.5) * areaRadius * 1.5,
+              y: this.musouSlashY + (Math.random() - 0.5) * areaRadius * 1.5,
+              vx: (Math.random() - 0.5) * 14,
+              vy: (Math.random() - 0.5) * 14,
+              size: Math.random() * 8 + 3,
+              color: p % 2 === 0 ? '#ffffff' : '#c084fc',
+              life: 14,
+              maxLife: 14
+            });
+          }
         }
+      }
+      else if (this.assassinmonUltimateTimer === 23) {
+        // STEP 3: FINAL DELAYED SHADOW DIMENSIONAL SHATTER EXPLOSION!
+        soundService.playHit();
+        this.screenShake = 36;
+
+        // Area explosion damage (6.5x Attack Damage + 2s Stun to ALL enemies in 240px radius!)
+        let hitCount = 0;
+        this.enemies.forEach(enemy => {
+          if (enemy.hp > 0) {
+            const dist = Math.hypot(enemy.x + enemy.width / 2 - this.musouSlashX, enemy.y + enemy.height / 2 - this.musouSlashY);
+            if (dist <= areaRadius + 30) {
+              hitCount++;
+              this.damageEnemy(enemy, Math.floor(this.stats.attack * 6.5));
+              enemy.stunnedTimer = 120; // 2.0s Stun!
+              this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 22, '#e879f9');
+            }
+          }
+        });
 
         // Huge shadow plasma explosion particles
-        for (let p = 0; p < 30; p++) {
+        for (let p = 0; p < 40; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 12 + 4;
           this.particles.push({
-            x: this.musouSlashX + (Math.random() - 0.5) * 50,
-            y: this.musouSlashY + (Math.random() - 0.5) * 50,
-            vx: (Math.random() - 0.5) * 10,
-            vy: (Math.random() - 0.5) * 10,
-            size: Math.random() * 9 + 4,
-            color: p % 3 === 0 ? '#c084fc' : p % 3 === 1 ? '#e879f9' : '#a855f7',
-            life: 30,
-            maxLife: 30
+            x: this.musouSlashX,
+            y: this.musouSlashY,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: Math.random() * 10 + 4,
+            color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#e879f9' : '#a855f7',
+            life: 32,
+            maxLife: 32
           });
         }
 
-        this.addFloatingText(this.musouSlashX, this.musouSlashY - 25, 'TORN TO PIECES! 🗡️💥', '#ef4444');
+        this.addFloatingText(this.musouSlashX, this.musouSlashY - 75, `AREA SHADOW SHATTER (${hitCount} ENEMIES)! 🗡️💥`, '#ef4444', true);
       }
-      else if (this.assassinmonUltimateTimer === 32) {
+      else if (this.assassinmonUltimateTimer >= 36) {
         // Reset camera zoom, restore original position & end ultimate sequence cleanly!
         this.px = this.musouOriginalPx;
         this.py = this.musouOriginalPy;
@@ -2502,7 +2541,7 @@ export class GameEngine {
               this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.2));
               enemy.stunnedTimer = 90; // 1.5s stun!
               this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 20, '#f97316');
-              this.addFloatingText(enemy.x, enemy.y - 15, 'METEOR IMPACT! 🌋💥', '#ef4444');
+              this.addFloatingText(enemy.x, enemy.y - 75, 'METEOR IMPACT! 🌋💥', '#ef4444', true);
 
               // Erupting fire pillar particles
               for (let p = 0; p < 14; p++) {
@@ -2594,7 +2633,7 @@ export class GameEngine {
         this.screenShake = 16;
         this.arrowShowerActive = true;
         this.arrowShowerDuration = 360; // 6 seconds of raining arrow shower!
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'DOUBLE ARROW RAIN (6s)! 🏹⚡', '#10b981');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 75, 'DOUBLE ARROW RAIN (6s)! 🏹⚡', '#10b981', true);
       }
     }
 
@@ -2774,20 +2813,12 @@ export class GameEngine {
           }
         });
 
-        // Instant 1000px screen-wide eruption effect on all active enemies
-        this.enemies.forEach(enemy => {
-          if (enemy.hp > 0 && Math.abs(enemy.x - this.px) <= 1000) {
-            this.damageEnemy(enemy, waveDamage * totalWaves);
-            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 25, '#ef4444');
-            this.addFloatingText(enemy.x, enemy.y - 20, `SOUL BLAST (${totalWaves} WAVES)! 🔴🌊💥`, '#ef4444');
-          }
-        });
-
         this.addFloatingText(
           this.px + this.pWidth / 2,
-          this.py - 45,
-          `SOUL BLAST (${totalWaves} WAVE LINES)! 🔴🌊💥`,
-          '#ef4444'
+          this.py - 75,
+          `SOUL BLAST (${totalWaves} PHYSICAL WAVE LINES)! 🔴🌊`,
+          '#ef4444',
+          true
         );
 
         // Reset Dark Soul Stacks back to 0!
@@ -2857,7 +2888,7 @@ export class GameEngine {
         this.pvx = 0;
         this.screenShake = 45;
         soundService.playHit();
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 40, 'PORTAL IMPACT TRAMPLE! 🛡️⚡💥', '#fef08a');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 75, 'PORTAL IMPACT TRAMPLE! 🛡️⚡💥', '#fef08a', true);
 
         // Massive ground impact debris burst
         for (let i = 0; i < 35; i++) {
@@ -2929,6 +2960,27 @@ export class GameEngine {
           this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 6, '#60a5fa');
         }
       });
+    }
+
+    // Player Frozen in Ice Statue from Sub-Zero Freezing Point (Cannot move, walk or fall!)
+    if (this.frozenDeathTimer > 0) {
+      this.pvx = 0;
+      this.pvy = 0; // Freeze in place right where they stand!
+      return;
+    }
+
+    // Player Electrocuted from Temple Electric Field (Lock movement during electrocution!)
+    if (this.electrocutionDeathTimer > 0) {
+      this.pvx = 0;
+      this.pvy = 0;
+      return;
+    }
+
+    // Player Reaped by Death Scythe in Shadow Abyss Death Zone (Lock movement!)
+    if (this.reaperDeathTimer > 0) {
+      this.pvx = 0;
+      this.pvy = 0;
+      return;
     }
 
     // Player Stunned from King Kong 3rd Jump Seismic Ground Slam
@@ -3007,6 +3059,102 @@ export class GameEngine {
           life: 30,
           maxLife: 30
         });
+      }
+    }
+
+    // Molten Lava / Freezing Point / Electric Field / Death Zone ('*') Contact Check (Insta-Kill)
+    const touchedHazardPool = this.getTileSymbol(pxMid, pyFeet) === '*' || this.getTileSymbol(this.px + 4, pyFeet) === '*' || this.getTileSymbol(this.px + this.pWidth - 4, pyFeet) === '*';
+    if (touchedHazardPool && this.pHP > 0 && (this.skeletonDeathTimer || 0) <= 0 && (this.frozenDeathTimer || 0) <= 0 && (this.electrocutionDeathTimer || 0) <= 0 && (this.reaperDeathTimer || 0) <= 0) {
+      this.pHP = 0;
+      soundService.playHit();
+      this.callbacks.onHpChange?.(0, this.pMaxHP);
+
+      const isFrozenCitadel = this.level.name.includes('Frozen') || this.level.name.includes('Stage 4');
+      const isTemple = this.level.name.includes('Temple') || this.level.name.includes('Celestial') || this.level.name.includes('Crystal') || this.level.name.includes('Stage 6');
+      const isShadowAbyss = this.level.name.includes('Shadow') || this.level.name.includes('Abyss') || this.level.name.includes('Stage 5');
+
+      if (isShadowAbyss) {
+        // REAPER SCYTHE DEATH ZONE (Slashed by the Grim Reaper 💀⚔️)
+        this.reaperDeathTimer = 90; // 1.5s reaper slash death animation
+        this.pvx = 0;
+        this.pvy = 0;
+        this.screenShake = 25;
+        this.addFloatingText(pxMid, this.py - 20, 'REAPED BY DEATH! 💀⚔️', '#a855f7');
+
+        // Dark purple & crimson soul particles
+        for (let i = 0; i < 30; i++) {
+          this.particles.push({
+            x: pxMid + (Math.random() - 0.5) * 40,
+            y: pyFeet,
+            vx: (Math.random() - 0.5) * 6,
+            vy: -Math.random() * 7 - 2,
+            size: Math.random() * 8 + 4,
+            color: i % 3 === 0 ? '#a855f7' : i % 3 === 1 ? '#6b21a8' : '#ef4444',
+            life: 35,
+            maxLife: 35
+          });
+        }
+      } else if (isTemple) {
+        // INSTANT ELECTROCUTION DEATH (Summon Divine Thunderbolt ⚡⚡)
+        this.electrocutionDeathTimer = 90;
+        this.pvx = 0;
+        this.pvy = 0;
+        this.screenShake = 35;
+        this.addFloatingText(pxMid, this.py - 20, 'DIVINE THUNDERBOLT ELECTROCUTION! ⚡💥', '#eab308');
+
+        // Bright yellow & cyan plasma spark particles
+        for (let i = 0; i < 30; i++) {
+          this.particles.push({
+            x: pxMid + (Math.random() - 0.5) * 40,
+            y: pyFeet,
+            vx: (Math.random() - 0.5) * 6,
+            vy: -Math.random() * 8 - 2,
+            size: Math.random() * 8 + 4,
+            color: i % 3 === 0 ? '#fef08a' : i % 3 === 1 ? '#eab308' : '#38bdf8',
+            life: 35,
+            maxLife: 35
+          });
+        }
+      } else if (isFrozenCitadel) {
+        // INSTANT SUB-ZERO FREEZE DEATH
+        this.frozenDeathTimer = 999999;
+        this.pvx = 0;
+        this.pvy = 0;
+        this.addFloatingText(pxMid, this.py - 20, 'SUB-ZERO FLASH FREEZE! 🧊❄️', '#38bdf8');
+
+        for (let i = 0; i < 25; i++) {
+          this.particles.push({
+            x: pxMid + (Math.random() - 0.5) * 30,
+            y: pyFeet,
+            vx: (Math.random() - 0.5) * 5,
+            vy: -Math.random() * 6 - 2,
+            size: Math.random() * 8 + 4,
+            color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#7dd3fc' : '#38bdf8',
+            life: 30,
+            maxLife: 30
+          });
+        }
+
+        setTimeout(() => {
+          this.callbacks.onPlayerDeath();
+        }, 1000);
+      } else {
+        // MOLTEN LAVA MELTDOWN DEATH (Melting Skeleton)
+        this.skeletonDeathTimer = 90;
+        this.addFloatingText(pxMid, this.py - 20, 'MOLTEN LAVA MELTED! 🌋🔥', '#ef4444');
+
+        for (let i = 0; i < 25; i++) {
+          this.particles.push({
+            x: pxMid + (Math.random() - 0.5) * 30,
+            y: pyFeet,
+            vx: (Math.random() - 0.5) * 5,
+            vy: -Math.random() * 6 - 2,
+            size: Math.random() * 8 + 4,
+            color: i % 3 === 0 ? '#fef08a' : i % 3 === 1 ? '#f97316' : '#ef4444',
+            life: 30,
+            maxLife: 30
+          });
+        }
       }
     }
 
@@ -3467,9 +3615,10 @@ export class GameEngine {
             return;
           }
         }
-        else if (proj.type === 'giant_cleave') {
+        else if (proj.type === 'giant_cleave' || proj.type === 'dark_energy') {
           proj.x += proj.vx;
-          if (proj.x < 0 || proj.x > this.levelWidth) {
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
+          if (proj.x < -100 || proj.x > this.levelWidth + 100 || (proj as any).traveledDist >= 1000) {
             this.projectiles.splice(index, 1);
             return;
           }
@@ -3533,6 +3682,15 @@ export class GameEngine {
                 this.damageEnemy(enemy, proj.damage);
                 soundService.playHit();
                 this.addFloatingText(enemy.x, enemy.y - 15, 'LIFTED INTO TORNADO! 🌪️', '#06b6d4');
+              }
+            } else if (proj.type === 'dark_energy') {
+              const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
+              if (!hitSet.includes(enemy.id)) {
+                hitSet.push(enemy.id);
+                this.damageEnemy(enemy, proj.damage);
+                soundService.playHit();
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#ef4444');
+                this.addFloatingText(enemy.x, enemy.y - 15, 'SOUL WAVE HIT! 🔴🌊', '#ef4444');
               }
             } else if (proj.type === 'giant_cleave') {
               const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
@@ -3617,14 +3775,35 @@ export class GameEngine {
         enemy.vy += this.gravity;
         enemy.y += enemy.vy;
 
-        // Platform check
+        // Platform check (solid blocks # or floating platforms =)
         const left = enemy.x;
         const right = enemy.x + enemy.width;
         const bottom = enemy.y + enemy.height;
+        const oldBottom = bottom - enemy.vy;
 
-        const collidesBottom = this.isSolid(left + 2, bottom) || this.isSolid(right - 2, bottom);
-        if (collidesBottom) {
+        const collidesSolidBottom = this.isSolid(left + 2, bottom) || this.isSolid(right - 2, bottom);
+
+        let onOneWayPlatform = false;
+        let platformTopY = 0;
+
+        if (!collidesSolidBottom && enemy.vy >= 0) {
+          const platformLeft = this.checkPlatformOneWay(left + 2, bottom);
+          const platformRight = this.checkPlatformOneWay(right - 2, bottom);
+          if (platformLeft || platformRight) {
+            const tileRow = Math.floor(bottom / ts);
+            platformTopY = tileRow * ts;
+            if (oldBottom <= platformTopY + 12) {
+              onOneWayPlatform = true;
+            }
+          }
+        }
+
+        if (collidesSolidBottom) {
           enemy.y = Math.floor(bottom / ts) * ts - enemy.height;
+          enemy.vy = 0;
+          grounded = true;
+        } else if (onOneWayPlatform) {
+          enemy.y = platformTopY - enemy.height;
           enemy.vy = 0;
           grounded = true;
         }
@@ -4040,19 +4219,41 @@ export class GameEngine {
     }
   }
 
-  private addFloatingText(x: number, y: number, text: string, color: string) {
+  private addFloatingText(x: number, y: number, text: string, color: string, isUltimate = false) {
     this.floatingTexts.push({
       x,
       y,
       text,
       color,
       life: 100,
+      isUltimate
     });
   }
 
   // DRAW GAME
   private draw() {
     const ts = this.level.tileSize;
+
+    const viewW = this.canvas.width;
+    const viewH = this.canvas.height;
+
+    // Smooth camera tracking player center across level (works for any viewport size and aspect ratio!)
+    let targetCamX = this.px + this.pWidth / 2 - viewW / 2;
+    if (this.levelWidth > viewW) {
+      targetCamX = Math.max(0, Math.min(this.levelWidth - viewW, targetCamX));
+    } else {
+      targetCamX = (this.levelWidth - viewW) / 2;
+    }
+
+    let targetCamY = this.py + this.pHeight / 2 - viewH / 2;
+    if (this.levelHeight > viewH) {
+      targetCamY = Math.max(0, Math.min(this.levelHeight - viewH, targetCamY));
+    } else {
+      targetCamY = this.levelHeight - viewH; // Anchor ground flush at bottom of screen
+    }
+
+    this.cameraX = targetCamX;
+    this.cameraY = targetCamY;
 
     // Clear canvas
     this.ctx.fillStyle = this.level.theme.skyColor;
@@ -4126,22 +4327,112 @@ export class GameEngine {
           this.ctx.lineWidth = 1.5;
           this.ctx.strokeRect(ex, ey, ts, 12);
         } else if (char === '*') {
-          // Spikes/Lava
-          this.ctx.fillStyle = '#ef4444';
-          this.ctx.beginPath();
-          this.ctx.moveTo(ex, ey + ts);
-          this.ctx.lineTo(ex + ts / 2, ey);
-          this.ctx.lineTo(ex + ts, ey + ts);
-          this.ctx.closePath();
-          this.ctx.fill();
+          const isTemple = this.level.name.includes('Temple') || this.level.name.includes('Celestial') || this.level.name.includes('Crystal') || this.level.name.includes('Stage 6');
+          const isFrozenCitadel = this.level.name.includes('Frozen') || this.level.name.includes('Stage 4');
+          const isShadowAbyss = this.level.name.includes('Shadow') || this.level.name.includes('Abyss') || this.level.name.includes('Stage 5');
 
-          this.ctx.fillStyle = '#f97316';
-          this.ctx.beginPath();
-          this.ctx.moveTo(ex + 6, ey + ts);
-          this.ctx.lineTo(ex + ts / 2, ey + 10);
-          this.ctx.lineTo(ex + ts - 6, ey + ts);
-          this.ctx.closePath();
-          this.ctx.fill();
+          if (isShadowAbyss) {
+            // Death Zone Hazard Pool (Shadow Abyss)
+            this.ctx.fillStyle = '#0f0a1a'; // Void black-purple base
+            this.ctx.fillRect(ex, ey, ts, ts);
+
+            // Pulsing dark crimson soul energy layer
+            const pulseAlpha = 0.65 + Math.sin(this.frameCount * 0.14 + c * 1.7) * 0.2;
+            this.ctx.fillStyle = `rgba(127, 29, 29, ${pulseAlpha})`;
+            this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // Ghostly scythe slash marks
+            this.ctx.strokeStyle = '#a855f7';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            const slashPhase = Math.sin(this.frameCount * 0.1 + c * 2) * 4;
+            this.ctx.moveTo(ex + 4, ey + 6 + slashPhase);
+            this.ctx.lineTo(ex + ts - 4, ey + ts - 6 + slashPhase);
+            this.ctx.stroke();
+
+            // Floating death skull wisps
+            if ((this.frameCount + c * 9) % 30 < 15) {
+              this.ctx.fillStyle = '#c084fc';
+              this.ctx.beginPath();
+              this.ctx.arc(ex + 12, ey + 10, 3, 0, Math.PI * 2);
+              this.ctx.arc(ex + 28, ey + 22, 2.5, 0, Math.PI * 2);
+              this.ctx.fill();
+            }
+          } else if (isTemple) {
+            // Electric Field Hazard Pool (Crystal/Celestial Temple)
+            this.ctx.fillStyle = '#1e1b4b'; // Dark indigo electric base
+            this.ctx.fillRect(ex, ey, ts, ts);
+
+            // Pulsing electric plasma layer
+            const pulseAlpha = 0.7 + Math.sin(this.frameCount * 0.18 + c * 1.3) * 0.25;
+            this.ctx.fillStyle = `rgba(234, 179, 8, ${pulseAlpha})`;
+            this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // Crackling lightning arc lines across tile
+            this.ctx.strokeStyle = '#fef08a';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            const zigzagY1 = ey + 10 + Math.sin(this.frameCount * 0.3 + c) * 6;
+            const zigzagY2 = ey + 20 + Math.cos(this.frameCount * 0.25 + c) * 5;
+            this.ctx.moveTo(ex, zigzagY1);
+            this.ctx.lineTo(ex + ts * 0.3, zigzagY2);
+            this.ctx.lineTo(ex + ts * 0.6, zigzagY1);
+            this.ctx.lineTo(ex + ts, zigzagY2);
+            this.ctx.stroke();
+
+            // Sparking electric nodes
+            if ((this.frameCount + c * 7) % 18 < 9) {
+              this.ctx.fillStyle = '#ffffff';
+              this.ctx.beginPath();
+              this.ctx.arc(ex + 10, ey + 10, 3, 0, Math.PI * 2);
+              this.ctx.arc(ex + 28, ey + 20, 2.5, 0, Math.PI * 2);
+              this.ctx.fill();
+            }
+          } else if (isFrozenCitadel) {
+            // Freezing Point Hazard Pool (Stage 4 Frozen Citadel)
+            this.ctx.fillStyle = '#0369a1'; // deep sub-zero glacial bed
+            this.ctx.fillRect(ex, ey, ts, ts);
+
+            // Pulsing freezing cyan liquid layer
+            const pulseAlpha = 0.85 + Math.sin(this.frameCount * 0.12 + c) * 0.15;
+            this.ctx.fillStyle = `rgba(56, 189, 248, ${pulseAlpha})`;
+            this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // Frost crystal surface ripples & glittering ice sparkles
+            this.ctx.fillStyle = '#7dd3fc';
+            this.ctx.fillRect(ex, ey + 8, ts, ts - 8);
+
+            // Floating ice crystal sparkles
+            if ((this.frameCount + c * 5) % 24 < 12) {
+              this.ctx.fillStyle = '#ffffff';
+              this.ctx.beginPath();
+              this.ctx.arc(ex + 8, ey + 8, 3.5, 0, Math.PI * 2);
+              this.ctx.arc(ex + 26, ey + 14, 2.5, 0, Math.PI * 2);
+              this.ctx.fill();
+            }
+          } else {
+            // Molten Lava Liquid Pool (Stage 3 & Volcanic Lava Pools)
+            this.ctx.fillStyle = '#450a0a'; // dark deep volcanic magma bed
+            this.ctx.fillRect(ex, ey, ts, ts);
+
+            // Pulsing molten orange/red liquid layer
+            const pulseAlpha = 0.8 + Math.sin(this.frameCount * 0.12 + c) * 0.15;
+            this.ctx.fillStyle = `rgba(239, 68, 68, ${pulseAlpha})`;
+            this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // Molten magma surface ripples & inner fiery glow
+            this.ctx.fillStyle = '#f97316';
+            this.ctx.fillRect(ex, ey + 8, ts, ts - 8);
+
+            // Erupting magma bubbles & sparks
+            if ((this.frameCount + c * 5) % 24 < 12) {
+              this.ctx.fillStyle = '#fef08a';
+              this.ctx.beginPath();
+              this.ctx.arc(ex + 8, ey + 8, 3.5, 0, Math.PI * 2);
+              this.ctx.arc(ex + 26, ey + 14, 2.5, 0, Math.PI * 2);
+              this.ctx.fill();
+            }
+          }
         } else if (char === 'V') {
           // Climbable Tree Vine
           this.ctx.fillStyle = '#166534'; // dark vine strand
@@ -4544,26 +4835,30 @@ export class GameEngine {
         const channelTimer = proj.channelTimer || 0;
         const isExploding = (proj as any).isExploding;
 
+        // Full vertical map height from top of sky to bottom of world
+        const topY = -1000;
+        const beamHeight = this.levelHeight + 2000;
+
         if (channelTimer > 0) {
           // Channeling Laser Beam (0s to 1.7s)
           const chargeProgress = 1 - (channelTimer / 102);
 
-          // Beaming Light Column
-          this.ctx.fillStyle = `rgba(253, 224, 71, ${0.15 + chargeProgress * 0.2})`;
-          this.ctx.fillRect(tx - 16, 0, 32, this.canvas.height);
+          // Beaming Light Column spanning FULL HEIGHT of map
+          this.ctx.fillStyle = `rgba(253, 224, 71, ${0.2 + chargeProgress * 0.35})`;
+          this.ctx.fillRect(tx - 24, topY, 48, beamHeight);
 
           // Center Laser Filament Line
-          this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 + chargeProgress * 0.5})`;
-          this.ctx.lineWidth = 3 + chargeProgress * 4;
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + chargeProgress * 0.5})`;
+          this.ctx.lineWidth = 4 + chargeProgress * 6;
           this.ctx.beginPath();
-          this.ctx.moveTo(tx, 0);
-          this.ctx.lineTo(tx, this.canvas.height);
+          this.ctx.moveTo(tx, topY);
+          this.ctx.lineTo(tx, topY + beamHeight);
           this.ctx.stroke();
 
           // Expanding Solar Target Sigil on Ground
-          const ringRadius = 24 * chargeProgress + 6;
+          const ringRadius = 28 * chargeProgress + 8;
           this.ctx.strokeStyle = '#f59e0b';
-          this.ctx.lineWidth = 2.5;
+          this.ctx.lineWidth = 3;
           this.ctx.beginPath();
           this.ctx.arc(tx, this.py + this.pHeight - 5, ringRadius, 0, Math.PI * 2);
           this.ctx.stroke();
@@ -4571,27 +4866,31 @@ export class GameEngine {
           // Pulsing Core
           this.ctx.fillStyle = '#fef08a';
           this.ctx.beginPath();
-          this.ctx.arc(tx, this.py + this.pHeight - 5, 5, 0, Math.PI * 2);
+          this.ctx.arc(tx, this.py + this.pHeight - 5, 6, 0, Math.PI * 2);
           this.ctx.fill();
 
         } else if (isExploding) {
-          // DETONATION EXPLOSION PHASE (1.7s complete -> erupting solar laser pillar!)
+          // DETONATION EXPLOSION PHASE (1.7s complete -> erupting FULL HEIGHT solar laser pillar!)
           const expTimer = (proj as any).explosionTimer || 20;
           const alpha = expTimer / 20;
 
-          // Blinding Solar Pillar Core
-          this.ctx.fillStyle = `rgba(254, 240, 138, ${alpha})`;
-          this.ctx.fillRect(tx - 20, 0, 40, this.canvas.height);
+          // Pure White Blinding Core Pillar (Full Height)
+          this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+          this.ctx.fillRect(tx - 22, topY, 44, beamHeight);
 
-          // Outer Solar Flame Walls
-          this.ctx.fillStyle = `rgba(245, 158, 11, ${alpha * 0.8})`;
-          this.ctx.fillRect(tx - 32, 0, 12, this.canvas.height);
-          this.ctx.fillRect(tx + 20, 0, 12, this.canvas.height);
+          // Erupting Golden Solar Pillar Core (Full Height)
+          this.ctx.fillStyle = `rgba(254, 240, 138, ${alpha})`;
+          this.ctx.fillRect(tx - 38, topY, 76, beamHeight);
+
+          // Outer Solar Flame Walls (Full Height)
+          this.ctx.fillStyle = `rgba(245, 158, 11, ${alpha * 0.7})`;
+          this.ctx.fillRect(tx - 56, topY, 18, beamHeight);
+          this.ctx.fillRect(tx + 38, topY, 18, beamHeight);
 
           // Erupting Radial Shockwave Ring at ground
-          const shockRadius = (20 - expTimer) * 4 + 10;
+          const shockRadius = (20 - expTimer) * 5 + 12;
           this.ctx.strokeStyle = `rgba(239, 68, 68, ${alpha})`;
-          this.ctx.lineWidth = 4;
+          this.ctx.lineWidth = 5;
           this.ctx.beginPath();
           this.ctx.arc(tx, this.py + this.pHeight - 5, shockRadius, 0, Math.PI * 2);
           this.ctx.stroke();
@@ -5358,7 +5657,7 @@ export class GameEngine {
     }
 
     // Draw Player
-    if (this.skeletonDeathTimer <= 0) {
+    if (this.skeletonDeathTimer <= 0 && this.frozenDeathTimer <= 0 && this.electrocutionDeathTimer <= 0 && this.reaperDeathTimer <= 0) {
       this.ctx.save();
 
     // Jumpmon 360-degree Mega Spin rotation transform
@@ -6098,6 +6397,244 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    // Frozen Ice Statue (when player touches Freezing Point in Frozen Citadel)
+    if (this.frozenDeathTimer > 0) {
+      this.ctx.save();
+
+      const px = this.px;
+      const py = this.py;
+      const pw = this.pWidth;
+      const ph = this.pHeight;
+
+      // Solid Crystal Ice Block Pillar encasing player
+      this.ctx.fillStyle = 'rgba(125, 211, 252, 0.75)'; // Translucent cyan ice block
+      this.ctx.strokeStyle = '#38bdf8'; // Glowing cyan ice outline
+      this.ctx.lineWidth = 3;
+
+      this.ctx.beginPath();
+      this.ctx.roundRect(px - 6, py - 6, pw + 12, ph + 12, 10);
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Shimmering white ice crystal reflections
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.moveTo(px - 2, py);
+      this.ctx.lineTo(px + pw / 2, py - 4);
+      this.ctx.lineTo(px + 4, py + ph / 2);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Frozen character silhouette inside ice block
+      this.ctx.fillStyle = 'rgba(2, 132, 199, 0.6)';
+      this.ctx.fillRect(px + 4, py + 4, pw - 8, ph - 8);
+
+      // Rising frost sparkle particles ❄️
+      for (let f = 0; f < 5; f++) {
+        this.ctx.fillStyle = f % 2 === 0 ? '#ffffff' : '#7dd3fc';
+        this.ctx.beginPath();
+        this.ctx.arc(
+          px + pw / 2 + Math.sin(this.frameCount * 0.2 + f) * 16,
+          py + ph - (f * 8) - (this.frameCount % 20),
+          Math.random() * 3 + 2,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fill();
+      }
+      this.ctx.restore();
+    }
+
+    // Divine Thunderbolt Electrocution Death Animation (Crystal/Celestial Temple Electric Field)
+    if (this.electrocutionDeathTimer > 0) {
+      this.electrocutionDeathTimer--;
+      if (this.electrocutionDeathTimer === 0) {
+        this.callbacks.onPlayerDeath();
+      }
+
+      const progress = (90 - this.electrocutionDeathTimer) / 90;
+      const alpha = Math.min(1.0, this.electrocutionDeathTimer / 20);
+      this.ctx.save();
+
+      const px = this.px;
+      const py = this.py;
+      const pw = this.pWidth;
+      const ph = this.pHeight;
+      const cx = px + pw / 2;
+      const cy = py + ph / 2;
+
+      // MASSIVE DIVINE THUNDERBOLT from above ⚡
+      if (this.electrocutionDeathTimer > 30) {
+        const boltAlpha = Math.min(1.0, (this.electrocutionDeathTimer - 30) / 30);
+
+        // Outer glow column
+        this.ctx.fillStyle = `rgba(234, 179, 8, ${boltAlpha * 0.4})`;
+        this.ctx.fillRect(cx - 30, -1000, 60, cy + 1000);
+
+        // Core lightning bolt with zigzag path from sky to player
+        this.ctx.strokeStyle = `rgba(254, 240, 138, ${boltAlpha})`;
+        this.ctx.lineWidth = 6;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, -500);
+        const segments = 8;
+        for (let s = 1; s <= segments; s++) {
+          const segY = -500 + (cy + 500) * (s / segments);
+          const jitter = (Math.sin(this.frameCount * 0.5 + s * 2.3) * 20) * (1 - s / segments);
+          this.ctx.lineTo(cx + jitter, segY);
+        }
+        this.ctx.stroke();
+
+        // Inner white-hot core bolt
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${boltAlpha * 0.9})`;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, -500);
+        for (let s = 1; s <= segments; s++) {
+          const segY = -500 + (cy + 500) * (s / segments);
+          const jitter = (Math.sin(this.frameCount * 0.5 + s * 2.3) * 12) * (1 - s / segments);
+          this.ctx.lineTo(cx + jitter, segY);
+        }
+        this.ctx.stroke();
+      }
+
+      // Electric crackling aura around player body
+      this.ctx.globalAlpha = alpha;
+      for (let a = 0; a < 6; a++) {
+        const arcAngle = (this.frameCount * 0.4 + a * Math.PI / 3);
+        const arcR = 18 + Math.sin(this.frameCount * 0.6 + a) * 8;
+        const ax = cx + Math.cos(arcAngle) * arcR;
+        const ay = cy + Math.sin(arcAngle) * arcR;
+
+        this.ctx.strokeStyle = a % 2 === 0 ? '#fef08a' : '#38bdf8';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, cy);
+        // Zigzag arc to point
+        const midX = (cx + ax) / 2 + (Math.random() - 0.5) * 12;
+        const midY = (cy + ay) / 2 + (Math.random() - 0.5) * 12;
+        this.ctx.lineTo(midX, midY);
+        this.ctx.lineTo(ax, ay);
+        this.ctx.stroke();
+      }
+
+      // Flickering electrocuted character silhouette (visible through discharge)
+      if (this.frameCount % 4 < 2) {
+        this.ctx.fillStyle = `rgba(234, 179, 8, ${alpha * 0.7})`;
+        this.ctx.fillRect(px + 2, py + 2, pw - 4, ph - 4);
+
+        // Skeleton bones flashing through electric glow
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.8})`;
+        this.ctx.fillRect(cx - 1, py + 6, 2, ph - 12); // spine
+        this.ctx.fillRect(px + 6, cy - 2, pw - 12, 3); // ribs
+      }
+
+      // Blinding white flash in first 15 frames
+      if (this.electrocutionDeathTimer > 75) {
+        const flashAlpha = (this.electrocutionDeathTimer - 75) / 15;
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha * 0.6})`;
+        this.ctx.fillRect(0, 0, this.canvas.width + 2000, this.canvas.height + 2000);
+      }
+
+      this.ctx.restore();
+    }
+
+    // Reaper Scythe Death Animation (Shadow Abyss Death Zone)
+    if (this.reaperDeathTimer > 0) {
+      this.reaperDeathTimer--;
+      if (this.reaperDeathTimer === 0) {
+        this.callbacks.onPlayerDeath();
+      }
+
+      const alpha = Math.min(1.0, this.reaperDeathTimer / 20);
+      this.ctx.save();
+
+      const px = this.px;
+      const py = this.py;
+      const pw = this.pWidth;
+      const ph = this.pHeight;
+      const cx = px + pw / 2;
+      const cy = py + ph / 2;
+      const slashProgress = Math.min(1.0, (90 - this.reaperDeathTimer) / 25);
+
+      // Dark vignette death aura around player
+      if (this.reaperDeathTimer > 40) {
+        const auraAlpha = 0.5 * alpha;
+        const grad = this.ctx.createRadialGradient(cx, cy, 10, cx, cy, 80);
+        grad.addColorStop(0, `rgba(88, 28, 135, ${auraAlpha})`);
+        grad.addColorStop(1, 'rgba(15, 10, 26, 0)');
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, 80, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // Spectral Reaper Scythe Slash Arc (sweeps across player)
+      if (this.reaperDeathTimer > 30) {
+        const scytheAngle = slashProgress * Math.PI * 1.2 - Math.PI * 0.6;
+        const scytheR = 50;
+        const scytheX = cx + Math.cos(scytheAngle) * scytheR;
+        const scytheY = cy + Math.sin(scytheAngle) * scytheR;
+
+        // Scythe blade arc trail
+        this.ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
+        this.ctx.lineWidth = 5;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, scytheR, scytheAngle - 0.8, scytheAngle);
+        this.ctx.stroke();
+
+        // Scythe blade tip glow
+        this.ctx.fillStyle = `rgba(192, 132, 252, ${alpha})`;
+        this.ctx.beginPath();
+        this.ctx.arc(scytheX, scytheY, 6, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Inner crimson slash line through body
+        this.ctx.strokeStyle = `rgba(239, 68, 68, ${alpha})`;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px - 10, cy - 10 + slashProgress * 20);
+        this.ctx.lineTo(px + pw + 10, cy + 10 - slashProgress * 20);
+        this.ctx.stroke();
+      }
+
+      // Slashed character body splitting apart
+      this.ctx.globalAlpha = alpha;
+      if (this.reaperDeathTimer < 60) {
+        const splitOffset = (60 - this.reaperDeathTimer) * 0.8;
+
+        // Top half sliding up-left
+        this.ctx.fillStyle = `rgba(107, 33, 168, ${alpha * 0.6})`;
+        this.ctx.fillRect(px - splitOffset, py - splitOffset * 0.5, pw, ph / 2);
+
+        // Bottom half sliding down-right
+        this.ctx.fillStyle = `rgba(88, 28, 135, ${alpha * 0.5})`;
+        this.ctx.fillRect(px + splitOffset, cy + splitOffset * 0.3, pw, ph / 2);
+      }
+
+      // Rising dark soul wisps 💀
+      for (let w = 0; w < 5; w++) {
+        this.ctx.fillStyle = w % 2 === 0 ? `rgba(168, 85, 247, ${alpha * 0.7})` : `rgba(192, 132, 252, ${alpha * 0.5})`;
+        this.ctx.beginPath();
+        this.ctx.arc(
+          cx + Math.sin(this.frameCount * 0.25 + w * 1.5) * 20,
+          cy - (w * 10) - (this.frameCount % 25),
+          Math.random() * 4 + 2,
+          0,
+          Math.PI * 2
+        );
+        this.ctx.fill();
+      }
+
+      // Dark flash on initial contact
+      if (this.reaperDeathTimer > 80) {
+        const flashAlpha = (this.reaperDeathTimer - 80) / 10;
+        this.ctx.fillStyle = `rgba(15, 10, 26, ${flashAlpha * 0.5})`;
+        this.ctx.fillRect(-1000, -1000, this.canvas.width + 3000, this.canvas.height + 3000);
+      }
+
+      this.ctx.restore();
+    }
+
     // Vine Trap Root Coil effect around player feet when rooted
     if (this.playerRootedTimer > 0) {
       this.ctx.save();
@@ -6170,14 +6707,43 @@ export class GameEngine {
       this.ctx.restore();
     }
 
-    // Draw Floating Text
+    // Draw Floating Text (ONLY Ultimate announcement texts get a dark backdrop box!)
     this.floatingTexts.forEach(ft => {
       this.ctx.save();
-      this.ctx.font = 'bold 12px "Press Start 2P", Courier, monospace';
-      this.ctx.fillStyle = ft.color;
-      this.ctx.globalAlpha = ft.life / 100;
-      this.ctx.textAlign = 'center';
-      this.ctx.fillText(ft.text, ft.x, ft.y);
+      this.ctx.globalAlpha = Math.min(1.0, ft.life / 70);
+
+      if (ft.isUltimate) {
+        this.ctx.font = 'bold 13px "Press Start 2P", Courier, monospace';
+        // Clamp ultimate text box within visible camera screen bounds
+        const minX = this.cameraX + 70;
+        const maxX = this.cameraX + this.canvas.width - 70;
+        const minY = this.cameraY + 45;
+        const maxY = this.cameraY + this.canvas.height - 30;
+
+        const clampedX = Math.max(minX, Math.min(maxX, ft.x));
+        const clampedY = Math.max(minY, Math.min(maxY, ft.y));
+
+        // High contrast backdrop box & border ONLY for Ultimate announcement text
+        const textWidth = this.ctx.measureText(ft.text).width;
+        this.ctx.fillStyle = 'rgba(15, 12, 24, 0.92)';
+        this.ctx.fillRect(clampedX - textWidth / 2 - 8, clampedY - 14, textWidth + 16, 18);
+        this.ctx.strokeStyle = ft.color;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(clampedX - textWidth / 2 - 8, clampedY - 14, textWidth + 16, 18);
+
+        this.ctx.fillStyle = ft.color;
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(ft.text, clampedX, clampedY);
+      } else {
+        // Normal floating text (damage, exp, coins, healing) - NO BACKDROP BOX!
+        this.ctx.font = 'bold 12px "Press Start 2P", Courier, monospace';
+        this.ctx.fillStyle = ft.color;
+        this.ctx.shadowColor = '#000000';
+        this.ctx.shadowBlur = 4;
+        this.ctx.textAlign = 'center';
+        this.ctx.fillText(ft.text, ft.x, ft.y);
+      }
+
       this.ctx.restore();
     });
 
@@ -6282,6 +6848,29 @@ export class GameEngine {
       this.ctx.font = 'bold 22px monospace';
       this.ctx.textAlign = 'center';
       this.ctx.fillText('🗡️', tx, ty + 7);
+
+      // 5. FLASHING SCREEN EFFECT & CRISS-CROSS KATANA RAYS (After slash before shatter completion)
+      if (this.assassinmonUltimateTimer >= 10 && this.assassinmonUltimateTimer <= 23) {
+        const isWhiteFlash = this.frameCount % 2 === 0;
+        this.ctx.fillStyle = isWhiteFlash ? 'rgba(255, 255, 255, 0.45)' : 'rgba(232, 121, 249, 0.35)';
+        this.ctx.fillRect(0, 0, w, h);
+
+        // Criss-cross Flashing Katana Rays
+        this.ctx.strokeStyle = isWhiteFlash ? '#ffffff' : '#e879f9';
+        this.ctx.lineWidth = 4;
+        for (let ray = -3; ray <= 3; ray++) {
+          const rayOffset = ray * 50;
+          this.ctx.beginPath();
+          this.ctx.moveTo(tx - 320 + rayOffset, ty - 220 - rayOffset);
+          this.ctx.lineTo(tx + 320 + rayOffset, ty + 220 - rayOffset);
+          this.ctx.stroke();
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(tx - 320 - rayOffset, ty + 220 + rayOffset);
+          this.ctx.lineTo(tx + 320 - rayOffset, ty - 220 + rayOffset);
+          this.ctx.stroke();
+        }
+      }
 
       this.ctx.restore();
     }

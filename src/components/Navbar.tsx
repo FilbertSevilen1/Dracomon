@@ -3,11 +3,14 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Coins, Briefcase, Sparkles, Shield, Crown } from 'lucide-react';
+import { Coins, Briefcase, Sparkles, Shield, Crown, Settings } from 'lucide-react';
 import { useGameState } from '../hooks/useGameState';
 import { storageService } from '../services/storage';
 import { soundService } from '../services/sound';
 import { SaveData } from '../types/game';
+import { SettingsModal } from './SettingsModal';
+import { AnimatePresence } from 'framer-motion';
+
 
 interface NavbarProps {
   onOpenInventory?: () => void;
@@ -17,6 +20,43 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
   const pathname = usePathname();
   const { saveData } = useGameState();
   const [liveSaveData, setLiveSaveData] = useState<SaveData>(saveData);
+  const [showSettings, setShowSettings] = useState(false);
+
+  const updateSettings = (music: boolean, volume: number, sfxVolume: number) => {
+    const updated = {
+      ...liveSaveData,
+      settings: {
+        ...liveSaveData.settings,
+        music,
+        volume,
+        sfxVolume,
+      }
+    };
+    storageService.saveGame(updated);
+    soundService.updateVolumes(volume, sfxVolume, music);
+    window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: updated }));
+  };
+
+  const resetGameSave = () => {
+    const freshData = storageService.resetGame();
+    soundService.updateVolumes(freshData.settings.volume, freshData.settings.sfxVolume ?? 80, freshData.settings.music);
+    soundService.playClick();
+    window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: freshData }));
+  };
+
+  const exportSave = () => {
+    return storageService.exportSave(liveSaveData);
+  };
+
+  const importSave = (dataStr: string) => {
+    const imported = storageService.importSave(dataStr);
+    if (imported) {
+      soundService.updateVolumes(imported.settings.volume, imported.settings.sfxVolume ?? 80, imported.settings.music);
+      window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: imported }));
+      return true;
+    }
+    return false;
+  };
 
   useEffect(() => {
     setLiveSaveData(saveData);
@@ -51,7 +91,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
   ];
 
   return (
-    <header className="sticky top-0 w-full border-b border-stone-200/80 bg-white/90 backdrop-blur-md px-4 md:px-8 py-3 flex items-center justify-between z-50 shadow-sm select-none">
+    <>
+      <header className="sticky top-0 w-full border-b border-stone-200/80 bg-white/90 backdrop-blur-md px-4 md:px-8 py-3 flex items-center justify-between z-50 shadow-sm select-none">
       {/* Brand Logo */}
       <div className="flex items-center gap-3">
         <Link
@@ -135,7 +176,34 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
             <Briefcase className="w-4 h-4 text-amber-600" />
           </button>
         )}
+
+        {/* Settings Button */}
+        <button
+          onClick={() => {
+            soundService.playClick();
+            setShowSettings(true);
+          }}
+          className="p-1.5 border border-stone-200 rounded-xl bg-white hover:bg-stone-50 text-stone-700 shadow-sm transition-all active:scale-95 flex items-center gap-1 text-xs font-bold group"
+          title="Game Settings"
+        >
+          <Settings className="w-4 h-4 text-stone-600 group-hover:rotate-45 transition-transform duration-300" />
+        </button>
       </div>
-    </header>
+      </header>
+
+      {/* Settings Modal */}
+      <AnimatePresence>
+        {showSettings && (
+          <SettingsModal
+            saveData={liveSaveData}
+            onUpdateSettings={updateSettings}
+            onResetSave={resetGameSave}
+            onExportSave={exportSave}
+            onImportSave={importSave}
+            onClose={() => setShowSettings(false)}
+          />
+        )}
+      </AnimatePresence>
+    </>
   );
 };
