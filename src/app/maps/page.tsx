@@ -200,10 +200,6 @@ export default function MapsPage() {
           {/* Page Title Banner */}
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-8">
             <div>
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-rose-100 border border-rose-300 text-rose-800 text-xs font-mono font-bold mb-2">
-                <Compass className="w-4 h-4 text-rose-600" />
-                <span>CAMPAIGN REALMS & DEFENSE ARENAS</span>
-              </div>
               <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
                 Campaign <span className="text-rose-500">Maps & Stages</span>
               </h1>

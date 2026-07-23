@@ -31,9 +31,6 @@ export default function HeroesPage() {
         {/* Page Hero Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-100 border border-amber-300 text-amber-800 text-xs font-mono font-bold mb-2">
-              <span>🐉 ROSTER GUARDIAN ACADEMY</span>
-            </div>
             <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight font-display">
               Hero Roster <span className="text-amber-500">& Selection</span>
             </h1>

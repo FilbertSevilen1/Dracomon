@@ -195,10 +195,6 @@ export default function VersionPage() {
         
         {/* Page Hero Header */}
         <div className="space-y-3 text-center md:text-left border-b border-stone-200 pb-8">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-amber-50 border border-amber-200 text-amber-700 text-xs font-mono font-bold shadow-sm">
-            <ScrollText className="w-4 h-4 text-amber-600" />
-            <span>VERSION RELEASE HISTORY & CHANGELOG</span>
-          </div>
           <h1 className="text-3xl md:text-5xl font-black tracking-tight text-stone-900 font-display">
             Patch Notes <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 bg-clip-text text-transparent">& Updates</span>
           </h1>

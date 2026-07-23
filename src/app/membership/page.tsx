@@ -36,10 +36,6 @@ export default function MembershipPage() {
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
         {/* Page Title Banner */}
         <div className="text-center md:text-left border-b border-stone-200 pb-8 space-y-2">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-mono font-bold">
-            <Crown className="w-4 h-4 text-purple-600" />
-            <span>PLAYER PROGRESSION TIERS</span>
-          </div>
           <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
             Membership <span className="text-purple-600">& Power Perks</span>
           </h1>
