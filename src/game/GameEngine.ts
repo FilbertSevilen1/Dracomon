@@ -949,13 +949,13 @@ export class GameEngine {
       soundService.playHit();
       // Shield Bash - short range melee burst forward
       this.pvx += this.pFacing * 4;
-      this.checkMeleeHit(this.px + (this.pFacing === 1 ? this.pWidth : -24), this.py, 36, this.pHeight, this.stats.attack);
+      this.checkMeleeHit(this.px + (this.pFacing === 1 ? this.pWidth : -24), this.py, 36, this.pHeight, this.stats.attack, true);
       this.spawnDustParticles(slashX, slashY, 8, '#60a5fa');
     } else if (this.selectedDraco === 'Assassinmon') {
       soundService.playHit();
       // Fast Shadow Katana Slash
       this.pvx += this.pFacing * 2.5;
-      this.checkMeleeHit(this.px - 16, this.py - 8, this.pWidth + 40, this.pHeight + 16, this.stats.attack);
+      this.checkMeleeHit(this.px - 16, this.py - 8, this.pWidth + 40, this.pHeight + 16, this.stats.attack, true);
       this.spawnDustParticles(slashX, slashY, 8, '#c084fc');
       // Spawn katana spark particles
       for (let k = 0; k < 5; k++) {
@@ -1037,13 +1037,14 @@ export class GameEngine {
         isEnemy: false,
         damage: Math.floor(this.stats.attack * 1.1),
         color: '#ef4444',
-        type: 'dark_energy' as any
-      });
+        type: 'dark_energy' as any,
+        isBasic: true
+      } as any);
       this.spawnDustParticles(slashX, slashY, 8, '#ef4444');
     } else {
       // Jumpmon Melee Sword Swing
       soundService.playHit();
-      this.checkMeleeHit(this.px - 12, this.py - 12, this.pWidth + 24, this.pHeight + 24, this.stats.attack);
+      this.checkMeleeHit(this.px - 12, this.py - 12, this.pWidth + 24, this.pHeight + 24, this.stats.attack, true);
       this.spawnDustParticles(slashX, slashY, 10, '#fbbf24');
     }
   }
@@ -1406,17 +1407,31 @@ export class GameEngine {
     this.addFloatingText(targetX - 20, (targetY || this.py) - 15, 'SUN STRIKE! ☀️💥', '#f59e0b');
   }
 
-  private checkMeleeHit(x: number, y: number, w: number, h: number, damage: number) {
-    this.enemies.forEach(enemy => {
-      if (
-        x < enemy.x + enemy.width &&
-        x + w > enemy.x &&
-        y < enemy.y + enemy.height &&
-        y + h > enemy.y
-      ) {
-        this.damageEnemy(enemy, damage);
+  private checkMeleeHit(x: number, y: number, w: number, h: number, damage: number, stopOnFirstHit = false) {
+    if (stopOnFirstHit) {
+      for (const enemy of this.enemies) {
+        if (
+          x < enemy.x + enemy.width &&
+          x + w > enemy.x &&
+          y < enemy.y + enemy.height &&
+          y + h > enemy.y
+        ) {
+          this.damageEnemy(enemy, damage);
+          break;
+        }
       }
-    });
+    } else {
+      this.enemies.forEach(enemy => {
+        if (
+          x < enemy.x + enemy.width &&
+          x + w > enemy.x &&
+          y < enemy.y + enemy.height &&
+          y + h > enemy.y
+        ) {
+          this.damageEnemy(enemy, damage);
+        }
+      });
+    }
   }
 
   private getMaxEnergy(): number {
@@ -1871,7 +1886,7 @@ export class GameEngine {
         coinReward = 0;
         this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'REVIVED SKELETON (0 EXP)', '#94a3b8');
       } else {
-        expReward = 15;
+        expReward = 0;
         coinReward = 25;
       }
       enemy.isBonePile = true;
@@ -1880,9 +1895,14 @@ export class GameEngine {
       soundService.playHit();
       this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 14, '#e2e8f0');
 
-      if (expReward > 0) {
+      if (expReward > 0 || coinReward > 0) {
         this.callbacks.onEnemyDefeat(expReward, coinReward);
-        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, `+${expReward} EXP`, '#3b82f6');
+        if (expReward > 0) {
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, `+${expReward} EXP`, '#3b82f6');
+        }
+        if (coinReward > 0) {
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, `+${coinReward} Coins`, '#eab308');
+        }
       }
       return;
     } else if (enemy.type === 'king_kong') {
@@ -3656,7 +3676,9 @@ export class GameEngine {
         }
       } else {
         // Hits enemy
+        let projSpliced = false;
         this.enemies.forEach(enemy => {
+          if (projSpliced) return;
           if (
             proj.x < enemy.x + enemy.width &&
             proj.x + proj.width > enemy.x &&
@@ -3684,13 +3706,23 @@ export class GameEngine {
                 this.addFloatingText(enemy.x, enemy.y - 15, 'LIFTED INTO TORNADO! 🌪️', '#06b6d4');
               }
             } else if (proj.type === 'dark_energy') {
-              const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
-              if (!hitSet.includes(enemy.id)) {
-                hitSet.push(enemy.id);
+              if ((proj as any).isBasic) {
+                // Basic attack version: does NOT pierce, splices out on hit!
                 this.damageEnemy(enemy, proj.damage);
                 soundService.playHit();
                 this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#ef4444');
-                this.addFloatingText(enemy.x, enemy.y - 15, 'SOUL WAVE HIT! 🔴🌊', '#ef4444');
+                this.projectiles.splice(index, 1);
+                projSpliced = true;
+              } else {
+                // Spell/Ultimate version: pierces!
+                const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
+                if (!hitSet.includes(enemy.id)) {
+                  hitSet.push(enemy.id);
+                  this.damageEnemy(enemy, proj.damage);
+                  soundService.playHit();
+                  this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#ef4444');
+                  this.addFloatingText(enemy.x, enemy.y - 15, 'SOUL WAVE HIT! 🔴🌊', '#ef4444');
+                }
               }
             } else if (proj.type === 'giant_cleave') {
               const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
@@ -3705,6 +3737,7 @@ export class GameEngine {
             } else {
               this.damageEnemy(enemy, proj.damage);
               this.projectiles.splice(index, 1);
+              projSpliced = true;
             }
           }
         });
