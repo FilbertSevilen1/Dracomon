@@ -30,6 +30,23 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.1.6',
+    date: 'July 23, 2026',
+    tag: 'Economy Rebalance & Bug Fixes',
+    badgeColor: 'bg-amber-600 text-white font-black shadow-sm',
+    summary: 'Major economy rebalance reducing EXP and Gold gain by 80%, updated maps, and critical Bombamon bug fixes.',
+    highlights: [
+      'Economy Nerf: EXP and Gold gain from all enemies reduced by 80% for longer and more rewarding progression.',
+      'Bombamon Ultimate Bug Fix: Carpet Bombing fire now correctly burns below Bombamon\'s flight path instead of from the top of the map.',
+      'Bombamon Ultimate Ceiling Awareness: Fire damage now jumps downward from Bombamon\'s height until hitting the ceiling, ensuring correct placement in indoor maps like Temple.',
+      'Bombamon Fire Tick Rate: Fire damage now ticks once every 0.5 seconds instead of every frame for balanced burn damage.',
+      'Ranged Base Attack Cap: All ranged basic attacks (Flymon, Whitemon, Magemon, Shadowmon, Bombamon) now have a maximum range of 800px.',
+      'Shieldmon Ultimate Rework: Creates a 10-radius wall barrier, then drops a giant shield from the sky to damage enemies trapped inside.',
+      'Flymon Tornado Skill: Range capped to 1000px maximum.',
+      'Assassinmon Ultimate: Improved visual animation effects.',
+    ],
+  },
+  {
     version: '0.1.5',
     date: 'July 23, 2026',
     tag: 'Underwater Abyss Revamp',
@@ -39,6 +56,7 @@ const VERSION_LOGS: VersionLog[] = [
       'Underwater Whirlpools: Replaced stage 9 lava pools with functional whirlpools that pull players within a 5-tile radius (stronger pull closer to the center) and instantly kill on contact.',
       'Massive Anchors: Redesigned anchors to be 1.8x larger with a premium metallic look and detailed ropes stretching all the way to the stage ceiling.',
       'Leviathan Orca Vortex Moveset: The Killer Whale boss now regularly casts a water vortex, drawing players in a 3-tile radius towards it and dealing damage on contact.',
+      'Gladiators Arena: Increased difficulty, increased survival duration, added new enemy types, and added a new boss. Increase timer to 3 minutes'
     ],
   },
   {
@@ -185,7 +203,7 @@ const VERSION_LOGS: VersionLog[] = [
 
 export default function VersionPage() {
   // Only the latest version ('0.1.5') is opened by default!
-  const [openVersion, setOpenVersion] = useState<string | null>('0.1.5');
+  const [openVersion, setOpenVersion] = useState<string | null>('0.1.6');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();

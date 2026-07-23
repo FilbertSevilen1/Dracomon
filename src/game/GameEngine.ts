@@ -2114,6 +2114,10 @@ export class GameEngine {
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'KING KONG SLAIN! 🦍👑', '#f59e0b');
     }
 
+    // v0.1.6 Economy Nerf: Reduce EXP and Gold gain by 80%
+    expReward = Math.floor(expReward * 0.2);
+    coinReward = Math.floor(coinReward * 0.2);
+
     this.callbacks.onEnemyDefeat(expReward, coinReward);
     this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, `+${expReward} EXP`, '#3b82f6');
     this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, `+${coinReward} Coins`, '#eab308');
@@ -2307,7 +2311,7 @@ export class GameEngine {
         const secondsLeft = Math.ceil(this.survivalTimer / 60);
 
         // AT 30 SECONDS REMAINING: MAP ERUPTS AND IMMORTAL GLADIATOR SPAWNS!
-        if (secondsLeft <= 30 && !this.arenaExploded) {
+        if (secondsLeft <= 90 && !this.arenaExploded) {
           this.arenaExploded = true;
           this.screenShake = 40;
           soundService.playHit();
@@ -4094,7 +4098,7 @@ export class GameEngine {
             return;
           }
         }
-        else if (proj.type === 'giant_cleave' || proj.type === 'dark_energy') {
+        else if (proj.type === 'giant_cleave') {
           proj.x += proj.vx;
           (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
           if (proj.x < -100 || proj.x > this.levelWidth + 100 || (proj as any).traveledDist >= 1000) {
@@ -4102,10 +4106,19 @@ export class GameEngine {
             return;
           }
         }
+        else if (proj.type === 'dark_energy') {
+          proj.x += proj.vx;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
+          if (proj.x < -100 || proj.x > this.levelWidth + 100 || (proj as any).traveledDist >= 800) {
+            this.projectiles.splice(index, 1);
+            return;
+          }
+        }
         else {
           proj.x += proj.vx;
           proj.y += proj.vy;
-          if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth) {
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
+          if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth || (proj as any).traveledDist >= 800) {
             this.projectiles.splice(index, 1);
             return;
           }
@@ -4856,9 +4869,9 @@ export class GameEngine {
           enemy.burnTimer = 30;
           enemy.burnLingerTimer = 120; // 2 seconds linger outside burn area
 
-          // Periodic burn tick damage every 15 frames
+          // Periodic burn tick damage every 30 frames (0.5 seconds)
           enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
-          if (enemy.burnTickTimer % 15 === 0) {
+          if (enemy.burnTickTimer % 30 === 0) {
             this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.5)));
             this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'BURN! 🔥', '#ea580c');
           }
