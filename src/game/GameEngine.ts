@@ -143,6 +143,7 @@ export class GameEngine {
   private isPlunging = false;
   private attackCooldown = 0;
   private specialCooldown = 0;
+  private trampolineCooldown = 0;
   private shieldActive = false;
   private shieldDuration = 0;
   private isAttacking = false;
@@ -3284,7 +3285,7 @@ export class GameEngine {
       this.isClimbing = false;
     }
 
-    const touchedVineTrap = this.getTileSymbol(pxMid, pyFeet) === 'T';
+    const touchedVineTrap = this.getTileSymbol(pxMid, pyFeet) === 'R';
     if (touchedVineTrap && this.playerRootedTimer <= 0) {
       this.playerRootedTimer = 120;
       soundService.playHit();
@@ -3741,11 +3742,12 @@ export class GameEngine {
     const tLeft = this.px + 4;
     const tRight = this.px + this.pWidth - 4;
     const tBottom = this.py + this.pHeight;
-    if (this.checkTrampoline(tLeft, tBottom) || this.checkTrampoline(tRight, tBottom)) {
+    if (this.pvy >= -2 && this.trampolineCooldown <= 0 && (this.checkTrampoline(tLeft, tBottom) || this.checkTrampoline(tRight, tBottom))) {
       soundService.playJump();
       this.pvy = -16;
       this.pGrounded = false;
       this.jumpCount = 1;
+      this.trampolineCooldown = 15;
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'BOING! 🌀', '#38bdf8');
 
       for (let i = 0; i < 8; i++) {
@@ -5431,7 +5433,7 @@ export class GameEngine {
             this.ctx.arc(ex + 28, ey + 16, 3, 0, Math.PI * 2);
             this.ctx.fill();
           }
-        } else if (char === 'T' && (this.level.name.includes('Jungle') || this.level.name.includes('Stage 10'))) {
+        } else if (char === 'R') {
           this.ctx.fillStyle = '#14532d';
           this.ctx.fillRect(ex + 2, ey + ts - 10, ts - 4, 10);
           this.ctx.fillStyle = '#22c55e';
@@ -8416,6 +8418,7 @@ export class GameEngine {
     if (this.attackCooldown > 0) this.attackCooldown--;
     if (this.specialCooldown > 0) this.specialCooldown--;
     if (this.pInvulnerableFrames > 0) this.pInvulnerableFrames--;
+    if (this.trampolineCooldown > 0) this.trampolineCooldown--;
 
     if (this.isAttacking) {
       this.attackDuration--;
