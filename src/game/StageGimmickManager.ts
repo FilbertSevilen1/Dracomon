@@ -336,22 +336,27 @@ export class StageGimmickManager {
 
         // Strike phase at <= 60 frames (1 second duration)
         if (tb.timer <= 60) {
-          // Calculate first platform row coming down from top (r = 0) to get groundY
-          let firstPlatformRow = grid.length;
+          let targetRow = grid.length;
+          let solidCount = 0;
           const centerCol = Math.floor(tb.x / tileSize);
           for (let r = 0; r < grid.length; r++) {
+            let rowHasSolid = false;
             for (let c = centerCol - 1; c <= centerCol + 1; c++) {
               if (c >= 0 && c < (grid[r]?.length || 0)) {
-                const char = grid[r][c];
-                if (char === '#' || char === '=') {
-                  if (r < firstPlatformRow) {
-                    firstPlatformRow = r;
-                  }
+                if (grid[r][c] === '#') {
+                  rowHasSolid = true;
                 }
               }
             }
+            if (rowHasSolid) {
+              solidCount++;
+              if (solidCount === 3) {
+                targetRow = r;
+                break;
+              }
+            }
           }
-          const groundY = firstPlatformRow < grid.length ? firstPlatformRow * tileSize : grid.length * tileSize;
+          const groundY = targetRow * tileSize;
 
           if (!tb.striking) {
             tb.striking = true;
@@ -459,7 +464,7 @@ export class StageGimmickManager {
         });
 
         const dragonTitle = chosenType === 'fire' ? 'INFERNO FIRE DRAGON' : chosenType === 'poison' ? 'TOXIC POISON DRAGON' : 'GLACIAL ICE DRAGON';
-        callbacks.addFloatingText(pxMid, py - 40, `🐉 GIANT ${dragonTitle} SOARS THE SKY!`, chosenType === 'fire' ? '#ef4444' : chosenType === 'poison' ? '#22c55e' : '#38bdf8');
+        // callbacks.addFloatingText(pxMid, py - 40, `🐉 GIANT ${dragonTitle} SOARS THE SKY!`, chosenType === 'fire' ? '#ef4444' : chosenType === 'poison' ? '#22c55e' : '#38bdf8');
       }
 
       // Update Sky Dragons
@@ -617,7 +622,7 @@ export class StageGimmickManager {
                 callbacks.spawnParticles(c * tileSize + tileSize / 2, zone.impactR * tileSize, '#ef4444', 15);
               }
             }
-            callbacks.addFloatingText(zone.x, zone.y - 15, 'PLATFORM DESTROYED BY INFERNO FIRE! 🔥💥', '#ef4444');
+            // callbacks.addFloatingText(zone.x, zone.y - 15, 'PLATFORM DESTROYED BY INFERNO FIRE! 🔥💥', '#ef4444');
           }
           this.dragonBreathZones.splice(z, 1);
         }
@@ -706,7 +711,7 @@ export class StageGimmickManager {
 
             callbacks.spawnParticles(m.targetX, m.targetY, '#ef4444', 16);
             callbacks.spawnParticles(m.targetX, m.targetY, '#f97316', 10);
-            callbacks.addFloatingText(m.targetX, m.targetY - 20, 'GIANT METEOR DESTROYED PLATFORM! ☄️💥', '#ef4444');
+            // callbacks.addFloatingText(m.targetX, m.targetY - 20, 'GIANT METEOR DESTROYED PLATFORM! ☄️💥', '#ef4444');
             soundService.playHit();
 
             this.meteors.splice(i, 1);
@@ -823,23 +828,28 @@ export class StageGimmickManager {
       this.thunderboltStrikes.forEach((tb) => {
         ctx.save();
 
-        // Calculate VERY FIRST solid/platform tile coming down from top (r = 0) in 96px column span
-        let firstPlatformRow = activeGrid.length;
+        let targetRow = activeGrid.length;
+        let solidCount = 0;
         const centerCol = Math.floor(tb.x / ts);
         for (let r = 0; r < activeGrid.length; r++) {
+          let rowHasSolid = false;
           for (let c = centerCol - 1; c <= centerCol + 1; c++) {
             if (c >= 0 && c < (activeGrid[r]?.length || 0)) {
-              const char = activeGrid[r][c];
-              if (char === '#' || char === '=') {
-                if (r < firstPlatformRow) {
-                  firstPlatformRow = r;
-                }
+              if (activeGrid[r][c] === '#') {
+                rowHasSolid = true;
               }
+            }
+          }
+          if (rowHasSolid) {
+            solidCount++;
+            if (solidCount === 3) {
+              targetRow = r;
+              break;
             }
           }
         }
 
-        const groundY = firstPlatformRow < activeGrid.length ? firstPlatformRow * ts : activeGrid.length * ts;
+        const groundY = targetRow * ts;
         const beamTop = cameraY - 100;
         const beamHeight = Math.max(20, groundY - beamTop);
 
@@ -877,7 +887,7 @@ export class StageGimmickManager {
           ctx.textAlign = 'center';
           ctx.shadowColor = '#eab308';
           ctx.shadowBlur = 8;
-          ctx.fillText(`⚡ DIVINE LIGHTNING WARNING! ${remainingSec}s`, tb.x, badgeY);
+          // ctx.fillText(`⚡ DIVINE LIGHTNING WARNING! ${remainingSec}s`, tb.x, badgeY);
         } else {
           // ACTIVE COLOSSAL LIGHTNING STRIKE PILLAR (Stopping flush on top of first platform groundY!)
           const strikeGrad = ctx.createLinearGradient(tb.x - 48, 0, tb.x + 48, 0);
@@ -1019,7 +1029,7 @@ export class StageGimmickManager {
         ctx.font = 'bold 11px sans-serif';
         ctx.textAlign = 'center';
         const icon = zone.type === 'fire' ? '🔥 INFERNO FIRE' : zone.type === 'poison' ? '☠️ TOXIC POISON' : '🧊 GLACIAL ICE';
-        ctx.fillText(`${icon} ${(zone.timer / 60).toFixed(1)}s`, zone.x, zone.y - 14);
+        // ctx.fillText(`${icon} ${(zone.timer / 60).toFixed(1)}s`, zone.x, zone.y - 14);
         ctx.restore();
       });
 
@@ -1152,7 +1162,7 @@ export class StageGimmickManager {
           ctx.fillStyle = '#fef08a';
           ctx.font = 'bold 11px sans-serif';
           ctx.textAlign = 'center';
-          ctx.fillText('⚠️ METEOR IMPACT ZONE!', m.targetX, m.targetY - 28);
+          // ctx.fillText('⚠️ METEOR IMPACT ZONE!', m.targetX, m.targetY - 28);
 
           // Giant Falling Meteor Outer Aura Ring (No shadowBlur!)
           ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';

@@ -22,7 +22,8 @@ export class HazardManager {
     getTileSymbol: (x: number, y: number) => string,
     onPlayerHpZero: () => void,
     addFloatingText: (x: number, y: number, text: string, color: string) => void,
-    spawnParticles: (x: number, y: number, color: string, count: number) => void
+    spawnParticles: (x: number, y: number, color: string, count: number) => void,
+    isUnderwater?: boolean
   ): {
     triggered: boolean;
     type?: 'swamp' | 'reaper' | 'thunderbolt' | 'ice' | 'lava';
@@ -61,7 +62,17 @@ export class HazardManager {
     if (touchedHazardPool) {
       onPlayerHpZero();
 
-      if (themeType === 'shadow') {
+      if (isUnderwater) {
+        soundService.playLavaDeath(); // Sizzling / splash SFX
+        addFloatingText(pxMid, py - 20, 'SUCKED INTO WHIRLPOOL! 🌀💀', '#06b6d4');
+        spawnParticles(pxMid, pyFeet, '#06b6d4', 25);
+
+        return {
+          triggered: true,
+          type: 'lava',
+          skeletonDeathTimer: 90
+        };
+      } else if (themeType === 'shadow') {
         // REAPER SCYTHE DEATH ZONE 💀⚔️
         soundService.playScytheDeath(); // Grim Reaper Scythe SFX
         addFloatingText(pxMid, py - 20, 'REAPED BY DEATH! 💀⚔️', '#a855f7');

@@ -487,7 +487,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             className="absolute inset-0 bg-stone-950/80 backdrop-blur-md flex flex-col items-center justify-center z-30"
           >
             <div className="w-80 bg-white rounded-3xl p-6 border border-stone-200 shadow-2xl text-center space-y-4">
-              <h3 className="text-xl font-bold text-stone-950 font-display">Adventure Suspended</h3>
+              <h3 className="text-xl font-bold text-stone-950 font-display">Adventure Paused</h3>
               <p className="text-xs text-stone-400 leading-normal">Your journey is paused. Equip items or change options.</p>
 
               <div className="flex flex-col gap-2 mt-4">

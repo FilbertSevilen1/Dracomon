@@ -30,6 +30,18 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.1.5',
+    date: 'July 23, 2026',
+    tag: 'Underwater Abyss Revamp',
+    badgeColor: 'bg-cyan-600 text-white font-black shadow-sm',
+    summary: 'Complete overhaul of Stage 9 Underwater Abyss: replaced lava pools with swirling whirlpool gravity traps, made anchors larger with ropes reaching to the ceiling, and added a vortex moveset to the Leviathan Orca.',
+    highlights: [
+      'Underwater Whirlpools: Replaced stage 9 lava pools with functional whirlpools that pull players within a 5-tile radius (stronger pull closer to the center) and instantly kill on contact.',
+      'Massive Anchors: Redesigned anchors to be 1.8x larger with a premium metallic look and detailed ropes stretching all the way to the stage ceiling.',
+      'Leviathan Orca Vortex Moveset: The Killer Whale boss now regularly casts a water vortex, drawing players in a 3-tile radius towards it and dealing damage on contact.',
+    ],
+  },
+  {
     version: '0.1.4',
     date: 'July 23, 2026',
     tag: 'Stage Gimmicks & Performance Overhaul (Current)',
@@ -172,8 +184,8 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  // Only the latest version ('0.1.4') is opened by default!
-  const [openVersion, setOpenVersion] = useState<string | null>('0.1.4');
+  // Only the latest version ('0.1.5') is opened by default!
+  const [openVersion, setOpenVersion] = useState<string | null>('0.1.5');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();
