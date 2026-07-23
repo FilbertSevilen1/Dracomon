@@ -73,6 +73,7 @@ interface Enemy {
   isBonePile?: boolean;
   respawnTimer?: number;
   hasRevived?: boolean;
+  reviveCount?: number;
   jumpCooldown?: number;
   jumpCount?: number;
   isLeaping?: boolean;
@@ -1751,17 +1752,20 @@ export class GameEngine {
 
     if (enemy.isImmortal) {
       enemy.hp = Math.max(1, enemy.hp - damageDealt); // Cannot drop below 1 HP!
-      enemy.damageAcc = (enemy.damageAcc || 0) + damageDealt;
+      
+      if ((enemy.stunTimer || 0) <= 0) {
+        enemy.damageAcc = (enemy.damageAcc || 0) + damageDealt;
 
-      // Stun Threshold (Every 45 damage accumulated stuns Immortal Gladiator for 1s = 60 frames)
-      if (enemy.damageAcc >= 45) {
-        enemy.damageAcc = 0;
-        enemy.stunTimer = 60; // 1 second stun!
-        enemy.vx = 0;
-        enemy.vy = 0;
-        soundService.playHit();
-        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, 'STUNNED! 💫', '#fef08a');
-        this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
+        // Stun Threshold (Every 45 damage accumulated stuns Immortal Gladiator for 1s = 60 frames)
+        if (enemy.damageAcc >= 45) {
+          enemy.damageAcc = 0;
+          enemy.stunTimer = 60; // 1 second stun!
+          enemy.vx = 0;
+          enemy.vy = 0;
+          soundService.playHit();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, 'STUNNED! 💫', '#fef08a');
+          this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
+        }
       }
 
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${damageDealt} [IMMORTAL 🛡️]`, '#fbbf24');
@@ -1779,8 +1783,8 @@ export class GameEngine {
       enemy.vy = -2.5;
     }
 
-    // Gain energy per hit
-    if (!this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
+    // Gain energy per hit (skip for skeleton_archer)
+    if (enemy.type !== 'skeleton_archer' && !this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
       this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + 2.5);
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
     }
@@ -1881,30 +1885,20 @@ export class GameEngine {
       });
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'PRIMORDIAL GOD CONQUERED! 👑', '#f59e0b');
     } else if (enemy.type === 'skeleton_archer') {
-      if (enemy.hasRevived) {
+      const currentRevives = enemy.reviveCount || 0;
+      if (currentRevives < 2) {
+        enemy.isBonePile = true;
+        enemy.respawnTimer = 300; // 5 seconds
+        enemy.hp = 0;
+        soundService.playHit();
+        this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 14, '#e2e8f0');
+        return; // Return early to prevent permanent removal
+      } else {
+        // Dies permanently!
         expReward = 0;
         coinReward = 0;
-        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'REVIVED SKELETON (0 EXP)', '#94a3b8');
-      } else {
-        expReward = 0;
-        coinReward = 25;
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'SKELETON DESTROYED! 💀', '#94a3b8');
       }
-      enemy.isBonePile = true;
-      enemy.respawnTimer = 300; // 5 seconds
-      enemy.hp = 0;
-      soundService.playHit();
-      this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 14, '#e2e8f0');
-
-      if (expReward > 0 || coinReward > 0) {
-        this.callbacks.onEnemyDefeat(expReward, coinReward);
-        if (expReward > 0) {
-          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, `+${expReward} EXP`, '#3b82f6');
-        }
-        if (coinReward > 0) {
-          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, `+${coinReward} Coins`, '#eab308');
-        }
-      }
-      return;
     } else if (enemy.type === 'king_kong') {
       expReward = 550;
       coinReward = 850;
@@ -1934,7 +1928,7 @@ export class GameEngine {
     this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
 
     // Notify boss defeat and spawn Exit Portal!
-    if (this.isBossType(enemy.type)) {
+    if (this.isBossType(enemy.type) && !this.isSurvivalMode) {
       const otherBosses = this.enemies.filter(e => e.id !== enemy.id && this.isBossType(e.type));
       if (otherBosses.length === 0) {
         this.exitPortalActive = true;
@@ -3753,8 +3747,9 @@ export class GameEngine {
           enemy.isBonePile = false;
           enemy.hp = enemy.maxHp;
           enemy.hasRevived = true;
+          enemy.reviveCount = (enemy.reviveCount || 0) + 1;
           soundService.playLevelUp();
-          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'SKELETON REVIVED! 💀⚡', '#e2e8f0');
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, `SKELETON REVIVED! (${enemy.reviveCount}/2) 💀⚡`, '#e2e8f0');
           this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 16, '#e2e8f0');
         }
         return;
