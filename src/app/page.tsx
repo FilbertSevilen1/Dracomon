@@ -106,7 +106,7 @@ export default function Home() {
       return true; // Basic and Premium membership tiers unlock all maps immediately!
     }
     if (stageNum === 1) return true; // Stage 1 unlocked by default for Free Tier
-    const completed = saveData.completedStages || [1];
+    const completed = saveData.completedStages || [];
     return completed.includes(stageNum) || completed.includes(stageNum - 1);
   };
 
@@ -1545,7 +1545,7 @@ export default function Home() {
                             }`}
                           >
                             <Play className="w-4 h-4 fill-current" />
-                            <span>{unlocked ? `Deploy to Stage ${stage.num}` : `Locked (Requires Stage ${stage.num - 1})`}</span>
+                            <span>{unlocked ? `Play Stage ${stage.num}` : `Locked (Requires Stage ${stage.num - 1})`}</span>
                           </button>
                         </div>
                       </div>
