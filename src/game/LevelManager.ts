@@ -4,17 +4,22 @@ export interface SubMapData {
   grid: string[];
 }
 
+export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core';
+
+export interface LevelTheme {
+  type: ThemeType;
+  skyColor: string;
+  solidColor: string;
+  platformColor: string;
+  borderColor: string;
+  bgGradient: string;
+  particleColor: string;
+}
+
 export interface LevelData {
   name: string;
   tileSize: number;
-  theme: {
-    skyColor: string;
-    solidColor: string;
-    platformColor: string;
-    borderColor: string;
-    bgGradient: string;
-    particleColor: string;
-  };
+  theme: LevelTheme;
   grid?: string[];
   maps?: SubMapData[];
   isUnderwater?: boolean;
@@ -27,11 +32,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 1: Whispering Woods',
     tileSize: 40,
     theme: {
-      skyColor: '#ecfdf5',
+      type: 'forest',
+      skyColor: '#042f2e',
       solidColor: '#10b981',
       platformColor: '#b45309',
       borderColor: '#047857',
-      bgGradient: 'linear-gradient(to bottom, #d1fae5, #ecfdf5)',
+      bgGradient: 'linear-gradient(to bottom, #021a18, #042f2e, #065f46)',
       particleColor: '#6ee7b7',
     },
     // Width: 67 tiles
@@ -57,11 +63,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 2: Mystic Ruins',
     tileSize: 40,
     theme: {
-      skyColor: '#f1f5f9',
+      type: 'ruins',
+      skyColor: '#0f172a',
       solidColor: '#64748b',
       platformColor: '#475569',
       borderColor: '#334155',
-      bgGradient: 'linear-gradient(to bottom, #cbd5e1, #f1f5f9)',
+      bgGradient: 'linear-gradient(to bottom, #020617, #0f172a, #1e293b)',
       particleColor: '#94a3b8',
     },
     // Width: 75 tiles
@@ -87,11 +94,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 3: Volcanic Peak',
     tileSize: 40,
     theme: {
-      skyColor: '#fff7ed',
+      type: 'volcano',
+      skyColor: '#450a0a',
       solidColor: '#4b5563',
       platformColor: '#ea580c',
       borderColor: '#1f2937',
-      bgGradient: 'linear-gradient(to bottom, #ffedd5, #fff7ed)',
+      bgGradient: 'linear-gradient(to bottom, #180202, #450a0a, #7f1d1d)',
       particleColor: '#f97316',
     },
     // Width: 80 tiles
@@ -117,11 +125,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 4: Frozen Citadel',
     tileSize: 40,
     theme: {
-      skyColor: '#f0f9ff',
+      type: 'ice',
+      skyColor: '#082f49',
       solidColor: '#0284c7',
       platformColor: '#38bdf8',
       borderColor: '#0369a1',
-      bgGradient: 'linear-gradient(to bottom, #e0f2fe, #f0f9ff)',
+      bgGradient: 'linear-gradient(to bottom, #031828, #082f49, #0369a1)',
       particleColor: '#7dd3fc',
     },
     // Width: 85 tiles
@@ -147,11 +156,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 5: Shadow Abyss',
     tileSize: 40,
     theme: {
-      skyColor: '#faf5ff',
+      type: 'shadow',
+      skyColor: '#1e1b4b',
       solidColor: '#581c87',
       platformColor: '#a855f7',
       borderColor: '#3b0764',
-      bgGradient: 'linear-gradient(to bottom, #f3e8ff, #faf5ff)',
+      bgGradient: 'linear-gradient(to bottom, #090518, #1e1b4b, #4c1d95)',
       particleColor: '#c084fc',
     },
     // Width: 90 tiles
@@ -177,11 +187,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 6: Celestial Dragon Temple',
     tileSize: 40,
     theme: {
-      skyColor: '#fffbebf0',
+      type: 'temple',
+      skyColor: '#451a03',
       solidColor: '#b45309',
       platformColor: '#f59e0b',
       borderColor: '#78350f',
-      bgGradient: 'linear-gradient(to bottom, #fef3c7, #fffbe0)',
+      bgGradient: 'linear-gradient(to bottom, #1a0800, #451a03, #78350f)',
       particleColor: '#fbbf24',
     },
     // Width: 100 tiles - Grand Final Boss Sanctuary!
@@ -207,11 +218,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 7: Sky Heavens',
     tileSize: 40,
     theme: {
-      skyColor: '#f0f9ff',
+      type: 'heavens',
+      skyColor: '#075985',
       solidColor: '#0284c7',
       platformColor: '#0ea5e9',
       borderColor: '#0369a1',
-      bgGradient: 'linear-gradient(to bottom, #e0f2fe, #f0f9ff)',
+      bgGradient: 'linear-gradient(to bottom, #032b45, #075985, #0284c7)',
       particleColor: '#38bdf8',
     },
     // Width: 100 tiles
@@ -222,11 +234,11 @@ export const STAGES: LevelData[] = [
       '....................................................................................................',
       '.............................................====...................====............................',
       '........................====.............====....====...........====....====........................',
-      '.............====...................T....K..........K....T..........................................',
+      '.............====...................T....................T..........................................',
       '.......===.........................###..###........###..###....................====.................',
       '.........................4......................................4...................................',
       '....@.....1......M.......#.......2..............................#.......M.......2.......#.......B..P',
-      '###########===#######..#####===#####..K..K..K..K..K..K..#####===#####..#####===#####..#####.######.#',
+      '###########===#######..#####===#####....................#####===#####..#####===#####..#####.######.#',
       '##########....#######..#############..#..#..#..#..#..#..#############..#############..##############',
       '##########....#######..#############..#..#..#..#..#..#..#############..#############..##############',
       '##########....#######..#############..#..#..#..#..#..#..#############..#############..##############',
@@ -237,11 +249,12 @@ export const STAGES: LevelData[] = [
     name: 'Stage 8: Primordial Core',
     tileSize: 40,
     theme: {
-      skyColor: '#fef2f2',
+      type: 'core',
+      skyColor: '#450a0a',
       solidColor: '#991b1b',
       platformColor: '#dc2626',
       borderColor: '#7f1d1d',
-      bgGradient: 'linear-gradient(to bottom, #fee2e2, #fef2f2)',
+      bgGradient: 'linear-gradient(to bottom, #200000, #450a0a, #991b1b)',
       particleColor: '#ef4444',
     },
     // Width: 110 tiles
@@ -268,6 +281,7 @@ export const STAGES: LevelData[] = [
     tileSize: 40,
     isUnderwater: true,
     theme: {
+      type: 'ruins',
       skyColor: '#0284c7',
       solidColor: '#0369a1',
       platformColor: '#06b6d4',
@@ -345,6 +359,7 @@ export const STAGES: LevelData[] = [
     name: 'Stage 10: Primordial Jungle Sanctuary',
     tileSize: 40,
     theme: {
+      type: 'forest',
       skyColor: '#052e16',
       solidColor: '#166534',
       platformColor: '#854d0e',
@@ -424,6 +439,7 @@ export const STAGES: LevelData[] = [
     isSurvivalMode: true,
     survivalDuration: 120, // 2 Minutes Defense Timer
     theme: {
+      type: 'volcano',
       skyColor: '#1c1917',
       solidColor: '#b45309',
       platformColor: '#d97706',
@@ -454,5 +470,13 @@ export const STAGES: LevelData[] = [
 
 export const getLevel = (stageNum: number): LevelData => {
   const index = Math.max(1, Math.min(STAGES.length, stageNum)) - 1;
-  return STAGES[index];
+  const stage = STAGES[index];
+  return {
+    ...stage,
+    grid: stage.grid ? [...stage.grid] : undefined,
+    maps: stage.maps ? stage.maps.map(m => ({
+      ...m,
+      grid: [...m.grid]
+    })) : undefined,
+  };
 };

@@ -107,11 +107,43 @@ const DRACO_META: {
     colorClass: 'text-rose-600 border-rose-900 bg-rose-950',
     bgGradient: 'from-rose-900 via-stone-900 to-red-950',
   },
+  Bombamon: {
+    role: 'Explosive / Carpet Bomber',
+    abilityName: 'Homing Bomb Rock',
+    abilityDesc: 'Throws a rock homing in on enemies (within 1000px). Explodes on hit or ignites 3-block ground burn for 2s.',
+    ultimateName: 'Carpet Bombing',
+    ultimateDesc: 'Flies across screen 8 blocks high, breathing fire to burn platforms for 5s. Lit foes move faster, linger burn 2s outside, & explode on death!',
+    cost: 350,
+    colorClass: 'text-orange-600 border-orange-300 bg-orange-50',
+    bgGradient: 'from-orange-500 via-red-600 to-amber-500',
+  },
 };
 
 // Render Draco SVGs efficiently without Framer Motion ticker overhead
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
+
+  if (name === 'Bombamon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.2)" />
+        {/* Dragon Wings with Flame Edges */}
+        <path d="M 28 44 Q 8 20 32 30 Z" fill="#ea580c" stroke="#c2410c" strokeWidth="1.5" />
+        <path d="M 72 44 Q 92 20 68 30 Z" fill="#ea580c" stroke="#c2410c" strokeWidth="1.5" />
+        {/* Body & Horns */}
+        <rect x="34" y="34" width="32" height="42" rx="10" fill="#f97316" stroke="#c2410c" strokeWidth="2.5" />
+        <path d="M 36 34 L 28 20 L 42 28 Z" fill="#b91c1c" />
+        <path d="M 64 34 L 72 20 L 58 28 Z" fill="#b91c1c" />
+        {/* Glowing Eyes */}
+        <rect x="42" y="44" width="5" height="4" fill="#fef08a" />
+        <rect x="53" y="44" width="5" height="4" fill="#fef08a" />
+        {/* Bomb Emblem on Chest */}
+        <circle cx="50" cy="62" r="8" fill="#18181b" stroke="#f97316" strokeWidth="1.5" />
+        <path d="M 50 54 L 52 50 L 55 52" fill="none" stroke="#f59e0b" strokeWidth="1.5" />
+        <circle cx="56" cy="51" r="1.5" fill="#ef4444" />
+      </svg>
+    );
+  }
 
   if (name === 'Jumpmon') {
     return (
@@ -293,21 +325,22 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   const canLevelUp = isUnlocked && lvl < 15 && coins >= levelUpCost;
 
   const content = (
-    <div className={`w-full flex flex-col border bg-white border-stone-200/90 rounded-3xl shadow-xl overflow-hidden ${isFullPage ? 'min-h-[620px]' : 'max-h-[92vh]'}`}>
-      {/* Header */}
-      <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-stone-900 text-white rounded-2xl shadow-sm">
-            <Shield className="w-5 h-5 text-amber-400" />
+    <div className={`w-full flex flex-col ${isFullPage ? 'min-h-[500px]' : 'bg-white border border-stone-200/90 rounded-3xl shadow-xl overflow-hidden max-h-[92vh]'}`}>
+      {/* Header (Only shown in Modal view) */}
+      {!isFullPage && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-stone-900 text-white rounded-2xl shadow-sm">
+              <Shield className="w-5 h-5 text-amber-400" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold tracking-tight text-stone-900 font-display">Draco Sanctuary</h2>
+              <p className="text-xs text-stone-500">Select & upgrade your battle companion</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-xl font-bold tracking-tight text-stone-900 font-display">Draco Sanctuary</h2>
-            <p className="text-xs text-stone-500">Select & upgrade your battle companion</p>
-          </div>
-        </div>
 
-          {/* Account Tier Switcher (Hidden on Full Page / Heroes Page) */}
-          {!isFullPage && onSwitchTier && (
+          {/* Account Tier Switcher */}
+          {onSwitchTier && (
             <div className="flex items-center gap-1 p-1 bg-stone-100 border border-stone-200 rounded-xl">
               {(['Free', 'Basic', 'Premium'] as TierType[]).map((t) => (
                 <button
@@ -334,7 +367,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
               <span className="font-mono font-bold text-xs text-stone-800">{coins} Coins</span>
             </div>
-            {!isFullPage && onClose && (
+            {onClose && (
               <button
                 onClick={() => {
                   soundService.playClick();
@@ -347,120 +380,115 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
             )}
           </div>
         </div>
+      )}
 
-        {/* Content Layout - Split 2 Panel */}
-        <div className="grid grid-cols-1 md:grid-cols-12 flex-1 min-h-0 overflow-hidden">
-          {/* Left Panel: Roster List with Filter by Name Input */}
-          <div className="md:col-span-4 border-r border-stone-100 bg-stone-50/40 p-4 flex flex-col justify-between space-y-2 overflow-hidden">
-            
-            {/* Filter Search Input */}
-            <div className="relative">
-              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+      {/* Content Layout - Split 2 Panel (60% Grid List Left | 40% Details Right) */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 items-start">
+        {/* Left Panel (60% width on Desktop, Bottom on Mobile): Ultra-Compact Character Avatars Grid */}
+        <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col space-y-4">
+          
+          {/* Filter Search Input & Header */}
+          <div className="flex items-center justify-between gap-3">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
               <input
                 type="text"
-                placeholder="Filter hero by name..."
+                placeholder="Filter hero by name or role..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 bg-white border border-stone-200 rounded-xl text-xs font-mono text-stone-800 placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/20 transition-all shadow-sm"
+                className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200/80 rounded-2xl text-xs font-mono text-stone-800 placeholder-stone-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm"
               />
             </div>
-
-            <div className="text-[11px] font-extrabold uppercase tracking-wider text-stone-400 px-1">
+            <div className="text-xs font-black uppercase tracking-wider text-stone-500 bg-stone-200/60 px-3 py-1.5 rounded-2xl shrink-0">
               Roster ({filteredDracos.length})
-            </div>
-
-            <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
-              {filteredDracos.map((name) => {
-                const dData = saveData.dracos[name];
-                const meta = DRACO_META[name];
-                const itemUnlocked = !!dData.unlocked;
-                const itemEquipped = equippedDraco === name;
-                const isSelected = selectedName === name;
-
-                return (
-                  <button
-                    key={name}
-                    onClick={() => {
-                      soundService.playClick();
-                      setSelectedName(name);
-                    }}
-                    className={`w-full flex items-center justify-between p-2.5 rounded-2xl border transition-all text-left ${
-                      isSelected
-                        ? 'border-stone-900 bg-white shadow-md ring-2 ring-stone-900/10'
-                        : itemEquipped
-                        ? 'border-emerald-300 bg-emerald-50/40 hover:bg-white'
-                        : itemUnlocked
-                        ? 'border-stone-200 bg-white/70 hover:bg-white hover:border-stone-300'
-                        : 'border-stone-200/60 bg-stone-100/50 opacity-75 hover:opacity-100'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-9 h-9 rounded-xl bg-stone-100 flex items-center justify-center overflow-hidden flex-shrink-0 border border-stone-200/50">
-                        <DracoArtwork name={name} animated={false} size={32} />
-                      </div>
-                      <div>
-                        <div className="text-xs font-bold text-stone-800 flex items-center gap-1 font-display">
-                          {name}
-                          {itemUnlocked && (
-                            <span className="text-[10px] text-stone-400 font-normal">Lv.{dData.level || 1}</span>
-                          )}
-                        </div>
-                        <div className="text-[10px] text-stone-500 truncate max-w-[110px]">{meta.role}</div>
-                      </div>
-                    </div>
-
-                    <div>
-                      {itemEquipped ? (
-                        <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase tracking-wider text-emerald-700 bg-emerald-100 rounded-full border border-emerald-200">
-                          ACTIVE
-                        </span>
-                      ) : itemUnlocked ? (
-                        <span className="px-2 py-0.5 text-[9px] font-semibold text-stone-600 bg-stone-100 rounded-full border border-stone-200">
-                          OWNED
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 text-[9px] font-bold text-amber-700 bg-amber-50 rounded-full border border-amber-200 flex items-center gap-0.5">
-                          <Lock className="w-2.5 h-2.5" />
-                          {meta.cost}🪙
-                        </span>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
             </div>
           </div>
 
-          {/* Right Panel: Detailed Inspect Showcase */}
-          <div className="md:col-span-8 p-5 flex flex-col justify-between bg-white overflow-hidden space-y-3">
+          {/* Clean Borderless Avatar Grid */}
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 max-h-[500px] overflow-y-auto pr-1">
+            {filteredDracos.map((name) => {
+              const dData = saveData.dracos[name];
+              const meta = DRACO_META[name];
+              const itemUnlocked = !!dData.unlocked;
+              const itemEquipped = equippedDraco === name;
+              const isSelected = selectedName === name;
+
+              return (
+                <button
+                  key={name}
+                  onClick={() => {
+                    soundService.playClick();
+                    setSelectedName(name);
+                  }}
+                  className="flex flex-col items-center justify-center p-1.5 rounded-2xl transition-all group relative cursor-pointer select-none"
+                >
+                  {/* Status Indicator Badge */}
+                  {itemEquipped ? (
+                    <span className="absolute top-1 right-2 w-3 h-3 rounded-full bg-emerald-500 ring-2 ring-white shadow-sm z-10" title="Active Companion" />
+                  ) : !itemUnlocked ? (
+                    <span className="absolute top-1 right-2 p-0.5 bg-stone-200/90 text-stone-600 rounded-full z-10 shadow-sm">
+                      <Lock className="w-2.5 h-2.5" />
+                    </span>
+                  ) : null}
+
+                  {/* Character Avatar Icon */}
+                  <div
+                    className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center transition-all ${
+                      isSelected
+                        ? 'bg-amber-500/20 ring-4 ring-amber-500 shadow-md scale-105'
+                        : itemEquipped
+                        ? 'bg-emerald-50 ring-2 ring-emerald-400 hover:scale-105'
+                        : itemUnlocked
+                        ? 'bg-stone-100 hover:bg-stone-200/70 hover:scale-105'
+                        : 'bg-stone-100/50 opacity-45 hover:opacity-90 hover:scale-105'
+                    }`}
+                  >
+                    <DracoArtwork name={name} animated={isSelected} size={44} />
+                  </div>
+
+                  {/* Character Name & Level Label */}
+                  <span className={`text-xs font-bold font-display mt-1.5 truncate max-w-full text-center ${isSelected ? 'text-amber-600 font-extrabold' : 'text-stone-800'}`}>
+                    {name}
+                  </span>
+                  <span className="text-[10px] text-stone-400 font-semibold leading-tight">
+                    {itemUnlocked ? `Lv.${dData.level || 1}` : 'Locked'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Right Panel (40% width on Desktop, Top on Mobile): Detailed Inspect Showcase */}
+        <div className="order-1 lg:order-2 lg:col-span-5 p-5 sm:p-6 rounded-3xl bg-white border border-stone-200/80 shadow-md flex flex-col justify-between space-y-4">
             {/* Top Showcase Header */}
-            <div className="flex flex-col sm:flex-row items-center sm:items-start justify-between gap-4 p-4 rounded-2xl bg-stone-50/80 border border-stone-100">
-              <div className="flex items-center gap-4">
+            <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 rounded-2xl bg-stone-50/80 border border-stone-100">
+              <div className="flex items-center gap-3.5 min-w-0 flex-1">
                 <div
-                  className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${inspectedMeta.bgGradient} p-1 shadow-md flex items-center justify-center flex-shrink-0`}
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${inspectedMeta.bgGradient} p-1 shadow-md flex items-center justify-center flex-shrink-0`}
                 >
                   <div className="w-full h-full bg-white/90 rounded-xl flex items-center justify-center">
-                    <DracoArtwork name={selectedName} animated={isEquipped} size={68} />
+                    <DracoArtwork name={selectedName} animated={isEquipped} size={52} />
                   </div>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h3 className="text-xl font-bold text-stone-900 font-display">{selectedName}</h3>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-lg font-bold text-stone-900 font-display truncate">{selectedName}</h3>
                     {isEquipped && (
-                      <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase text-emerald-700 bg-emerald-100 rounded-full">
+                      <span className="px-2 py-0.5 text-[9px] font-extrabold uppercase text-emerald-700 bg-emerald-100 rounded-full shrink-0">
                         EQUIPPED
                       </span>
                     )}
                   </div>
-                  <p className="text-xs font-semibold text-stone-500 mt-0.5">{inspectedMeta.role}</p>
-                  <p className="text-[11px] text-stone-400 mt-1">
+                  <p className="text-xs font-semibold text-stone-500 mt-0.5 truncate">{inspectedMeta.role}</p>
+                  <p className="text-[11px] text-stone-400 mt-0.5 truncate">
                     {isUnlocked ? `Class Unlocked • Level ${lvl}` : `Unlock Cost: ${inspectedMeta.cost} Coins`}
                   </p>
                 </div>
               </div>
 
               {/* Main Action Button (Equip / Unlock) */}
-              <div className="w-full sm:w-auto">
+              <div className="w-full xl:w-auto shrink-0 mt-1 xl:mt-0">
                 {isUnlocked ? (
                   <button
                     disabled={isEquipped}
@@ -468,7 +496,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                       soundService.playLevelUp();
                       onSelect(selectedName);
                     }}
-                    className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 ${
+                    className={`w-full xl:w-auto px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap ${
                       isEquipped
                         ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-default'
                         : 'bg-stone-900 hover:bg-stone-800 text-white shadow-md active:scale-95'
@@ -476,13 +504,13 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   >
                     {isEquipped ? (
                       <>
-                        <Check className="w-4 h-4 text-emerald-500" />
+                        <Check className="w-4 h-4 text-emerald-500 shrink-0" />
                         Active Companion
                       </>
                     ) : (
                       <>
-                        <ArrowUpRight className="w-4 h-4" />
-                        Equip {selectedName}
+                        <ArrowUpRight className="w-4 h-4 shrink-0" />
+                        Equip Hero
                       </>
                     )}
                   </button>
@@ -493,13 +521,13 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                       soundService.playLevelUp();
                       onUnlock(selectedName, inspectedMeta.cost);
                     }}
-                    className={`w-full sm:w-auto px-5 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 ${
+                    className={`w-full xl:w-auto px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap ${
                       canAfford
                         ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-95'
                         : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
                     }`}
                   >
-                    <Coins className="w-4 h-4" />
+                    <Coins className="w-4 h-4 shrink-0" />
                     Unlock for {inspectedMeta.cost} Coins
                   </button>
                 )}

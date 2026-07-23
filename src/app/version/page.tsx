@@ -30,9 +30,41 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.1.4',
+    date: 'July 23, 2026',
+    tag: 'Stage Gimmicks & Performance Overhaul (Current)',
+    badgeColor: 'bg-rose-500 text-white font-black shadow-sm',
+    summary: 'Overhauled Sky Heavens & Primordial Core Stage Gimmicks, optimized Canvas particle rendering for smooth 60 FPS, and made falling into the void an instant death.',
+    highlights: [
+      'Volcanic Peak  will Summons fireball from lava',
+      'Frozen Citadel will Summons random ice from the sky, slowing the player',
+      'Shadow Abyss has now reduced player visibility',
+      'Celestial will Summons random thunderbolt',
+      'Sky Heavens Dragon Breath: Sky dragons fly higher in the clouds and target random elevated platforms across the upper sky.',
+      'Primordial Core Destructive Meteors: Meteors are 2x larger (36px) with warning target reticles, destroying 3-tile platform sections on impact and crushing non-boss enemies (bosses take partial damage & stun).',
+      'Bottomless Void Death: Falling off platforms out of bounds into the void now instantly counts as player death (0 HP) and opens the level retry screen.',
+      'Pristine Level Restarts: Restarting or retrying any level restores 100% of destroyed platform tiles back to original map layouts.',
+      'Canvas Performance Optimization: Eliminated hardware-taxing shadowBlur passes and capped active particles at 100 max, delivering silky-smooth 60 FPS performance.',
+      'Bug Fix - Stage Gimmick DOT Death: Damage over time from dragon breath zones (fire, poison, ice), lava burn, and other stage hazards now properly kills the player when HP reaches 0.',
+    ],
+  },
+  {
+    version: '0.1.3',
+    date: 'July 23, 2026',
+    tag: 'Bombamon Unleashed!',
+    badgeColor: 'bg-orange-500 text-white font-black shadow-sm',
+    summary: 'Introduces Bombamon, the explosive dragon hero featuring Homing Bomb Rock skill and Carpet Bombing ultimate.',
+    highlights: [
+      'New Hero - Bombamon: Explosive dragon hero featuring Fire Breath basic attack, Homing Bomb Rock skill, and Carpet Bombing ultimate.',
+      'Homing Bomb Rock & Ground Igniter: Throws a rock homing in on enemies within 1000px range. Ignites 3-block ground burn for 2s on impact.',
+      'Carpet Bombing Ultimate: Dragon flies 8 blocks high across screen left-to-right, breathing fire that ignites platforms for 5s.',
+      'Enemy Burn Status & Death Explosions: Lit enemies run faster while burning and linger burning 2s outside fire. Defeated burning units explode dealing 120 area damage!',
+    ],
+  },
+  {
     version: '0.1.2',
     date: 'July 23, 2026',
-    tag: 'Mobile & Gameplay Polish (Current)',
+    tag: 'Mobile & Gameplay Polish',
     badgeColor: 'bg-cyan-500 text-white font-black shadow-sm',
     summary: 'Enhanced the overall game screen with Death Zone animations, premium feedback, and optimized controls support for mobile players.',
     highlights: [
@@ -140,8 +172,8 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  // Only the latest version ('0.1.2') is opened by default!
-  const [openVersion, setOpenVersion] = useState<string | null>('0.1.2');
+  // Only the latest version ('0.1.4') is opened by default!
+  const [openVersion, setOpenVersion] = useState<string | null>('0.1.4');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();

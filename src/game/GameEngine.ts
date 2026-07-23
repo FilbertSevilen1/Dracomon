@@ -1,6 +1,7 @@
 import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
+import { stageGimmickManager } from './StageGimmickManager';
 
 interface FloatingText {
   x: number;
@@ -32,11 +33,13 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
   hitEnemyIds?: number[];
+  isHoming?: boolean;
+  groundBurnOnImpact?: boolean;
 }
 
 interface Pickup {
@@ -47,6 +50,16 @@ interface Pickup {
   type: 'coin' | 'potion' | 'upgrade_stone';
   amount: number;
   collected: boolean;
+}
+
+interface GroundBurnZone {
+  id: number;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  timer: number;
+  duration: number;
 }
 
 interface Enemy {
@@ -80,6 +93,9 @@ interface Enemy {
   isImmortal?: boolean;
   stunTimer?: number;
   damageAcc?: number;
+  burnTimer?: number;
+  burnLingerTimer?: number;
+  burnTickTimer?: number;
 }
 
 export class GameEngine {
@@ -261,6 +277,21 @@ export class GameEngine {
   private shadowmonUltTimer: number = 0;
   private shadowmonUltStacksUsed: number = 0;
 
+  // Bombamon Ground Burn & Carpet Bombing State
+  private groundBurnZones: GroundBurnZone[] = [];
+  private groundBurnIdCounter: number = 0;
+  private carpetBombingActive: boolean = false;
+  private carpetBombingTimer: number = 0;
+  private carpetBombingChannelTimer: number = 0;
+  private carpetBombingSpreadRadius: number = 0;
+  private carpetBombingX: number = 0;
+  private carpetBombingY: number = 0;
+  private carpetBombingStartX: number = 0;
+  private carpetBombingStartY: number = 0;
+  private carpetBombingFireStreamTimer: number = 0;
+
+  private stageNum: number;
+
   constructor(
     canvas: HTMLCanvasElement,
     stageNum: number,
@@ -282,6 +313,7 @@ export class GameEngine {
     if (!context) throw new Error('Could not get 2D canvas context');
     this.ctx = context;
 
+    this.stageNum = stageNum;
     this.level = getLevel(stageNum);
     this.selectedDraco = selectedDraco;
     this.stats = stats;
@@ -330,11 +362,15 @@ export class GameEngine {
   }
 
   private initLevelEntities(preservePlayerPos = false) {
+    this.level = getLevel(this.stageNum);
     this.enemies = [];
     this.projectiles = [];
     this.pickups = [];
     this.particles = [];
     this.floatingTexts = [];
+    this.groundBurnZones = [];
+    this.carpetBombingActive = false;
+    stageGimmickManager.reset();
 
     const grid = this.getActiveGrid();
     let maxCols = 0;
@@ -1042,6 +1078,35 @@ export class GameEngine {
         isBasic: true
       } as any);
       this.spawnDustParticles(slashX, slashY, 8, '#ef4444');
+    } else if (this.selectedDraco === 'Bombamon') {
+      soundService.playShoot();
+      // Ranged Fire Breath Projectile
+      const fireVx = this.pFacing * (this.stats.speed + 7);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 22,
+        y: this.py + this.pHeight / 2 - 8,
+        vx: fireVx,
+        vy: 0,
+        width: 22,
+        height: 16,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 1.15),
+        color: '#f97316',
+        type: 'fireball'
+      });
+      // Fiery breath particles
+      for (let p = 0; p < 8; p++) {
+        this.particles.push({
+          x: slashX,
+          y: slashY + (Math.random() - 0.5) * 12,
+          vx: this.pFacing * (Math.random() * 5 + 3),
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 5 + 3,
+          color: p % 2 === 0 ? '#f97316' : '#fef08a',
+          life: 14,
+          maxLife: 14
+        });
+      }
     } else {
       // Jumpmon Melee Sword Swing
       soundService.playHit();
@@ -1325,6 +1390,39 @@ export class GameEngine {
         type: 'dark_energy' as any,
         life: 12
       } as any);
+    } else if (this.selectedDraco === 'Bombamon') {
+      // HOMING BOMB ROCK & 3-BLOCK GROUND IGNITER (1000px Homing Range)
+      soundService.playShoot();
+      this.specialCooldown = 180; // 3.0s cooldown
+      const rockVx = this.pFacing * 8.5;
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 24,
+        y: this.py + this.pHeight / 2 - 12,
+        vx: rockVx,
+        vy: -3.5,
+        width: 24,
+        height: 24,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 2.4),
+        color: '#78350f',
+        type: 'homing_bomb' as any,
+        isHoming: true,
+        groundBurnOnImpact: true
+      } as any);
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'HOMING BOMB ROCK! 🪨💣🔥', '#ea580c');
+
+      for (let p = 0; p < 12; p++) {
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: (Math.random() - 0.5) * 6,
+          vy: (Math.random() - 0.5) * 6,
+          size: Math.random() * 5 + 3,
+          color: p % 2 === 0 ? '#ea580c' : '#f59e0b',
+          life: 16,
+          maxLife: 16
+        });
+      }
     }
   }
 
@@ -1740,6 +1838,42 @@ export class GameEngine {
         });
       }
     }
+    else if (this.selectedDraco === 'Bombamon') {
+      soundService.playLevelUp();
+      this.carpetBombingActive = true;
+      this.carpetBombingChannelTimer = 35; // 35 frames (~0.6s) mid-air channeling phase
+      this.carpetBombingTimer = 120; // 120 frames flame breath duration (~2 seconds)
+      this.carpetBombingSpreadRadius = 0; // Expands from center outwards to left and right!
+      this.carpetBombingStartX = this.px;
+      this.carpetBombingStartY = this.py;
+      this.carpetBombingX = this.px;
+      // Fly at 8 levels (320px = 8 * 40px) above standing platform!
+      this.carpetBombingY = Math.max(30, this.py - 8 * 40);
+      this.carpetBombingFireStreamTimer = 0;
+
+      // 1. CAMERA ZOOM (1.5x Zoom during carpet bombing initiation focused on Bombamon)
+      this.cameraZoom = 1.5;
+      this.cameraZoomTargetX = this.carpetBombingX + this.pWidth / 2;
+      this.cameraZoomTargetY = this.carpetBombingY + this.pHeight / 2;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'CHARGING CARPET BOMBING... 🐉🔥', '#f97316');
+      this.screenShake = 35;
+
+      for (let p = 0; p < 30; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 2,
+          size: Math.random() * 8 + 4,
+          color: p % 3 === 0 ? '#f97316' : p % 3 === 1 ? '#ea580c' : '#fef08a',
+          life: 25,
+          maxLife: 25
+        });
+      }
+    }
 
     this.birdX = this.px;
     this.birdY = this.py - 50;
@@ -1795,6 +1929,43 @@ export class GameEngine {
   }
 
   private defeatEnemy(enemy: Enemy) {
+    // Bombamon Burn Death Explosion: If unit dies while on fire, explode dealing small area damage (120 damage / energy blast)
+    if ((enemy.burnTimer && enemy.burnTimer > 0) || (enemy.burnLingerTimer && enemy.burnLingerTimer > 0)) {
+      soundService.playHit();
+      this.screenShake = 22;
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'BOOM! BURN EXPLOSION! 💥 (120 DMG)', '#f97316');
+
+      // 120 Explosion AoE damage to all surrounding enemies within 120px
+      const expX = enemy.x + enemy.width / 2;
+      const expY = enemy.y + enemy.height / 2;
+      this.enemies.forEach(other => {
+        if (other.id !== enemy.id && other.hp > 0) {
+          const dist = Math.hypot(other.x + other.width / 2 - expX, other.y + other.height / 2 - expY);
+          if (dist <= 120) {
+            this.damageEnemy(other, 120);
+            other.vx = (other.x > expX ? 1 : -1) * 5.0;
+            other.vy = -4.0;
+          }
+        }
+      });
+
+      // Explosion flame particles
+      for (let p = 0; p < 25; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 8 + 3;
+        this.particles.push({
+          x: expX,
+          y: expY,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 2,
+          size: Math.random() * 7 + 3,
+          color: p % 3 === 0 ? '#f97316' : p % 3 === 1 ? '#ea580c' : '#fef08a',
+          life: 22,
+          maxLife: 22
+        });
+      }
+    }
+
     // Increment Shadowmon Dark Soul Stacks on enemy defeat (max 5)
     if (this.selectedDraco === 'Shadowmon') {
       const oldStacks = this.shadowmonStacks;
@@ -3057,7 +3228,7 @@ export class GameEngine {
     if (touchedSwamp && this.pHP > 0) {
       this.pHP = 0;
       this.skeletonDeathTimer = 90; // 1.5s melting acid skeleton animation
-      soundService.playHit();
+      soundService.playLavaDeath(); // Sizzling acid meltdown SFX 🌋☠️
       this.callbacks.onHpChange?.(0, this.pMaxHP);
       this.addFloatingText(pxMid, this.py - 20, 'TOXIC ACID SWAMP MELTDOWN! ☠️🧪', '#22c55e');
 
@@ -3080,15 +3251,13 @@ export class GameEngine {
     const touchedHazardPool = this.getTileSymbol(pxMid, pyFeet) === '*' || this.getTileSymbol(this.px + 4, pyFeet) === '*' || this.getTileSymbol(this.px + this.pWidth - 4, pyFeet) === '*';
     if (touchedHazardPool && this.pHP > 0 && (this.skeletonDeathTimer || 0) <= 0 && (this.frozenDeathTimer || 0) <= 0 && (this.electrocutionDeathTimer || 0) <= 0 && (this.reaperDeathTimer || 0) <= 0) {
       this.pHP = 0;
-      soundService.playHit();
       this.callbacks.onHpChange?.(0, this.pMaxHP);
 
-      const isFrozenCitadel = this.level.name.includes('Frozen') || this.level.name.includes('Stage 4');
-      const isTemple = this.level.name.includes('Temple') || this.level.name.includes('Celestial') || this.level.name.includes('Crystal') || this.level.name.includes('Stage 6');
-      const isShadowAbyss = this.level.name.includes('Shadow') || this.level.name.includes('Abyss') || this.level.name.includes('Stage 5');
+      const themeType = this.level.theme.type;
 
-      if (isShadowAbyss) {
+      if (themeType === 'shadow') {
         // REAPER SCYTHE DEATH ZONE (Slashed by the Grim Reaper 💀⚔️)
+        soundService.playScytheDeath(); // Grim Reaper Scythe Death SFX
         this.reaperDeathTimer = 90; // 1.5s reaper slash death animation
         this.pvx = 0;
         this.pvy = 0;
@@ -3108,8 +3277,9 @@ export class GameEngine {
             maxLife: 35
           });
         }
-      } else if (isTemple) {
+      } else if (themeType === 'temple') {
         // INSTANT ELECTROCUTION DEATH (Summon Divine Thunderbolt ⚡⚡)
+        soundService.playThunderboltDeath(); // Divine Thunderbolt Electrocution SFX
         this.electrocutionDeathTimer = 90;
         this.pvx = 0;
         this.pvy = 0;
@@ -3129,8 +3299,9 @@ export class GameEngine {
             maxLife: 35
           });
         }
-      } else if (isFrozenCitadel) {
+      } else if (themeType === 'ice') {
         // INSTANT SUB-ZERO FREEZE DEATH
+        soundService.playIceDeath(); // Sub-Zero Flash Freeze Death SFX
         this.frozenDeathTimer = 999999;
         this.pvx = 0;
         this.pvy = 0;
@@ -3154,6 +3325,7 @@ export class GameEngine {
         }, 1000);
       } else {
         // MOLTEN LAVA MELTDOWN DEATH (Melting Skeleton)
+        soundService.playLavaDeath(); // Molten Lava Sizzle Death SFX
         this.skeletonDeathTimer = 90;
         this.addFloatingText(pxMid, this.py - 20, 'MOLTEN LAVA MELTED! 🌋🔥', '#ef4444');
 
@@ -3172,8 +3344,74 @@ export class GameEngine {
       }
     }
 
+    // Update Stage Gimmicks (Volcano fireballs, Frozen snow slow, Shadow fog blindness, Temple thunderbolts, Heavens falling platforms, Core meteors)
+    stageGimmickManager.update(
+      this.level.theme.type,
+      this.px,
+      this.py,
+      this.pWidth,
+      this.pHeight,
+      this.pHP,
+      this.pMaxHP,
+      this.getActiveGrid(),
+      this.level.tileSize,
+      this.enemies,
+      {
+        onDamagePlayer: (dmg, reason) => {
+          this.pHP = Math.max(0, this.pHP - dmg);
+          this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+          if (this.pHP <= 0) {
+            this.callbacks.onPlayerDeath();
+          }
+        },
+        onInstaKillPlayer: (reason) => {
+          if (this.pHP <= 0 && (this.electrocutionDeathTimer > 0 || this.skeletonDeathTimer > 0 || this.reaperDeathTimer > 0)) return;
+          this.pHP = 0;
+          this.callbacks.onHpChange?.(0, this.pMaxHP);
+
+          if (reason.includes('Thunderbolt')) {
+            soundService.playThunderboltDeath();
+            this.electrocutionDeathTimer = 90; // 1.5s electrocution death animation & game over transition!
+            this.screenShake = 35;
+            this.pvx = 0;
+            this.pvy = 0;
+          } else if (reason.includes('Meteor')) {
+            soundService.playLavaDeath();
+            this.skeletonDeathTimer = 90; // Crushed skeleton death animation!
+            this.screenShake = 40;
+            this.pvx = 0;
+            this.pvy = 0;
+          } else {
+            this.callbacks.onPlayerDeath();
+          }
+        },
+        addFloatingText: (x, y, text, color) => this.addFloatingText(x, y, text, color),
+        spawnParticles: (x, y, color, count) => this.spawnDustParticles(x, y, count, color),
+        setGridTile: (r, c, char) => {
+          const grid = this.getActiveGrid();
+          if (grid[r] && c >= 0 && c < grid[r].length) {
+            grid[r] = grid[r].substring(0, c) + char + grid[r].substring(c + 1);
+          }
+        },
+        onDestroyPickups: (r, c) => {
+          const ts = this.level.tileSize;
+          const px = c * ts + ts / 2;
+          const py = r * ts + ts / 2;
+          this.pickups.forEach(p => {
+            if (!p.collected && Math.hypot(p.x + p.width / 2 - px, p.y + p.height / 2 - py) < ts) {
+              p.collected = true;
+              this.spawnDustParticles(p.x + p.width / 2, p.y + p.height / 2, 8, '#ef4444');
+            }
+          });
+        }
+      }
+    );
+
     // Horizontal Movement
     let speedMultiplier = 1.0;
+    if (stageGimmickManager.playerSlowTimer > 0) {
+      speedMultiplier *= 0.5; // Frostbite slow penalty!
+    }
 
     if (this.shieldmonChargeActive) {
       this.pvx = this.pFacing * 18.0; // Maintain constant 18.0 speed for 3s portal rampage charge!
@@ -3371,14 +3609,13 @@ export class GameEngine {
       }
     }
 
-    // Out of bounds (falling into sky/chasm)
-    if (this.py > this.levelHeight + 100) {
-      this.handlePlayerHit(6, this.px);
-      // Respawn near the top
-      this.px = Math.max(100, this.px - 200);
-      this.py = 50;
-      this.pvx = 0;
-      this.pvy = 0;
+    // Out of bounds (falling into bottomless void / chasm = Instant Death!)
+    if (this.py > this.levelHeight + 50 && this.pHP > 0) {
+      this.pHP = 0;
+      this.callbacks.onHpChange?.(0, this.pMaxHP);
+      soundService.playHit();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'FELL INTO THE VOID! 💀', '#ef4444');
+      this.callbacks.onPlayerDeath();
     }
 
     // Trampoline Bouncing check
@@ -3458,7 +3695,109 @@ export class GameEngine {
         }
       }
 
-      if ((proj as any).type === 'bomb') {
+      if ((proj as any).type === 'homing_bomb') {
+        // HOMING ROCK LOGIC (Homing if enemy near 1000px)
+        let nearestEnemy: Enemy | null = null;
+        let minDistance = 1000;
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const dist = Math.hypot(enemy.x + enemy.width / 2 - (proj.x + proj.width / 2), enemy.y + enemy.height / 2 - (proj.y + proj.height / 2));
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestEnemy = enemy;
+          }
+        });
+
+        if (nearestEnemy) {
+          const angle = Math.atan2((nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2 - proj.y, (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 - proj.x);
+          proj.vx = Math.cos(angle) * 9.0;
+          proj.vy = Math.sin(angle) * 9.0;
+        } else {
+          proj.vy = (proj.vy || -3.5) + 0.25; // Standard arc if no target
+        }
+
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        // Spawn rock flame particles
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            size: Math.random() * 5 + 2,
+            color: '#ea580c',
+            life: 12,
+            maxLife: 12
+          });
+        }
+
+        // Ground / Wall Collision -> Ignite 3-block ground burn zone for 2 seconds (120 frames)!
+        const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height) || this.checkPlatformOneWay(proj.x + proj.width / 2, proj.y + proj.height) || proj.x < 0 || proj.x > this.levelWidth || proj.y > this.levelHeight;
+        if (hitSolid) {
+          soundService.playHit();
+          this.screenShake = 18;
+
+          // Find standing ground platform Y underneath impact point
+          const dropX = proj.x + proj.width / 2;
+          let groundY = this.levelHeight - 40;
+          const ts = this.level.tileSize;
+          const col = Math.floor(dropX / ts);
+
+          const grid = this.getActiveGrid();
+          if (grid.length > 0 && col >= 0 && col < (grid[0]?.length || 0)) {
+            for (let r = 0; r < grid.length; r++) {
+              const char = grid[r][col];
+              if (char === '#' || char === '=') {
+                groundY = r * ts;
+                break;
+              }
+            }
+          }
+
+          // Ignite 3-block ground area (120px wide) flush ON THE GROUND surface for 2 seconds (120 frames)!
+          this.groundBurnZones.push({
+            id: this.groundBurnIdCounter++,
+            x: dropX - 60,
+            y: groundY,
+            width: 120,
+            height: 20,
+            timer: 120,
+            duration: 120
+          });
+
+          // Explosion splash damage to surrounding enemies
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const dist = Math.hypot(enemy.x + enemy.width / 2 - proj.x, enemy.y + enemy.height / 2 - proj.y);
+            if (dist <= 100) {
+              this.damageEnemy(enemy, proj.damage);
+              enemy.burnTimer = 30;
+              enemy.burnLingerTimer = 120; // 2s linger burn
+            }
+          });
+
+          // Explosion debris & flame particles
+          for (let p = 0; p < 24; p++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 8 + 2;
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd - 2,
+              size: Math.random() * 7 + 3,
+              color: p % 2 === 0 ? '#ea580c' : '#f59e0b',
+              life: 20,
+              maxLife: 20
+            });
+          }
+
+          this.projectiles.splice(index, 1);
+          return;
+        }
+      } else if ((proj as any).type === 'bomb') {
         // Bomb Physics (Gravity and bouncing)
         proj.vy = (proj.vy || 0) + 0.24;
 
@@ -3728,6 +4067,67 @@ export class GameEngine {
               }
             } else if (proj.type === 'sun_strike') {
               // Damage handled continuously in explosion phase!
+            } else if ((proj as any).type === 'homing_bomb') {
+              soundService.playHit();
+              this.screenShake = 18;
+
+              // Find standing ground platform Y underneath hit enemy/impact point
+              const dropX = enemy.x + enemy.width / 2;
+              let groundY = this.levelHeight - 40;
+              const ts = this.level.tileSize;
+              const col = Math.floor(dropX / ts);
+
+              const grid = this.getActiveGrid();
+              if (grid.length > 0 && col >= 0 && col < (grid[0]?.length || 0)) {
+                for (let r = 0; r < grid.length; r++) {
+                  const char = grid[r][col];
+                  if (char === '#' || char === '=') {
+                    groundY = r * ts;
+                    break;
+                  }
+                }
+              }
+
+              // Ignite 3-block ground area (120px wide) flush ON THE GROUND surface for 2s (120 frames)!
+              this.groundBurnZones.push({
+                id: this.groundBurnIdCounter++,
+                x: dropX - 60,
+                y: groundY,
+                width: 120,
+                height: 20,
+                timer: 120,
+                duration: 120
+              });
+
+              // Explosion splash damage to surrounding enemies
+              this.enemies.forEach(e => {
+                if (e.hp <= 0) return;
+                const dist = Math.hypot(e.x + e.width / 2 - dropX, e.y + e.height / 2 - enemy.y);
+                if (dist <= 100) {
+                  this.damageEnemy(e, proj.damage);
+                  e.burnTimer = 30;
+                  e.burnLingerTimer = 120; // 2s linger burn
+                }
+              });
+
+              // Explosion debris & flame particles
+              for (let p = 0; p < 24; p++) {
+                const ang = Math.random() * Math.PI * 2;
+                const spd = Math.random() * 8 + 2;
+                this.particles.push({
+                  x: dropX,
+                  y: enemy.y + enemy.height / 2,
+                  vx: Math.cos(ang) * spd,
+                  vy: Math.sin(ang) * spd - 2,
+                  size: Math.random() * 7 + 3,
+                  color: p % 2 === 0 ? '#ea580c' : '#f59e0b',
+                  life: 20,
+                  maxLife: 20
+                });
+              }
+
+              this.projectiles.splice(index, 1);
+              projSpliced = true;
             } else {
               this.damageEnemy(enemy, proj.damage);
               this.projectiles.splice(index, 1);
@@ -4109,6 +4509,196 @@ export class GameEngine {
       }
     });
 
+    // Bombamon Carpet Bombing Air Channeling & Center-to-Left-and-Right Ground Burning
+    if (this.carpetBombingActive) {
+      this.pInvulnerableFrames = 180;
+      // Bombamon stays hovering in mid-air above standing spot!
+      this.px = this.carpetBombingStartX;
+      this.py = this.carpetBombingY;
+      this.pvx = 0;
+      this.pvy = 0;
+
+      this.cameraZoomTargetX = this.px + this.pWidth / 2;
+      this.cameraZoomTargetY = this.py + this.pHeight / 2;
+
+      if (this.carpetBombingChannelTimer > 0) {
+        // Phase 1: Mid-Air Channeling Phase
+        this.carpetBombingChannelTimer--;
+
+        // Swirling charging energy fire particles around Bombamon in air
+        if (this.frameCount % 2 === 0) {
+          const ang = Math.random() * Math.PI * 2;
+          const dist = Math.random() * 40 + 20;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + Math.cos(ang) * dist,
+            y: this.py + this.pHeight / 2 + Math.sin(ang) * dist,
+            vx: -Math.cos(ang) * 3,
+            vy: -Math.sin(ang) * 3,
+            size: Math.random() * 6 + 3,
+            color: '#f97316',
+            life: 15,
+            maxLife: 15
+          });
+        }
+
+        if (this.carpetBombingChannelTimer === 0) {
+          soundService.playShoot();
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'CARPET BOMBING FLAME BREATH! 🔥🌋', '#ef4444');
+          this.screenShake = 40;
+        }
+      } else {
+        // Phase 2: Flame Breath to Ground & Spreading Center to Left and Right!
+        this.carpetBombingTimer--;
+        this.carpetBombingFireStreamTimer++;
+
+        // Expand ground burn radius outwards from center to both LEFT and RIGHT simultaneously!
+        const maxRadius = Math.min(260, (this.canvas.width || 800) * 0.35); // 260px left + 260px right = 520px total spread!
+        if (this.carpetBombingSpreadRadius < maxRadius) {
+          this.carpetBombingSpreadRadius += 10.0;
+        }
+
+        const centerPointX = this.carpetBombingStartX + this.pWidth / 2;
+
+        // Spawn ground fire & damage enemies on BOTH LEFT (-radius) and RIGHT (+radius) fronts every 3 frames!
+        if (this.carpetBombingFireStreamTimer % 3 === 0) {
+          soundService.playShoot();
+
+          const currentRad = this.carpetBombingSpreadRadius;
+          const targets = [centerPointX - currentRad, centerPointX + currentRad, centerPointX];
+
+          targets.forEach(dropX => {
+            let groundY = this.levelHeight - 40;
+            const ts = this.level.tileSize;
+            const col = Math.floor(dropX / ts);
+
+            const grid = this.getActiveGrid();
+            if (grid.length > 0 && col >= 0 && col < (grid[0]?.length || 0)) {
+              for (let r = 0; r < grid.length; r++) {
+                const char = grid[r][col];
+                if (char === '#' || char === '=') {
+                  groundY = r * ts;
+                  break;
+                }
+              }
+            }
+
+            // Ignite platform flush on top of surface for 5 SECONDS (300 frames)!
+            this.groundBurnZones.push({
+              id: this.groundBurnIdCounter++,
+              x: dropX - 45,
+              y: groundY,
+              width: 90,
+              height: 20,
+              timer: 300,
+              duration: 300
+            });
+
+            // Damage enemies caught in expanding fire path
+            this.enemies.forEach(enemy => {
+              if (enemy.hp <= 0) return;
+              if (Math.abs(enemy.x + enemy.width / 2 - dropX) < 65) {
+                this.damageEnemy(enemy, Math.floor(this.stats.attack * 1.8));
+                enemy.burnTimer = 30;
+                enemy.burnLingerTimer = 120; // 2s linger burn
+              }
+            });
+
+            // Falling flame particles from air to ground
+            for (let f = 0; f < 3; f++) {
+              this.particles.push({
+                x: dropX + (Math.random() - 0.5) * 24,
+                y: this.py + Math.random() * Math.max(20, groundY - this.py),
+                vx: (Math.random() - 0.5) * 3,
+                vy: Math.random() * 8 + 4,
+                size: Math.random() * 7 + 3,
+                color: f % 2 === 0 ? '#ea580c' : '#fef08a',
+                life: 18,
+                maxLife: 18
+              });
+            }
+          });
+        }
+
+        if (this.carpetBombingTimer <= 0) {
+          this.carpetBombingActive = false;
+          // Return Bombamon back to standing start position!
+          this.px = this.carpetBombingStartX;
+          this.py = this.carpetBombingStartY;
+          this.pvx = 0;
+          this.pvy = 0;
+          this.cameraZoom = 1.0; // Restore camera zoom
+        }
+      }
+    }
+
+    // Ground Burn Zones tick & enemy burn contact check
+    this.groundBurnZones.forEach(zone => {
+      zone.timer--;
+
+      // Spawn fiery ground particles
+      if (this.frameCount % 4 === 0) {
+        this.particles.push({
+          x: zone.x + Math.random() * zone.width,
+          y: zone.y + zone.height - Math.random() * 8,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 4 - 1,
+          size: Math.random() * 6 + 3,
+          color: Math.random() > 0.5 ? '#f97316' : '#fef08a',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      // Check enemies standing in ground burn area
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        if (
+          enemy.x < zone.x + zone.width &&
+          enemy.x + enemy.width > zone.x &&
+          enemy.y + enemy.height >= zone.y - 12 &&
+          enemy.y <= zone.y + zone.height + 24
+        ) {
+          enemy.burnTimer = 30;
+          enemy.burnLingerTimer = 120; // 2 seconds linger outside burn area
+
+          // Periodic burn tick damage every 15 frames
+          enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
+          if (enemy.burnTickTimer % 15 === 0) {
+            this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.5)));
+            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'BURN! 🔥', '#ea580c');
+          }
+        }
+      });
+    });
+
+    // Clean up expired ground burn zones
+    this.groundBurnZones = this.groundBurnZones.filter(z => z.timer > 0);
+
+    // Enemy Burn Timers & Haste (Run Faster) Speed Boost
+    this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      if ((enemy.burnTimer || 0) > 0) enemy.burnTimer!--;
+      if ((enemy.burnLingerTimer || 0) > 0) enemy.burnLingerTimer!--;
+
+      const isBurning = (enemy.burnTimer || 0) > 0 || (enemy.burnLingerTimer || 0) > 0;
+      if (isBurning) {
+        // Run faster while on fire! (1.8x movement speed boost)
+        enemy.x += enemy.vx * 0.8;
+        if (this.frameCount % 5 === 0) {
+          this.particles.push({
+            x: enemy.x + Math.random() * enemy.width,
+            y: enemy.y + Math.random() * enemy.height,
+            vx: (Math.random() - 0.5) * 3,
+            vy: -Math.random() * 3 - 1,
+            size: Math.random() * 5 + 2,
+            color: Math.random() > 0.5 ? '#ef4444' : '#f97316',
+            life: 14,
+            maxLife: 14
+          });
+        }
+      }
+    });
+
     // Update Whitemon's Bird Familiar AI
     this.updateBirdFamiliar();
   }
@@ -4230,20 +4820,29 @@ export class GameEngine {
   }
 
   private spawnDustParticles(x: number, y: number, count: number, color = '#ffffff') {
+    if (this.particles.length > 100) {
+      this.particles.splice(0, this.particles.length - 100);
+    }
+
+    const isInferno = color === '#ef4444' || color === '#f97316' || color === '#ea580c' || color === '#f59e0b';
+    const isIce = color === '#38bdf8' || color === '#7dd3fc' || color === '#0284c7' || color === '#737373';
+    const isPoison = color === '#22c55e' || color === '#86efac' || color === '#a855f7' || color === '#15803d';
+
     for (let i = 0; i < count; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = Math.random() * 2.5 + 0.5;
-      const maxLife = Math.random() * 20 + 10;
+      const speed = Math.random() * (isInferno || isIce || isPoison ? 4.5 : 2.5) + 0.5;
+      const maxLife = Math.random() * (isInferno || isIce || isPoison ? 25 : 20) + 12;
       this.particles.push({
-        x,
-        y,
+        x: x + (Math.random() - 0.5) * (isInferno || isIce || isPoison ? 8 : 2),
+        y: y + (Math.random() - 0.5) * (isInferno || isIce || isPoison ? 8 : 2),
         vx: Math.cos(angle) * speed,
-        vy: Math.sin(angle) * speed - 1, // bias upwards
+        vy: Math.sin(angle) * speed - (isInferno ? 1.8 : isPoison ? 1.2 : 0.8),
         color,
-        size: Math.random() * 3 + 2,
+        size: Math.random() * (isInferno || isIce || isPoison ? 5 : 3) + 2,
         life: maxLife,
         maxLife,
-      });
+        type: isInferno ? 'inferno' : isIce ? 'ice' : isPoison ? 'poison' : 'general',
+      } as any);
     }
   }
 
@@ -4283,14 +4882,51 @@ export class GameEngine {
     this.cameraX = targetCamX;
     this.cameraY = targetCamY;
 
-    // Clear canvas
-    this.ctx.fillStyle = this.level.theme.skyColor;
+    // Clear canvas with rich atmospheric theme sky gradient
+    const bgGrad = this.ctx.createLinearGradient(0, 0, 0, this.canvas.height);
+    const themeType = this.level.theme.type;
+
+    if (themeType === 'forest') {
+      bgGrad.addColorStop(0, '#021a18');
+      bgGrad.addColorStop(0.5, '#042f2e');
+      bgGrad.addColorStop(1, '#065f46');
+    } else if (themeType === 'ruins') {
+      bgGrad.addColorStop(0, '#020617');
+      bgGrad.addColorStop(0.5, '#0f172a');
+      bgGrad.addColorStop(1, '#1e293b');
+    } else if (themeType === 'volcano') {
+      bgGrad.addColorStop(0, '#180202');
+      bgGrad.addColorStop(0.5, '#450a0a');
+      bgGrad.addColorStop(1, '#7f1d1d');
+    } else if (themeType === 'ice') {
+      bgGrad.addColorStop(0, '#031828');
+      bgGrad.addColorStop(0.5, '#082f49');
+      bgGrad.addColorStop(1, '#0369a1');
+    } else if (themeType === 'shadow') {
+      bgGrad.addColorStop(0, '#090518');
+      bgGrad.addColorStop(0.5, '#1e1b4b');
+      bgGrad.addColorStop(1, '#4c1d95');
+    } else if (themeType === 'temple') {
+      bgGrad.addColorStop(0, '#1a0800');
+      bgGrad.addColorStop(0.5, '#451a03');
+      bgGrad.addColorStop(1, '#78350f');
+    } else if (themeType === 'heavens') {
+      bgGrad.addColorStop(0, '#032b45');
+      bgGrad.addColorStop(0.5, '#075985');
+      bgGrad.addColorStop(1, '#0284c7');
+    } else {
+      bgGrad.addColorStop(0, '#180202');
+      bgGrad.addColorStop(0.5, '#450a0a');
+      bgGrad.addColorStop(1, '#991b1b');
+    }
+
+    this.ctx.fillStyle = bgGrad;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Grid sky background gradient details
     this.ctx.save();
-    this.ctx.globalAlpha = 0.06;
-    this.ctx.strokeStyle = '#000000';
+    this.ctx.globalAlpha = 0.04;
+    this.ctx.strokeStyle = '#ffffff';
     this.ctx.lineWidth = 1;
     for (let x = 0; x < this.canvas.width; x += 40) {
       this.ctx.beginPath();
@@ -4355,11 +4991,9 @@ export class GameEngine {
           this.ctx.lineWidth = 1.5;
           this.ctx.strokeRect(ex, ey, ts, 12);
         } else if (char === '*') {
-          const isTemple = this.level.name.includes('Temple') || this.level.name.includes('Celestial') || this.level.name.includes('Crystal') || this.level.name.includes('Stage 6');
-          const isFrozenCitadel = this.level.name.includes('Frozen') || this.level.name.includes('Stage 4');
-          const isShadowAbyss = this.level.name.includes('Shadow') || this.level.name.includes('Abyss') || this.level.name.includes('Stage 5');
+          const themeType = this.level.theme.type;
 
-          if (isShadowAbyss) {
+          if (themeType === 'shadow') {
             // Death Zone Hazard Pool (Shadow Abyss)
             this.ctx.fillStyle = '#0f0a1a'; // Void black-purple base
             this.ctx.fillRect(ex, ey, ts, ts);
@@ -4368,6 +5002,14 @@ export class GameEngine {
             const pulseAlpha = 0.65 + Math.sin(this.frameCount * 0.14 + c * 1.7) * 0.2;
             this.ctx.fillStyle = `rgba(127, 29, 29, ${pulseAlpha})`;
             this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // GLOWING NETHER SOUL FLAME UPWARD AURA FIELD (Rises 44px above death zone)
+            const auraGrad = this.ctx.createLinearGradient(ex, ey - 44, ex, ey + ts);
+            auraGrad.addColorStop(0, 'rgba(168, 85, 247, 0.0)');
+            auraGrad.addColorStop(0.5, 'rgba(168, 85, 247, 0.3)');
+            auraGrad.addColorStop(1, 'rgba(127, 29, 29, 0.6)');
+            this.ctx.fillStyle = auraGrad;
+            this.ctx.fillRect(ex, ey - 44, ts, ts + 44);
 
             // Ghostly scythe slash marks
             this.ctx.strokeStyle = '#a855f7';
@@ -4386,7 +5028,7 @@ export class GameEngine {
               this.ctx.arc(ex + 28, ey + 22, 2.5, 0, Math.PI * 2);
               this.ctx.fill();
             }
-          } else if (isTemple) {
+          } else if (themeType === 'temple') {
             // Electric Field Hazard Pool (Crystal/Celestial Temple)
             this.ctx.fillStyle = '#1e1b4b'; // Dark indigo electric base
             this.ctx.fillRect(ex, ey, ts, ts);
@@ -4395,6 +5037,14 @@ export class GameEngine {
             const pulseAlpha = 0.7 + Math.sin(this.frameCount * 0.18 + c * 1.3) * 0.25;
             this.ctx.fillStyle = `rgba(234, 179, 8, ${pulseAlpha})`;
             this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // GLOWING ELECTRIC LIGHTNING UPWARD AURA FIELD (Rises 44px above thunder zone)
+            const auraGrad = this.ctx.createLinearGradient(ex, ey - 44, ex, ey + ts);
+            auraGrad.addColorStop(0, 'rgba(234, 179, 8, 0.0)');
+            auraGrad.addColorStop(0.5, 'rgba(234, 179, 8, 0.35)');
+            auraGrad.addColorStop(1, 'rgba(56, 189, 248, 0.6)');
+            this.ctx.fillStyle = auraGrad;
+            this.ctx.fillRect(ex, ey - 44, ts, ts + 44);
 
             // Crackling lightning arc lines across tile
             this.ctx.strokeStyle = '#fef08a';
@@ -4416,7 +5066,7 @@ export class GameEngine {
               this.ctx.arc(ex + 28, ey + 20, 2.5, 0, Math.PI * 2);
               this.ctx.fill();
             }
-          } else if (isFrozenCitadel) {
+          } else if (themeType === 'ice') {
             // Freezing Point Hazard Pool (Stage 4 Frozen Citadel)
             this.ctx.fillStyle = '#0369a1'; // deep sub-zero glacial bed
             this.ctx.fillRect(ex, ey, ts, ts);
@@ -4425,6 +5075,14 @@ export class GameEngine {
             const pulseAlpha = 0.85 + Math.sin(this.frameCount * 0.12 + c) * 0.15;
             this.ctx.fillStyle = `rgba(56, 189, 248, ${pulseAlpha})`;
             this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // GLOWING GLACIAL FROST MIST UPWARD AURA FIELD (Rises 44px above ice hazard)
+            const auraGrad = this.ctx.createLinearGradient(ex, ey - 44, ex, ey + ts);
+            auraGrad.addColorStop(0, 'rgba(56, 189, 248, 0.0)');
+            auraGrad.addColorStop(0.5, 'rgba(125, 211, 252, 0.3)');
+            auraGrad.addColorStop(1, 'rgba(3, 105, 161, 0.55)');
+            this.ctx.fillStyle = auraGrad;
+            this.ctx.fillRect(ex, ey - 44, ts, ts + 44);
 
             // Frost crystal surface ripples & glittering ice sparkles
             this.ctx.fillStyle = '#7dd3fc';
@@ -4447,6 +5105,14 @@ export class GameEngine {
             const pulseAlpha = 0.8 + Math.sin(this.frameCount * 0.12 + c) * 0.15;
             this.ctx.fillStyle = `rgba(239, 68, 68, ${pulseAlpha})`;
             this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            // GLOWING MOLTEN FIERY HEATWAVE UPWARD AURA FIELD (Rises 44px above lava)
+            const auraGrad = this.ctx.createLinearGradient(ex, ey - 44, ex, ey + ts);
+            auraGrad.addColorStop(0, 'rgba(239, 68, 68, 0.0)');
+            auraGrad.addColorStop(0.5, 'rgba(249, 115, 22, 0.35)');
+            auraGrad.addColorStop(1, 'rgba(254, 240, 138, 0.6)');
+            this.ctx.fillStyle = auraGrad;
+            this.ctx.fillRect(ex, ey - 44, ts, ts + 44);
 
             // Molten magma surface ripples & inner fiery glow
             this.ctx.fillStyle = '#f97316';
@@ -4475,8 +5141,8 @@ export class GameEngine {
           this.ctx.arc(ex + ts / 2 - 8 + wave, ey + 10, 5, 0, Math.PI * 2);
           this.ctx.arc(ex + ts / 2 + 8 + wave, ey + 26, 5, 0, Math.PI * 2);
           this.ctx.fill();
-        } else if (char === 'X' && (this.level.name.includes('Jungle') || this.level.name.includes('Stage 10'))) {
-          // Toxic Poison Swamp
+        } else if (char === 'X') {
+          // Toxic Poison Swamp Hazard Pool
           this.ctx.fillStyle = '#052e16'; // dark deep swamp bed
           this.ctx.fillRect(ex, ey, ts, ts);
 
@@ -4484,6 +5150,14 @@ export class GameEngine {
           const pulseAlpha = 0.65 + Math.sin(this.frameCount * 0.1 + c) * 0.2;
           this.ctx.fillStyle = `rgba(34, 197, 94, ${pulseAlpha})`;
           this.ctx.fillRect(ex, ey + 6, ts, ts - 6);
+
+          // GLOWING TOXIC GREEN UPWARD VAPOR AURA FIELD (Rises 44px above swamp)
+          const auraGrad = this.ctx.createLinearGradient(ex, ey - 44, ex, ey + ts);
+          auraGrad.addColorStop(0, 'rgba(34, 197, 94, 0.0)');
+          auraGrad.addColorStop(0.5, 'rgba(34, 197, 94, 0.35)');
+          auraGrad.addColorStop(1, 'rgba(134, 239, 172, 0.6)');
+          this.ctx.fillStyle = auraGrad;
+          this.ctx.fillRect(ex, ey - 44, ts, ts + 44);
 
           // Acid surface bubbles
           if ((this.frameCount + c * 7) % 30 < 15) {
@@ -5641,12 +6315,60 @@ export class GameEngine {
       this.ctx.restore();
     });
 
-    // Draw Particles
+    // Draw Particles (Optimized fast rendering without costly shadowBlur!)
     this.particles.forEach(part => {
-      this.ctx.fillStyle = part.color;
-      this.ctx.globalAlpha = part.life / part.maxLife;
-      this.ctx.fillRect(part.x, part.y, part.size, part.size);
-      this.ctx.globalAlpha = 1.0;
+      this.ctx.save();
+      const alpha = Math.max(0, part.life / part.maxLife);
+      this.ctx.globalAlpha = alpha;
+
+      const pType = (part as any).type || (part.color === '#ef4444' || part.color === '#f97316' || part.color === '#ea580c' ? 'inferno' : part.color === '#22c55e' || part.color === '#86efac' || part.color === '#a855f7' ? 'poison' : part.color === '#38bdf8' || part.color === '#7dd3fc' ? 'ice' : 'general');
+
+      if (pType === 'inferno') {
+        // Fast soft glow halo (No shadowBlur!)
+        this.ctx.fillStyle = part.color;
+        this.ctx.globalAlpha = alpha * 0.35;
+        this.ctx.beginPath();
+        this.ctx.arc(part.x, part.y, part.size * 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.globalAlpha = alpha;
+
+        this.ctx.fillStyle = part.color;
+        this.ctx.beginPath();
+        this.ctx.arc(part.x, part.y, Math.max(1, part.size / 2), 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Hot yellow/white core highlight
+        this.ctx.fillStyle = alpha > 0.4 ? '#ffffff' : '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.arc(part.x, part.y, Math.max(0.8, part.size * 0.25), 0, Math.PI * 2);
+        this.ctx.fill();
+      } else if (pType === 'ice') {
+        this.ctx.fillStyle = part.color;
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+
+        const r = Math.max(1, part.size / 2);
+        this.ctx.beginPath();
+        this.ctx.arc(part.x, part.y, r, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+      } else if (pType === 'poison') {
+        this.ctx.fillStyle = part.color;
+        this.ctx.beginPath();
+        this.ctx.arc(part.x, part.y, Math.max(1, part.size / 2), 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Acid bubble reflection dot
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+        this.ctx.beginPath();
+        this.ctx.arc(part.x - part.size * 0.15, part.y - part.size * 0.15, Math.max(0.5, part.size * 0.15), 0, Math.PI * 2);
+        this.ctx.fill();
+      } else {
+        this.ctx.fillStyle = part.color;
+        this.ctx.fillRect(part.x, part.y, part.size, part.size);
+      }
+
+      this.ctx.restore();
     });
 
     // Draw Bird Familiar (Whitemon)
@@ -5759,6 +6481,11 @@ export class GameEngine {
       accentColor = '#881337'; // Crimson Red
       bellyColor = '#9f1239'; // Deep Crimson
       detailColor = '#ef4444'; // Glowing Red Eyes & Accents
+    } else if (this.selectedDraco === 'Bombamon') {
+      mainColor = '#ea580c'; // Vibrant Orange
+      accentColor = '#c2410c'; // Flame Red / Dark Orange
+      bellyColor = '#fef08a'; // Bright Yellow
+      detailColor = '#ef4444'; // Red Accents
     }
 
     const px = this.px;
@@ -6374,6 +7101,81 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    // Bombamon Ground Burn Zones Rendering (Flaming platforms flush on surface)
+    this.groundBurnZones.forEach(zone => {
+      this.ctx.save();
+      const alpha = Math.min(1.0, zone.timer / 20);
+      this.ctx.globalAlpha = alpha;
+
+      // Fiery ground base gradient overlay sitting flush on top of platform surface
+      const burnGrad = this.ctx.createLinearGradient(zone.x, zone.y - 8, zone.x, zone.y + 6);
+      burnGrad.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
+      burnGrad.addColorStop(0.4, 'rgba(249, 115, 22, 0.75)');
+      burnGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+      this.ctx.fillStyle = burnGrad;
+      this.ctx.fillRect(zone.x, zone.y - 4, zone.width, 8);
+
+      // Flickering animated flame tongues along the burned platform surface rising UPWARDS
+      const numFlames = Math.floor(zone.width / 10);
+      for (let f = 0; f < numFlames; f++) {
+        const fx = zone.x + f * 10 + 5;
+        const fh = 10 + Math.sin(this.frameCount * 0.4 + f * 1.5) * 6;
+
+        this.ctx.fillStyle = f % 2 === 0 ? '#f97316' : '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.moveTo(fx - 5, zone.y + 2);
+        this.ctx.lineTo(fx, zone.y - fh);
+        this.ctx.lineTo(fx + 5, zone.y + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+
+      this.ctx.restore();
+    });
+
+    // Bombamon Carpet Bombing Sky Fire Shower Stream
+    if (this.carpetBombingActive) {
+      this.ctx.save();
+      const bx = this.px + this.pWidth / 2;
+      const by = this.py + this.pHeight / 2;
+
+      if (this.carpetBombingChannelTimer > 0) {
+        // Phase 1: Charging Air Channel Ring
+        const chargeProgress = 1 - (this.carpetBombingChannelTimer / 35);
+        const rad = 25 + chargeProgress * 30;
+        this.ctx.strokeStyle = '#f97316';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.arc(bx, by, rad, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = 'rgba(254, 240, 138, 0.4)';
+        this.ctx.beginPath();
+        this.ctx.arc(bx, by, rad * 0.7, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else {
+        // Phase 2: Expanding Cone Flame Breath to Ground (Center to Left and Right!)
+        const rad = Math.max(40, this.carpetBombingSpreadRadius);
+        const streamGrad = this.ctx.createLinearGradient(bx, by, bx, by + 400);
+        streamGrad.addColorStop(0, 'rgba(254, 240, 138, 0.95)');
+        streamGrad.addColorStop(0.3, 'rgba(249, 115, 22, 0.85)');
+        streamGrad.addColorStop(0.85, 'rgba(239, 68, 68, 0.75)');
+        streamGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
+
+        this.ctx.fillStyle = streamGrad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx - 12, by + 12);
+        this.ctx.lineTo(bx + 12, by + 12);
+        this.ctx.lineTo(bx + rad, by + 420);
+        this.ctx.lineTo(bx - rad, by + 420);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+
+      this.ctx.restore();
+    }
+
     // Toxic Acid Skeleton Death Animation (when player melted in Poison Swamp)
     if (this.skeletonDeathTimer > 0) {
       this.skeletonDeathTimer--;
@@ -6902,6 +7704,22 @@ export class GameEngine {
 
       this.ctx.restore();
     }
+
+    // Render Stage Gimmick Visuals (warnings, thunderbolts, meteors, falling platforms, fog of war)
+    stageGimmickManager.draw(
+      this.ctx,
+      this.level.theme.type,
+      this.px,
+      this.py,
+      this.pWidth,
+      this.pHeight,
+      this.canvas.width,
+      this.canvas.height,
+      this.cameraX,
+      this.cameraY,
+      this.getActiveGrid(),
+      this.level.tileSize
+    );
 
     this.ctx.restore(); // Restore Camera transform
 

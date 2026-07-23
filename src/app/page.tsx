@@ -7,7 +7,6 @@ import { DracoSelection } from '../components/DracoSelection';
 import { InventoryModal } from '../components/InventoryModal';
 import { LevelUpModal } from '../components/LevelUpModal';
 import { SettingsModal } from '../components/SettingsModal';
-import { VersionHistoryModal } from '../components/VersionHistoryModal';
 import { GameScreen } from '../components/GameScreen';
 import { Navbar } from '../components/Navbar';
 import { soundService } from '../services/sound';
@@ -392,6 +391,37 @@ export default function Home() {
           <rect x="53" y="44" width="5" height="4" fill="#ef4444" />
           <circle cx="50" cy="62" r="7" fill="#881337" stroke="#ef4444" strokeWidth="1.5" />
           <text x="50" y="65" textAnchor="middle" fill="#ffffff" fontSize="9" fontWeight="900" fontFamily="monospace">5</text>
+        </svg>
+      ),
+    },
+    {
+      name: 'Bombamon',
+      title: 'Fiery Carpet Bomber',
+      cost: 350,
+      role: 'Explosive / Carpet Bomber',
+      lore: 'Forged in the heart of Volcanic Peak. Bombamon launches fire projectiles and throws homing rocks that ignite 3-block ground burn zones for 2s. Unleashes Carpet Bombing to fly high across the sky, shower fire streams onto platforms for 5s, hasten ignited foes, and detonate dying enemies into 120-damage AoE explosions!',
+      signatureSkill: 'Homing Bomb Rock (1000px Range • 3-Block Ground Igniter 2s)',
+      ultimateSkill: 'Carpet Bombing (8 Blocks High • 5s Platform Burn • Haste & Death Explosions)',
+      color: 'orange',
+      tagColor: 'bg-orange-100 text-orange-950 border-orange-300 font-mono',
+      attackType: 'Ranged Fire Breath & Homing Explosive Rocks',
+      hp: saveData.dracos['Bombamon']?.hp || 21,
+      atk: saveData.dracos['Bombamon']?.attack || 8,
+      def: saveData.dracos['Bombamon']?.defense || 3,
+      spd: saveData.dracos['Bombamon']?.speed || 7,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-medium">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
+          <path d="M 28 45 Q 8 22 32 34 Z" fill="#ea580c" stroke="#c2410c" strokeWidth="1.5" />
+          <path d="M 72 45 Q 92 22 68 34 Z" fill="#ea580c" stroke="#c2410c" strokeWidth="1.5" />
+          <rect x="34" y="34" width="32" height="42" rx="10" fill="#f97316" stroke="#c2410c" strokeWidth="2.5" />
+          <path d="M 36 30 L 30 16 L 42 24 Z" fill="#ea580c" />
+          <path d="M 64 30 L 70 16 L 58 24 Z" fill="#ea580c" />
+          <rect x="42" y="44" width="5" height="5" fill="#fef08a" />
+          <rect x="53" y="44" width="5" height="5" fill="#fef08a" />
+          <circle cx="50" cy="62" r="7" fill="#ea580c" stroke="#c2410c" strokeWidth="1.5" />
+          <text x="50" y="65" textAnchor="middle" fill="#fef08a" fontSize="10" fontWeight="900">💣</text>
         </svg>
       ),
     },
@@ -962,6 +992,40 @@ export default function Home() {
                         ) : (
                           <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
                             🔒 400C
+                          </span>
+                        )}
+                      </div>
+                    </motion.div>
+
+                    {/* Floating Island 9: Bombamon (Center Core) */}
+                    <motion.div
+                      className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group z-30 ${
+                        activeDracoName === 'Bombamon' ? 'scale-110' : ''
+                      }`}
+                      onClick={() => handleHeroSelectDraco('Bombamon', 350)}
+                      whileHover={{ scale: 1.15 }}
+                    >
+                      <div className="animate-float-medium drop-shadow-xl">
+                        {companionShowcase[8]?.svg}
+                      </div>
+                      <div className={`w-24 h-6 bg-[#ea580c] border-2 ${activeDracoName === 'Bombamon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#c2410c]'} rounded-full shadow-xl mt-1 flex flex-col overflow-hidden`}>
+                        <div className="bg-[#fef08a] h-3 mt-auto w-full" />
+                      </div>
+                      <div className="mt-1 flex flex-col items-center">
+                        <span className="text-[10px] font-extrabold text-stone-900 uppercase tracking-wider group-hover:text-orange-600 transition-colors">
+                          Bombamon
+                        </span>
+                        {activeDracoName === 'Bombamon' ? (
+                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
+                            ⚡ EQUIPPED
+                          </span>
+                        ) : saveData.dracos['Bombamon']?.unlocked ? (
+                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
+                            ✓ EQUIP
+                          </span>
+                        ) : (
+                          <span className="text-[9px] font-mono font-bold text-orange-900 bg-orange-100 border border-orange-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
+                            🔒 350C
                           </span>
                         )}
                       </div>
@@ -1940,11 +2004,6 @@ export default function Home() {
             onImportSave={importSave}
             onClose={() => setShowSettings(false)}
           />
-        )}
-
-        {/* Version History Modal */}
-        {showVersionHistory && (
-          <VersionHistoryModal onClose={() => setShowVersionHistory(false)} />
         )}
       </AnimatePresence>
 

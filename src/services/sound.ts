@@ -212,6 +212,150 @@ class SoundService {
     });
   }
 
+  // PLAY SFX: Grim Reaper Scythe Death 💀⚔️
+  public playScytheDeath() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const subOsc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    // Dark spectral blade slice sound
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(440, now);
+    osc.frequency.exponentialRampToValueAtTime(45, now + 0.4);
+
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(180, now);
+    subOsc.frequency.exponentialRampToValueAtTime(30, now + 0.5);
+
+    gain.gain.setValueAtTime(this.sfxVolume * 0.85, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+    osc.connect(gain);
+    subOsc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    subOsc.start(now);
+    osc.stop(now + 0.5);
+    subOsc.stop(now + 0.5);
+  }
+
+  // PLAY SFX: Divine Thunderbolt Electrocution Death ⚡💥
+  public playThunderboltDeath() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    
+    // 1. High-voltage lightning crackle noise
+    const bufferSize = this.ctx.sampleRate * 0.35;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const output = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      output[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(1800, now);
+    noiseFilter.Q.setValueAtTime(3.0, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(this.sfxVolume * 0.75, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+
+    // 2. Heavy thunder bass boom thud
+    const osc = this.ctx.createOscillator();
+    const oscGain = this.ctx.createGain();
+    osc.type = 'square';
+    osc.frequency.setValueAtTime(280, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 0.4);
+
+    oscGain.gain.setValueAtTime(this.sfxVolume * 0.8, now);
+    oscGain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+
+    osc.connect(oscGain);
+    oscGain.connect(this.ctx.destination);
+
+    noise.start(now);
+    osc.start(now);
+    noise.stop(now + 0.35);
+    osc.stop(now + 0.4);
+  }
+
+  // PLAY SFX: Molten Lava / Acid Meltdown Death 🌋☠️
+  public playLavaDeath() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(360, now);
+    osc.frequency.exponentialRampToValueAtTime(50, now + 0.6);
+
+    // Low-pass sizzle filter
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(800, now);
+    filter.frequency.linearRampToValueAtTime(150, now + 0.6);
+
+    gain.gain.setValueAtTime(this.sfxVolume * 0.8, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.6);
+  }
+
+  // PLAY SFX: Sub-Zero Flash Freeze Ice Death 🧊❄️
+  public playIceDeath() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    const playCrystalChime = (freq: number, offset: number, dur: number) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + offset);
+      osc.frequency.exponentialRampToValueAtTime(freq * 0.5, now + offset + dur);
+
+      gain.gain.setValueAtTime(this.sfxVolume * 0.6, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + offset + dur);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+
+      osc.start(now + offset);
+      osc.stop(now + offset + dur);
+    };
+
+    // Glassy crystal shattering chime cascade (Sub-Zero Freeze)
+    playCrystalChime(1567.98, 0, 0.25);   // G6
+    playCrystalChime(1318.51, 0.06, 0.25); // E6
+    playCrystalChime(1046.50, 0.12, 0.3);  // C6
+    playCrystalChime(783.99, 0.18, 0.35);  // G5
+  }
+
   // BGM: Procedural Music Loop
   public playBGM() {
     this.initCtx();

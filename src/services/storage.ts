@@ -124,6 +124,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Bombamon: {
+      level: 1,
+      exp: 0,
+      hp: 21,
+      attack: 8,
+      defense: 3,
+      speed: 7,
+      jump: 11,
+      range: 8,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -222,6 +234,34 @@ export const storageService = {
             range: 12,
             unlocked: false,
             energyRegen: 1.2,
+          };
+        }
+        if (!parsed.dracos.Shadowmon) {
+          parsed.dracos.Shadowmon = {
+            level: 1,
+            exp: 0,
+            hp: 20,
+            attack: 9,
+            defense: 3,
+            speed: 8,
+            jump: 10.5,
+            range: 8,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Bombamon) {
+          parsed.dracos.Bombamon = {
+            level: 1,
+            exp: 0,
+            hp: 21,
+            attack: 8,
+            defense: 3,
+            speed: 7,
+            jump: 11,
+            range: 8,
+            unlocked: false,
+            energyRegen: 1.0,
           };
         }
 
