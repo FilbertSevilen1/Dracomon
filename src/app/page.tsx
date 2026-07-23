@@ -1090,9 +1090,6 @@ export default function Home() {
               {/* MEMBERSHIP TIERS SECTION (Above Heroes Section) */}
               <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-16 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
-                  <span className="text-xs font-mono font-black text-amber-600 uppercase tracking-widest bg-amber-100 border border-amber-300 px-3 py-1 rounded-full">
-                    ★ ACCOUNT MEMBERSHIP & PROGRESSION TIERS
-                  </span>
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
                   <p className="text-stone-600 text-sm leading-relaxed">
                     Unlock instant access to all dragon companions, boosted starting attributes, and exclusive summoner perks.
@@ -1435,7 +1432,7 @@ export default function Home() {
                     className="inline-flex items-center gap-2 px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl text-xs font-mono font-black shadow-lg transition-all active:scale-95 border border-stone-800"
                   >
                     <Sparkles className="w-4 h-4 text-amber-400" />
-                    <span>EXPLORE ALL 8 DRAGON GUARDIANS IN ROSTER SANCTUARY (/heroes) →</span>
+                    <span>EXPLORE →</span>
                   </Link>
                 </div>
               </section>
@@ -1444,9 +1441,6 @@ export default function Home() {
               <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
                 <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
                   <div>
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-100 text-amber-900 text-[10px] font-extrabold uppercase tracking-widest rounded-full font-mono border border-amber-200">
-                      🗺️ 9 Campaign Realms
-                    </div>
                     <h2 className="text-3xl md:text-5xl font-black text-stone-900 mt-2 font-display">Explore Platform Realms</h2>
                     <p className="text-stone-600 text-xs md:text-sm leading-relaxed mt-1">
                       Conquer custom hand-crafted platform stages. Basic & Premium members get all maps unlocked instantly!
