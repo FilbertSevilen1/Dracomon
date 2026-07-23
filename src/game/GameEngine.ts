@@ -386,7 +386,32 @@ export class GameEngine {
     if (this.isSurvivalMode) {
       const duration = this.level.survivalDuration || 120;
       this.survivalTimer = duration * 60;
-      this.survivalWaveTimer = 180;
+      this.survivalWaveTimer = 60;
+
+      const gladX = Math.min(this.levelWidth - 400, Math.max(400, Math.random() * (this.levelWidth - 800) + 400));
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: gladX,
+        y: 200,
+        vx: 2.5,
+        vy: 0,
+        width: 72,
+        height: 72,
+        type: 'immortal_gladiator',
+        hp: 600,
+        maxHp: 600,
+        attack: 15,
+        defense: 8,
+        facing: 1,
+        shootCooldown: 50,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Immortal Gladiator',
+        isImmortal: true,
+        stunTimer: 0,
+        damageAcc: 0,
+        chargeCooldownTimer: 120
+      });
     } else {
       this.survivalTimer = 0;
       this.survivalWaveTimer = 0;
@@ -2375,10 +2400,11 @@ export class GameEngine {
             });
           }
 
+          const gladX = Math.min(this.levelWidth - 400, Math.max(400, Math.random() * (this.levelWidth - 800) + 400));
           this.enemies.push({
             id: this.enemyIdCounter++,
-            x: this.levelWidth / 2,
-            y: 180,
+            x: gladX,
+            y: 200,
             vx: 2.2,
             vy: 0,
             width: 72,
@@ -2404,9 +2430,10 @@ export class GameEngine {
           this.survivalWaveTimer = Math.floor(Math.random() * 80) + 140;
 
           if (this.enemies.length < 15) {
-            const arenaCenterX = this.levelWidth / 2;
-            const spawnX = arenaCenterX + (Math.random() * 260 - 130);
-            const spawnY = 240;
+            const minX = 300;
+            const maxX = Math.max(minX + 400, this.levelWidth - 300);
+            const spawnX = minX + Math.random() * (maxX - minX);
+            const spawnY = Math.random() > 0.4 ? 320 : 180;
             const facingDir = Math.random() > 0.5 ? 1 : -1;
 
             const elapsedRatio = (120 - secondsLeft) / 120;
@@ -4600,7 +4627,18 @@ export class GameEngine {
           enemy.isCharging = false;
           const dx = this.px - enemy.x;
           enemy.facing = dx > 0 ? 1 : -1;
-          enemy.vx = enemy.facing * 2.2;
+          enemy.vx = enemy.facing * 2.5;
+        }
+
+        enemy.x += enemy.vx;
+        const nextX = enemy.vx > 0 ? enemy.x + enemy.width + 6 : enemy.x - 6;
+        const wallAhead = this.isSolid(nextX, enemy.y + 4) || this.isSolid(nextX, enemy.y + enemy.height - 4);
+        if (wallAhead) {
+          if (grounded) {
+            enemy.vy = -11;
+          } else {
+            enemy.x -= enemy.vx;
+          }
         }
       } else if (enemy.type === 'king_kong') {
         const dx = this.px - enemy.x;
