@@ -1632,14 +1632,15 @@ export class GameEngine {
   private getMaxEnergy(): number {
     switch (this.selectedDraco) {
       case 'Jumpmon': return 100;
-      case 'Archermon': return 60;
+      case 'Archermon': return 80;
       case 'Shieldmon': return 80;
-      case 'Assassinmon': return 150;
-      case 'Flymon': return 200;
-      case 'Whitemon': return 120;
+      case 'Assassinmon': return 120;
+      case 'Flymon': return 140;
+      case 'Whitemon': return 140;
       case 'Magemon': return 300;
-      case 'Shadowmon': return 120;
-      case 'Thundermon': return 200;
+      case 'Shadowmon': return 160;
+      case 'Bombamon': return 120;
+      case 'Thundermon': return 240;
       default: return 100;
     }
   }
@@ -1654,6 +1655,7 @@ export class GameEngine {
       case 'Whitemon': return 'Primal Roar';
       case 'Magemon': return 'Trio Orb Blast';
       case 'Shadowmon': return 'Soul Blast';
+      case 'Bombamon': return 'Eternal Flare!';
       case 'Thundermon': return 'Raigeki';
       default: return 'Ultimate';
     }
@@ -1664,20 +1666,19 @@ export class GameEngine {
       case 'Jumpmon': return 'Fulfill the prophecy of the sun!';
       case 'Archermon': return 'Nature will purge your corruption!';
       case 'Shieldmon': return 'Aegis Dome! Shatter the earth!';
-      case 'Assassinmon': return 'Fall before the shadow Katana...';
+      case 'Assassinmon': return 'Fall before the shadow Katana!';
       case 'Flymon': return 'Hyper charged crimson laser beam firing!';
       case 'Whitemon': return 'Hear the primal roar of the wild!';
       case 'Magemon': return 'Behold the elemental devastation of the stars!';
       case 'Shadowmon': return 'Gather, dark souls... SOUL BLAST!';
-      case 'Thundermon': return 'Feel the wrath of the heavens... RAIGEKI! ⚡⚡';
+      case 'Bombamon': return 'Burn everything into ashes, ETERNAL FLARE!';
+      case 'Thundermon': return 'Feel the wrath of the heavens... RAIGEKI!';
       default: return 'Unleash full power!';
     }
   }
 
   private getUltimateCost(): number {
-    if (this.selectedDraco === 'Shadowmon') return 120;
     if (this.selectedDraco === 'Magemon') return 150;
-    if (this.selectedDraco === 'Thundermon') return 200;
     return this.getMaxEnergy();
   }
 
