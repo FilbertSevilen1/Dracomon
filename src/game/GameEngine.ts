@@ -1864,7 +1864,7 @@ export class GameEngine {
 
       this.shieldmonUltCastX = this.px + this.pWidth / 2;
       this.shieldmonUltCastY = this.py + this.pHeight / 2;
-      this.shieldmonUltRadius = 10 * 40;
+      this.shieldmonUltRadius = 10 * 30;
       this.shieldmonShieldY = this.shieldmonUltCastY - 500;
       this.shieldmonShieldTargetY = this.shieldmonUltCastY;
       this.shieldmonUltDamageDealt = false;
@@ -2012,7 +2012,7 @@ export class GameEngine {
   }
 
   private damageEnemy(enemy: Enemy, damage: number) {
-    const finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 2.0 : damage;
+    const finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 1 : damage;
     const damageDealt = Math.max(1, finalDamage - Math.floor(enemy.defense / 2));
 
     if (enemy.isImmortal) {
@@ -6700,587 +6700,587 @@ export class GameEngine {
     if (this.skeletonDeathTimer <= 0 && this.frozenDeathTimer <= 0 && this.electrocutionDeathTimer <= 0 && this.reaperDeathTimer <= 0) {
       this.ctx.save();
 
-    const isSpinning = this.selectedDraco === 'Jumpmon' && this.jumpmonSpinActive;
-    if (isSpinning) {
+      const isSpinning = this.selectedDraco === 'Jumpmon' && this.jumpmonSpinActive;
+      if (isSpinning) {
+        const px = this.px;
+        const py = this.py;
+        const pw = this.pWidth;
+        const ph = this.pHeight;
+        this.ctx.translate(px + pw / 2, py + ph / 2);
+        this.ctx.rotate(this.jumpmonSpinAngle);
+        this.ctx.translate(-(px + pw / 2), -(py + ph / 2));
+
+        this.ctx.strokeStyle = '#fbbf24';
+        this.ctx.lineWidth = 6;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, 34, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
+        this.ctx.lineWidth = 14;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, 38, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
+      if (this.pInvulnerableFrames > 0 && Math.floor(this.pInvulnerableFrames / 4) % 2 === 0) {
+        this.ctx.globalAlpha = 0.3;
+      }
+
+      let mainColor = '#f59e0b';
+      let accentColor = '#b45309';
+      let bellyColor = '#fef08a';
+      let detailColor = '#ffffff';
+
+      if (this.selectedDraco === 'Archermon') {
+        mainColor = '#10b981';
+        accentColor = '#065f46';
+        bellyColor = '#a7f3d0';
+        detailColor = '#fef08a';
+      } else if (this.selectedDraco === 'Shieldmon') {
+        mainColor = '#3b82f6';
+        accentColor = '#1e3a8a';
+        bellyColor = '#bfdbfe';
+        detailColor = '#cbd5e1';
+      } else if (this.selectedDraco === 'Assassinmon') {
+        mainColor = '#4c1d95';
+        accentColor = '#1e1b4b';
+        bellyColor = '#c084fc';
+        detailColor = '#c084fc';
+      } else if (this.selectedDraco === 'Flymon') {
+        mainColor = '#e11d48';
+        accentColor = '#881337';
+        bellyColor = '#fda4af';
+        detailColor = '#facc15';
+      } else if (this.selectedDraco === 'Whitemon') {
+        mainColor = '#f8fafc';
+        accentColor = '#64748b';
+        bellyColor = '#e2e8f0';
+        detailColor = '#38bdf8';
+      } else if (this.selectedDraco === 'Magemon') {
+        mainColor = '#6d28d9';
+        accentColor = '#312e81';
+        bellyColor = '#c084fc';
+        detailColor = '#f59e0b';
+      } else if (this.selectedDraco === 'Shadowmon') {
+        mainColor = '#18181b';
+        accentColor = '#881337';
+        bellyColor = '#9f1239';
+        detailColor = '#ef4444';
+      } else if (this.selectedDraco === 'Bombamon') {
+        mainColor = '#ea580c';
+        accentColor = '#c2410c';
+        bellyColor = '#fef08a';
+        detailColor = '#ef4444';
+      } else if (this.selectedDraco === 'Thundermon') {
+        mainColor = '#facc15';
+        accentColor = '#ca8a04';
+        bellyColor = '#fef08a';
+        detailColor = '#06b6d4';
+      }
+
       const px = this.px;
       const py = this.py;
       const pw = this.pWidth;
       const ph = this.pHeight;
-      this.ctx.translate(px + pw / 2, py + ph / 2);
-      this.ctx.rotate(this.jumpmonSpinAngle);
-      this.ctx.translate(-(px + pw / 2), -(py + ph / 2));
 
-      this.ctx.strokeStyle = '#fbbf24';
-      this.ctx.lineWidth = 6;
-      this.ctx.beginPath();
-      this.ctx.arc(px + pw / 2, py + ph / 2, 34, 0, Math.PI * 2);
-      this.ctx.stroke();
+      if (this.shadowAfterimages.length > 0) {
+        this.shadowAfterimages.forEach(img => {
+          this.ctx.save();
+          this.ctx.globalAlpha = img.alpha * 0.55;
+          this.ctx.fillStyle = '#4c1d95';
+          this.ctx.strokeStyle = '#c084fc';
+          this.ctx.lineWidth = 2;
 
-      this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
-      this.ctx.lineWidth = 14;
-      this.ctx.beginPath();
-      this.ctx.arc(px + pw / 2, py + ph / 2, 38, 0, Math.PI * 2);
-      this.ctx.stroke();
-    }
+          const bodyY = img.y;
+          this.ctx.beginPath();
+          this.ctx.arc(img.x + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+          this.ctx.lineTo(img.x + pw, bodyY + ph - 6);
+          this.ctx.quadraticCurveTo(img.x + pw, bodyY + ph - 2, img.x + pw - 6, bodyY + ph - 2);
+          this.ctx.lineTo(img.x + 6, bodyY + ph - 2);
+          this.ctx.quadraticCurveTo(img.x, bodyY + ph - 2, img.x, bodyY + ph - 6);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
 
-    if (this.pInvulnerableFrames > 0 && Math.floor(this.pInvulnerableFrames / 4) % 2 === 0) {
-      this.ctx.globalAlpha = 0.3;
-    }
+          this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.moveTo(img.x - img.facing * 10, bodyY + 12);
+          this.ctx.lineTo(img.x - img.facing * 35, bodyY + 12);
+          this.ctx.moveTo(img.x - img.facing * 5, bodyY + 24);
+          this.ctx.lineTo(img.x - img.facing * 30, bodyY + 24);
+          this.ctx.stroke();
 
-    let mainColor = '#f59e0b';
-    let accentColor = '#b45309';
-    let bellyColor = '#fef08a';
-    let detailColor = '#ffffff';
+          this.ctx.restore();
+        });
+      }
 
-    if (this.selectedDraco === 'Archermon') {
-      mainColor = '#10b981';
-      accentColor = '#065f46';
-      bellyColor = '#a7f3d0';
-      detailColor = '#fef08a';
-    } else if (this.selectedDraco === 'Shieldmon') {
-      mainColor = '#3b82f6';
-      accentColor = '#1e3a8a';
-      bellyColor = '#bfdbfe';
-      detailColor = '#cbd5e1';
-    } else if (this.selectedDraco === 'Assassinmon') {
-      mainColor = '#4c1d95';
-      accentColor = '#1e1b4b';
-      bellyColor = '#c084fc';
-      detailColor = '#c084fc';
-    } else if (this.selectedDraco === 'Flymon') {
-      mainColor = '#e11d48';
-      accentColor = '#881337';
-      bellyColor = '#fda4af';
-      detailColor = '#facc15';
-    } else if (this.selectedDraco === 'Whitemon') {
-      mainColor = '#f8fafc';
-      accentColor = '#64748b';
-      bellyColor = '#e2e8f0';
-      detailColor = '#38bdf8';
-    } else if (this.selectedDraco === 'Magemon') {
-      mainColor = '#6d28d9';
-      accentColor = '#312e81';
-      bellyColor = '#c084fc';
-      detailColor = '#f59e0b';
-    } else if (this.selectedDraco === 'Shadowmon') {
-      mainColor = '#18181b';
-      accentColor = '#881337';
-      bellyColor = '#9f1239';
-      detailColor = '#ef4444';
-    } else if (this.selectedDraco === 'Bombamon') {
-      mainColor = '#ea580c';
-      accentColor = '#c2410c';
-      bellyColor = '#fef08a';
-      detailColor = '#ef4444';
-    } else if (this.selectedDraco === 'Thundermon') {
-      mainColor = '#facc15';
-      accentColor = '#ca8a04';
-      bellyColor = '#fef08a';
-      detailColor = '#06b6d4';
-    }
-
-    const px = this.px;
-    const py = this.py;
-    const pw = this.pWidth;
-    const ph = this.pHeight;
-
-    if (this.shadowAfterimages.length > 0) {
-      this.shadowAfterimages.forEach(img => {
+      if (this.selectedDraco === 'Assassinmon' && this.assassinmonDashActive) {
         this.ctx.save();
-        this.ctx.globalAlpha = img.alpha * 0.55;
-        this.ctx.fillStyle = '#4c1d95';
-        this.ctx.strokeStyle = '#c084fc';
-        this.ctx.lineWidth = 2;
-
-        const bodyY = img.y;
+        this.ctx.fillStyle = 'rgba(168, 85, 247, 0.25)';
         this.ctx.beginPath();
-        this.ctx.arc(img.x + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
-        this.ctx.lineTo(img.x + pw, bodyY + ph - 6);
-        this.ctx.quadraticCurveTo(img.x + pw, bodyY + ph - 2, img.x + pw - 6, bodyY + ph - 2);
-        this.ctx.lineTo(img.x + 6, bodyY + ph - 2);
-        this.ctx.quadraticCurveTo(img.x, bodyY + ph - 2, img.x, bodyY + ph - 6);
-        this.ctx.closePath();
+        this.ctx.ellipse(px + pw / 2, py + ph / 2, pw + 18, ph / 2 + 6, 0, 0, Math.PI * 2);
         this.ctx.fill();
-        this.ctx.stroke();
 
-        this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.4)';
+        this.ctx.strokeStyle = 'rgba(232, 121, 249, 0.85)';
         this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-        this.ctx.moveTo(img.x - img.facing * 10, bodyY + 12);
-        this.ctx.lineTo(img.x - img.facing * 35, bodyY + 12);
-        this.ctx.moveTo(img.x - img.facing * 5, bodyY + 24);
-        this.ctx.lineTo(img.x - img.facing * 30, bodyY + 24);
-        this.ctx.stroke();
-
+        for (let s = 0; s < 4; s++) {
+          const sy = py + 6 + s * 9;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + (this.pFacing === 1 ? -15 : pw + 15), sy);
+          this.ctx.lineTo(px + (this.pFacing === 1 ? -50 : pw + 50), sy);
+          this.ctx.stroke();
+        }
         this.ctx.restore();
-      });
-    }
-
-    if (this.selectedDraco === 'Assassinmon' && this.assassinmonDashActive) {
-      this.ctx.save();
-      this.ctx.fillStyle = 'rgba(168, 85, 247, 0.25)';
-      this.ctx.beginPath();
-      this.ctx.ellipse(px + pw / 2, py + ph / 2, pw + 18, ph / 2 + 6, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.strokeStyle = 'rgba(232, 121, 249, 0.85)';
-      this.ctx.lineWidth = 3;
-      for (let s = 0; s < 4; s++) {
-        const sy = py + 6 + s * 9;
-        this.ctx.beginPath();
-        this.ctx.moveTo(px + (this.pFacing === 1 ? -15 : pw + 15), sy);
-        this.ctx.lineTo(px + (this.pFacing === 1 ? -50 : pw + 50), sy);
-        this.ctx.stroke();
-      }
-      this.ctx.restore();
-    }
-
-    if (this.selectedDraco === 'Shadowmon') {
-      this.ctx.save();
-      const auraPulse = Math.sin(this.frameCount * 0.1) * 4;
-      this.ctx.fillStyle = 'rgba(159, 18, 57, 0.25)';
-      this.ctx.beginPath();
-      this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 10 + auraPulse, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      const wingFlap = Math.sin(this.frameCount * 0.2) * 5;
-      this.ctx.fillStyle = '#9f1239';
-      this.ctx.strokeStyle = '#ef4444';
-      this.ctx.lineWidth = 1.5;
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(px + pw / 2 - 8, py + 16);
-      this.ctx.quadraticCurveTo(px - 18, py - 6 + wingFlap, px - 28, py + 12 + wingFlap);
-      this.ctx.quadraticCurveTo(px - 16, py + 22, px + pw / 2 - 8, py + 28);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(px + pw / 2 + 8, py + 16);
-      this.ctx.quadraticCurveTo(px + pw + 18, py - 6 + wingFlap, px + pw + 28, py + 12 + wingFlap);
-      this.ctx.quadraticCurveTo(px + pw + 16, py + 22, px + pw / 2 + 8, py + 28);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.restore();
-    }
-
-    if (this.pGrounded) {
-      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-      this.ctx.beginPath();
-      this.ctx.ellipse(px + pw / 2, py + ph, 14, 4, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-    }
-
-    if (this.selectedDraco === 'Jumpmon' && this.isPlunging) {
-      this.ctx.fillStyle = 'rgba(245, 158, 11, 0.45)';
-      this.ctx.beginPath();
-      this.ctx.arc(px + pw / 2, py + ph / 2, 28, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.fillStyle = '#ef4444';
-      this.ctx.beginPath();
-      this.ctx.moveTo(px + 2, py + ph - 6);
-      this.ctx.lineTo(px + pw / 2, py + ph + 22);
-      this.ctx.lineTo(px + pw - 2, py + ph - 6);
-      this.ctx.closePath();
-      this.ctx.fill();
-    }
-
-    const isMoving = Math.abs(this.pvx) > 0.2;
-    const idleBob = (this.pGrounded && !isMoving) ? Math.sin(this.frameCount * 0.09) * 1.5 : 0;
-    const legStride = (this.pGrounded && isMoving) ? Math.sin(this.frameCount * 0.35) * 6 : 0;
-
-    this.ctx.fillStyle = accentColor;
-    this.ctx.beginPath();
-    const tailBaseX = this.pFacing === 1 ? px + 2 : px + pw - 2;
-    const tailBaseY = py + ph - 14 + idleBob;
-    const tailTipX = this.pFacing === 1 ? px - 12 + Math.cos(this.frameCount * 0.1) * 3 : px + pw + 12 - Math.cos(this.frameCount * 0.1) * 3;
-    const tailTipY = py + ph - 20 + Math.sin(this.frameCount * 0.1) * 4;
-
-    this.ctx.moveTo(tailBaseX, tailBaseY);
-    this.ctx.quadraticCurveTo(tailBaseX - this.pFacing * 8, tailBaseY - 10, tailTipX, tailTipY);
-    this.ctx.quadraticCurveTo(tailBaseX - this.pFacing * 4, tailBaseY + 6, tailBaseX, tailBaseY + 4);
-    this.ctx.closePath();
-    this.ctx.fill();
-
-    if (this.selectedDraco === 'Flymon') {
-      this.ctx.save();
-      this.ctx.fillStyle = '#fda4af';
-      this.ctx.globalAlpha = 0.75;
-      const buzz = Math.sin(this.frameCount * 0.8) * 4;
-      this.ctx.beginPath();
-      const wingX = this.pFacing === 1 ? px + 6 : px + pw - 6;
-      this.ctx.ellipse(wingX - this.pFacing * 12, py + 16 + buzz, 14, 6, -this.pFacing * Math.PI / 6, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      this.ctx.beginPath();
-      this.ctx.ellipse(wingX - this.pFacing * 16, py + 22 - buzz, 10, 5, -this.pFacing * Math.PI / 4, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.restore();
-    }
-
-    this.ctx.fillStyle = accentColor;
-    if (this.pGrounded) {
-      this.ctx.fillRect(px + 4 + legStride, py + ph - 6 + idleBob, 8, 6);
-
-      this.ctx.fillRect(px + pw - 12 - legStride, py + ph - 6 + idleBob, 8, 6);
-    } else {
-      this.ctx.fillRect(px + 6, py + ph - 10, 6, 6);
-      this.ctx.fillRect(px + pw - 12, py + ph - 10, 6, 6);
-    }
-
-    const bodyY = py + idleBob;
-    this.ctx.fillStyle = mainColor;
-    this.ctx.strokeStyle = accentColor;
-    this.ctx.lineWidth = 2.5;
-
-    this.ctx.beginPath();
-    this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
-    this.ctx.lineTo(px + pw, bodyY + ph - 6);
-    this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
-    this.ctx.lineTo(px + 6, bodyY + ph - 2);
-    this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
-    this.ctx.closePath();
-    this.ctx.fill();
-    this.ctx.stroke();
-
-    this.ctx.fillStyle = bellyColor;
-    const bellyX = this.pFacing === 1 ? px + 8 : px + 6;
-    this.ctx.beginPath();
-    this.ctx.ellipse(bellyX + 8, bodyY + ph / 2 + 4, 7, 10, 0, 0, Math.PI * 2);
-    this.ctx.fill();
-
-    if (this.selectedDraco === 'Shadowmon') {
-      this.ctx.save();
-      const stackX = px + pw / 2;
-      const stackY = bodyY + 22;
-
-      this.ctx.fillStyle = 'rgba(24, 24, 27, 0.95)';
-      this.ctx.strokeStyle = '#ef4444';
-      this.ctx.lineWidth = 1.8;
-      this.ctx.beginPath();
-      this.ctx.arc(stackX, stackY, 11, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.font = '900 12px monospace';
-      this.ctx.textAlign = 'center';
-      this.ctx.textBaseline = 'middle';
-      this.ctx.fillStyle = this.shadowmonStacks >= 5 ? '#fef08a' : '#ffffff';
-      this.ctx.fillText(`${this.shadowmonStacks}`, stackX, stackY + 1);
-
-      for (let s = 0; s < this.shadowmonStacks; s++) {
-        const sang = (this.frameCount * 0.12) + (s * Math.PI * 2) / 5;
-        const sx = stackX + Math.cos(sang) * 16;
-        const sy = stackY + Math.sin(sang) * 16;
-        this.ctx.fillStyle = '#ef4444';
-        this.ctx.beginPath();
-        this.ctx.arc(sx, sy, 3, 0, Math.PI * 2);
-        this.ctx.fill();
       }
 
-      this.ctx.restore();
-    }
-
-    this.ctx.fillStyle = accentColor;
-    this.ctx.beginPath();
-    if (this.pFacing === 1) {
-      this.ctx.moveTo(px + 6, bodyY);
-      this.ctx.lineTo(px + 2, bodyY - 10);
-      this.ctx.lineTo(px + 14, bodyY + 2);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(px + pw - 14, bodyY + 2);
-      this.ctx.lineTo(px + pw - 2, bodyY - 14);
-      this.ctx.lineTo(px + pw - 6, bodyY);
-      this.ctx.closePath();
-      this.ctx.fill();
-    } else {
-      this.ctx.beginPath();
-      this.ctx.moveTo(px + 14, bodyY + 2);
-      this.ctx.lineTo(px + 2, bodyY - 14);
-      this.ctx.lineTo(px + 6, bodyY);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      this.ctx.beginPath();
-      this.ctx.moveTo(px + pw - 6, bodyY);
-      this.ctx.lineTo(px + pw - 2, bodyY - 10);
-      this.ctx.lineTo(px + pw - 14, bodyY + 2);
-      this.ctx.closePath();
-      this.ctx.fill();
-    }
-
-    this.ctx.fillStyle = '#ffffff';
-    const eyeX = this.pFacing === 1 ? px + pw - 14 : px + 6;
-    this.ctx.fillRect(eyeX, bodyY + 8, 8, 9);
-    this.ctx.fillStyle = '#000000';
-    const pupilX = this.pFacing === 1 ? eyeX + 4 : eyeX;
-    this.ctx.fillRect(pupilX, bodyY + 10, 4, 5);
-
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillRect(pupilX + 1, bodyY + 10, 1.5, 1.5);
-
-    this.ctx.fillStyle = detailColor;
-    const cheekX = this.pFacing === 1 ? px + pw - 8 : px + 2;
-    this.ctx.fillRect(cheekX, bodyY + 20, 4, 4);
-
-    if (this.selectedDraco === 'Shieldmon' && this.shieldActive) {
-      this.ctx.save();
-      this.ctx.strokeStyle = 'rgba(96, 165, 250, 0.6)';
-      this.ctx.lineWidth = 4;
-      this.ctx.beginPath();
-      this.ctx.arc(px + pw / 2, bodyY + ph / 2, pw + 8, 0, Math.PI * 2);
-      this.ctx.stroke();
-      this.ctx.restore();
-    }
-
-    if (this.isAttacking && this.attackDuration > 0) {
-      const maxDuration = 10;
-      const progress = Math.max(0, Math.min(1, 1 - (this.attackDuration / maxDuration)));
-
-      const swingAngleDeg = -75 + (progress * 160);
-      const swingRad = (swingAngleDeg * Math.PI) / 180;
-
-      const shoulderX = px + (this.pFacing === 1 ? pw - 4 : 4);
-      const shoulderY = bodyY + 18;
-
-      this.ctx.save();
-      this.ctx.translate(shoulderX, shoulderY);
-      this.ctx.scale(this.pFacing, 1);
-      this.ctx.rotate(swingRad);
-
-      if (this.selectedDraco === 'Archermon') {
-        this.ctx.strokeStyle = '#34d399';
-        this.ctx.lineWidth = 3;
+      if (this.selectedDraco === 'Shadowmon') {
+        this.ctx.save();
+        const auraPulse = Math.sin(this.frameCount * 0.1) * 4;
+        this.ctx.fillStyle = 'rgba(159, 18, 57, 0.25)';
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 24, -0.6, 0.6);
-        this.ctx.stroke();
-
-        this.ctx.fillStyle = 'rgba(52, 211, 153, 0.35)';
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, 32, -0.8, 0.2);
-        this.ctx.lineTo(0, 0);
-        this.ctx.closePath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 10 + auraPulse, 0, Math.PI * 2);
         this.ctx.fill();
-      } else if (this.selectedDraco === 'Shieldmon') {
-        this.ctx.fillStyle = '#60a5fa';
-        this.ctx.strokeStyle = '#1d4ed8';
-        this.ctx.lineWidth = 2.5;
-        this.ctx.fillRect(4, -14, 12, 28);
-        this.ctx.strokeRect(4, -14, 12, 28);
 
-        this.ctx.strokeStyle = 'rgba(96, 165, 250, 0.6)';
-        this.ctx.lineWidth = 4;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, 28, -0.5, 0.5);
-        this.ctx.stroke();
-      } else if (this.selectedDraco === 'Assassinmon') {
-        this.ctx.fillStyle = '#1e1b4b';
-        this.ctx.fillRect(0, -3, 10, 6);
-        this.ctx.fillStyle = '#c084fc';
-        this.ctx.fillRect(2, -3, 2, 6);
-        this.ctx.fillRect(6, -3, 2, 6);
-
-        this.ctx.fillStyle = '#f59e0b';
-        this.ctx.fillRect(10, -7, 3, 14);
-
-        this.ctx.fillStyle = '#e2e8f0';
-        this.ctx.strokeStyle = '#c084fc';
+        const wingFlap = Math.sin(this.frameCount * 0.2) * 5;
+        this.ctx.fillStyle = '#9f1239';
+        this.ctx.strokeStyle = '#ef4444';
         this.ctx.lineWidth = 1.5;
 
         this.ctx.beginPath();
-        this.ctx.moveTo(13, -3);
-        this.ctx.lineTo(40, -4);
-        this.ctx.lineTo(46, 0);
-        this.ctx.lineTo(38, 3);
-        this.ctx.lineTo(13, 3);
+        this.ctx.moveTo(px + pw / 2 - 8, py + 16);
+        this.ctx.quadraticCurveTo(px - 18, py - 6 + wingFlap, px - 28, py + 12 + wingFlap);
+        this.ctx.quadraticCurveTo(px - 16, py + 22, px + pw / 2 - 8, py + 28);
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
 
-        this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
-        this.ctx.moveTo(14, -1);
-        this.ctx.lineTo(42, -2);
-        this.ctx.lineTo(44, 0);
-        this.ctx.lineTo(14, 1);
+        this.ctx.moveTo(px + pw / 2 + 8, py + 16);
+        this.ctx.quadraticCurveTo(px + pw + 18, py - 6 + wingFlap, px + pw + 28, py + 12 + wingFlap);
+        this.ctx.quadraticCurveTo(px + pw + 16, py + 22, px + pw / 2 + 8, py + 28);
         this.ctx.closePath();
         this.ctx.fill();
-
-        this.ctx.save();
-        this.ctx.rotate(-swingRad * 0.4);
-
-        const grad = this.ctx.createRadialGradient(0, 0, 12, 0, 0, 50);
-        grad.addColorStop(0, 'rgba(192, 132, 252, 0.9)');
-        grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.5)');
-        grad.addColorStop(1, 'rgba(168, 85, 247, 0)');
-
-        this.ctx.fillStyle = grad;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, 52, -1.1, 0.5);
-        this.ctx.lineTo(12, 0);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2.5;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, 50, -1.0, 0.4);
         this.ctx.stroke();
 
         this.ctx.restore();
-      } else if (this.selectedDraco === 'Flymon') {
-        this.ctx.strokeStyle = '#fda4af';
-        this.ctx.lineWidth = 3;
+      }
+
+      if (this.pGrounded) {
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 26, -0.5, 0.5);
+        this.ctx.ellipse(px + pw / 2, py + ph, 14, 4, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      if (this.selectedDraco === 'Jumpmon' && this.isPlunging) {
+        this.ctx.fillStyle = 'rgba(245, 158, 11, 0.45)';
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, 28, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 2, py + ph - 6);
+        this.ctx.lineTo(px + pw / 2, py + ph + 22);
+        this.ctx.lineTo(px + pw - 2, py + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
+
+      const isMoving = Math.abs(this.pvx) > 0.2;
+      const idleBob = (this.pGrounded && !isMoving) ? Math.sin(this.frameCount * 0.09) * 1.5 : 0;
+      const legStride = (this.pGrounded && isMoving) ? Math.sin(this.frameCount * 0.35) * 6 : 0;
+
+      this.ctx.fillStyle = accentColor;
+      this.ctx.beginPath();
+      const tailBaseX = this.pFacing === 1 ? px + 2 : px + pw - 2;
+      const tailBaseY = py + ph - 14 + idleBob;
+      const tailTipX = this.pFacing === 1 ? px - 12 + Math.cos(this.frameCount * 0.1) * 3 : px + pw + 12 - Math.cos(this.frameCount * 0.1) * 3;
+      const tailTipY = py + ph - 20 + Math.sin(this.frameCount * 0.1) * 4;
+
+      this.ctx.moveTo(tailBaseX, tailBaseY);
+      this.ctx.quadraticCurveTo(tailBaseX - this.pFacing * 8, tailBaseY - 10, tailTipX, tailTipY);
+      this.ctx.quadraticCurveTo(tailBaseX - this.pFacing * 4, tailBaseY + 6, tailBaseX, tailBaseY + 4);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      if (this.selectedDraco === 'Flymon') {
+        this.ctx.save();
+        this.ctx.fillStyle = '#fda4af';
+        this.ctx.globalAlpha = 0.75;
+        const buzz = Math.sin(this.frameCount * 0.8) * 4;
+        this.ctx.beginPath();
+        const wingX = this.pFacing === 1 ? px + 6 : px + pw - 6;
+        this.ctx.ellipse(wingX - this.pFacing * 12, py + 16 + buzz, 14, 6, -this.pFacing * Math.PI / 6, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.ellipse(wingX - this.pFacing * 16, py + 22 - buzz, 10, 5, -this.pFacing * Math.PI / 4, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+      }
+
+      this.ctx.fillStyle = accentColor;
+      if (this.pGrounded) {
+        this.ctx.fillRect(px + 4 + legStride, py + ph - 6 + idleBob, 8, 6);
+
+        this.ctx.fillRect(px + pw - 12 - legStride, py + ph - 6 + idleBob, 8, 6);
+      } else {
+        this.ctx.fillRect(px + 6, py + ph - 10, 6, 6);
+        this.ctx.fillRect(px + pw - 12, py + ph - 10, 6, 6);
+      }
+
+      const bodyY = py + idleBob;
+      this.ctx.fillStyle = mainColor;
+      this.ctx.strokeStyle = accentColor;
+      this.ctx.lineWidth = 2.5;
+
+      this.ctx.beginPath();
+      this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+      this.ctx.lineTo(px + pw, bodyY + ph - 6);
+      this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+      this.ctx.lineTo(px + 6, bodyY + ph - 2);
+      this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = bellyColor;
+      const bellyX = this.pFacing === 1 ? px + 8 : px + 6;
+      this.ctx.beginPath();
+      this.ctx.ellipse(bellyX + 8, bodyY + ph / 2 + 4, 7, 10, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      if (this.selectedDraco === 'Shadowmon') {
+        this.ctx.save();
+        const stackX = px + pw / 2;
+        const stackY = bodyY + 22;
+
+        this.ctx.fillStyle = 'rgba(24, 24, 27, 0.95)';
+        this.ctx.strokeStyle = '#ef4444';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.arc(stackX, stackY, 11, 0, Math.PI * 2);
+        this.ctx.fill();
         this.ctx.stroke();
 
-        this.ctx.fillStyle = 'rgba(251, 113, 133, 0.25)';
+        this.ctx.font = '900 12px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillStyle = this.shadowmonStacks >= 5 ? '#fef08a' : '#ffffff';
+        this.ctx.fillText(`${this.shadowmonStacks}`, stackX, stackY + 1);
+
+        for (let s = 0; s < this.shadowmonStacks; s++) {
+          const sang = (this.frameCount * 0.12) + (s * Math.PI * 2) / 5;
+          const sx = stackX + Math.cos(sang) * 16;
+          const sy = stackY + Math.sin(sang) * 16;
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.beginPath();
+          this.ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        this.ctx.restore();
+      }
+
+      this.ctx.fillStyle = accentColor;
+      this.ctx.beginPath();
+      if (this.pFacing === 1) {
+        this.ctx.moveTo(px + 6, bodyY);
+        this.ctx.lineTo(px + 2, bodyY - 10);
+        this.ctx.lineTo(px + 14, bodyY + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 30, -0.7, 0.3);
-        this.ctx.lineTo(0, 0);
+        this.ctx.moveTo(px + pw - 14, bodyY + 2);
+        this.ctx.lineTo(px + pw - 2, bodyY - 14);
+        this.ctx.lineTo(px + pw - 6, bodyY);
         this.ctx.closePath();
         this.ctx.fill();
       } else {
-        this.ctx.fillStyle = '#78350f';
-        this.ctx.fillRect(0, -3, 8, 6);
-        this.ctx.fillStyle = '#fbbf24';
-        this.ctx.fillRect(8, -8, 4, 16);
-        this.ctx.fillStyle = '#f59e0b';
-        this.ctx.strokeStyle = '#d97706';
-        this.ctx.lineWidth = 1.5;
-
         this.ctx.beginPath();
-        this.ctx.moveTo(12, -4);
-        this.ctx.lineTo(32, -2);
-        this.ctx.lineTo(38, 0);
-        this.ctx.lineTo(32, 2);
-        this.ctx.lineTo(12, 4);
+        this.ctx.moveTo(px + 14, bodyY + 2);
+        this.ctx.lineTo(px + 2, bodyY - 14);
+        this.ctx.lineTo(px + 6, bodyY);
         this.ctx.closePath();
         this.ctx.fill();
-        this.ctx.stroke();
 
-        this.ctx.fillStyle = '#fef08a';
-        this.ctx.fillRect(14, -1, 18, 2);
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 6, bodyY);
+        this.ctx.lineTo(px + pw - 2, bodyY - 10);
+        this.ctx.lineTo(px + pw - 14, bodyY + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+      }
 
+      this.ctx.fillStyle = '#ffffff';
+      const eyeX = this.pFacing === 1 ? px + pw - 14 : px + 6;
+      this.ctx.fillRect(eyeX, bodyY + 8, 8, 9);
+      this.ctx.fillStyle = '#000000';
+      const pupilX = this.pFacing === 1 ? eyeX + 4 : eyeX;
+      this.ctx.fillRect(pupilX, bodyY + 10, 4, 5);
+
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(pupilX + 1, bodyY + 10, 1.5, 1.5);
+
+      this.ctx.fillStyle = detailColor;
+      const cheekX = this.pFacing === 1 ? px + pw - 8 : px + 2;
+      this.ctx.fillRect(cheekX, bodyY + 20, 4, 4);
+
+      if (this.selectedDraco === 'Shieldmon' && this.shieldActive) {
         this.ctx.save();
-        this.ctx.rotate(-swingRad * 0.4);
-        const grad = this.ctx.createRadialGradient(0, 0, 10, 0, 0, 42);
-        grad.addColorStop(0, 'rgba(251, 191, 36, 0.85)');
-        grad.addColorStop(0.5, 'rgba(245, 158, 11, 0.45)');
-        grad.addColorStop(1, 'rgba(251, 191, 36, 0)');
-
-        this.ctx.fillStyle = grad;
+        this.ctx.strokeStyle = 'rgba(96, 165, 250, 0.6)';
+        this.ctx.lineWidth = 4;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, 42, -1.0, 0.4);
-        this.ctx.lineTo(10, 0);
-        this.ctx.closePath();
-        this.ctx.fill();
+        this.ctx.arc(px + pw / 2, bodyY + ph / 2, pw + 8, 0, Math.PI * 2);
+        this.ctx.stroke();
         this.ctx.restore();
       }
 
-      this.ctx.restore();
-    } else {
-      const handX = px + (this.pFacing === 1 ? pw - 4 : 4);
-      const handY = bodyY + 20;
+      if (this.isAttacking && this.attackDuration > 0) {
+        const maxDuration = 10;
+        const progress = Math.max(0, Math.min(1, 1 - (this.attackDuration / maxDuration)));
 
-      this.ctx.save();
-      this.ctx.translate(handX, handY);
-      this.ctx.scale(this.pFacing, 1);
+        const swingAngleDeg = -75 + (progress * 160);
+        const swingRad = (swingAngleDeg * Math.PI) / 180;
 
-      if (this.selectedDraco === 'Archermon') {
-        this.ctx.strokeStyle = '#ca8a04';
-        this.ctx.lineWidth = 2.5;
-        this.ctx.beginPath();
-        this.ctx.arc(6, 0, 10, -Math.PI / 2, Math.PI / 2);
-        this.ctx.stroke();
-      } else if (this.selectedDraco === 'Shieldmon') {
-        this.ctx.fillStyle = '#475569';
-        this.ctx.strokeStyle = '#1e293b';
-        this.ctx.lineWidth = 2;
-        this.ctx.fillRect(2, -12, 10, 24);
-        this.ctx.strokeRect(2, -12, 10, 24);
-      } else if (this.selectedDraco === 'Assassinmon') {
-        if (this.assassinmonDashActive) {
+        const shoulderX = px + (this.pFacing === 1 ? pw - 4 : 4);
+        const shoulderY = bodyY + 18;
+
+        this.ctx.save();
+        this.ctx.translate(shoulderX, shoulderY);
+        this.ctx.scale(this.pFacing, 1);
+        this.ctx.rotate(swingRad);
+
+        if (this.selectedDraco === 'Archermon') {
+          this.ctx.strokeStyle = '#34d399';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 24, -0.6, 0.6);
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = 'rgba(52, 211, 153, 0.35)';
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 32, -0.8, 0.2);
+          this.ctx.lineTo(0, 0);
+          this.ctx.closePath();
+          this.ctx.fill();
+        } else if (this.selectedDraco === 'Shieldmon') {
+          this.ctx.fillStyle = '#60a5fa';
+          this.ctx.strokeStyle = '#1d4ed8';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.fillRect(4, -14, 12, 28);
+          this.ctx.strokeRect(4, -14, 12, 28);
+
+          this.ctx.strokeStyle = 'rgba(96, 165, 250, 0.6)';
+          this.ctx.lineWidth = 4;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 28, -0.5, 0.5);
+          this.ctx.stroke();
+        } else if (this.selectedDraco === 'Assassinmon') {
           this.ctx.fillStyle = '#1e1b4b';
-          this.ctx.fillRect(0, -3, 8, 6);
+          this.ctx.fillRect(0, -3, 10, 6);
+          this.ctx.fillStyle = '#c084fc';
+          this.ctx.fillRect(2, -3, 2, 6);
+          this.ctx.fillRect(6, -3, 2, 6);
+
           this.ctx.fillStyle = '#f59e0b';
-          this.ctx.fillRect(8, -6, 2, 12);
+          this.ctx.fillRect(10, -7, 3, 14);
 
           this.ctx.fillStyle = '#e2e8f0';
           this.ctx.strokeStyle = '#c084fc';
           this.ctx.lineWidth = 1.5;
+
           this.ctx.beginPath();
-          this.ctx.moveTo(10, -2);
-          this.ctx.lineTo(38, -3);
-          this.ctx.lineTo(44, 0);
+          this.ctx.moveTo(13, -3);
+          this.ctx.lineTo(40, -4);
+          this.ctx.lineTo(46, 0);
           this.ctx.lineTo(38, 3);
-          this.ctx.lineTo(10, 2);
+          this.ctx.lineTo(13, 3);
           this.ctx.closePath();
           this.ctx.fill();
           this.ctx.stroke();
 
           this.ctx.fillStyle = '#ffffff';
-          this.ctx.fillRect(12, -1, 28, 2);
-
-          this.ctx.fillStyle = 'rgba(232, 121, 249, 0.45)';
           this.ctx.beginPath();
-          this.ctx.moveTo(44, 0);
-          this.ctx.lineTo(58, -12);
-          this.ctx.lineTo(58, 12);
+          this.ctx.moveTo(14, -1);
+          this.ctx.lineTo(42, -2);
+          this.ctx.lineTo(44, 0);
+          this.ctx.lineTo(14, 1);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.save();
+          this.ctx.rotate(-swingRad * 0.4);
+
+          const grad = this.ctx.createRadialGradient(0, 0, 12, 0, 0, 50);
+          grad.addColorStop(0, 'rgba(192, 132, 252, 0.9)');
+          grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.5)');
+          grad.addColorStop(1, 'rgba(168, 85, 247, 0)');
+
+          this.ctx.fillStyle = grad;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 52, -1.1, 0.5);
+          this.ctx.lineTo(12, 0);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 50, -1.0, 0.4);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        } else if (this.selectedDraco === 'Flymon') {
+          this.ctx.strokeStyle = '#fda4af';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 26, -0.5, 0.5);
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = 'rgba(251, 113, 133, 0.25)';
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 30, -0.7, 0.3);
+          this.ctx.lineTo(0, 0);
           this.ctx.closePath();
           this.ctx.fill();
         } else {
-          this.ctx.fillStyle = '#1e1b4b';
+          this.ctx.fillStyle = '#78350f';
           this.ctx.fillRect(0, -3, 8, 6);
-          this.ctx.fillStyle = '#c084fc';
-          this.ctx.fillRect(2, -3, 2, 6);
-          this.ctx.fillRect(5, -3, 2, 6);
-
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.fillRect(8, -8, 4, 16);
           this.ctx.fillStyle = '#f59e0b';
-          this.ctx.fillRect(8, -6, 2, 12);
+          this.ctx.strokeStyle = '#d97706';
+          this.ctx.lineWidth = 1.5;
 
-          this.ctx.fillStyle = '#4c1d95';
-          this.ctx.strokeStyle = '#312e81';
-          this.ctx.lineWidth = 1;
           this.ctx.beginPath();
-          this.ctx.moveTo(10, -2);
-          this.ctx.lineTo(24, 6);
-          this.ctx.lineTo(22, 9);
-          this.ctx.lineTo(10, 2);
+          this.ctx.moveTo(12, -4);
+          this.ctx.lineTo(32, -2);
+          this.ctx.lineTo(38, 0);
+          this.ctx.lineTo(32, 2);
+          this.ctx.lineTo(12, 4);
           this.ctx.closePath();
           this.ctx.fill();
           this.ctx.stroke();
+
+          this.ctx.fillStyle = '#fef08a';
+          this.ctx.fillRect(14, -1, 18, 2);
+
+          this.ctx.save();
+          this.ctx.rotate(-swingRad * 0.4);
+          const grad = this.ctx.createRadialGradient(0, 0, 10, 0, 0, 42);
+          grad.addColorStop(0, 'rgba(251, 191, 36, 0.85)');
+          grad.addColorStop(0.5, 'rgba(245, 158, 11, 0.45)');
+          grad.addColorStop(1, 'rgba(251, 191, 36, 0)');
+
+          this.ctx.fillStyle = grad;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 42, -1.0, 0.4);
+          this.ctx.lineTo(10, 0);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.restore();
         }
-      } else if (this.selectedDraco === 'Flymon') {
-        this.ctx.fillStyle = '#f43f5e';
-        this.ctx.strokeStyle = '#881337';
-        this.ctx.lineWidth = 1;
-        this.ctx.beginPath();
-        this.ctx.moveTo(1, -3);
-        this.ctx.lineTo(9, 0);
-        this.ctx.lineTo(1, 3);
-        this.ctx.closePath();
-        this.ctx.fill();
-        this.ctx.stroke();
+
+        this.ctx.restore();
       } else {
-        this.ctx.fillStyle = '#f59e0b';
-        this.ctx.strokeStyle = '#b45309';
-        this.ctx.lineWidth = 1.5;
-        this.ctx.fillRect(2, -2, 14, 4);
+        const handX = px + (this.pFacing === 1 ? pw - 4 : 4);
+        const handY = bodyY + 20;
+
+        this.ctx.save();
+        this.ctx.translate(handX, handY);
+        this.ctx.scale(this.pFacing, 1);
+
+        if (this.selectedDraco === 'Archermon') {
+          this.ctx.strokeStyle = '#ca8a04';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(6, 0, 10, -Math.PI / 2, Math.PI / 2);
+          this.ctx.stroke();
+        } else if (this.selectedDraco === 'Shieldmon') {
+          this.ctx.fillStyle = '#475569';
+          this.ctx.strokeStyle = '#1e293b';
+          this.ctx.lineWidth = 2;
+          this.ctx.fillRect(2, -12, 10, 24);
+          this.ctx.strokeRect(2, -12, 10, 24);
+        } else if (this.selectedDraco === 'Assassinmon') {
+          if (this.assassinmonDashActive) {
+            this.ctx.fillStyle = '#1e1b4b';
+            this.ctx.fillRect(0, -3, 8, 6);
+            this.ctx.fillStyle = '#f59e0b';
+            this.ctx.fillRect(8, -6, 2, 12);
+
+            this.ctx.fillStyle = '#e2e8f0';
+            this.ctx.strokeStyle = '#c084fc';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(10, -2);
+            this.ctx.lineTo(38, -3);
+            this.ctx.lineTo(44, 0);
+            this.ctx.lineTo(38, 3);
+            this.ctx.lineTo(10, 2);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.fillRect(12, -1, 28, 2);
+
+            this.ctx.fillStyle = 'rgba(232, 121, 249, 0.45)';
+            this.ctx.beginPath();
+            this.ctx.moveTo(44, 0);
+            this.ctx.lineTo(58, -12);
+            this.ctx.lineTo(58, 12);
+            this.ctx.closePath();
+            this.ctx.fill();
+          } else {
+            this.ctx.fillStyle = '#1e1b4b';
+            this.ctx.fillRect(0, -3, 8, 6);
+            this.ctx.fillStyle = '#c084fc';
+            this.ctx.fillRect(2, -3, 2, 6);
+            this.ctx.fillRect(5, -3, 2, 6);
+
+            this.ctx.fillStyle = '#f59e0b';
+            this.ctx.fillRect(8, -6, 2, 12);
+
+            this.ctx.fillStyle = '#4c1d95';
+            this.ctx.strokeStyle = '#312e81';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.moveTo(10, -2);
+            this.ctx.lineTo(24, 6);
+            this.ctx.lineTo(22, 9);
+            this.ctx.lineTo(10, 2);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+          }
+        } else if (this.selectedDraco === 'Flymon') {
+          this.ctx.fillStyle = '#f43f5e';
+          this.ctx.strokeStyle = '#881337';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(1, -3);
+          this.ctx.lineTo(9, 0);
+          this.ctx.lineTo(1, 3);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+        } else {
+          this.ctx.fillStyle = '#f59e0b';
+          this.ctx.strokeStyle = '#b45309';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.fillRect(2, -2, 14, 4);
+        }
+
+        this.ctx.restore();
       }
 
       this.ctx.restore();
-    }
-
-    this.ctx.restore();
     }
 
     if (this.jumpmonMeteorState === 'impact' && this.jumpmonImpactTimer > 0) {
@@ -8177,15 +8177,15 @@ export class GameEngine {
       const h = 130;
 
       const shieldPath = new Path2D();
-      shieldPath.moveTo(0, -h/2);
-      shieldPath.lineTo(w/2, -h/2 + 25);
-      shieldPath.lineTo(w/2, h/6);
-      shieldPath.quadraticCurveTo(w/2, h/2, 0, h/2 + 15);
-      shieldPath.quadraticCurveTo(-w/2, h/2, -w/2, h/6);
-      shieldPath.lineTo(-w/2, -h/2 + 25);
+      shieldPath.moveTo(0, -h / 2);
+      shieldPath.lineTo(w / 2, -h / 2 + 25);
+      shieldPath.lineTo(w / 2, h / 6);
+      shieldPath.quadraticCurveTo(w / 2, h / 2, 0, h / 2 + 15);
+      shieldPath.quadraticCurveTo(-w / 2, h / 2, -w / 2, h / 6);
+      shieldPath.lineTo(-w / 2, -h / 2 + 25);
       shieldPath.closePath();
 
-      const metalGrad = this.ctx.createLinearGradient(-w/2, -h/2, w/2, h/2);
+      const metalGrad = this.ctx.createLinearGradient(-w / 2, -h / 2, w / 2, h / 2);
       metalGrad.addColorStop(0, '#fef08a');
       metalGrad.addColorStop(0.3, '#fbbf24');
       metalGrad.addColorStop(0.7, '#d97706');
@@ -8201,12 +8201,12 @@ export class GameEngine {
       this.ctx.lineWidth = 4;
       this.ctx.fillStyle = '#1e40af';
       const innerPath = new Path2D();
-      innerPath.moveTo(0, -h/2 + 15);
-      innerPath.lineTo(w/3, -h/2 + 33);
-      innerPath.lineTo(w/3, h/8);
-      innerPath.quadraticCurveTo(w/3, h/2 - 10, 0, h/2 - 2);
-      innerPath.quadraticCurveTo(-w/3, h/2 - 10, -w/3, h/8);
-      innerPath.lineTo(-w/3, -h/2 + 33);
+      innerPath.moveTo(0, -h / 2 + 15);
+      innerPath.lineTo(w / 3, -h / 2 + 33);
+      innerPath.lineTo(w / 3, h / 8);
+      innerPath.quadraticCurveTo(w / 3, h / 2 - 10, 0, h / 2 - 2);
+      innerPath.quadraticCurveTo(-w / 3, h / 2 - 10, -w / 3, h / 8);
+      innerPath.lineTo(-w / 3, -h / 2 + 33);
       innerPath.closePath();
       this.ctx.fill(innerPath);
       this.ctx.stroke(innerPath);
