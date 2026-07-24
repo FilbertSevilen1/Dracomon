@@ -389,9 +389,10 @@ export class GameEngine {
       this.pMaxHP = 9999;
       this.pEnergy = this.getMaxEnergy();
 
-      this.enemies = [{
-        id: 99999,
-        x: 320,
+      const positions = [260, 320, 380];
+      this.enemies = positions.map((posX, idx) => ({
+        id: 99991 + idx,
+        x: posX,
         y: 688,
         vx: 0,
         vy: 0,
@@ -406,9 +407,9 @@ export class GameEngine {
         shootCooldown: 0,
         state: 'idle',
         animFrame: 0,
-        name: 'IMMORTAL SLIME 👑',
+        name: `IMMORTAL SLIME ${idx + 1} 👑`,
         isImmortal: true,
-      }];
+      }));
       return;
     }
 
@@ -8494,10 +8495,13 @@ export class GameEngine {
     if (this.isDemoMode) {
       this.pHP = 9999;
       this.pEnergy = this.getMaxEnergy();
-      if (this.enemies.length === 0 || this.enemies[0].hp <= 0) {
-        this.enemies = [{
-          id: 99999,
-          x: 320,
+
+      const positions = [260, 320, 380];
+
+      if (this.enemies.length < 3) {
+        this.enemies = positions.map((posX, idx) => ({
+          id: 99991 + idx,
+          x: posX,
           y: 688,
           vx: 0,
           vy: 0,
@@ -8512,15 +8516,20 @@ export class GameEngine {
           shootCooldown: 0,
           state: 'idle',
           animFrame: 0,
-          name: 'IMMORTAL SLIME 👑',
+          name: `IMMORTAL SLIME ${idx + 1} 👑`,
           isImmortal: true,
-        }];
+        }));
       } else {
-        // Lock slime position stationary facing player
-        this.enemies[0].x = 320;
-        this.enemies[0].vx = 0;
-        this.enemies[0].facing = -1;
-        this.enemies[0].state = 'idle';
+        // Lock all 3 slimes firmly on ground level so knockback explosions never make them fly
+        this.enemies.forEach((slime, idx) => {
+          slime.x = positions[idx] || (260 + idx * 60);
+          slime.y = 688;
+          slime.vx = 0;
+          slime.vy = 0;
+          slime.facing = -1;
+          slime.state = 'idle';
+          if (slime.hp <= 0) slime.hp = 999999999;
+        });
       }
     }
 
