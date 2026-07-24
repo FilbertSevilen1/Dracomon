@@ -10,6 +10,7 @@ import { SettingsModal } from '../components/SettingsModal';
 import { GameScreen } from '../components/GameScreen';
 import { Navbar } from '../components/Navbar';
 import { soundService } from '../services/sound';
+import { STAGES } from '../game/LevelManager';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Sword,
@@ -473,118 +474,22 @@ export default function Home() {
     },
   ];
 
-  const STAGE_CARDS = [
-    {
-      num: 1,
-      name: 'Whispering Woods',
-      difficulty: 'EASY',
-      diffClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      borderHover: 'hover:border-emerald-500 hover:bg-emerald-50/20',
-      desc: 'Forest platforms with Slimes & King Slime Lord.',
-      boss: 'King Slime',
-      color: 'emerald'
-    },
-    {
-      num: 2,
-      name: 'Mystic Ruins',
-      difficulty: 'MEDIUM',
-      diffClass: 'bg-slate-100 text-slate-800 border-slate-200',
-      borderHover: 'hover:border-slate-500 hover:bg-slate-50/20',
-      desc: 'Ruined stone structures with Goblin Archers & Archdemon.',
-      boss: 'Archdemon',
-      color: 'slate'
-    },
-    {
-      num: 3,
-      name: 'Volcanic Peak',
-      difficulty: 'HARD',
-      diffClass: 'bg-orange-100 text-orange-800 border-orange-200',
-      borderHover: 'hover:border-orange-500 hover:bg-orange-50/20',
-      desc: 'Lava hazards with Fire Golems & Dracoguard Fire Lord.',
-      boss: 'Fire Lord',
-      color: 'orange'
-    },
-    {
-      num: 4,
-      name: 'Frozen Citadel',
-      difficulty: 'EXPERT',
-      diffClass: 'bg-sky-100 text-sky-800 border-sky-200',
-      borderHover: 'hover:border-sky-500 hover:bg-sky-50/20',
-      desc: 'Glacial ice chasms with Frostbite Wyvern ice boss.',
-      boss: 'Frost Wyvern',
-      color: 'sky'
-    },
-    {
-      num: 5,
-      name: 'Shadow Abyss',
-      difficulty: 'MASTER',
-      diffClass: 'bg-purple-100 text-purple-800 border-purple-200',
-      borderHover: 'hover:border-purple-500 hover:bg-purple-50/20',
-      desc: 'Void crystal platforms with Shadow Overlord boss.',
-      boss: 'Shadow Lord',
-      color: 'purple'
-    },
-    {
-      num: 6,
-      name: 'Celestial Temple',
-      difficulty: 'CHALLENGE',
-      diffClass: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-      borderHover: 'hover:border-emerald-500 hover:bg-emerald-50/20',
-      desc: 'Grand sanctuary altar defending sacred artifacts.',
-      boss: 'Fire Golems',
-      color: 'emerald'
-    },
-    {
-      num: 7,
-      name: 'Sky Heavens',
-      difficulty: 'EXPERT',
-      diffClass: 'bg-sky-100 text-sky-800 border-sky-200',
-      borderHover: 'hover:border-sky-500 hover:bg-sky-50/20',
-      desc: 'Trampolines, skewers, landmines, and Sentinel Archdemon.',
-      boss: 'Archdemon',
-      color: 'sky'
-    },
-    {
-      num: 8,
-      name: 'Primordial Core',
-      difficulty: 'FINAL BOSS',
-      diffClass: 'bg-amber-500 text-stone-950 font-black border-amber-300',
-      borderHover: 'hover:border-amber-500 hover:bg-amber-500/10 ring-2 ring-amber-400/30',
-      desc: 'Magma core erupting fire torrents and the Primordial Dragon King.',
-      boss: 'Dragon King',
-      color: 'amber'
-    },
-    {
-      num: 9,
-      name: 'Underwater Abyss',
-      difficulty: 'WATER WORLD',
-      diffClass: 'bg-cyan-500 text-stone-950 font-black border-cyan-300',
-      borderHover: 'hover:border-cyan-500 hover:bg-cyan-500/10 ring-2 ring-cyan-400/30',
-      desc: 'Low gravity floating, water currents, moving anchors, scallop traps, and Leviathan Orca Killer Whale boss.',
-      boss: 'Killer Whale',
-      color: 'cyan'
-    },
-    {
-      num: 10,
-      name: 'Jungle Sanctuary',
-      difficulty: 'JUNGLE WORLD',
-      diffClass: 'bg-emerald-500 text-stone-950 font-black border-emerald-300',
-      borderHover: 'hover:border-emerald-500 hover:bg-emerald-500/10 ring-2 ring-emerald-400/30',
-      desc: 'Climbable tree vines, 2s root vine traps, instant-death toxic poison swamp chasm with melting acid skeleton animation, reviving skeleton archers, and the Primordial King Kong Boss with 3-jump 2s seismic stun ground slam!',
-      boss: 'King Kong',
-      color: 'emerald'
-    },
-    {
-      num: 11,
-      name: 'Gladiator Arena',
-      difficulty: 'SURVIVAL DEFENSE (2 MIN)',
-      diffClass: 'bg-rose-500 text-white font-black border-rose-400',
-      borderHover: 'hover:border-rose-500 hover:bg-rose-500/10 ring-2 ring-rose-400/30',
-      desc: 'Roman Colosseum defense map! Endless gladiator enemy waves spawn for 2 full minutes. Survive the 120s timer to spawn the Exit Portal!',
-      boss: 'Gladiator Waves',
-      color: 'rose'
-    }
-  ];
+  // Derive stage cards from LevelManager — single source of truth
+  const getDisplayName = (fullName: string) => {
+    const match = fullName.match(/^Stage \d+:\s*(.+)$/);
+    return match ? match[1] : fullName;
+  };
+
+  const STAGE_CARDS = STAGES.map((stg, index) => ({
+    num: index + 1,
+    name: getDisplayName(stg.name),
+    difficulty: stg.difficulty,
+    diffClass: stg.diffClass,
+    borderHover: stg.borderHover,
+    desc: stg.description,
+    boss: stg.boss,
+    color: stg.color,
+  }));
 
   const scrollToSection = (id: string) => {
     soundService.playClick();

@@ -25,11 +25,26 @@ export interface LevelData {
   isUnderwater?: boolean;
   isSurvivalMode?: boolean;
   survivalDuration?: number;
+  // Display metadata — used by maps page, stage selectors, etc.
+  description: string;
+  difficulty: string;
+  diffClass: string;
+  boss: string;
+  icon: string;
+  borderHover: string;
+  color: string;
 }
 
 export const STAGES: LevelData[] = [
   {
     "name": "Stage 1: Whispering Woods",
+    "description": "Lush forest filled with platforming blocks, coins, and friendly slime enemies.",
+    "difficulty": "EASY",
+    "diffClass": "bg-emerald-100 text-emerald-800 border-emerald-300 font-mono",
+    "boss": "King Slime",
+    "icon": "🌲",
+    "borderHover": "hover:border-emerald-500 hover:bg-emerald-50/20",
+    "color": "emerald",
     "tileSize": 40,
     "theme": {
       "type": "forest",
@@ -68,6 +83,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 2: Mystic Ruins",
+    "description": "Ancient ruin structures with solid stone platforms and goblin archers.",
+    "difficulty": "EASY",
+    "diffClass": "bg-stone-100 text-stone-800 border-stone-300 font-mono",
+    "boss": "Fire Golem",
+    "icon": "🏛️",
+    "borderHover": "hover:border-slate-500 hover:bg-slate-50/20",
+    "color": "slate",
     "tileSize": 40,
     "theme": {
       "type": "ruins",
@@ -106,6 +128,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 3: Volcanic Peak",
+    "description": "Molten magma caverns with fiery liquid pools and lava hazard zones.",
+    "difficulty": "MEDIUM",
+    "diffClass": "bg-amber-100 text-amber-800 border-amber-300 font-mono",
+    "boss": "Magma Guard",
+    "icon": "🌋",
+    "borderHover": "hover:border-orange-500 hover:bg-orange-50/20",
+    "color": "orange",
     "tileSize": 40,
     "theme": {
       "type": "volcano",
@@ -144,6 +173,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 4: Frozen Citadel",
+    "description": "Glacial ice fortress with sub-zero freezing hazards and slippery platforms.",
+    "difficulty": "HARD",
+    "diffClass": "bg-sky-100 text-sky-800 border-sky-300 font-mono",
+    "boss": "Frost Wyvern",
+    "icon": "❄️",
+    "borderHover": "hover:border-sky-500 hover:bg-sky-50/20",
+    "color": "sky",
     "tileSize": 40,
     "theme": {
       "type": "ice",
@@ -182,6 +218,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 5: Shadow Abyss",
+    "description": "Dark void domain populated by nether soul flames and shadow monsters.",
+    "difficulty": "EXPERT",
+    "diffClass": "bg-purple-900 text-purple-200 border-purple-600 font-mono",
+    "boss": "Shadow Overlord",
+    "icon": "🌑",
+    "borderHover": "hover:border-purple-500 hover:bg-purple-50/20",
+    "color": "purple",
     "tileSize": 40,
     "theme": {
       "type": "shadow",
@@ -219,6 +262,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 6: Celestial Dragon Temple",
+    "description": "Sacred celestial temple featuring thunderbolts and divine lightning traps.",
+    "difficulty": "INSANE",
+    "diffClass": "bg-amber-100 text-amber-900 border-amber-400 font-mono",
+    "boss": "Primordial Dragon King",
+    "icon": "⚡",
+    "borderHover": "hover:border-emerald-500 hover:bg-emerald-50/20",
+    "color": "emerald",
     "tileSize": 40,
     "theme": {
       "type": "temple",
@@ -259,6 +309,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 7: Sky Heavens",
+    "description": "High-altitude sky platforms with trampolines and floating cloud islands.",
+    "difficulty": "HARD",
+    "diffClass": "bg-blue-100 text-blue-800 border-blue-300 font-mono",
+    "boss": "Demonic Grenadier",
+    "icon": "☁️",
+    "borderHover": "hover:border-sky-500 hover:bg-sky-50/20",
+    "color": "sky",
     "tileSize": 40,
     "theme": {
       "type": "heavens",
@@ -302,6 +359,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 8: Primordial Core",
+    "description": "Volcanic magma core featuring exploding fire torrents and landmines.",
+    "difficulty": "NIGHTMARE",
+    "diffClass": "bg-rose-900 text-rose-200 border-rose-600 font-mono",
+    "boss": "Core Guardian",
+    "icon": "💥",
+    "borderHover": "hover:border-amber-500 hover:bg-amber-500/10 ring-2 ring-amber-400/30",
+    "color": "amber",
     "tileSize": 40,
     "theme": {
       "type": "core",
@@ -336,6 +400,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 9: Underwater Abyss",
+    "description": "Submerged ocean abyss featuring swimming currents, whirlpools, anchors, and scallop traps.",
+    "difficulty": "WATER WORLD (FLOAT PHYSICS)",
+    "diffClass": "bg-cyan-100 text-cyan-900 border-cyan-300 font-mono",
+    "boss": "Killer Whale",
+    "icon": "🌊",
+    "borderHover": "hover:border-cyan-500 hover:bg-cyan-500/10 ring-2 ring-cyan-400/30",
+    "color": "cyan",
     "tileSize": 40,
     "isUnderwater": true,
     "theme": {
@@ -415,6 +486,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 10: Primordial Jungle Sanctuary",
+    "description": "Dense primordial jungle with climbable tree vines, vine traps, and toxic swamp chasms.",
+    "difficulty": "JUNGLE HAZARDS",
+    "diffClass": "bg-emerald-900 text-emerald-200 border-emerald-600 font-mono",
+    "boss": "King Kong",
+    "icon": "🌴",
+    "borderHover": "hover:border-emerald-500 hover:bg-emerald-500/10 ring-2 ring-emerald-400/30",
+    "color": "emerald",
     "tileSize": 40,
     "theme": {
       "type": "forest",
@@ -511,6 +589,13 @@ export const STAGES: LevelData[] = [
   },
   {
     "name": "Stage 11: Gladiator Arena",
+    "description": "Roman Colosseum defense map! Endless gladiator enemy waves spawn for 3 full minutes. Survive the 180s timer to spawn the Exit Portal!",
+    "difficulty": "SURVIVAL DEFENSE (3 MIN)",
+    "diffClass": "bg-rose-600 text-white font-black border-rose-400",
+    "boss": "Immortal Gladiator Champion",
+    "icon": "🛡️",
+    "borderHover": "hover:border-rose-500 hover:bg-rose-500/10 ring-2 ring-rose-400/30",
+    "color": "rose",
     "tileSize": 40,
     "isSurvivalMode": true,
     "survivalDuration": 180,
