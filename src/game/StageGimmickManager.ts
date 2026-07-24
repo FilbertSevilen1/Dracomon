@@ -434,7 +434,7 @@ export class StageGimmickManager {
           id: this.nextEntityId++,
           type: chosenType,
           x: startX,
-          y: Math.min(50, Math.max(-140, py - 560 + (Math.random() - 0.5) * 60)),
+          y: Math.min(10, Math.max(-300, py - 900 + (Math.random() - 0.5) * 20)),
           vx: facing * 7.0,
           width: 220,
           height: 100,
