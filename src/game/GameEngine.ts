@@ -240,6 +240,7 @@ export class GameEngine {
   private electrocutionDeathTimer = 0;
   private reaperDeathTimer = 0;
   private playerStunnedTimer = 0;
+  private playerStunCooldown = 0;
 
   private gravity = 0.5;
   private friction = 0.82;
@@ -367,6 +368,8 @@ export class GameEngine {
     this.carpetBombingActive = false;
     stageGimmickManager.reset();
     this.gradientCache.clear();
+    this.playerStunnedTimer = 0;
+    this.playerStunCooldown = 0;
 
     const grid = this.getActiveGrid();
     let maxCols = 0;
@@ -398,8 +401,8 @@ export class GameEngine {
         width: 72,
         height: 72,
         type: 'immortal_gladiator',
-        hp: 600,
-        maxHp: 600,
+        hp: 999999999999999999,
+        maxHp: 999999999999999999,
         attack: 15,
         defense: 8,
         facing: 1,
@@ -3397,7 +3400,7 @@ export class GameEngine {
         this.pvx = 0;
         this.pvy = 0;
         this.screenShake = 35;
-        this.addFloatingText(pxMid, this.py - 20, 'DIVINE THUNDERBOLT ELECTROCUTION! ⚡💥', '#eab308');
+        this.addFloatingText(pxMid, this.py - 20, 'THUNDERSTRUCK! ⚡💥', '#eab308');
 
         for (let i = 0; i < 30; i++) {
           this.particles.push({
@@ -3416,7 +3419,7 @@ export class GameEngine {
         this.frozenDeathTimer = 999999;
         this.pvx = 0;
         this.pvy = 0;
-        this.addFloatingText(pxMid, this.py - 20, 'SUB-ZERO FLASH FREEZE! 🧊❄️', '#38bdf8');
+        this.addFloatingText(pxMid, this.py - 20, 'ABSOLUTE FROZEN! 🧊❄️', '#38bdf8');
 
         for (let i = 0; i < 25; i++) {
           this.particles.push({
@@ -4682,8 +4685,11 @@ export class GameEngine {
               }
 
               if (this.pGrounded) {
-                this.playerStunnedTimer = 120;
-                this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SEISMIC GROUND SLAM! STUNNED 2s! 🦍💥', '#ef4444');
+                if (this.playerStunCooldown <= 0) {
+                  this.playerStunnedTimer = 120;
+                  this.playerStunCooldown = 150; // 2s stun + 0.5s cooldown (120 + 30 frames)
+                  this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SEISMIC GROUND SLAM! STUNNED 2s! 🦍💥', '#ef4444');
+                }
               } else {
                 this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'AIR DODGED STUN! 🦘✨', '#38bdf8');
               }
@@ -4733,9 +4739,12 @@ export class GameEngine {
         this.handlePlayerHit(enemy.attack, enemy.x + enemy.width / 2);
 
         if ((enemy.isImmortal || enemy.type === 'immortal_gladiator') && enemy.isCharging) {
-          this.playerStunnedTimer = 60;
-          this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'GLADIATOR RUSH STUN! STUNNED 1.0s! 🛡️💥', '#ef4444');
-          soundService.playHit();
+          if (this.playerStunCooldown <= 0) {
+            this.playerStunnedTimer = 60;
+            this.playerStunCooldown = 90; // 1s stun + 0.5s cooldown (60 + 30 frames)
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'GLADIATOR RUSH STUN! STUNNED 1.0s! 🛡️💥', '#ef4444');
+            soundService.playHit();
+          }
         }
       }
     });
@@ -8458,6 +8467,7 @@ export class GameEngine {
     if (this.specialCooldown > 0) this.specialCooldown--;
     if (this.pInvulnerableFrames > 0) this.pInvulnerableFrames--;
     if (this.trampolineCooldown > 0) this.trampolineCooldown--;
+    if (this.playerStunCooldown > 0) this.playerStunCooldown--;
 
     if (this.isAttacking) {
       this.attackDuration--;
