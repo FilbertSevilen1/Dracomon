@@ -8,6 +8,7 @@ import { InventoryModal } from '../components/InventoryModal';
 import { LevelUpModal } from '../components/LevelUpModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { GameScreen } from '../components/GameScreen';
+import { HeroDemoCanvas } from '../components/HeroDemoCanvas';
 import { Navbar } from '../components/Navbar';
 import { soundService } from '../services/sound';
 import { STAGES } from '../game/LevelManager';
@@ -619,309 +620,74 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {}
-                  <div className="md:col-span-5 flex justify-center items-center h-[500px] relative select-none w-full px-2">
-                    {}
-                    <motion.div
-                      className={`absolute top-2 left-2 md:left-4 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Jumpmon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Jumpmon', 0)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-slow drop-shadow-md">
-                        {companionShowcase[0].svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#10b981] border-2 ${activeDracoName === 'Jumpmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#047857]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#b45309] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Jumpmon
-                        </span>
-                        {activeDracoName === 'Jumpmon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
+                  {/* HERO SHOWCASE CONTAINER - LIVE ULTIMATE DEMO & SELECTION GRID */}
+                  <div className="md:col-span-5 w-full bg-white/70 backdrop-blur-md p-4 sm:p-5 rounded-3xl border border-stone-200/80 shadow-xl space-y-3.5 select-none">
+                    
+                    {/* LIVE 5-SECOND ULTIMATE ANIMATION DEMO CANVAS */}
+                    <div className="w-full">
+                      <HeroDemoCanvas selectedDraco={activeDracoName} />
+                    </div>
 
-                    {}
-                    <motion.div
-                      className={`absolute top-0 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Magemon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Magemon', 250)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-fast drop-shadow-md">
-                        {companionShowcase[6].svg}
+                    <div className="flex items-center justify-between border-b border-stone-200/60 pb-2 pt-0.5">
+                      <div className="flex items-center gap-2">
+                        <div className="p-1 bg-amber-500 text-stone-950 rounded-lg shadow-sm">
+                          <Sparkles className="w-3.5 h-3.5" />
+                        </div>
+                        <div>
+                          <h3 className="text-xs font-extrabold text-stone-900 font-display">Select Hero to Preview Ultimate</h3>
+                          <p className="text-[9px] text-stone-500 font-mono">1-Click to test 5-second loop demo vs Immortal Slime</p>
+                        </div>
                       </div>
-                      <div className={`w-24 h-6 bg-[#4c1d95] border-2 ${activeDracoName === 'Magemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#312e81]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#6d28d9] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Magemon
-                        </span>
-                        {activeDracoName === 'Magemon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Magemon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 250C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
+                      <span className="text-[9px] font-mono font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shadow-sm">
+                        10 Companions
+                      </span>
+                    </div>
 
-                    {}
-                    <motion.div
-                      className={`absolute top-2 right-2 md:right-4 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Archermon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Archermon', 100)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-medium drop-shadow-md">
-                        {companionShowcase[1].svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#64748b] border-2 ${activeDracoName === 'Archermon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#334155]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#475569] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Archermon
-                        </span>
-                        {activeDracoName === 'Archermon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Archermon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 100C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-[220px] overflow-y-auto p-1.5">
+                      {companionShowcase.map((item) => {
+                        const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
+                        const isEquipped = activeDracoName === item.name;
 
-                    {}
-                    <motion.div
-                      className={`absolute top-[175px] left-0 md:left-2 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Shieldmon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Shieldmon', 200)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-fast drop-shadow-md">
-                        {companionShowcase[2].svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#4b5563] border-2 ${activeDracoName === 'Shieldmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#1f2937]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#ea580c] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Shieldmon
-                        </span>
-                        {activeDracoName === 'Shieldmon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Shieldmon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 200C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
+                        return (
+                          <motion.div
+                            key={item.name}
+                            whileHover={{ scale: 1.05, y: -2 }}
+                            onClick={() => handleHeroSelectDraco(item.name, item.cost)}
+                            className={`p-2 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-between text-center relative group ${
+                              isEquipped
+                                ? 'bg-amber-500/15 border-amber-400 ring-2 ring-amber-400/50 shadow-md'
+                                : isUnlocked
+                                ? 'bg-white hover:bg-stone-50 border-stone-200 hover:border-amber-300 shadow-sm'
+                                : 'bg-stone-100/60 border-stone-200/60 opacity-65 hover:opacity-90'
+                            }`}
+                          >
+                            <div className="w-10 h-10 flex items-center justify-center">
+                              {item.svg}
+                            </div>
 
-                    {}
-                    <motion.div
-                      className={`absolute top-[175px] right-0 md:right-2 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Shadowmon' ? 'scale-110' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Shadowmon', 450)}
-                      whileHover={{ scale: 1.15 }}
-                    >
-                      <div className="animate-float-slow drop-shadow-xl">
-                        {companionShowcase[7].svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#881337] border-2 ${activeDracoName === 'Shadowmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#ef4444]'} rounded-full shadow-xl mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#18181b] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-900 uppercase tracking-wider group-hover:text-rose-600 transition-colors">
-                          Shadowmon
-                        </span>
-                        {activeDracoName === 'Shadowmon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Shadowmon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-rose-300 bg-rose-950 border border-rose-700 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 450C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
+                            <div className="w-full mt-1 space-y-0.5">
+                              <span className={`text-[10px] font-bold font-display block truncate ${isEquipped ? 'text-amber-700 font-black' : 'text-stone-800'}`}>
+                                {item.name}
+                              </span>
 
-                    {}
-                    <motion.div
-                      className={`absolute bottom-2 left-2 md:left-4 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Assassinmon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Assassinmon', 300)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-slow drop-shadow-md">
-                        {companionShowcase[3].svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#581c87] border-2 ${activeDracoName === 'Assassinmon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#3b0764]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#1e1b4b] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Assassinmon
-                        </span>
-                        {activeDracoName === 'Assassinmon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Assassinmon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 300C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {}
-                    <motion.div
-                      className={`absolute bottom-0 left-1/2 -translate-x-1/2 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Whitemon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Whitemon', 500)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-slow drop-shadow-md">
-                        {companionShowcase[5].svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#0284c7] border-2 ${activeDracoName === 'Whitemon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#0369a1]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#38bdf8] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Whitemon
-                        </span>
-                        {activeDracoName === 'Whitemon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Whitemon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 500C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {}
-                    <motion.div
-                      className={`absolute bottom-2 right-2 md:right-4 flex flex-col items-center cursor-pointer group z-20 ${
-                        activeDracoName === 'Flymon' ? 'scale-105' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Flymon', 400)}
-                      whileHover={{ scale: 1.1 }}
-                    >
-                      <div className="animate-float-medium drop-shadow-md">
-                        {companionShowcase[4].svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#e11d48] border-2 ${activeDracoName === 'Flymon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#881337]'} rounded-full shadow-lg mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#fda4af] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-700 uppercase tracking-wider group-hover:text-stone-900 transition-colors">
-                          Flymon
-                        </span>
-                        {activeDracoName === 'Flymon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Flymon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 400C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
-
-                    {}
-                    <motion.div
-                      className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center cursor-pointer group z-30 ${
-                        activeDracoName === 'Bombamon' ? 'scale-110' : ''
-                      }`}
-                      onClick={() => handleHeroSelectDraco('Bombamon', 350)}
-                      whileHover={{ scale: 1.15 }}
-                    >
-                      <div className="animate-float-medium drop-shadow-xl">
-                        {companionShowcase[8]?.svg}
-                      </div>
-                      <div className={`w-24 h-6 bg-[#ea580c] border-2 ${activeDracoName === 'Bombamon' ? 'border-amber-400 ring-4 ring-amber-400/30' : 'border-[#c2410c]'} rounded-full shadow-xl mt-1 flex flex-col overflow-hidden`}>
-                        <div className="bg-[#fef08a] h-3 mt-auto w-full" />
-                      </div>
-                      <div className="mt-1 flex flex-col items-center">
-                        <span className="text-[10px] font-extrabold text-stone-900 uppercase tracking-wider group-hover:text-orange-600 transition-colors">
-                          Bombamon
-                        </span>
-                        {activeDracoName === 'Bombamon' ? (
-                          <span className="text-[9px] font-mono font-black text-amber-950 bg-amber-400 px-1.5 py-0.5 rounded border border-amber-300 shadow-sm flex items-center gap-1 animate-pulse">
-                            ⚡ EQUIPPED
-                          </span>
-                        ) : saveData.dracos['Bombamon']?.unlocked ? (
-                          <span className="text-[9px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1.5 py-0.5 rounded">
-                            ✓ EQUIP
-                          </span>
-                        ) : (
-                          <span className="text-[9px] font-mono font-bold text-orange-900 bg-orange-100 border border-orange-300 px-1.5 py-0.5 rounded flex items-center gap-0.5">
-                            🔒 350C
-                          </span>
-                        )}
-                      </div>
-                    </motion.div>
+                              {isEquipped ? (
+                                <span className="text-[7px] font-mono font-black text-amber-950 bg-amber-400 px-1 py-0.2 rounded border border-amber-300 shadow-sm block truncate animate-pulse">
+                                  ⚡ EQUIPPED
+                                </span>
+                              ) : isUnlocked ? (
+                                <span className="text-[7px] font-mono font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-1 py-0.2 rounded block truncate">
+                                  ✓ EQUIP
+                                </span>
+                              ) : (
+                                <span className="text-[7px] font-mono font-bold text-amber-900 bg-amber-100 border border-amber-300 px-1.5 py-0.2 rounded block truncate">
+                                  🔒 {item.cost}C
+                                </span>
+                              )}
+                            </div>
+                          </motion.div>
+                        );
+                      })}
+                    </div>
                   </div>
                 </div>
               </section>

@@ -30,6 +30,21 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.1.9',
+    date: 'July 24, 2026',
+    tag: 'Interactive Hero Previews & Hotkey Indicators (Current)',
+    badgeColor: 'bg-amber-500 text-stone-950 font-black shadow-sm',
+    summary: 'Introduces live in-game 3-tab Hero Combat Previews (Basic Attack, Skill, Ultimate) vs Immortal Slime on both Homepage and /heroes pages, cleans up the Hero Section layout, adds visible hotkey badges to all game HUD and modal controls, and moves the Quick Heal Potion beside skills.',
+    highlights: [
+      '3-Tab In-Game Ability Previews: Real-time 60 FPS combat demo canvas featuring 3 toggleable tabs (Basic Attack, Skill Preview, Ultimate) executing live on loop against an Immortal Slime target.',
+      'Solid Ground Physics Positioning: Hero character and Immortal Slime stand firmly on solid forest ground tiles without floating in mid-air or text box clutter.',
+      'Hero Roster Preview Integration: Hero ability previews are now integrated directly into both the Homepage Hero Showcase and the /heroes page.',
+      'Clean Non-Overlapping Roster: Redesigned the hero showcase container into a structured 5-column grid layout for all 10 dragon guardians without overlapping.',
+      'Universal Hotkey Indicators: All interactive controls (Movement, Attack, Jump, Skill, Ult, Heal, Bag, Pause, Fullscreen) feature high-visibility keyboard keycap badges.',
+      'Potion Relocation: Moved the Quick Heal Potion button from the top utility bar down to the bottom controls area right beside Skill and Ultimate action buttons.',
+    ],
+  },
+  {
     version: '0.1.8',
     date: 'July 23, 2026',
     tag: 'Thunder Tempest & Gladiator Overhaul!',
@@ -230,7 +245,7 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  const [openVersion, setOpenVersion] = useState<string | null>('0.1.8');
+  const [openVersion, setOpenVersion] = useState<string | null>('0.1.9');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();

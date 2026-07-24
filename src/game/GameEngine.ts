@@ -77,7 +77,7 @@ interface Enemy {
   defense: number;
   facing: number;
   shootCooldown: number;
-  state: 'patrol' | 'alert' | 'charge';
+  state: 'patrol' | 'alert' | 'charge' | 'idle';
   animFrame: number;
   name?: string;
   stunnedTimer?: number;
@@ -288,6 +288,7 @@ export class GameEngine {
   private carpetBombingFireStreamTimer: number = 0;
 
   private stageNum: number;
+  private isDemoMode: boolean = false;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -303,21 +304,23 @@ export class GameEngine {
       onPauseToggle?: () => void;
       onStageClear: () => void;
       onPlayerDeath: () => void;
-    }
+    },
+    isDemoMode = false
   ) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Could not get 2D canvas context');
     this.ctx = context;
 
+    this.isDemoMode = isDemoMode;
     this.stageNum = stageNum;
     this.level = getLevel(stageNum);
     this.selectedDraco = selectedDraco;
     this.stats = stats;
     this.callbacks = callbacks;
 
-    this.pHP = stats.hp;
-    this.pMaxHP = stats.hp;
+    this.pHP = isDemoMode ? 9999 : stats.hp;
+    this.pMaxHP = isDemoMode ? 9999 : stats.hp;
     this.energyRegenRate = (stats as any).energyRegen || 1.0;
     this.pEnergy = this.getMaxEnergy();
     this.maxJumps = 2;
@@ -378,6 +381,36 @@ export class GameEngine {
     }
     this.levelWidth = maxCols * this.level.tileSize;
     this.levelHeight = grid.length * this.level.tileSize;
+
+    if (this.isDemoMode) {
+      this.px = 120;
+      this.py = 680;
+      this.pHP = 9999;
+      this.pMaxHP = 9999;
+      this.pEnergy = this.getMaxEnergy();
+
+      this.enemies = [{
+        id: 99999,
+        x: 320,
+        y: 688,
+        vx: 0,
+        vy: 0,
+        width: 38,
+        height: 32,
+        type: 'slime',
+        hp: 999999999,
+        maxHp: 999999999,
+        attack: 0,
+        defense: 5,
+        facing: -1,
+        shootCooldown: 0,
+        state: 'idle',
+        animFrame: 0,
+        name: 'IMMORTAL SLIME 👑',
+        isImmortal: true,
+      }];
+      return;
+    }
 
     this.shadowmonStacks = 0;
     this.shadowmonUltActive = false;
@@ -794,6 +827,7 @@ export class GameEngine {
   }
 
   private setupInputListeners() {
+    if (this.isDemoMode) return;
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
   }
@@ -8457,16 +8491,52 @@ export class GameEngine {
       if (this.shieldDuration <= 0) this.shieldActive = false;
     }
 
+    if (this.isDemoMode) {
+      this.pHP = 9999;
+      this.pEnergy = this.getMaxEnergy();
+      if (this.enemies.length === 0 || this.enemies[0].hp <= 0) {
+        this.enemies = [{
+          id: 99999,
+          x: 320,
+          y: 688,
+          vx: 0,
+          vy: 0,
+          width: 38,
+          height: 32,
+          type: 'slime',
+          hp: 999999999,
+          maxHp: 999999999,
+          attack: 0,
+          defense: 5,
+          facing: -1,
+          shootCooldown: 0,
+          state: 'idle',
+          animFrame: 0,
+          name: 'IMMORTAL SLIME 👑',
+          isImmortal: true,
+        }];
+      } else {
+        // Lock slime position stationary facing player
+        this.enemies[0].x = 320;
+        this.enemies[0].vx = 0;
+        this.enemies[0].facing = -1;
+        this.enemies[0].state = 'idle';
+      }
+    }
+
     this.updatePhysics();
     this.updateEntities();
     this.updateParticles();
 
-    const targetCamX = this.px - this.canvas.width / 2 + this.pWidth / 2;
-    this.cameraX += (targetCamX - this.cameraX) * 0.1;
-
-    this.cameraX = Math.max(0, Math.min(this.levelWidth - this.canvas.width, this.cameraX));
-
-    this.cameraY = 0;
+    if (this.isDemoMode) {
+      this.cameraX = 0;
+      this.cameraY = 510;
+    } else {
+      const targetCamX = this.px - this.canvas.width / 2 + this.pWidth / 2;
+      this.cameraX += (targetCamX - this.cameraX) * 0.1;
+      this.cameraX = Math.max(0, Math.min(this.levelWidth - this.canvas.width, this.cameraX));
+      this.cameraY = 0;
+    }
 
     this.draw();
   };
@@ -8488,8 +8558,10 @@ export class GameEngine {
 
   public destroy() {
     this.pause();
-    window.removeEventListener('keydown', this.handleKeyDown);
-    window.removeEventListener('keyup', this.handleKeyUp);
+    if (!this.isDemoMode) {
+      window.removeEventListener('keydown', this.handleKeyDown);
+      window.removeEventListener('keyup', this.handleKeyUp);
+    }
   }
 
   private checkTrampoline(x: number, y: number): boolean {

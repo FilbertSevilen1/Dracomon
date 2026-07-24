@@ -124,6 +124,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
       if (e.key === 'Escape') {
         e.preventDefault();
         if (gameState === 'victory' || gameState === 'gameover') {
@@ -144,16 +145,30 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           e.preventDefault();
           handlePauseToggle();
         }
-      } else if (e.key.toLowerCase() === 'r' && gameState === 'paused') {
+      } else if (key === 'r' && (gameState === 'paused' || gameState === 'gameover')) {
         e.preventDefault();
         handleRestart();
-      } else if (e.key.toLowerCase() === 'q' && gameState === 'paused') {
+      } else if (key === 'q' && (gameState === 'paused' || gameState === 'gameover' || gameState === 'victory')) {
         e.preventDefault();
         soundService.playClick();
         onQuit();
-      } else if (e.key.toLowerCase() === 'h' && gameState === 'playing') {
+      } else if (key === 's' && gameState === 'paused') {
+        e.preventDefault();
+        soundService.playClick();
+        openSettings();
+      } else if (key === 'h' && gameState === 'playing') {
         e.preventDefault();
         handleQuickHeal();
+      } else if ((key === 'b' || key === 'i') && gameState === 'playing') {
+        e.preventDefault();
+        soundService.playClick();
+        openInventory();
+      } else if (key === 'p' && (gameState === 'playing' || gameState === 'paused')) {
+        e.preventDefault();
+        handlePauseToggle();
+      } else if (key === 'f' && gameState === 'playing') {
+        e.preventDefault();
+        handleToggleFullscreen();
       }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
@@ -314,8 +329,10 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       </div>
 
 
+      {/* TOP OVERLAY HUD */}
       <div className="absolute top-1 left-1 right-1 sm:top-3 sm:left-4 sm:right-4 max-w-[1920px] mx-auto z-30 flex items-center justify-between pointer-events-none gap-1 sm:gap-2">
 
+        {/* HERO BADGE */}
         <div className="flex items-center gap-1.5 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
           <div className="relative shrink-0">
             <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-stone-800/90 flex items-center justify-center border border-stone-700 font-display text-xs sm:text-base">
@@ -346,6 +363,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         </div>
 
 
+        {/* STAT GAUGES */}
         <div className="flex items-center gap-1 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
 
           <div className="flex flex-col items-center justify-center relative group" title={`Health: ${hp}/${maxHp}`}>
@@ -409,6 +427,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         </div>
 
 
+        {/* TOP UTILITIES & HOTKEY BADGES */}
         <div className="flex items-center gap-0.5 sm:gap-1.5 pointer-events-auto bg-stone-950/80 backdrop-blur-md p-1 sm:p-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
 
           <div className="flex items-center gap-0.5 px-1.5 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[9px] sm:text-xs font-mono font-bold text-amber-400 shadow-sm">
@@ -417,52 +436,44 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
 
           <button
-            onClick={handleQuickHeal}
-            disabled={activePotionCount <= 0}
-            className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl border flex items-center justify-center relative transition-all active:scale-95 ${activePotionCount > 0
-                ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/50 shadow-sm'
-                : 'bg-stone-800 border-stone-700 text-stone-600 cursor-not-allowed'
-              }`}
-            title={`Use Potion [H] (${activePotionCount} left)`}
-          >
-            <Heart className="w-3 h-3 sm:w-4 sm:h-4" />
-            {activePotionCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-rose-500 border border-stone-900 text-white text-[7px] sm:text-[9px] font-bold font-mono px-0.5 sm:px-1 rounded-full">
-                {activePotionCount}
-              </span>
-            )}
-          </button>
-
-
-          <button
             onClick={() => { soundService.playClick(); openInventory(); }}
-            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-300 shadow-sm transition-all active:scale-95"
-            title="Open Bag"
+            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-300 shadow-sm transition-all active:scale-95 relative group"
+            title="Open Bag [B]"
           >
             <Briefcase className="w-3 h-3 sm:w-4 sm:h-4" />
+            <kbd className="absolute -bottom-1.5 -right-1.5 bg-stone-950 border border-amber-500/60 text-amber-400 text-[7px] sm:text-[8px] font-mono font-bold px-1 rounded shadow pointer-events-none">
+              B
+            </kbd>
           </button>
 
 
           <button
             onClick={handlePauseToggle}
-            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-white shadow-sm transition-all active:scale-95"
-            title="Pause Game"
+            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-white shadow-sm transition-all active:scale-95 relative group"
+            title="Pause Game [Esc]"
           >
             <Pause className="w-3 h-3 sm:w-4 sm:h-4" />
+            <kbd className="absolute -bottom-1.5 -right-1.5 bg-stone-950 border border-amber-500/60 text-amber-400 text-[7px] sm:text-[8px] font-mono font-bold px-1 rounded shadow pointer-events-none">
+              Esc
+            </kbd>
           </button>
 
 
           <button
             onClick={handleToggleFullscreen}
-            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-amber-400 shadow-sm transition-all active:scale-95 flex items-center justify-center"
-            title={isFullscreen ? "Exit Fullscreen" : "Fullscreen Mode"}
+            className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-amber-400 shadow-sm transition-all active:scale-95 flex items-center justify-center relative group"
+            title={isFullscreen ? "Exit Fullscreen [F]" : "Fullscreen Mode [F]"}
           >
             {isFullscreen ? <Minimize className="w-3 h-3 sm:w-4 sm:h-4" /> : <Maximize className="w-3 h-3 sm:w-4 sm:h-4" />}
+            <kbd className="absolute -bottom-1.5 -right-1.5 bg-stone-950 border border-amber-500/60 text-amber-400 text-[7px] sm:text-[8px] font-mono font-bold px-1 rounded shadow pointer-events-none">
+              F
+            </kbd>
           </button>
         </div>
       </div>
 
 
+      {/* GAME STATE MODALS */}
       <AnimatePresence>
 
         {gameState === 'paused' && (
@@ -483,7 +494,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   className="w-full py-3 px-4 bg-stone-900 text-white rounded-xl text-sm font-bold hover:bg-stone-800 active:scale-95 transition-all flex items-center justify-between"
                 >
                   <span className="flex items-center gap-2"><Play className="w-3.5 h-3.5" /> Resume Adventure</span>
-                  <span className="text-[10px] font-mono bg-stone-700 px-2 py-0.5 rounded-lg">ESC / ENTER</span>
+                  <kbd className="text-[10px] font-mono bg-stone-700 text-amber-400 px-2 py-0.5 rounded-lg border border-stone-600 font-bold">ESC / ENTER</kbd>
                 </button>
 
                 <button
@@ -491,15 +502,15 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 active:scale-95 transition-all border border-stone-200 flex items-center justify-between"
                 >
                   <span className="flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" /> Restart Level</span>
-                  <span className="text-[10px] font-mono bg-stone-200 px-2 py-0.5 rounded-lg">R</span>
+                  <kbd className="text-[10px] font-mono bg-stone-200 text-stone-800 px-2 py-0.5 rounded-lg border border-stone-300 font-bold">R</kbd>
                 </button>
 
                 <button
                   onClick={() => { soundService.playClick(); openSettings(); }}
-                  className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 active:scale-95 transition-all border border-stone-200 flex items-center justify-center gap-2"
+                  className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 active:scale-95 transition-all border border-stone-200 flex items-center justify-between"
                 >
-                  <Settings className="w-3.5 h-3.5" />
-                  Settings
+                  <span className="flex items-center gap-2"><Settings className="w-3.5 h-3.5" /> Settings</span>
+                  <kbd className="text-[10px] font-mono bg-stone-200 text-stone-800 px-2 py-0.5 rounded-lg border border-stone-300 font-bold">S</kbd>
                 </button>
 
                 <button
@@ -507,7 +518,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   className="w-full py-2.5 px-4 bg-white text-rose-600 rounded-xl text-xs font-bold hover:bg-rose-50 active:scale-95 transition-all border border-rose-200 flex items-center justify-between"
                 >
                   <span className="flex items-center gap-2"><Home className="w-3.5 h-3.5" /> Return to Camp</span>
-                  <span className="text-[10px] font-mono bg-rose-100 text-rose-400 px-2 py-0.5 rounded-lg">Q</span>
+                  <kbd className="text-[10px] font-mono bg-rose-100 text-rose-600 px-2 py-0.5 rounded-lg border border-rose-200 font-bold">Q</kbd>
                 </button>
               </div>
             </div>
@@ -538,7 +549,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   className="w-full py-3 px-4 bg-rose-500 text-white rounded-xl text-sm font-bold hover:bg-rose-600 active:scale-95 transition-all flex items-center justify-between"
                 >
                   <span className="flex items-center gap-2"><RotateCcw className="w-3.5 h-3.5" /> Try Again</span>
-                  <span className="text-[10px] font-mono bg-rose-700/50 px-2 py-0.5 rounded-lg">ENTER</span>
+                  <kbd className="text-[10px] font-mono bg-rose-700/80 text-white px-2 py-0.5 rounded-lg border border-rose-600 font-bold">ENTER / R</kbd>
                 </button>
 
                 <button
@@ -546,7 +557,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   className="w-full py-2.5 px-4 bg-stone-50 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-100 active:scale-95 transition-all border border-stone-200 flex items-center justify-between"
                 >
                   <span className="flex items-center gap-2"><Home className="w-3.5 h-3.5" /> Return to Camp</span>
-                  <span className="text-[10px] font-mono bg-stone-300 px-2 py-0.5 rounded-lg">ESC</span>
+                  <kbd className="text-[10px] font-mono bg-stone-200 text-stone-800 px-2 py-0.5 rounded-lg border border-stone-300 font-bold">ESC / Q</kbd>
                 </button>
               </div>
             </div>
@@ -577,7 +588,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   className="w-full py-3 px-4 bg-emerald-500 text-white rounded-xl text-sm font-bold hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-between shadow-lg"
                 >
                   <span>Next Level</span>
-                  <span className="text-[10px] font-mono bg-emerald-700/50 px-2 py-0.5 rounded-lg">ENTER</span>
+                  <kbd className="text-[10px] font-mono bg-emerald-700/80 text-white px-2 py-0.5 rounded-lg border border-emerald-600 font-bold">ENTER</kbd>
                 </button>
 
                 <button
@@ -585,7 +596,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
                   className="w-full py-2.5 px-4 bg-stone-100 text-stone-700 rounded-xl text-xs font-bold hover:bg-stone-200 active:scale-95 transition-all border border-stone-200 flex items-center justify-between"
                 >
                   <span>Return to Camp</span>
-                  <span className="text-[10px] font-mono bg-stone-300 px-2 py-0.5 rounded-lg">ESC</span>
+                  <kbd className="text-[10px] font-mono bg-stone-200 text-stone-800 px-2 py-0.5 rounded-lg border border-stone-300 font-bold">ESC / Q</kbd>
                 </button>
               </div>
             </div>
@@ -594,90 +605,168 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       </AnimatePresence>
 
 
+      {/* BOTTOM CONTROL CONTROLS WITH HOTKEY BADGES */}
       <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 z-20 flex items-end justify-between pointer-events-none">
 
+        {/* DIRECTIONAL CONTROLS WITH HOTKEY INDICATORS */}
         <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
-          <button
-            onMouseDown={() => triggerMobileAction('left')}
-            onMouseUp={() => stopMobileAction('left')}
-            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('left'); }}
-            onTouchEnd={() => stopMobileAction('left')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-900/80 border-2 border-stone-700/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-xl select-none"
-          >
-            ◀
-          </button>
 
-          <button
-            onMouseDown={() => triggerMobileAction('down')}
-            onMouseUp={() => stopMobileAction('down')}
-            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('down'); }}
-            onTouchEnd={() => stopMobileAction('down')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-900/80 border-2 border-stone-700/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-xl select-none"
-          >
-            ▼
-          </button>
+          {/* LEFT BUTTON [A] */}
+          <div className="relative group">
+            <button
+              onMouseDown={() => triggerMobileAction('left')}
+              onMouseUp={() => stopMobileAction('left')}
+              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('left'); }}
+              onTouchEnd={() => stopMobileAction('left')}
+              className="w-11 h-11 sm:w-14 sm:h-14 bg-stone-900/80 border-2 border-stone-700/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-xl select-none relative"
+              title="Move Left [A]"
+            >
+              ◀
+            </button>
+            <kbd className="absolute -top-1.5 -left-1.5 bg-stone-900 border border-stone-600 text-amber-400 text-[7px] sm:text-[9px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+              A
+            </kbd>
+          </div>
 
-          <button
-            onMouseDown={() => triggerMobileAction('right')}
-            onMouseUp={() => stopMobileAction('right')}
-            onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('right'); }}
-            onTouchEnd={() => stopMobileAction('right')}
-            className="w-12 h-12 sm:w-14 sm:h-14 bg-stone-900/80 border-2 border-stone-700/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-xl select-none"
-          >
-            ▶
-          </button>
+          {/* DOWN BUTTON [S] */}
+          <div className="relative group">
+            <button
+              onMouseDown={() => triggerMobileAction('down')}
+              onMouseUp={() => stopMobileAction('down')}
+              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('down'); }}
+              onTouchEnd={() => stopMobileAction('down')}
+              className="w-11 h-11 sm:w-14 sm:h-14 bg-stone-900/80 border-2 border-stone-700/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-xl select-none relative"
+              title="Drop Down / Crouch [S]"
+            >
+              ▼
+            </button>
+            <kbd className="absolute -top-1.5 -left-1.5 bg-stone-900 border border-stone-600 text-amber-400 text-[7px] sm:text-[9px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+              S
+            </kbd>
+          </div>
+
+          {/* RIGHT BUTTON [D] */}
+          <div className="relative group">
+            <button
+              onMouseDown={() => triggerMobileAction('right')}
+              onMouseUp={() => stopMobileAction('right')}
+              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('right'); }}
+              onTouchEnd={() => stopMobileAction('right')}
+              className="w-11 h-11 sm:w-14 sm:h-14 bg-stone-900/80 border-2 border-stone-700/80 backdrop-blur-md rounded-2xl flex items-center justify-center text-white active:bg-stone-700 active:scale-95 transition-all font-mono font-bold shadow-xl select-none relative"
+              title="Move Right [D]"
+            >
+              ▶
+            </button>
+            <kbd className="absolute -top-1.5 -left-1.5 bg-stone-900 border border-stone-600 text-amber-400 text-[7px] sm:text-[9px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+              D
+            </kbd>
+          </div>
         </div>
 
 
+        {/* ACTION & SKILL CONTROLS WITH HOTKEY INDICATORS & POTION BESIDE SKILLS */}
         <div className="pointer-events-auto flex flex-col gap-2.5 items-end select-none">
 
-          <div className="flex items-center gap-3 justify-end">
+          {/* ROW 1: HEAL [H], JUMP [W], SLAY [J] */}
+          <div className="flex items-center gap-2 sm:gap-3 justify-end">
 
-            <button
-              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('jump'); }}
-              onMouseDown={() => triggerMobileAction('jump')}
-              className="w-12 h-12 sm:w-14 sm:h-14 bg-amber-500/90 border-2 border-amber-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[10px] sm:text-xs active:bg-amber-600 active:scale-95 transition-all shadow-xl"
-            >
-              <span>JUMP</span>
-            </button>
+            {/* POTION QUICK HEAL BUTTON [H] - MOVED BESIDE SKILLS */}
+            <div className="relative group">
+              <button
+                onClick={handleQuickHeal}
+                disabled={activePotionCount <= 0}
+                className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-xl border-2 backdrop-blur-md relative ${
+                  activePotionCount > 0
+                    ? 'bg-rose-500/90 border-rose-400 text-white hover:bg-rose-600 shadow-rose-900/40'
+                    : 'bg-stone-900/80 border-stone-800 text-stone-600 cursor-not-allowed'
+                }`}
+                title={`Use Potion [H] (${activePotionCount} left)`}
+              >
+                <Heart className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5 fill-current" />
+                <span>HEAL</span>
+                {activePotionCount > 0 && (
+                  <span className="absolute -bottom-1 -right-1 bg-rose-600 border border-stone-900 text-white text-[7px] sm:text-[9px] font-extrabold font-mono px-1 rounded-full">
+                    {activePotionCount}
+                  </span>
+                )}
+              </button>
+              <kbd className="absolute -top-1.5 -left-1.5 bg-stone-950 border border-rose-500/80 text-rose-300 text-[7px] sm:text-[9px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+                H
+              </kbd>
+            </div>
 
+            {/* JUMP BUTTON [W] */}
+            <div className="relative group">
+              <button
+                onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('jump'); }}
+                onMouseDown={() => triggerMobileAction('jump')}
+                className="w-11 h-11 sm:w-14 sm:h-14 bg-amber-500/90 border-2 border-amber-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[9px] sm:text-xs active:bg-amber-600 active:scale-95 transition-all shadow-xl relative"
+                title="Jump [W / Up]"
+              >
+                <span>JUMP</span>
+              </button>
+              <kbd className="absolute -top-1.5 -left-1.5 bg-stone-950 border border-amber-500/80 text-amber-300 text-[7px] sm:text-[9px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+                W
+              </kbd>
+            </div>
 
-            <button
-              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('attack'); }}
-              onMouseDown={() => triggerMobileAction('attack')}
-              className="w-13 h-13 sm:w-15 sm:h-15 bg-rose-500/90 border-2 border-rose-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-xs sm:text-sm active:bg-rose-600 active:scale-95 transition-all shadow-xl"
-            >
-              <Sword className="w-4 h-4 sm:w-5 sm:h-5 mb-0.5" />
-              <span>SLAY</span>
-            </button>
+            {/* SLAY ATTACK BUTTON [J] */}
+            <div className="relative group">
+              <button
+                onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('attack'); }}
+                onMouseDown={() => triggerMobileAction('attack')}
+                className="w-12 h-12 sm:w-15 sm:h-15 bg-rose-500/90 border-2 border-rose-400 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[10px] sm:text-xs active:bg-rose-600 active:scale-95 transition-all shadow-xl relative"
+                title="Basic Attack [J / Z]"
+              >
+                <Sword className="w-3.5 h-3.5 sm:w-4 sm:h-4 mb-0.5" />
+                <span>SLAY</span>
+              </button>
+              <kbd className="absolute -top-1.5 -left-1.5 bg-stone-950 border border-rose-500/80 text-rose-300 text-[7px] sm:text-[9px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+                J
+              </kbd>
+            </div>
           </div>
 
 
-          <div className="flex items-center gap-3 justify-end">
+          {/* ROW 2: SKILL [K], ULT [Space] */}
+          <div className="flex items-center gap-2 sm:gap-3 justify-end">
 
-            <button
-              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('special'); }}
-              onMouseDown={() => triggerMobileAction('special')}
-              className="w-12 h-12 sm:w-14 sm:h-14 bg-purple-600/90 border-2 border-purple-500 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[9px] sm:text-[10px] active:bg-purple-700 active:scale-95 transition-all shadow-xl"
-            >
-              <Zap className="w-3.5 h-3.5" />
-              <span>SKILL</span>
-            </button>
+            {/* SPECIAL SKILL BUTTON [K] */}
+            <div className="relative group">
+              <button
+                onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('special'); }}
+                onMouseDown={() => triggerMobileAction('special')}
+                className="w-11 h-11 sm:w-14 sm:h-14 bg-purple-600/90 border-2 border-purple-500 backdrop-blur-md rounded-full flex flex-col items-center justify-center text-white font-black text-[9px] sm:text-[10px] active:bg-purple-700 active:scale-95 transition-all shadow-xl relative"
+                title="Special Skill [K / X]"
+              >
+                <Zap className="w-3.5 h-3.5" />
+                <span>SKILL</span>
+              </button>
+              <kbd className="absolute -top-1.5 -left-1.5 bg-stone-950 border border-purple-400 text-purple-300 text-[7px] sm:text-[9px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+                K
+              </kbd>
+            </div>
 
-
-            <button
-              onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('ultimate'); }}
-              onMouseDown={() => triggerMobileAction('ultimate')}
-              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-xl border-2 backdrop-blur-md ${isUltimateReady
-                  ? 'bg-amber-400/90 border-amber-300 text-amber-950 animate-pulse shadow-[0_0_14px_#fbbf24]'
-                  : level < 5
-                    ? 'bg-stone-900/80 border-stone-800 text-stone-600 cursor-not-allowed'
-                    : 'bg-indigo-950/90 border-purple-500 text-purple-300'
-                }`}
-            >
-              <Zap className={`w-3.5 h-3.5 ${isUltimateReady ? 'text-amber-950 fill-amber-950' : 'text-purple-300 fill-purple-300'}`} />
-              <span>ULT</span>
-            </button>
+            {/* ULTIMATE SKILL BUTTON [Space] */}
+            <div className="relative group">
+              <button
+                onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('ultimate'); }}
+                onMouseDown={() => triggerMobileAction('ultimate')}
+                className={`w-11 h-11 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-xl border-2 backdrop-blur-md relative ${isUltimateReady
+                    ? 'bg-amber-400/90 border-amber-300 text-amber-950 animate-pulse shadow-[0_0_14px_#fbbf24]'
+                    : level < 5
+                      ? 'bg-stone-900/80 border-stone-800 text-stone-600 cursor-not-allowed'
+                      : 'bg-indigo-950/90 border-purple-500 text-purple-300'
+                  }`}
+                title="Ultimate Skill [Space]"
+              >
+                <Zap className={`w-3.5 h-3.5 ${isUltimateReady ? 'text-amber-950 fill-amber-950' : 'text-purple-300 fill-purple-300'}`} />
+                <span>ULT</span>
+              </button>
+              <kbd className="absolute -top-1.5 -left-1.5 bg-stone-950 border border-amber-400 text-amber-300 text-[7px] sm:text-[8px] font-mono font-bold px-1 py-0.2 rounded shadow pointer-events-none z-10">
+                Space
+              </kbd>
+            </div>
           </div>
         </div>
       </div>
@@ -685,3 +774,4 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   );
 };
 export default GameScreen;
+
