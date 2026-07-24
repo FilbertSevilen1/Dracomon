@@ -244,13 +244,13 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     soundService.playClick();
     if (!document.fullscreenElement) {
       if (containerRef.current?.requestFullscreen) {
-        containerRef.current.requestFullscreen().catch(() => {});
+        containerRef.current.requestFullscreen().catch(() => { });
       } else if ((containerRef.current as any)?.webkitRequestFullscreen) {
         (containerRef.current as any).webkitRequestFullscreen();
       }
     } else {
       if (document.exitFullscreen) {
-        document.exitFullscreen().catch(() => {});
+        document.exitFullscreen().catch(() => { });
       } else if ((document as any).webkitExitFullscreen) {
         (document as any).webkitExitFullscreen();
       }
@@ -305,7 +305,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   return (
     <div ref={containerRef} className="w-full h-full z-50 bg-stone-950 overflow-hidden select-none relative flex justify-center items-center">
-      {}
+
       <div className="w-full h-full max-w-[1920px] mx-auto relative overflow-hidden flex items-center justify-center bg-stone-950 z-10">
         <canvas
           ref={canvasRef}
@@ -313,9 +313,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         />
       </div>
 
-      {}
+
       <div className="absolute top-1 left-1 right-1 sm:top-3 sm:left-4 sm:right-4 max-w-[1920px] mx-auto z-30 flex items-center justify-between pointer-events-none gap-1 sm:gap-2">
-        {}
+
         <div className="flex items-center gap-1.5 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
           <div className="relative shrink-0">
             <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-stone-800/90 flex items-center justify-center border border-stone-700 font-display text-xs sm:text-base">
@@ -329,7 +329,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             <div className="font-bold text-[10px] sm:text-sm text-stone-100 leading-none flex items-center gap-1 truncate">
               <span className="truncate">{selectedDraco}</span>
             </div>
-            {}
+
             <div className="w-12 sm:w-24 mt-0.5 sm:mt-1">
               <div className="flex justify-between text-[6px] sm:text-[8px] font-bold text-stone-400 font-mono">
                 <span>EXP</span>
@@ -345,9 +345,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </div>
         </div>
 
-        {}
+
         <div className="flex items-center gap-1 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-4 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
-          {}
+
           <div className="flex flex-col items-center justify-center relative group" title={`Health: ${hp}/${maxHp}`}>
             <div className="relative w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
@@ -377,7 +377,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             </div>
           </div>
 
-          {}
+
           <div className="flex flex-col items-center justify-center relative group" title={`Laser/Energy: ${Math.floor(energy)}/${maxEnergy}`}>
             <div className="relative w-8 h-8 sm:w-11 sm:h-11 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90 transform" viewBox="0 0 36 36">
@@ -408,22 +408,21 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </div>
         </div>
 
-        {}
+
         <div className="flex items-center gap-0.5 sm:gap-1.5 pointer-events-auto bg-stone-950/80 backdrop-blur-md p-1 sm:p-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
-          {}
+
           <div className="flex items-center gap-0.5 px-1.5 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[9px] sm:text-xs font-mono font-bold text-amber-400 shadow-sm">
             🪙 <span>{saveData.player.coins}</span>
           </div>
 
-          {}
+
           <button
             onClick={handleQuickHeal}
             disabled={activePotionCount <= 0}
-            className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl border flex items-center justify-center relative transition-all active:scale-95 ${
-              activePotionCount > 0
+            className={`p-1 sm:p-1.5 rounded-lg sm:rounded-xl border flex items-center justify-center relative transition-all active:scale-95 ${activePotionCount > 0
                 ? 'bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 border-rose-500/50 shadow-sm'
                 : 'bg-stone-800 border-stone-700 text-stone-600 cursor-not-allowed'
-            }`}
+              }`}
             title={`Use Potion [H] (${activePotionCount} left)`}
           >
             <Heart className="w-3 h-3 sm:w-4 sm:h-4" />
@@ -434,7 +433,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             )}
           </button>
 
-          {}
+
           <button
             onClick={() => { soundService.playClick(); openInventory(); }}
             className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-stone-300 shadow-sm transition-all active:scale-95"
@@ -443,7 +442,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             <Briefcase className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
 
-          {}
+
           <button
             onClick={handlePauseToggle}
             className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-white shadow-sm transition-all active:scale-95"
@@ -452,7 +451,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             <Pause className="w-3 h-3 sm:w-4 sm:h-4" />
           </button>
 
-          {}
+
           <button
             onClick={handleToggleFullscreen}
             className="p-1 sm:p-1.5 rounded-lg sm:rounded-xl border border-stone-700 bg-stone-800 hover:bg-stone-700 text-amber-400 shadow-sm transition-all active:scale-95 flex items-center justify-center"
@@ -463,9 +462,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         </div>
       </div>
 
-      {}
+
       <AnimatePresence>
-        {}
+
         {gameState === 'paused' && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -515,7 +514,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </motion.div>
         )}
 
-        {}
+
         {gameState === 'gameover' && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -554,7 +553,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </motion.div>
         )}
 
-        {}
+
         {gameState === 'victory' && (
           <motion.div
             initial={{ opacity: 0 }}
@@ -594,9 +593,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         )}
       </AnimatePresence>
 
-      {}
+
       <div className="absolute bottom-3 left-3 right-3 sm:bottom-5 sm:left-5 sm:right-5 z-20 flex items-end justify-between pointer-events-none">
-        {}
+
         <div className="pointer-events-auto flex items-center gap-1.5 sm:gap-2">
           <button
             onMouseDown={() => triggerMobileAction('left')}
@@ -629,11 +628,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           </button>
         </div>
 
-        {}
+
         <div className="pointer-events-auto flex flex-col gap-2.5 items-end select-none">
-          {}
+
           <div className="flex items-center gap-3 justify-end">
-            {}
+
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('jump'); }}
               onMouseDown={() => triggerMobileAction('jump')}
@@ -642,7 +641,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               <span>JUMP</span>
             </button>
 
-            {}
+
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('attack'); }}
               onMouseDown={() => triggerMobileAction('attack')}
@@ -653,9 +652,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             </button>
           </div>
 
-          {}
+
           <div className="flex items-center gap-3 justify-end">
-            {}
+
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('special'); }}
               onMouseDown={() => triggerMobileAction('special')}
@@ -665,17 +664,16 @@ export const GameScreen: React.FC<GameScreenProps> = ({
               <span>SKILL</span>
             </button>
 
-            {}
+
             <button
               onTouchStart={(e) => { e.preventDefault(); triggerMobileAction('ultimate'); }}
               onMouseDown={() => triggerMobileAction('ultimate')}
-              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-xl border-2 backdrop-blur-md ${
-                isUltimateReady
+              className={`w-12 h-12 sm:w-14 sm:h-14 rounded-full flex flex-col items-center justify-center font-black text-[9px] sm:text-[10px] active:scale-95 transition-all shadow-xl border-2 backdrop-blur-md ${isUltimateReady
                   ? 'bg-amber-400/90 border-amber-300 text-amber-950 animate-pulse shadow-[0_0_14px_#fbbf24]'
                   : level < 5
-                  ? 'bg-stone-900/80 border-stone-800 text-stone-600 cursor-not-allowed'
-                  : 'bg-indigo-950/90 border-purple-500 text-purple-300'
-              }`}
+                    ? 'bg-stone-900/80 border-stone-800 text-stone-600 cursor-not-allowed'
+                    : 'bg-indigo-950/90 border-purple-500 text-purple-300'
+                }`}
             >
               <Zap className={`w-3.5 h-3.5 ${isUltimateReady ? 'text-amber-950 fill-amber-950' : 'text-purple-300 fill-purple-300'}`} />
               <span>ULT</span>
