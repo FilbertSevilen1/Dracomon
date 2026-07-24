@@ -443,7 +443,7 @@ export class GameEngine {
           this.pickups.push({ x: ex + 12, y: ey + 12, width: 16, height: 16, type: 'coin', amount: 5, collected: false });
         } else if (char === 'p') {
           this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'potion', amount: 1, collected: false });
-        } else if (char === 's') {
+        } else if (char === 'u') {
           this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'upgrade_stone', amount: 1, collected: false });
         } else if (char === 'F') {
           this.enemies.push({
@@ -632,57 +632,35 @@ export class GameEngine {
             width: 32,
             height: 36,
             type: 'bomb_thrower' as any,
-            hp: 20 + (grid.length * 4),
-            maxHp: 20 + (grid.length * 4),
-            attack: 4,
-            defense: 2,
+            hp: 40 + (grid.length * 4),
+            maxHp: 40 + (grid.length * 4),
+            attack: 12,
+            defense: 6,
             facing: -1,
             shootCooldown: 120,
             state: 'patrol',
             animFrame: 0,
           });
         } else if (char === 'S') {
-          if (this.level.name.includes('Stage 10') || this.level.name.includes('Jungle')) {
-            this.enemies.push({
-              id: this.enemyIdCounter++,
-              x: ex + 4,
-              y: ey + ts - 38,
-              vx: -1.2,
-              vy: 0,
-              width: 30,
-              height: 38,
-              type: 'skeleton_archer',
-              hp: 25,
-              maxHp: 25,
-              attack: 5,
-              defense: 2,
-              facing: -1,
-              shootCooldown: 90,
-              state: 'patrol',
-              animFrame: 0,
-              name: 'Undead Skeleton'
-            });
-          } else {
-            this.enemies.push({
-              id: this.enemyIdCounter++,
-              x: ex + 2,
-              y: ey + ts - 48,
-              vx: -0.6,
-              vy: 0,
-              width: 60,
-              height: 48,
-              type: 'king_slime',
-              hp: 80,
-              maxHp: 80,
-              attack: 5,
-              defense: 2,
-              facing: -1,
-              shootCooldown: 90,
-              state: 'patrol',
-              animFrame: 0,
-              name: 'King Slime Lord'
-            });
-          }
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex + 2,
+            y: ey + ts - 48,
+            vx: -0.6,
+            vy: 0,
+            width: 60,
+            height: 48,
+            type: 'king_slime',
+            hp: 120,
+            maxHp: 120,
+            attack: 5,
+            defense: 2,
+            facing: -1,
+            shootCooldown: 90,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'King Slime Lord'
+          });
         } else if (char === 'B') {
           const isStage2 = this.level.name.includes('Stage 2');
           this.enemies.push({
@@ -694,10 +672,10 @@ export class GameEngine {
             width: 56,
             height: 64,
             type: 'miniboss',
-            hp: isStage2 ? 100 : 140,
-            maxHp: isStage2 ? 100 : 140,
-            attack: isStage2 ? 6 : 8,
-            defense: isStage2 ? 3 : 5,
+            hp: isStage2 ? 250 : 400,
+            maxHp: isStage2 ? 250 : 400,
+            attack: isStage2 ? 8 : 17,
+            defense: isStage2 ? 6 : 9,
             facing: -1,
             shootCooldown: 100,
             state: 'patrol',
@@ -714,8 +692,8 @@ export class GameEngine {
             width: 68,
             height: 60,
             type: 'frost_wyvern',
-            hp: 190,
-            maxHp: 190,
+            hp: 600,
+            maxHp: 600,
             attack: 10,
             defense: 6,
             facing: -1,
@@ -734,10 +712,10 @@ export class GameEngine {
             width: 72,
             height: 68,
             type: 'shadow_overlord',
-            hp: 250,
-            maxHp: 250,
-            attack: 12,
-            defense: 7,
+            hp: 750,
+            maxHp: 750,
+            attack: 24,
+            defense: 16,
             facing: -1,
             shootCooldown: 70,
             state: 'patrol',
@@ -754,17 +732,17 @@ export class GameEngine {
             width: 88,
             height: 80,
             type: 'dragon_king',
-            hp: 380,
-            maxHp: 380,
-            attack: 16,
-            defense: 9,
+            hp: 900,
+            maxHp: 900,
+            attack: 32,
+            defense: 24,
             facing: -1,
             shootCooldown: 60,
             state: 'patrol',
             animFrame: 0,
             name: 'PRIMORDIAL DRAGON KING'
           });
-        } else if (char === 'S') {
+        } else if (char === 's') {
           this.enemies.push({
             id: this.enemyIdCounter++,
             x: ex + 4,
@@ -774,12 +752,12 @@ export class GameEngine {
             width: 32,
             height: 38,
             type: 'skeleton_archer',
-            hp: 35,
-            maxHp: 35,
-            attack: 6,
-            defense: 3,
+            hp: 50,
+            maxHp: 50,
+            attack: 12,
+            defense: 6,
             facing: -1,
-            shootCooldown: 100,
+            shootCooldown: 60,
             state: 'patrol',
             animFrame: 0,
             name: 'Skeleton Archer',
@@ -797,10 +775,10 @@ export class GameEngine {
             width: 86,
             height: 86,
             type: 'king_kong',
-            hp: 950,
-            maxHp: 950,
-            attack: 18,
-            defense: 8,
+            hp: 1850,
+            maxHp: 1850,
+            attack: 38,
+            defense: 28,
             facing: -1,
             shootCooldown: 120,
             state: 'patrol',
@@ -4530,7 +4508,7 @@ export class GameEngine {
                 type: 'fireball'
               });
             } else if (enemy.type === 'miniboss') {
-              enemy.shootCooldown = 80;
+              enemy.shootCooldown = 60;
               this.projectiles.push({
                 x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 12,
                 y: enemy.y + enemy.height / 2,
@@ -4570,7 +4548,7 @@ export class GameEngine {
         if (Math.abs(dx) < 550 && Math.abs(dy) < 300) {
           enemy.shootCooldown--;
           if (enemy.shootCooldown <= 0) {
-            enemy.shootCooldown = 110;
+            enemy.shootCooldown = 70;
             soundService.playShoot();
 
             const startX = enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 14;
@@ -4597,7 +4575,7 @@ export class GameEngine {
             });
           }
         }
-      } else if (enemy.type === 'immortal_gladiator' || enemy.isImmortal) {
+      } else if (enemy.type === 'immortal_gladiator') {
         enemy.chargeCooldownTimer = (enemy.chargeCooldownTimer ?? 180) - 1;
 
         if (enemy.chargeCooldownTimer <= 0) {
@@ -4687,7 +4665,7 @@ export class GameEngine {
               if (this.pGrounded) {
                 if (this.playerStunCooldown <= 0) {
                   this.playerStunnedTimer = 120;
-                  this.playerStunCooldown = 150; // 2s stun + 0.5s cooldown (120 + 30 frames)
+                  this.playerStunCooldown = 150;
                   this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SEISMIC GROUND SLAM! STUNNED 2s! 🦍💥', '#ef4444');
                 }
               } else {
@@ -4741,7 +4719,7 @@ export class GameEngine {
         if ((enemy.isImmortal || enemy.type === 'immortal_gladiator') && enemy.isCharging) {
           if (this.playerStunCooldown <= 0) {
             this.playerStunnedTimer = 60;
-            this.playerStunCooldown = 90; // 1s stun + 0.5s cooldown (60 + 30 frames)
+            this.playerStunCooldown = 90;
             this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'GLADIATOR RUSH STUN! STUNNED 1.0s! 🛡️💥', '#ef4444');
             soundService.playHit();
           }
