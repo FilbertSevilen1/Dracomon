@@ -248,6 +248,7 @@ export class GameEngine {
   private electrocutionDeathTimer = 0;
   private reaperDeathTimer = 0;
   private antimatterDeathTimer = 0;
+  private shadowHazardCooldown = 0;
   private playerStunnedTimer = 0;
   private playerStunCooldown = 0;
 
@@ -402,6 +403,7 @@ export class GameEngine {
     this.carpetBombingActive = false;
     stageGimmickManager.reset();
     this.gradientCache.clear();
+    this.shadowHazardCooldown = 0;
     this.playerStunnedTimer = 0;
     this.playerStunCooldown = 0;
 
@@ -3818,6 +3820,10 @@ export class GameEngine {
       return;
     }
 
+    if (this.shadowHazardCooldown > 0) {
+      this.shadowHazardCooldown--;
+    }
+
     if (this.playerStunnedTimer > 0) {
       this.playerStunnedTimer--;
       this.pvx = 0;
@@ -3919,53 +3925,83 @@ export class GameEngine {
 
     const touchedHazardPool = this.getTileSymbol(pxMid, pyFeet) === '*' || this.getTileSymbol(this.px + 4, pyFeet) === '*' || this.getTileSymbol(this.px + this.pWidth - 4, pyFeet) === '*';
     if (touchedHazardPool && this.pHP > 0 && (this.skeletonDeathTimer || 0) <= 0 && (this.frozenDeathTimer || 0) <= 0 && (this.electrocutionDeathTimer || 0) <= 0 && (this.reaperDeathTimer || 0) <= 0 && (this.antimatterDeathTimer || 0) <= 0) {
-      this.pHP = 0;
-      this.callbacks.onHpChange?.(0, this.pMaxHP);
-
       const themeType = this.level.theme.type;
 
-      if (this.level.isUnderwater) {
-        soundService.playLavaDeath();
-        this.skeletonDeathTimer = 90;
-        this.pvx = 0;
-        this.pvy = 0;
-        this.addFloatingText(pxMid, this.py - 20, 'SUCKED INTO WHIRLPOOL! 🌀💀', '#06b6d4');
+      if (themeType === 'shadow') {
+        if (this.shadowHazardCooldown <= 0) {
+          this.shadowHazardCooldown = 30;
+          const shadowDmg = 20;
+          if (this.pHP <= shadowDmg) {
+            this.pHP = 0;
+            this.callbacks.onHpChange?.(0, this.pMaxHP);
+            soundService.playScytheDeath();
+            this.reaperDeathTimer = 90;
+            this.pvx = 0;
+            this.pvy = 0;
+            this.screenShake = 25;
+            this.addFloatingText(pxMid, this.py - 20, 'REAPED BY DEATH! 💀⚔️', '#a855f7');
 
-        for (let i = 0; i < 30; i++) {
-          const ang = Math.random() * Math.PI * 2;
-          const spd = Math.random() * 5 + 2;
-          this.particles.push({
-            x: pxMid,
-            y: pyFeet,
-            vx: Math.cos(ang) * spd,
-            vy: Math.sin(ang) * spd,
-            size: Math.random() * 6 + 3,
-            color: i % 2 === 0 ? '#06b6d4' : '#0891b2',
-            life: 30,
-            maxLife: 30
-          });
-        }
-      } else if (themeType === 'shadow') {
-        soundService.playScytheDeath();
-        this.reaperDeathTimer = 90;
-        this.pvx = 0;
-        this.pvy = 0;
-        this.screenShake = 25;
-        this.addFloatingText(pxMid, this.py - 20, 'REAPED BY DEATH! 💀⚔️', '#a855f7');
+            for (let i = 0; i < 30; i++) {
+              this.particles.push({
+                x: pxMid + (Math.random() - 0.5) * 40,
+                y: pyFeet,
+                vx: (Math.random() - 0.5) * 6,
+                vy: -Math.random() * 7 - 2,
+                size: Math.random() * 8 + 4,
+                color: i % 3 === 0 ? '#a855f7' : i % 3 === 1 ? '#6b21a8' : '#ef4444',
+                life: 35,
+                maxLife: 35
+              });
+            }
+          } else {
+            this.pHP = Math.max(1, this.pHP - shadowDmg);
+            this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+            soundService.playHit();
+            this.pvy = -8.5;
+            this.pvx = -this.pFacing * 3.5;
+            this.screenShake = 15;
+            this.addFloatingText(pxMid, this.py - 20, `SHADOW CLOUD -${shadowDmg} HP! 💀☁️`, '#a855f7');
 
-        for (let i = 0; i < 30; i++) {
-          this.particles.push({
-            x: pxMid + (Math.random() - 0.5) * 40,
-            y: pyFeet,
-            vx: (Math.random() - 0.5) * 6,
-            vy: -Math.random() * 7 - 2,
-            size: Math.random() * 8 + 4,
-            color: i % 3 === 0 ? '#a855f7' : i % 3 === 1 ? '#6b21a8' : '#ef4444',
-            life: 35,
-            maxLife: 35
-          });
+            for (let i = 0; i < 15; i++) {
+              this.particles.push({
+                x: pxMid + (Math.random() - 0.5) * 30,
+                y: pyFeet,
+                vx: (Math.random() - 0.5) * 6,
+                vy: -Math.random() * 6 - 2,
+                size: Math.random() * 7 + 3,
+                color: i % 2 === 0 ? '#a855f7' : '#c084fc',
+                life: 25,
+                maxLife: 25
+              });
+            }
+          }
         }
-      } else if (themeType === 'temple') {
+      } else {
+        this.pHP = 0;
+        this.callbacks.onHpChange?.(0, this.pMaxHP);
+
+        if (this.level.isUnderwater) {
+          soundService.playLavaDeath();
+          this.skeletonDeathTimer = 90;
+          this.pvx = 0;
+          this.pvy = 0;
+          this.addFloatingText(pxMid, this.py - 20, 'SUCKED INTO WHIRLPOOL! 🌀💀', '#06b6d4');
+
+          for (let i = 0; i < 30; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 5 + 2;
+            this.particles.push({
+              x: pxMid,
+              y: pyFeet,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              size: Math.random() * 6 + 3,
+              color: i % 2 === 0 ? '#06b6d4' : '#0891b2',
+              life: 30,
+              maxLife: 30
+            });
+          }
+        } else if (themeType === 'temple') {
         soundService.playThunderboltDeath();
         this.electrocutionDeathTimer = 90;
         this.pvx = 0;
@@ -4049,6 +4085,7 @@ export class GameEngine {
         }
       }
     }
+  }
 
     stageGimmickManager.update(
       this.level.theme.type,

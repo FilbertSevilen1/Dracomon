@@ -35,7 +35,7 @@ export default function HeroesPage() {
               Hero Roster <span className="text-amber-500">& Selection</span>
             </h1>
             <p className="text-xs md:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
-              Inspect all 11 dragon guardians, compare base attributes, test live 60 FPS combat previews against Immortal Slime, unlock new companions, and equip your active partner.
+              View all dracos, compare base attributes, unlock new companions, and equip your active partner.
             </p>
           </div>
         </div>

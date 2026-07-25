@@ -573,7 +573,7 @@ export default function Home() {
                     {}
                     <div className="pt-2">
                       <span className="text-[11px] font-mono font-bold text-stone-500 block mb-2 uppercase tracking-widest">
-                        ► Select Active Partner:
+                        ► Select Active Draco:
                       </span>
                       <div className="flex flex-wrap gap-2.5">
                         {companionShowcase.map((item) => {
@@ -630,22 +630,6 @@ export default function Home() {
                         <HelpCircle className="w-4 h-4" />
                         Controls
                       </button>
-                    </div>
-
-                    {}
-                    <div className="grid grid-cols-3 gap-4 pt-4 border-t border-stone-200/60 max-w-lg text-xs font-semibold text-stone-500">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                        <span>100% Offline Save</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
-                        <span>Swinging Blade Arcs</span>
-                      </div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2.5 h-2.5 rounded-full bg-indigo-500" />
-                        <span>Platforming Physics</span>
-                      </div>
                     </div>
                   </div>
 

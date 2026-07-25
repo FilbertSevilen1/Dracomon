@@ -55,7 +55,9 @@ export class HazardManager {
       getTileSymbol(px + pWidth - 4, pyFeet) === '*';
 
     if (touchedHazardPool) {
-      onPlayerHpZero();
+      if (themeType !== 'shadow') {
+        onPlayerHpZero();
+      }
 
       if (isUnderwater) {
         soundService.playLavaDeath();
@@ -68,14 +70,13 @@ export class HazardManager {
           skeletonDeathTimer: 90
         };
       } else if (themeType === 'shadow') {
-        soundService.playScytheDeath();
-        addFloatingText(pxMid, py - 20, 'REAPED BY DEATH! 💀⚔️', '#a855f7');
-        spawnParticles(pxMid, pyFeet, '#a855f7', 30);
+        soundService.playHit();
+        addFloatingText(pxMid, py - 20, 'SHADOW CLOUD -20 HP! 💀☁️', '#a855f7');
+        spawnParticles(pxMid, pyFeet, '#a855f7', 15);
 
         return {
           triggered: true,
-          type: 'reaper',
-          reaperDeathTimer: 90
+          type: 'reaper'
         };
       } else if (themeType === 'temple') {
         soundService.playThunderboltDeath();

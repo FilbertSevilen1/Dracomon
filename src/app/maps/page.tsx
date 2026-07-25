@@ -60,7 +60,7 @@ export default function MapsPage() {
               Campaign <span className="text-rose-500">Maps &amp; Stages</span>
             </h1>
             <p className="text-xs md:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
-              Discover all {STAGES.length} campaign stages across Volcanic Peaks, Underwater Abyss, Jungle Vine Swamps, and the Gladiator Arena.
+              Discover all stages across Volcanic Peaks, Underwater Abyss, Jungle Vine Swamps, and the Gladiator Arena.
               Launch any unlocked stage directly into campaign action!
             </p>
           </div>

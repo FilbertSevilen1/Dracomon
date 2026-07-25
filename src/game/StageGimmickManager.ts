@@ -324,10 +324,12 @@ export class StageGimmickManager {
 
         const dist = Math.hypot(fog.x - pxMid, fog.y - pyMid);
         if (dist < fog.radius + pWidth / 2 && pHP > 0) {
-          callbacks.onDamagePlayer(6, 'Poison Fog');
-          this.playerPoisonBlindTimer = 60;
-          callbacks.addFloatingText(pxMid, py - 20, 'POISON FOG BLINDNESS! ☠️👁️', '#a855f7');
-          callbacks.spawnParticles(pxMid, pyMid, '#c084fc', 12);
+          if (this.timerCount % 30 === 0) {
+            callbacks.onDamagePlayer(6, 'Poison Fog');
+            this.playerPoisonBlindTimer = 60;
+            callbacks.addFloatingText(pxMid, py - 20, 'POISON FOG BLINDNESS! ☠️👁️', '#a855f7');
+            callbacks.spawnParticles(pxMid, pyMid, '#c084fc', 12);
+          }
         }
       }
     }
