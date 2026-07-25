@@ -2699,7 +2699,7 @@ export class GameEngine {
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp'].includes(type);
+    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp'].includes(type);
   }
 
   private updatePhysics() {
