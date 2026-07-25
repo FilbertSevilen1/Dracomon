@@ -30,9 +30,24 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.2.1',
+    date: 'July 25, 2026',
+    tag: 'Mobile Navbar Optimization & Maps Redirect (Current)',
+    badgeColor: 'bg-sky-600 text-white font-black shadow-sm',
+    summary: 'Optimizes the Navbar for mobile screens by collapsing the game logo to a dragon emoji, shrinking the active hero badge to an icon, and displaying all navigation links (Home, Heroes, Maps, Membership, Patch Notes) as icon-only buttons with tooltips on mobile. Also redirects the "Play Campaign Stage" button on the landing page directly to /maps.',
+    highlights: [
+      'Mobile Logo Collapse: The DRACOMON RPG logo shows only the 🐉 dragon emoji on mobile, full logo text on ≥sm breakpoints.',
+      'Icon-Only Mobile Nav: Home, Heroes, Maps, Membership, and Patch Notes nav links collapse to icon buttons (Home, Swords, Map, Crown, ScrollText) on mobile, with title tooltips for accessibility.',
+      'Compact Hero Badge: Active hero badge shows only the Sparkles ⚡ icon on mobile — full name + level on ≥sm breakpoints — saving significant horizontal space.',
+      'Compact Tier Badge: Membership tier badge shows Crown icon on mobile, full "X TIER" text on desktop.',
+      'Play Campaign Stage → /maps: Clicking "Play Campaign Stage" on the landing page now navigates directly to the /maps page instead of opening the inline stage selector modal.',
+    ],
+  },
+  {
     version: '0.2.0',
     date: 'July 25, 2026',
-    tag: 'Enigmon & Outerspace Sphere Expansion (Current)',
+    tag: 'Enigmon & Outerspace Sphere Expansion',
+
     badgeColor: 'bg-purple-600 text-white font-black shadow-sm',
     summary: 'Introduces new Cosmic hero Enigmon with Schwarzschild Pulse & Black Hole singularity ultimate, Stage 12 Outerspace Sphere with black hole hazard zones and bullet-hell comet streams, Alien laser snipers, and the Giant Wisp Supernova boss. Massive animation overhaul pass across Enigmon abilities, Shadowmon, Archermon, Whitemon, and Flymon ultimates.',
     highlights: [
@@ -269,7 +284,7 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  const [openVersion, setOpenVersion] = useState<string | null>('0.2.0');
+  const [openVersion, setOpenVersion] = useState<string | null>('0.2.1');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();

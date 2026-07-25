@@ -43,11 +43,11 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [energy, setEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : selected === 'Enigmon' ? 300 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : selected === 'Enigmon' ? 200 : 100;
   });
   const [maxEnergy, setMaxEnergy] = useState(() => {
     const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : selected === 'Enigmon' ? 300 : 100;
+    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : selected === 'Enigmon' ? 200 : 100;
   });
   const [gameState, setGameState] = useState<'playing' | 'paused' | 'gameover' | 'victory'>('playing');
 
@@ -205,7 +205,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const handleRestart = () => {
     soundService.playClick();
     setGameState('playing');
-    const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : selectedDraco === 'Whitemon' ? 120 : selectedDraco === 'Magemon' ? 300 : selectedDraco === 'Bombamon' ? 120 : selectedDraco === 'Thundermon' ? 200 : selectedDraco === 'Enigmon' ? 300 : 100;
+    const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : selectedDraco === 'Whitemon' ? 120 : selectedDraco === 'Magemon' ? 300 : selectedDraco === 'Bombamon' ? 120 : selectedDraco === 'Thundermon' ? 200 : selectedDraco === 'Enigmon' ? 200 : 100;
     setEnergy(defaultMaxEnergy);
 
     if (engineRef.current) {

@@ -128,12 +128,12 @@ export const HeroDemoCanvas: React.FC<HeroDemoCanvasProps> = ({ selectedDraco })
       </div>
 
       {/* CLEAN CANVAS CONTAINER (NO OVERLAY TEXT OR CHARACTER HEADERS) */}
-      <div className="w-full relative rounded-2xl overflow-hidden border border-stone-800 shadow-xl bg-stone-950">
+      <div className="w-full relative rounded-2xl overflow-hidden border border-stone-800 shadow-xl bg-stone-950" style={{ aspectRatio: '2 / 1' }}>
         <canvas
           ref={canvasRef}
           width={480}
           height={240}
-          className="w-full h-52 block bg-stone-950 cursor-pointer"
+          className="absolute inset-0 w-full h-full block bg-stone-950 cursor-pointer"
           onClick={() => engineRef.current?.triggerAction(actionType)}
           title="Click canvas to trigger action!"
         />

@@ -607,13 +607,14 @@ export default function Home() {
 
                     {}
                     <div className="flex flex-wrap items-center gap-4 pt-2">
-                      <button
-                        onClick={() => { soundService.playClick(); setShowStageSelector(true); }}
+                      <Link
+                        href="/maps"
+                        onClick={() => soundService.playClick()}
                         className="px-8 py-4 bg-stone-900 text-white rounded-2xl font-extrabold text-sm shadow-xl hover:bg-stone-800 hover:shadow-stone-900/20 transition-all active:scale-95 flex items-center gap-2.5"
                       >
                         <Play className="w-5 h-5 text-amber-400 fill-amber-400" />
                         Play Campaign Stage
-                      </button>
+                      </Link>
 
                       <button
                         onClick={() => scrollToSection('characters')}

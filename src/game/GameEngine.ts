@@ -454,34 +454,9 @@ export class GameEngine {
     this.isSurvivalMode = !!this.level.isSurvivalMode;
     this.arenaExploded = false;
     if (this.isSurvivalMode) {
-      const duration = this.level.survivalDuration || 120;
+      const duration = this.level.survivalDuration || 180;
       this.survivalTimer = duration * 60;
       this.survivalWaveTimer = 60;
-
-      const gladX = Math.min(this.levelWidth - 400, Math.max(400, Math.random() * (this.levelWidth - 800) + 400));
-      this.enemies.push({
-        id: this.enemyIdCounter++,
-        x: gladX,
-        y: 200,
-        vx: 2.5,
-        vy: 0,
-        width: 72,
-        height: 72,
-        type: 'immortal_gladiator',
-        hp: 999999999999999999,
-        maxHp: 999999999999999999,
-        attack: 15,
-        defense: 8,
-        facing: 1,
-        shootCooldown: 50,
-        state: 'patrol',
-        animFrame: 0,
-        name: 'Immortal Gladiator',
-        isImmortal: true,
-        stunTimer: 0,
-        damageAcc: 0,
-        chargeCooldownTimer: 120
-      });
     } else {
       this.survivalTimer = 0;
       this.survivalWaveTimer = 0;
@@ -1890,7 +1865,7 @@ export class GameEngine {
       case 'Shadowmon': return 160;
       case 'Bombamon': return 180;
       case 'Thundermon': return 240;
-      case 'Enigmon': return 300;
+      case 'Enigmon': return 200;
       default: return 100;
     }
   }
@@ -8634,14 +8609,7 @@ export class GameEngine {
           this.ctx.stroke();
         }
 
-        // ── Pull zone boundary ────────────────────────────────────────────
-        this.ctx.strokeStyle = `rgba(192, 132, 252, ${lifeAlpha * 0.35})`;
-        this.ctx.lineWidth = 1.5;
-        this.ctx.setLineDash([6, 10]);
-        this.ctx.beginPath();
-        this.ctx.arc(bhX, bhY, pullRadius, 0, Math.PI * 2);
-        this.ctx.stroke();
-        this.ctx.setLineDash([]);
+
 
         this.ctx.restore();
       }
@@ -8679,16 +8647,6 @@ export class GameEngine {
           const bhX = (this as any).enigmonBlackHoleX;
           const bhY = (this as any).enigmonBlackHoleY;
           if (bhX !== undefined && bhY !== undefined) {
-            this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.7)';
-            this.ctx.lineWidth = 2.5;
-            this.ctx.setLineDash([6, 4]);
-            this.ctx.beginPath();
-            this.ctx.moveTo(cx, this.py + this.pHeight / 2);
-            const midX = (cx + bhX) / 2;
-            const midY = (this.py + this.pHeight / 2 + bhY) / 2 + Math.sin(this.frameCount * 0.2) * 15;
-            this.ctx.quadraticCurveTo(midX, midY, bhX, bhY);
-            this.ctx.stroke();
-
             if (this.frameCount % 3 === 0) {
               const t = (this.frameCount % 30) / 30;
               const px = (1 - t) * cx + t * bhX;
