@@ -127,10 +127,45 @@ const DRACO_META: {
     colorClass: 'text-yellow-600 border-yellow-300 bg-yellow-50',
     bgGradient: 'from-yellow-400 via-amber-500 to-cyan-500',
   },
+  Enigmon: {
+    role: 'Cosmic / Dark Matter Singularity',
+    abilityName: 'Schwarzschild Pulse',
+    abilityDesc: 'Creates a 300px radius pulse dealing base damage + 3% enemy max HP damage each second for 3 seconds (cooldown 5s).',
+    ultimateName: 'Black Hole',
+    ultimateDesc: 'Channeling spell (300 Energy). Creates a 50px radius black hole 400px in front, pulling enemies & platforms in 400px radius at 80px/s (destroying sucked platforms except exit portal floor). Enemies within 150px are stunned. Lasts 3s.',
+    cost: 500,
+    colorClass: 'text-purple-400 border-purple-800 bg-purple-950',
+    bgGradient: 'from-purple-900 via-indigo-950 to-black',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
+
+  if (name === 'Enigmon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.3)" />
+        {/* Cosmic Orbit Ring */}
+        <ellipse cx="50" cy="52" rx="38" ry="14" fill="none" stroke="#c084fc" strokeWidth="1.5" strokeDasharray="4 2" opacity="0.8" />
+        {/* Dark Wings */}
+        <path d="M 28 44 Q 4 12 28 26 Z" fill="#3b0764" stroke="#c084fc" strokeWidth="1.5" />
+        <path d="M 72 44 Q 96 12 72 26 Z" fill="#3b0764" stroke="#c084fc" strokeWidth="1.5" />
+        {/* Body */}
+        <rect x="34" y="34" width="32" height="42" rx="10" fill="#090514" stroke="#a855f7" strokeWidth="2.5" />
+        <path d="M 34 34 L 24 16 L 38 24 Z" fill="#7e22ce" stroke="#c084fc" strokeWidth="1.2" />
+        <path d="M 66 34 L 76 16 L 62 24 Z" fill="#7e22ce" stroke="#c084fc" strokeWidth="1.2" />
+        {/* Eyes */}
+        <circle cx="44" cy="46" r="3" fill="#c084fc" />
+        <circle cx="56" cy="46" r="3" fill="#c084fc" />
+        <circle cx="44" cy="46" r="1" fill="#ffffff" />
+        <circle cx="56" cy="46" r="1" fill="#ffffff" />
+        {/* Chest Singularity Core */}
+        <circle cx="50" cy="62" r="8" fill="#000000" stroke="#c084fc" strokeWidth="2" />
+        <circle cx="50" cy="62" r="3" fill="#e879f9" />
+      </svg>
+    );
+  }
 
   if (name === 'Thundermon') {
     return (

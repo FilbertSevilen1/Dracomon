@@ -450,6 +450,35 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Enigmon',
+      title: 'Cosmic Singularity Warden',
+      cost: 500,
+      role: 'Cosmic / Black Hole Gravity',
+      lore: 'Born from deep outer space singularity void. Enigmon fires dark matter particles and casts Schwarzschild Pulse onto target ground zones. Channeling 300 Energy summons a 150px Black Hole singularity 400px forward that pulls enemies, stuns them, and destroys platform blocks and hazard zones.',
+      signatureSkill: 'Schwarzschild Pulse (200px x 40px Oval Zone • Base + 3% Max HP/s)',
+      ultimateSkill: 'Black Hole Singularity (300 Energy • 150px Radius • Pull & Tile/Hazard Destruction • 3s Stun)',
+      color: 'purple',
+      tagColor: 'bg-purple-950 text-purple-300 border-purple-700 font-mono',
+      attackType: 'Dark Matter Particle Shot (500px Range)',
+      hp: saveData.dracos['Enigmon']?.hp || 20,
+      atk: saveData.dracos['Enigmon']?.attack || 8,
+      def: saveData.dracos['Enigmon']?.defense || 3,
+      spd: saveData.dracos['Enigmon']?.speed || 7,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
+          <path d="M 26 44 Q 4 14 28 26 Z" fill="#581c87" stroke="#c084fc" strokeWidth="1.5" />
+          <path d="M 74 44 Q 96 14 72 26 Z" fill="#581c87" stroke="#c084fc" strokeWidth="1.5" />
+          <rect x="34" y="34" width="32" height="42" rx="10" fill="#3b0764" stroke="#c084fc" strokeWidth="2.5" />
+          <circle cx="42" cy="44" r="3" fill="#e879f9" />
+          <circle cx="58" cy="44" r="3" fill="#e879f9" />
+          <ellipse cx="50" cy="62" rx="8" ry="5" fill="#000000" stroke="#e879f9" strokeWidth="1.5" />
+          <circle cx="50" cy="62" r="3" fill="#c084fc" />
+        </svg>
+      ),
+    },
   ];
 
   const faqs = [
@@ -639,7 +668,7 @@ export default function Home() {
                         </div>
                       </div>
                       <span className="text-[9px] font-mono font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shadow-sm">
-                        10 Companions
+                        11 Companions
                       </span>
                     </div>
 

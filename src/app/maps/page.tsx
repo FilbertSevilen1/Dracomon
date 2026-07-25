@@ -70,7 +70,8 @@ export default function MapsPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {STAGES.map((stg, index) => {
             const stageNum = index + 1;
-            const isUnlocked = stageNum <= maxUnlockedStage || currentTier === 'Premium' || currentTier === 'Basic';
+            const completed = saveData.completedStages || [];
+            const isUnlocked = stageNum === 1 || stageNum <= maxUnlockedStage || currentTier === 'Premium' || currentTier === 'Basic' || completed.includes(stageNum) || completed.includes(stageNum - 1);
             const displayName = getDisplayName(stg.name);
 
             return (

@@ -33,7 +33,7 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
@@ -70,7 +70,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp';
   hp: number;
   maxHp: number;
   attack: number;
@@ -101,6 +101,9 @@ interface Enemy {
   burnTickTimer?: number;
   suckTimer?: number;
   suckCooldown?: number;
+  wispOrbitAngle?: number;
+  wispDetonating?: boolean;
+  wispDetonationTimer?: number;
 }
 
 export class GameEngine {
@@ -196,6 +199,11 @@ export class GameEngine {
   private musouOriginalPx = 0;
   private musouOriginalPy = 0;
 
+  public isChanneling = false;
+  public channelingSpell: string | null = null;
+  public channelingTimer = 0;
+  public channelingMaxDuration = 180;
+
   private jumpmonSpinActive = false;
   private jumpmonSpinTimer = 0;
   private jumpmonSpinAngle = 0;
@@ -239,6 +247,7 @@ export class GameEngine {
   private frozenDeathTimer = 0;
   private electrocutionDeathTimer = 0;
   private reaperDeathTimer = 0;
+  private antimatterDeathTimer = 0;
   private playerStunnedTimer = 0;
   private playerStunCooldown = 0;
 
@@ -335,12 +344,34 @@ export class GameEngine {
     this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
   }
 
+  public cancelChanneling(reason: string = 'Movement') {
+    if (!this.isChanneling) return;
+    this.isChanneling = false;
+
+    if (this.channelingSpell === 'black_hole') {
+      (this as any).enigmonBlackHoleActive = false;
+      (this as any).enigmonBlackHoleTimer = 0;
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, `CHANNEL INTERRUPTED (${reason.toUpperCase()})! 🚫`, '#f87171');
+      soundService.playHit();
+    }
+
+    this.channelingSpell = null;
+    this.channelingTimer = 0;
+  }
+
   private getActiveGrid(): string[] {
     if (this.level.maps && this.level.maps.length > 0) {
       const idx = Math.max(0, Math.min(this.level.maps.length - 1, this.currentSubMapIndex));
       return this.level.maps[idx].grid;
     }
     return this.level.grid || [];
+  }
+
+  private setGridTile(r: number, c: number, char: string) {
+    const grid = this.getActiveGrid();
+    if (r >= 0 && r < grid.length && c >= 0 && c < grid[r].length) {
+      grid[r] = grid[r].substring(0, c) + char + grid[r].substring(c + 1);
+    }
   }
 
   private isEnemyInsideFrame(enemy: Enemy): boolean {
@@ -822,6 +853,49 @@ export class GameEngine {
             jumpCount: 0,
             isLeaping: false
           });
+        } else if (char === 'a') {
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex + 4,
+            y: ey + ts - 40,
+            vx: -0.6,
+            vy: 0,
+            width: 36,
+            height: 40,
+            type: 'alien' as any,
+            hp: 80,
+            maxHp: 80,
+            attack: 14,
+            defense: 5,
+            facing: -1,
+            shootCooldown: 180,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'Alien Laser Sniper',
+          });
+        } else if (char === 'G') {
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex + 2,
+            y: ey + ts - 90,
+            vx: -0.7,
+            vy: 0,
+            width: 90,
+            height: 90,
+            type: 'giant_wisp' as any,
+            hp: 1200,
+            maxHp: 1200,
+            attack: 28,
+            defense: 18,
+            facing: -1,
+            shootCooldown: 90,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'GIANT WISP OVERLORD',
+            wispOrbitAngle: 0,
+            wispDetonating: false,
+            wispDetonationTimer: 0,
+          });
         }
       }
     }
@@ -890,6 +964,10 @@ export class GameEngine {
 
   private jump() {
     if (this.isPaused || this.pHP <= 0) return;
+
+    if (this.isChanneling) {
+      this.cancelChanneling('Jump');
+    }
 
     const pxMid = this.px + this.pWidth / 2;
     const pyMid = this.py + this.pHeight / 2;
@@ -1071,6 +1149,20 @@ export class GameEngine {
         type: 'arcane_orb'
       });
       this.spawnDustParticles(slashX, slashY, 6, '#c084fc');
+      // Arcane burst ring on orb spawn
+      for (let p = 0; p < 10; p++) {
+        const ang = (p / 10) * Math.PI * 2;
+        this.particles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 16,
+          y: this.py + this.pHeight / 2 - 4,
+          vx: Math.cos(ang) * (Math.random() * 4 + 2),
+          vy: Math.sin(ang) * (Math.random() * 4 + 2),
+          size: Math.random() * 4 + 2,
+          color: p % 2 === 0 ? '#a855f7' : '#e879f9',
+          life: 12,
+          maxLife: 12
+        });
+      }
     } else if (this.selectedDraco === 'Shadowmon') {
       soundService.playShoot();
 
@@ -1147,6 +1239,36 @@ export class GameEngine {
           color: p % 2 === 0 ? '#06b6d4' : '#facc15',
           life: 16,
           maxLife: 16
+        });
+      }
+    } else if (this.selectedDraco === 'Enigmon') {
+      soundService.playShoot();
+      const darkVx = this.pFacing * (this.stats.speed + 8);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 18,
+        y: this.py + this.pHeight / 2 - 6,
+        vx: darkVx,
+        vy: 0,
+        width: 18,
+        height: 18,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 1.15),
+        color: '#c084fc',
+        type: 'dark_matter' as any,
+        rangeCap: 500,
+        startX: this.px
+      } as any);
+
+      for (let p = 0; p < 8; p++) {
+        this.particles.push({
+          x: slashX,
+          y: slashY + (Math.random() - 0.5) * 12,
+          vx: this.pFacing * (Math.random() * 4 + 2),
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 4 + 2,
+          color: p % 2 === 0 ? '#c084fc' : '#e879f9',
+          life: 14,
+          maxLife: 14
         });
       }
     } else {
@@ -1369,8 +1491,8 @@ export class GameEngine {
       const targetY = nearestEnemy ? (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2 : this.py + this.pHeight / 2;
 
       soundService.playHit();
-      this.screenShake = 28;
-      this.addFloatingText(targetX, targetY - 40, 'SHADOWRAZE EXPLOSION! 🌋💣💥', '#ef4444');
+      this.screenShake = 42;
+      this.addFloatingText(targetX, targetY - 44, '☠ SHADOWRAZE ☠', '#ef4444');
 
       this.enemies.forEach(enemy => {
         if (enemy.hp > 0) {
@@ -1379,39 +1501,58 @@ export class GameEngine {
             this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.8));
             enemy.vx = (enemy.x > targetX ? 1 : -1) * 6.5;
             enemy.vy = -7.0;
-            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 22, '#ef4444');
           }
         }
       });
 
-      for (let i = 0; i < 45; i++) {
+      // Void shard burst — upward-biased shards
+      for (let i = 0; i < 52; i++) {
         const ang = Math.random() * Math.PI * 2;
-        const spd = Math.random() * 12 + 3;
+        const spd = Math.random() * 14 + 3;
+        const isShard = i < 18;
         this.particles.push({
-          x: targetX,
-          y: targetY,
+          x: targetX + (Math.random() - 0.5) * 30,
+          y: targetY + (Math.random() - 0.5) * 20,
           vx: Math.cos(ang) * spd,
-          vy: Math.sin(ang) * spd - 3,
-          size: Math.random() * 10 + 4,
-          color: i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#9f1239' : '#18181b',
-          life: 32,
-          maxLife: 32
+          vy: Math.sin(ang) * spd - (isShard ? 6 : 2),
+          size: isShard ? Math.random() * 5 + 3 : Math.random() * 11 + 4,
+          color: i % 4 === 0 ? '#ef4444' : i % 4 === 1 ? '#9f1239' : i % 4 === 2 ? '#18181b' : '#7f1d1d',
+          life: isShard ? 28 + Math.floor(Math.random() * 14) : 22,
+          maxLife: isShard ? 42 : 22
+        });
+      }
+      // Dark tendril pillars shooting upward from centre
+      for (let t = 0; t < 7; t++) {
+        const offset = (t - 3) * 14;
+        this.particles.push({
+          x: targetX + offset,
+          y: targetY,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -(8 + Math.random() * 10),
+          size: Math.random() * 9 + 5,
+          color: t % 2 === 0 ? '#6b21a8' : '#18181b',
+          life: 30,
+          maxLife: 30
         });
       }
 
-      this.projectiles.push({
-        x: targetX - 45,
-        y: targetY - 45,
+      // Lingering scorch zone (dark_energy projectile)
+      const razeProj = {
+        x: targetX - 55,
+        y: targetY - 55,
         vx: 0,
         vy: 0,
-        width: 90,
-        height: 90,
+        width: 110,
+        height: 110,
         isEnemy: false,
         damage: Math.floor(this.stats.attack * 1.5),
         color: '#ef4444',
         type: 'dark_energy' as any,
-        life: 12
-      } as any);
+        life: 14,
+        isShadowraze: true,
+        birthFrame: this.frameCount
+      };
+      this.projectiles.push(razeProj as any);
     } else if (this.selectedDraco === 'Bombamon') {
       soundService.playShoot();
       this.specialCooldown = 180;
@@ -1541,6 +1682,53 @@ export class GameEngine {
           maxLife: 20
         });
       }
+    } else if (this.selectedDraco === 'Enigmon') {
+      soundService.playJump();
+      this.specialCooldown = 300;
+
+      let targetX = this.px + this.pFacing * 600;
+      let targetY = this.py + this.pHeight - 10;
+
+      let nearestEnemy: Enemy | null = null;
+      let minDistance = 600;
+      const pxMid = this.px + this.pWidth / 2;
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dist = Math.abs((enemy.x + enemy.width / 2) - pxMid);
+        if (dist <= minDistance) {
+          minDistance = dist;
+          nearestEnemy = enemy;
+        }
+      });
+
+      if (nearestEnemy) {
+        targetX = (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2;
+        targetY = (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height - 10;
+      }
+
+      (this as any).enigmonPulseActive = true;
+      (this as any).enigmonPulseTimer = 180;
+      (this as any).enigmonPulseX = targetX;
+      (this as any).enigmonPulseY = targetY;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'SCHWARZSCHILD PULSE! 🌀🌌', '#c084fc');
+
+      // Schwarzschild activation — ring implosion burst
+      for (let p = 0; p < 40; p++) {
+        const ang = (p / 40) * Math.PI * 2 + Math.random() * 0.18;
+        const startR = 160 + Math.random() * 40;
+        const spd = 5 + Math.random() * 6;
+        this.particles.push({
+          x: targetX + Math.cos(ang) * startR,
+          y: targetY + Math.sin(ang) * startR * 0.2,
+          vx: -Math.cos(ang) * spd,
+          vy: -Math.sin(ang) * spd * 0.2,
+          size: Math.random() * 6 + 2,
+          color: p % 3 === 0 ? '#e879f9' : p % 3 === 1 ? '#c084fc' : '#7c3aed',
+          life: 20 + Math.floor(Math.random() * 10),
+          maxLife: 30
+        });
+      }
     }
   }
 
@@ -1569,32 +1757,75 @@ export class GameEngine {
         y: startY,
         vx: this.pFacing * 5.0,
         vy: 6.0,
-        width: 36,
-        height: 36,
+        width: 40,
+        height: 40,
         isEnemy: false,
         damage: Math.floor(this.stats.attack * 2.6),
         color: '#f97316',
         type: 'meteor'
       });
+      // Meteor summoning sparks
+      for (let mp = 0; mp < 18; mp++) {
+        const mang = Math.random() * Math.PI * 2;
+        const mspd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: startX + (Math.random() - 0.5) * 24,
+          y: startY + (Math.random() - 0.5) * 24,
+          vx: Math.cos(mang) * mspd,
+          vy: Math.sin(mang) * mspd,
+          size: Math.random() * 6 + 3,
+          color: mp % 3 === 0 ? '#f97316' : mp % 3 === 1 ? '#fef08a' : '#ef4444',
+          life: 18,
+          maxLife: 18
+        });
+      }
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'CHAOS METEOR! ☄️', '#f97316');
     } else if (spellType === 1) {
       const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : fallbackTargetX;
       const targetY = nearestEnemy ? (nearestEnemy as Enemy).y : this.py;
       this.castSunStrikeAt(targetX, targetY);
+      // Sun strike golden halo
+      for (let hp = 0; hp < 20; hp++) {
+        const hang = (hp / 20) * Math.PI * 2;
+        this.particles.push({
+          x: targetX + Math.cos(hang) * 30,
+          y: (targetY || this.py) + Math.sin(hang) * 30,
+          vx: Math.cos(hang) * (3 + Math.random() * 3),
+          vy: Math.sin(hang) * (3 + Math.random() * 3) - 2,
+          size: Math.random() * 5 + 2,
+          color: hp % 2 === 0 ? '#f59e0b' : '#fef08a',
+          life: 20,
+          maxLife: 20
+        });
+      }
     } else {
       this.projectiles.push({
-        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 36,
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 40,
         y: this.py - 10,
         vx: this.pFacing * 6.5,
         vy: 0,
-        width: 36,
-        height: 60,
+        width: 40,
+        height: 64,
         isEnemy: false,
         damage: Math.floor(this.stats.attack * 2.2),
         color: '#06b6d4',
         type: 'tornado',
         hitEnemyIds: []
       });
+      // Tornado spawn swirl
+      for (let tp = 0; tp < 16; tp++) {
+        const tang = (tp / 16) * Math.PI * 2;
+        this.particles.push({
+          x: (this.pFacing === 1 ? this.px + this.pWidth : this.px - 40) + Math.cos(tang) * 20,
+          y: this.py + Math.sin(tang) * 20,
+          vx: Math.cos(tang) * (3 + Math.random() * 2),
+          vy: Math.sin(tang) * (3 + Math.random() * 2) - 1,
+          size: Math.random() * 5 + 2,
+          color: tp % 2 === 0 ? '#06b6d4' : '#38bdf8',
+          life: 16,
+          maxLife: 16
+        });
+      }
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'TORNADO! 🌪️', '#06b6d4');
     }
   }
@@ -1655,8 +1886,9 @@ export class GameEngine {
       case 'Whitemon': return 140;
       case 'Magemon': return 300;
       case 'Shadowmon': return 160;
-      case 'Bombamon': return 120;
+      case 'Bombamon': return 180;
       case 'Thundermon': return 240;
+      case 'Enigmon': return 300;
       default: return 100;
     }
   }
@@ -1673,6 +1905,7 @@ export class GameEngine {
       case 'Shadowmon': return 'Soul Blast';
       case 'Bombamon': return 'Eternal Flare!';
       case 'Thundermon': return 'Raigeki';
+      case 'Enigmon': return 'Black Hole';
       default: return 'Ultimate';
     }
   }
@@ -1689,6 +1922,7 @@ export class GameEngine {
       case 'Shadowmon': return 'Gather, dark souls... SOUL BLAST!';
       case 'Bombamon': return 'Burn everything into ashes, ETERNAL FLARE!';
       case 'Thundermon': return 'Feel the wrath of the heavens... RAIGEKI!';
+      case 'Enigmon': return 'Singularity unleash... BLACK HOLE!';
       default: return 'Unleash full power!';
     }
   }
@@ -1762,20 +1996,22 @@ export class GameEngine {
       this.cameraZoomTargetX = this.px + this.pWidth / 2;
       this.cameraZoomTargetY = this.py + this.pHeight / 2;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SKYWARD ARROW SHOT! 🏹✨', '#10b981');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '★ SKYWARD ARROW SHOT ★', '#10b981');
+      this.screenShake = 20;
 
-      for (let p = 0; p < 20; p++) {
-        const ang = Math.random() * Math.PI * 2;
-        const spd = Math.random() * 5 + 2;
+      // Wind charge burst — spiral outward rings
+      for (let p = 0; p < 36; p++) {
+        const ang = (p / 36) * Math.PI * 2;
+        const spd = 4 + Math.random() * 6;
         this.particles.push({
           x: this.px + this.pWidth / 2,
           y: this.py + this.pHeight / 2,
           vx: Math.cos(ang) * spd,
-          vy: Math.sin(ang) * spd,
-          size: Math.random() * 6 + 3,
-          color: p % 2 === 0 ? '#10b981' : '#34d399',
-          life: 20,
-          maxLife: 20
+          vy: Math.sin(ang) * spd - 2,
+          size: Math.random() * 7 + 3,
+          color: p % 3 === 0 ? '#10b981' : p % 3 === 1 ? '#34d399' : '#a7f3d0',
+          life: 24,
+          maxLife: 24
         });
       }
     }
@@ -1831,11 +2067,45 @@ export class GameEngine {
       this.flymonLaserTargetEnemy = null;
       this.laserBeamActive = true;
       this.laserBeamDuration = 90;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'HYPER CHARGED LASER! 🛸⚡', '#f43f5e');
+      this.screenShake = 18;
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '⚡ HYPER CHARGED LASER ⚡', '#f43f5e');
+
+      // Charging burst — crimson ring explosion
+      for (let p = 0; p < 30; p++) {
+        const ang = (p / 30) * Math.PI * 2;
+        const spd = 5 + Math.random() * 7;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd * 0.6,
+          size: Math.random() * 8 + 3,
+          color: p % 3 === 0 ? '#f43f5e' : p % 3 === 1 ? '#ffffff' : '#fb7185',
+          life: 20,
+          maxLife: 20
+        });
+      }
     }
     else if (this.selectedDraco === 'Whitemon') {
       soundService.playLevelUp();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'PRIMAL ROAR! 🦁🔊', '#ef4444');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '🦁 PRIMAL ROAR 🦁', '#f97316');
+      this.screenShake = 35;
+
+      // Fire ring shockwave
+      for (let p = 0; p < 48; p++) {
+        const ang = (p / 48) * Math.PI * 2;
+        const spd = 7 + Math.random() * 8;
+        this.particles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px,
+          y: this.py + this.pHeight / 2 + (Math.random() * 24 - 12),
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 10 + 4,
+          color: p % 4 === 0 ? '#f97316' : p % 4 === 1 ? '#fef08a' : p % 4 === 2 ? '#38bdf8' : '#ffffff',
+          life: 28 + Math.floor(Math.random() * 10),
+          maxLife: 38
+        });
+      }
 
       for (let w = 0; w < 4; w++) {
         setTimeout(() => {
@@ -1853,21 +2123,6 @@ export class GameEngine {
             hitEnemyIds: []
           } as any);
         }, w * 80);
-      }
-
-      for (let i = 0; i < 30; i++) {
-        const angle = (this.pFacing === 1 ? 0 : Math.PI) + (Math.random() * 0.7 - 0.35);
-        const speed = Math.random() * 9 + 5;
-        this.particles.push({
-          x: this.pFacing === 1 ? this.px + this.pWidth : this.px,
-          y: this.py + this.pHeight / 2 + (Math.random() * 24 - 12),
-          vx: Math.cos(angle) * speed,
-          vy: Math.sin(angle) * speed,
-          size: Math.random() * 6 + 3,
-          color: i % 2 === 0 ? '#38bdf8' : '#fbbf24',
-          life: 25,
-          maxLife: 25
-        });
       }
 
       this.birdActive = true;
@@ -2023,6 +2278,41 @@ export class GameEngine {
 
       this.thundermonUltTimer = Math.max(65, validEnemies.length * delayPerHit + 45);
     }
+    else if (this.selectedDraco === 'Enigmon') {
+      soundService.playBlackHoleActivation();
+      const targetBlackHoleX = Math.max(100, this.px + this.pFacing * 300);
+      const targetBlackHoleY = this.py + this.pHeight / 2;
+
+      this.isChanneling = true;
+      this.channelingSpell = 'black_hole';
+      this.channelingTimer = 180;
+      this.channelingMaxDuration = 180;
+
+      (this as any).enigmonBlackHoleActive = true;
+      (this as any).enigmonBlackHoleTimer = 180;
+      (this as any).enigmonBlackHoleX = targetBlackHoleX;
+      (this as any).enigmonBlackHoleY = targetBlackHoleY;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '✦ BLACK HOLE SINGULARITY ✦ (MOVE TO CANCEL)', '#e879f9');
+      this.screenShake = 45;
+
+      // Implosion burst — particles fly inward from a ring
+      for (let p = 0; p < 56; p++) {
+        const ang = (p / 56) * Math.PI * 2 + Math.random() * 0.2;
+        const startR = 180 + Math.random() * 60;
+        const spd = 5 + Math.random() * 7;
+        this.particles.push({
+          x: targetBlackHoleX + Math.cos(ang) * startR,
+          y: targetBlackHoleY + Math.sin(ang) * startR * 0.55,
+          vx: -Math.cos(ang) * spd,
+          vy: -Math.sin(ang) * spd * 0.55,
+          size: Math.random() * 7 + 2,
+          color: p % 3 === 0 ? '#e879f9' : p % 3 === 1 ? '#c084fc' : '#a5f3fc',
+          life: 22 + Math.floor(Math.random() * 12),
+          maxLife: 34
+        });
+      }
+    }
 
     this.birdX = this.px;
     this.birdY = this.py - 50;
@@ -2059,6 +2349,19 @@ export class GameEngine {
   }
 
   private defeatEnemy(enemy: Enemy) {
+    if (enemy.type === 'giant_wisp' && !(enemy as any).wispDetonatingFinished) {
+      if (!enemy.wispDetonating) {
+        enemy.wispDetonating = true;
+        enemy.wispDetonationTimer = 120;
+        enemy.hp = 1;
+        soundService.playShoot();
+        const cx = enemy.x + enemy.width / 2;
+        const cy = enemy.y + enemy.height / 2;
+        this.addFloatingText(cx, cy - 20, 'SUPERNOVA DETONATION IN 2s! 💥💥', '#ef4444');
+      }
+      return;
+    }
+
     if ((enemy.burnTimer && enemy.burnTimer > 0) || (enemy.burnLingerTimer && enemy.burnLingerTimer > 0)) {
       soundService.playHit();
       this.screenShake = 22;
@@ -2208,6 +2511,19 @@ export class GameEngine {
         collected: false
       });
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'KING KONG SLAIN! 🦍👑', '#f59e0b');
+    } else if (enemy.type === 'giant_wisp') {
+      expReward = 500;
+      coinReward = 800;
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 10,
+        y: enemy.y + enemy.height / 2 - 10,
+        width: 20,
+        height: 20,
+        type: 'upgrade_stone',
+        amount: 3,
+        collected: false
+      });
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'GIANT WISP OVERLORD SLAIN! 🌌✨', '#c084fc');
     }
 
     expReward = Math.floor(expReward * 0.2);
@@ -2272,6 +2588,10 @@ export class GameEngine {
 
   private handlePlayerHit(damage: number, sourceX: number) {
     if (this.pInvulnerableFrames > 0 || this.pHP <= 0) return;
+
+    if (this.isChanneling) {
+      this.cancelChanneling('Damage');
+    }
 
     if (this.shieldActive) {
       soundService.playBlock();
@@ -2389,7 +2709,7 @@ export class GameEngine {
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong'].includes(type);
+    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'giant_wisp'].includes(type);
   }
 
   private updatePhysics() {
@@ -2913,40 +3233,99 @@ export class GameEngine {
       if (this.archermonUltTimer <= 0) {
         this.archermonUltActive = false;
         this.cameraZoom = 1.0;
-        this.screenShake = 16;
+        this.screenShake = 22;
         this.arrowShowerActive = true;
         this.arrowShowerDuration = 360;
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 75, 'DOUBLE ARROW RAIN (6s)! 🏹⚡', '#10b981', true);
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 75, '🏹 DOUBLE ARROW RAIN (6s)! 🏹', '#10b981', true);
       }
     }
 
     if (this.arrowShowerActive) {
       this.arrowShowerDuration--;
 
-      if (this.frameCount % 5 === 0) {
+      // Ambient sky-green shimmer every frame
+      if (this.frameCount % 4 === 0) {
+        const shimX = this.cameraX + Math.random() * this.canvas.width;
+        const shimY = this.cameraY + Math.random() * 60;
+        this.particles.push({
+          x: shimX,
+          y: shimY,
+          vx: (Math.random() - 0.5) * 1.0,
+          vy: Math.random() * 1.5 + 0.5,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.5 ? '#34d399' : '#6ee7b7',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      if (this.frameCount % 4 === 0) {
         soundService.playShoot();
         const viewLeft = this.cameraX - 50;
         const viewRight = this.cameraX + this.canvas.width + 50;
 
-        for (let a = 0; a < 2; a++) {
+        // Fire 3 arrows per burst (up from 2)
+        for (let a = 0; a < 3; a++) {
           const spawnX = viewLeft + Math.random() * (viewRight - viewLeft);
+          const spawnY = this.cameraY - 40;
+          const vy = Math.random() * 5 + 13;
+          const arrowColor = a % 3 === 0 ? '#10b981' : a % 3 === 1 ? '#34d399' : '#6ee7b7';
           this.projectiles.push({
             x: spawnX,
-            y: this.cameraY - 30,
-            vx: (Math.random() - 0.5) * 2.5,
-            vy: Math.random() * 4 + 13,
-            width: 8,
-            height: 22,
+            y: spawnY,
+            vx: (Math.random() - 0.5) * 3.0,
+            vy,
+            width: 10,
+            height: 26,
             isEnemy: false,
-            damage: Math.floor(this.stats.attack * 1.1),
-            color: a % 2 === 0 ? '#10b981' : '#34d399',
+            damage: Math.floor(this.stats.attack * 1.2),
+            color: arrowColor,
             type: 'arrow'
+          });
+          // Rich comet trail behind each arrow
+          for (let t = 0; t < 5; t++) {
+            this.particles.push({
+              x: spawnX + (Math.random() - 0.5) * 6,
+              y: spawnY + t * 8,
+              vx: (Math.random() - 0.5) * 2.0,
+              vy: -vy * 0.30,
+              size: Math.random() * 5 + 2,
+              color: t % 2 === 0 ? '#34d399' : '#a7f3d0',
+              life: 16,
+              maxLife: 16
+            });
+          }
+          // Bright spark at spawn point
+          this.particles.push({
+            x: spawnX,
+            y: spawnY,
+            vx: (Math.random() - 0.5) * 3,
+            vy: Math.random() * 2 + 1,
+            size: Math.random() * 6 + 3,
+            color: '#ffffff',
+            life: 8,
+            maxLife: 8
           });
         }
       }
 
       if (this.arrowShowerDuration <= 0) {
         this.arrowShowerActive = false;
+        // Closing burst
+        for (let p = 0; p < 24; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 8 + 3;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 80,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: Math.random() * 7 + 3,
+            color: p % 3 === 0 ? '#10b981' : p % 3 === 1 ? '#34d399' : '#a7f3d0',
+            life: 22,
+            maxLife: 22
+          });
+        }
       }
     }
 
@@ -2957,34 +3336,113 @@ export class GameEngine {
       this.cameraZoomTargetX = this.px + this.pWidth / 2;
       this.cameraZoomTargetY = this.py + this.pHeight / 2;
 
+      // Orbiting elemental orbs — richer trails + inner ring
       for (let orb = 0; orb < 3; orb++) {
-        const angle = this.frameCount * 0.15 + (orb * Math.PI * 2) / 3;
-        const orbX = this.px + this.pWidth / 2 + Math.cos(angle) * 36;
-        const orbY = this.py + this.pHeight / 2 + Math.sin(angle) * 36;
+        const angle = this.frameCount * 0.18 + (orb * Math.PI * 2) / 3;
+        const orbX = this.px + this.pWidth / 2 + Math.cos(angle) * 42;
+        const orbY = this.py + this.pHeight / 2 + Math.sin(angle) * 42;
+        const orbColor = orb === 0 ? '#06b6d4' : orb === 1 ? '#fbbf24' : '#ef4444';
 
+        // Main orb dot
         this.particles.push({
           x: orbX,
           y: orbY,
           vx: 0,
           vy: 0,
-          size: 6,
-          color: orb === 0 ? '#06b6d4' : orb === 1 ? '#fbbf24' : '#ef4444',
-          life: 2,
-          maxLife: 2
+          size: 8,
+          color: orbColor,
+          life: 3,
+          maxLife: 3
+        });
+
+        // Comet tail behind each orb
+        for (let t = 1; t <= 4; t++) {
+          const trailAngle = angle - t * 0.12;
+          const trailX = this.px + this.pWidth / 2 + Math.cos(trailAngle) * 42;
+          const trailY = this.py + this.pHeight / 2 + Math.sin(trailAngle) * 42;
+          this.particles.push({
+            x: trailX,
+            y: trailY,
+            vx: 0,
+            vy: 0,
+            size: 8 - t * 1.6,
+            color: orbColor,
+            life: 3,
+            maxLife: 3
+          });
+        }
+
+        // Sparkle scatter from each orb
+        if (this.frameCount % 4 === orb) {
+          this.particles.push({
+            x: orbX,
+            y: orbY,
+            vx: (Math.random() - 0.5) * 5,
+            vy: (Math.random() - 0.5) * 5,
+            size: Math.random() * 4 + 2,
+            color: orbColor,
+            life: 14,
+            maxLife: 14
+          });
+        }
+      }
+
+      // Inner orbit ring (faster, smaller) — arcane
+      for (let orb = 0; orb < 6; orb++) {
+        const angle = -this.frameCount * 0.12 + (orb * Math.PI * 2) / 6;
+        const orbX = this.px + this.pWidth / 2 + Math.cos(angle) * 22;
+        const orbY = this.py + this.pHeight / 2 + Math.sin(angle) * 22;
+        this.particles.push({
+          x: orbX,
+          y: orbY,
+          vx: 0,
+          vy: 0,
+          size: 3,
+          color: orb % 2 === 0 ? '#a855f7' : '#e879f9',
+          life: 3,
+          maxLife: 3
+        });
+      }
+
+      // Mana eruption pulsing upward
+      if (this.frameCount % 3 === 0) {
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 20,
+          y: this.py + this.pHeight / 2,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -(Math.random() * 5 + 3),
+          size: Math.random() * 5 + 2,
+          color: this.frameCount % 9 < 3 ? '#06b6d4' : this.frameCount % 9 < 6 ? '#fbbf24' : '#ef4444',
+          life: 18,
+          maxLife: 18
         });
       }
 
       if (this.magemonUltTimer === 45) {
+        // Tornado burst — add spiral spin particles
+        for (let sp = 0; sp < 20; sp++) {
+          const sang = (sp / 20) * Math.PI * 2;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + Math.cos(sang) * 24,
+            y: this.py + this.pHeight / 2 + Math.sin(sang) * 24,
+            vx: Math.cos(sang) * (4 + Math.random() * 4),
+            vy: Math.sin(sang) * (4 + Math.random() * 4),
+            size: Math.random() * 6 + 3,
+            color: sp % 2 === 0 ? '#06b6d4' : '#38bdf8',
+            life: 20,
+            maxLife: 20
+          });
+        }
         [-1, 1].forEach(dir => {
           this.projectiles.push({
             x: this.px + (dir === 1 ? this.pWidth : -24),
             y: this.py - 10,
             vx: dir * (this.stats.speed + 8),
             vy: 0,
-            width: 32,
-            height: 32,
+            width: 40,
+            height: 40,
             isEnemy: false,
-            damage: Math.floor(this.stats.attack * 1.8),
+            damage: Math.floor(this.stats.attack * 2.0),
             color: '#06b6d4',
             type: 'tornado'
           });
@@ -2992,6 +3450,21 @@ export class GameEngine {
       }
 
       if (this.magemonUltTimer === 30) {
+        // Sun strike — bright golden flash ring
+        for (let sp = 0; sp < 28; sp++) {
+          const sang = (sp / 28) * Math.PI * 2;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + Math.cos(sang) * 30,
+            y: this.py + this.pHeight / 2 + Math.sin(sang) * 30,
+            vx: Math.cos(sang) * (5 + Math.random() * 3),
+            vy: Math.sin(sang) * (5 + Math.random() * 3) - 2,
+            size: Math.random() * 7 + 3,
+            color: sp % 2 === 0 ? '#f59e0b' : '#fef08a',
+            life: 22,
+            maxLife: 22
+          });
+        }
+        this.screenShake = 18;
         let targetsFound = 0;
         this.enemies.forEach(enemy => {
           if (enemy.hp > 0 && Math.abs(enemy.x - this.px) < 800) {
@@ -3008,10 +3481,26 @@ export class GameEngine {
 
       if (this.magemonUltTimer === 15) {
         soundService.playHit();
-        [-150, 0, 150].forEach(offset => {
+        // Triple meteor — add pre-launch fire streaks
+        [-150, 0, 150].forEach((offset, mi) => {
+          const mx = this.px + this.pFacing * 100 + offset - (this.pFacing * 80);
+          const my = Math.max(20, this.py - 220);
+          // Meteor launch streaks
+          for (let ms = 0; ms < 8; ms++) {
+            this.particles.push({
+              x: mx + (Math.random() - 0.5) * 30,
+              y: my + (Math.random() - 0.5) * 30,
+              vx: (Math.random() - 0.5) * 5,
+              vy: -(Math.random() * 4 + 2),
+              size: Math.random() * 6 + 3,
+              color: ms % 2 === 0 ? '#f97316' : '#fef08a',
+              life: 18,
+              maxLife: 18
+            });
+          }
           this.projectiles.push({
-            x: this.px + this.pFacing * 100 + offset - (this.pFacing * 80),
-            y: Math.max(20, this.py - 220),
+            x: mx,
+            y: my,
             vx: this.pFacing * 5.0,
             vy: 7.5,
             width: 44,
@@ -3027,7 +3516,22 @@ export class GameEngine {
       if (this.magemonUltTimer <= 0) {
         this.magemonUltActive = false;
         this.cameraZoom = 1.0;
-        this.screenShake = 28;
+        this.screenShake = 36;
+        // Grand finale burst
+        for (let fp = 0; fp < 48; fp++) {
+          const fang = Math.random() * Math.PI * 2;
+          const fspd = Math.random() * 12 + 4;
+          this.particles.push({
+            x: this.px + this.pWidth / 2,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(fang) * fspd,
+            vy: Math.sin(fang) * fspd,
+            size: Math.random() * 9 + 4,
+            color: fp % 3 === 0 ? '#06b6d4' : fp % 3 === 1 ? '#fbbf24' : '#ef4444',
+            life: 30,
+            maxLife: 30
+          });
+        }
       }
     }
 
@@ -3038,25 +3542,43 @@ export class GameEngine {
       this.cameraZoomTargetX = this.px + this.pWidth / 2;
       this.cameraZoomTargetY = this.py + this.pHeight / 2;
 
+      // Dark soul vortex charge — spiral inward rings + crimson columns
       if (this.frameCount % 2 === 0) {
-        const ang = Math.random() * Math.PI * 2;
-        const dist = 50;
-        this.particles.push({
-          x: this.px + this.pWidth / 2 + Math.cos(ang) * dist,
-          y: this.py + this.pHeight / 2 + Math.sin(ang) * dist,
-          vx: -Math.cos(ang) * 3,
-          vy: -Math.sin(ang) * 3,
-          size: Math.random() * 6 + 3,
-          color: '#ef4444',
-          life: 18,
-          maxLife: 18
-        });
+        const vortexAng = this.frameCount * 0.28;
+        for (let arm = 0; arm < 3; arm++) {
+          const armAng = vortexAng + arm * (Math.PI * 2 / 3);
+          const vortexR = 55 + Math.sin(this.frameCount * 0.1 + arm) * 10;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + Math.cos(armAng) * vortexR,
+            y: this.py + this.pHeight / 2 + Math.sin(armAng) * vortexR * 0.5,
+            vx: -Math.cos(armAng) * 3.5 - Math.sin(armAng) * 1.5,
+            vy: -Math.sin(armAng) * 3.5 * 0.5 + Math.cos(armAng) * 0.8,
+            size: Math.random() * 7 + 3,
+            color: arm === 0 ? '#ef4444' : arm === 1 ? '#9f1239' : '#18181b',
+            life: 18,
+            maxLife: 18
+          });
+        }
+        // Crimson rising pillars from beneath
+        if (this.frameCount % 6 === 0) {
+          const offset = (Math.random() - 0.5) * 50;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + offset,
+            y: this.py + this.pHeight,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: -(5 + Math.random() * 6),
+            size: Math.random() * 8 + 4,
+            color: Math.random() > 0.5 ? '#ef4444' : '#7f1d1d',
+            life: 22,
+            maxLife: 22
+          });
+        }
       }
 
       if (this.shadowmonUltTimer <= 0) {
         this.shadowmonUltActive = false;
         this.cameraZoom = 1.0;
-        this.screenShake = 40;
+        this.screenShake = 48;
         soundService.playHit();
 
         const totalWaves = 1 + this.shadowmonUltStacksUsed;
@@ -3067,6 +3589,16 @@ export class GameEngine {
             const delay = w * 70;
             const yOffset = (w - (totalWaves - 1) / 2) * 16;
             setTimeout(() => {
+              this.particles.push(...Array.from({ length: 12 }, () => ({
+                x: this.px + this.pWidth / 2,
+                y: this.py + this.pHeight / 2 + yOffset,
+                vx: dir * (6 + Math.random() * 8),
+                vy: (Math.random() - 0.5) * 5,
+                size: Math.random() * 8 + 4,
+                color: w % 2 === 0 ? '#ef4444' : '#9f1239',
+                life: 22,
+                maxLife: 22
+              })));
               this.projectiles.push({
                 x: this.px + (dir === 1 ? this.pWidth : -50),
                 y: this.py - 30 + yOffset,
@@ -3086,7 +3618,7 @@ export class GameEngine {
         this.addFloatingText(
           this.px + this.pWidth / 2,
           this.py - 75,
-          `SOUL BLAST (${totalWaves} PHYSICAL WAVE LINES)! 🔴🌊`,
+          `☠ SOUL BLAST x${totalWaves} ☠`,
           '#ef4444',
           true
         );
@@ -3292,7 +3824,33 @@ export class GameEngine {
       if (this.frameCount % 12 === 0) {
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'STUNNED! 💫', '#ef4444');
       }
+      if (this.isChanneling) this.cancelChanneling('Stun');
       return;
+    }
+
+    if (this.isChanneling) {
+      const isMovingInput =
+        this.keys['a'] ||
+        this.keys['d'] ||
+        this.keys['w'] ||
+        this.keys['s'] ||
+        this.keys['arrowleft'] ||
+        this.keys['arrowright'] ||
+        this.keys['arrowup'] ||
+        this.keys['arrowdown'] ||
+        this.keys[' '];
+
+      if (isMovingInput) {
+        this.cancelChanneling('Movement');
+      } else {
+        this.channelingTimer--;
+        (this as any).enigmonBlackHoleTimer = this.channelingTimer;
+        if (this.channelingTimer <= 0) {
+          this.isChanneling = false;
+          this.channelingSpell = null;
+          (this as any).enigmonBlackHoleActive = false;
+        }
+      }
     }
 
     if (this.playerRootedTimer > 0) {
@@ -3360,7 +3918,7 @@ export class GameEngine {
     }
 
     const touchedHazardPool = this.getTileSymbol(pxMid, pyFeet) === '*' || this.getTileSymbol(this.px + 4, pyFeet) === '*' || this.getTileSymbol(this.px + this.pWidth - 4, pyFeet) === '*';
-    if (touchedHazardPool && this.pHP > 0 && (this.skeletonDeathTimer || 0) <= 0 && (this.frozenDeathTimer || 0) <= 0 && (this.electrocutionDeathTimer || 0) <= 0 && (this.reaperDeathTimer || 0) <= 0) {
+    if (touchedHazardPool && this.pHP > 0 && (this.skeletonDeathTimer || 0) <= 0 && (this.frozenDeathTimer || 0) <= 0 && (this.electrocutionDeathTimer || 0) <= 0 && (this.reaperDeathTimer || 0) <= 0 && (this.antimatterDeathTimer || 0) <= 0) {
       this.pHP = 0;
       this.callbacks.onHpChange?.(0, this.pMaxHP);
 
@@ -3450,6 +4008,28 @@ export class GameEngine {
         setTimeout(() => {
           this.callbacks.onPlayerDeath();
         }, 1000);
+      } else if (themeType === 'space') {
+        soundService.playHit();
+        this.antimatterDeathTimer = 90;
+        this.pvx = 0;
+        this.pvy = 0;
+        this.screenShake = 30;
+        this.addFloatingText(pxMid, this.py - 20, 'DISSOLVED IN ANTIMATTER FIELD! ⚛️💥', '#06b6d4');
+
+        for (let i = 0; i < 30; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 6 + 2;
+          this.particles.push({
+            x: pxMid + (Math.random() - 0.5) * 20,
+            y: pyFeet - Math.random() * this.pHeight,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 2,
+            size: Math.random() * 7 + 3,
+            color: i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#e879f9' : '#a5f3fc',
+            life: 35,
+            maxLife: 35
+          });
+        }
       } else {
         soundService.playLavaDeath();
         this.skeletonDeathTimer = 90;
@@ -3490,7 +4070,7 @@ export class GameEngine {
           }
         },
         onInstaKillPlayer: (reason) => {
-          if (this.pHP <= 0 && (this.electrocutionDeathTimer > 0 || this.skeletonDeathTimer > 0 || this.reaperDeathTimer > 0)) return;
+          if (this.pHP <= 0 && (this.electrocutionDeathTimer > 0 || this.skeletonDeathTimer > 0 || this.reaperDeathTimer > 0 || this.antimatterDeathTimer > 0)) return;
           this.pHP = 0;
           this.callbacks.onHpChange?.(0, this.pMaxHP);
 
@@ -3506,6 +4086,27 @@ export class GameEngine {
             this.screenShake = 40;
             this.pvx = 0;
             this.pvy = 0;
+          } else if (reason.includes('Antimatter') || reason.includes('Disintegrated')) {
+            soundService.playHit();
+            this.antimatterDeathTimer = 90;
+            this.screenShake = 30;
+            this.pvx = 0;
+            this.pvy = 0;
+            const pxMid = this.px + this.pWidth / 2;
+            for (let i = 0; i < 30; i++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = Math.random() * 7 + 2;
+              this.particles.push({
+                x: pxMid + (Math.random() - 0.5) * 20,
+                y: this.py + Math.random() * this.pHeight,
+                vx: Math.cos(ang) * spd,
+                vy: Math.sin(ang) * spd - 2,
+                size: Math.random() * 7 + 3,
+                color: i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#e879f9' : '#a5f3fc',
+                life: 35,
+                maxLife: 35
+              });
+            }
           } else {
             this.callbacks.onPlayerDeath();
           }
@@ -3528,6 +4129,10 @@ export class GameEngine {
               this.spawnDustParticles(p.x + p.width / 2, p.y + p.height / 2, 8, '#ef4444');
             }
           });
+        },
+        onPullPlayer: (fx, fy) => {
+          this.pvx += fx;
+          this.pvy += fy;
         }
       }
     );
@@ -3852,6 +4457,103 @@ export class GameEngine {
         if ((proj as any).life <= 0) {
           this.projectiles.splice(index, 1);
           return;
+        }
+      }
+
+      if ((proj as any).type === 'dark_matter') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2,
+            size: Math.random() * 4 + 2,
+            color: '#c084fc',
+            life: 10,
+            maxLife: 10
+          });
+        }
+        const distTraveled = Math.abs(proj.x - ((proj as any).startX || proj.x));
+        if (distTraveled >= ((proj as any).rangeCap || 500)) {
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 6, '#c084fc');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+      }
+
+      if ((proj as any).type === 'wisp_orb') {
+        if ((proj as any).homingTimer > 0) {
+          (proj as any).homingTimer--;
+          const targetX = this.px + this.pWidth / 2;
+          const targetY = this.py + this.pHeight / 2;
+          const dx = targetX - (proj.x + proj.width / 2);
+          const dy = targetY - (proj.y + proj.height / 2);
+          const dist = Math.hypot(dx, dy) || 1;
+          const spd = (proj as any).speed || 6.0;
+          proj.vx = (dx / dist) * spd;
+          proj.vy = (dy / dist) * spd;
+        }
+
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: Math.random() * 4 + 2,
+            color: (proj as any).homingTimer > 0 ? '#38bdf8' : '#fef08a',
+            life: 10,
+            maxLife: 10
+          });
+        }
+
+        if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth || proj.y < 0 || proj.y > this.levelHeight) {
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 6, '#38bdf8');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+
+        if (proj.isEnemy) {
+          if (
+            proj.x < this.px + this.pWidth &&
+            proj.x + proj.width > this.px &&
+            proj.y < this.py + this.pHeight &&
+            proj.y + proj.height > this.py
+          ) {
+            this.handlePlayerHit(proj.damage, proj.x);
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, '#38bdf8');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+        }
+        return;
+      }
+
+      if ((proj as any).type === 'alien_laser') {
+        const pxMid = this.px + this.pWidth / 2;
+        const pyMid = this.py + this.pHeight / 2;
+        const angle = Math.atan2(pyMid - proj.y, pxMid - proj.x);
+        proj.vx = Math.cos(angle) * 7.5;
+        proj.vy = Math.sin(angle) * 7.5;
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x,
+            y: proj.y,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2,
+            size: Math.random() * 3 + 2,
+            color: '#a855f7',
+            life: 8,
+            maxLife: 8
+          });
         }
       }
 
@@ -4302,10 +5004,11 @@ export class GameEngine {
 
       let grounded = false;
 
-      if (enemy.type === 'flying_wyvern' || enemy.type === 'fish') {
+      if (enemy.type === 'flying_wyvern' || enemy.type === 'fish' || enemy.type === 'giant_wisp') {
+        enemy.vx = enemy.vx || -1.2;
         enemy.x += enemy.vx;
-        enemy.y += Math.sin(this.frameCount * 0.1 + enemy.id) * 1.2;
-        if (this.isSolid(enemy.x, enemy.y) || enemy.x < 10 || enemy.x > this.levelWidth - 40) {
+        enemy.y += Math.sin(this.frameCount * 0.05 + enemy.id) * 1.5;
+        if (this.isSolid(enemy.x, enemy.y) || enemy.x < 10 || enemy.x > this.levelWidth - 100) {
           enemy.vx = -enemy.vx;
           enemy.facing = enemy.vx > 0 ? 1 : -1;
         }
@@ -4457,6 +5160,257 @@ export class GameEngine {
         if (wallAhead || (grounded && !groundAhead)) {
           enemy.vx = -enemy.vx;
           enemy.facing = enemy.vx > 0 ? 1 : -1;
+        }
+      } else if (enemy.type === 'alien') {
+        const dx = this.px - enemy.x;
+        enemy.facing = dx > 0 ? 1 : -1;
+        enemy.vx = enemy.facing * 1.2;
+        enemy.x += enemy.vx;
+
+        const dist = Math.hypot(this.px - enemy.x, this.py - enemy.y);
+        if (dist <= 500) {
+          enemy.shootCooldown--;
+          if (enemy.shootCooldown <= 0) {
+            enemy.shootCooldown = 180;
+            soundService.playShoot();
+            this.projectiles.push({
+              x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 16,
+              y: enemy.y + enemy.height / 2 - 4,
+              vx: enemy.facing * 7,
+              vy: 0,
+              width: 16,
+              height: 8,
+              isEnemy: true,
+              damage: enemy.attack,
+              color: '#a855f7',
+              type: 'alien_laser' as any,
+              life: 60
+            } as any);
+            this.addFloatingText(enemy.x, enemy.y - 15, 'HOMING LASER FIRED! 🛸', '#a855f7');
+          }
+        }
+      } else if (enemy.type === 'giant_wisp') {
+        const cx = enemy.x + enemy.width / 2;
+        const cy = enemy.y + enemy.height / 2;
+
+        enemy.wispOrbitAngle = (enemy.wispOrbitAngle || 0) + 0.06;
+
+        // Shoot small wisp projectile homing for 0.5s (30 frames) then continuing direction
+        enemy.shootCooldown = (enemy.shootCooldown || 90) - 1;
+        if (enemy.shootCooldown <= 0 && !enemy.wispDetonating) {
+          enemy.shootCooldown = 110;
+          soundService.playShoot();
+
+          const targetX = this.px + this.pWidth / 2;
+          const targetY = this.py + this.pHeight / 2;
+          const dx = targetX - cx;
+          const dy = targetY - cy;
+          const dist = Math.hypot(dx, dy) || 1;
+          const speed = 6.0;
+
+          this.projectiles.push({
+            x: cx - 6,
+            y: cy - 6,
+            vx: (dx / dist) * speed,
+            vy: (dy / dist) * speed,
+            width: 12,
+            height: 12,
+            isEnemy: true,
+            damage: Math.floor(enemy.attack * 0.9),
+            color: '#38bdf8',
+            type: 'wisp_orb' as any,
+            homingTimer: 30, // 30 frames = 0.5 seconds at 60 FPS
+            speed: 6.0
+          } as any);
+
+          this.spawnDustParticles(cx, cy, 8, '#38bdf8');
+        }
+
+        const pxMid = this.px + this.pWidth / 2;
+        const pyMid = this.py + this.pHeight / 2;
+        const orbitRadius = 90 + Math.sin(this.frameCount * 0.05) * 25;
+        for (let i = 0; i < 4; i++) {
+          const ang = enemy.wispOrbitAngle + (i * Math.PI) / 2;
+          const sx = cx + Math.cos(ang) * orbitRadius;
+          const sy = cy + Math.sin(ang) * orbitRadius;
+          const sdist = Math.hypot(pxMid - sx, pyMid - sy);
+          if (sdist < 20 + this.pWidth / 2 && this.pHP > 0) {
+            this.handlePlayerHit(14, sx);
+            this.spawnDustParticles(pxMid, pyMid, 10, '#fef08a');
+          }
+        }
+
+        if (enemy.hp <= 0 && !enemy.wispDetonating && !(enemy as any).wispDetonatingFinished) {
+          enemy.wispDetonating = true;
+          enemy.wispDetonationTimer = 120;
+          enemy.hp = 1;
+          soundService.playShoot();
+          this.addFloatingText(cx, cy - 20, 'SUPERNOVA DETONATION IN 2s! 💥💥', '#ef4444');
+        }
+
+        if (enemy.wispDetonating) {
+          enemy.hp = 1;
+          enemy.wispDetonationTimer = (enemy.wispDetonationTimer || 120) - 1;
+
+          if (this.frameCount % 4 === 0) {
+            this.spawnDustParticles(cx, cy, 8, '#ef4444');
+          }
+
+          if (enemy.wispDetonationTimer <= 0) {
+            const distToPlayer = Math.hypot(pxMid - cx, pyMid - cy);
+            if (distToPlayer <= 400 && this.pHP > 0) {
+              this.handlePlayerHit(50, cx);
+              this.addFloatingText(pxMid, this.py - 20, 'SUPERNOVA EXPLOSION -50 HP! 💥☄️', '#ef4444');
+            }
+
+            this.screenShake = 35;
+            soundService.playHit();
+            for (let p = 0; p < 45; p++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = Math.random() * 12 + 3;
+              this.particles.push({
+                x: cx,
+                y: cy,
+                vx: Math.cos(ang) * spd,
+                vy: Math.sin(ang) * spd,
+                size: Math.random() * 10 + 4,
+                color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#f97316' : '#fef08a',
+                life: 30,
+                maxLife: 30
+              });
+            }
+
+            (enemy as any).wispDetonatingFinished = true;
+            enemy.hp = 0;
+            this.defeatEnemy(enemy);
+          }
+        }
+      }
+
+      if ((this as any).enigmonPulseActive && (this as any).enigmonPulseTimer > 0) {
+        (this as any).enigmonPulseTimer--;
+        const pulseX = (this as any).enigmonPulseX || (this.px + this.pWidth / 2);
+        const pulseY = (this as any).enigmonPulseY || (this.py + this.pHeight);
+
+        if ((this as any).enigmonPulseTimer % 60 === 0) {
+          this.enemies.forEach(e => {
+            if (e.hp <= 0) return;
+            const ex = e.x + e.width / 2;
+            const ey = e.y + e.height / 2;
+            const inOval = Math.pow((ex - pulseX) / 200, 2) + Math.pow((ey - pulseY) / 40, 2) <= 1.0;
+            if (inOval) {
+              const pulseDmg = Math.floor(this.stats.attack * 1.2) + Math.floor((e.maxHp || 100) * 0.03);
+              this.damageEnemy(e, pulseDmg);
+              this.addFloatingText(ex, e.y - 15, `PULSE -${pulseDmg} HP! 🌀`, '#c084fc');
+              this.spawnDustParticles(ex, ey, 10, '#c084fc');
+            }
+          });
+        }
+      }
+
+      if ((this as any).enigmonBlackHoleActive && (this as any).enigmonBlackHoleTimer > 0) {
+        (this as any).enigmonBlackHoleTimer--;
+        const bhX = (this as any).enigmonBlackHoleX;
+        const bhY = (this as any).enigmonBlackHoleY;
+
+        this.enemies.forEach(e => {
+          if (e.hp <= 0) return;
+          const ex = e.x + e.width / 2;
+          const ey = e.y + e.height / 2;
+          const dx = bhX - ex;
+          const dy = bhY - ey;
+          const dist = Math.hypot(dx, dy);
+
+          if (dist <= 150) {
+            const pullSpeed = 1.33;
+            e.x += (dx / dist) * pullSpeed;
+            e.y += (dy / dist) * pullSpeed;
+            e.stunnedTimer = 30;
+          }
+        });
+
+        if ((this as any).enigmonBlackHoleTimer % 30 === 0) {
+          soundService.playBlackHolePulse();
+          this.enemies.forEach(e => {
+            if (e.hp <= 0) return;
+            const ex = e.x + e.width / 2;
+            const ey = e.y + e.height / 2;
+            if (Math.hypot(ex - bhX, ey - bhY) <= 150) {
+              const bhDmg = Math.floor(this.stats.attack * 2.5) + Math.floor((e.maxHp || 100) * 0.05);
+              this.damageEnemy(e, bhDmg);
+              this.addFloatingText(ex, e.y - 15, `⚫ SINGULARITY -${bhDmg} HP! 🕳️`, '#e879f9');
+              // Spiral-inward death particles for each enemy hit
+              for (let p = 0; p < 10; p++) {
+                const ang = Math.random() * Math.PI * 2;
+                const dist2 = Math.hypot(ex - bhX, ey - bhY);
+                this.particles.push({
+                  x: ex + Math.cos(ang) * 12,
+                  y: ey + Math.sin(ang) * 12,
+                  vx: ((bhX - ex) / dist2) * (4 + Math.random() * 4),
+                  vy: ((bhY - ey) / dist2) * (4 + Math.random() * 4),
+                  size: Math.random() * 6 + 2,
+                  color: p % 2 === 0 ? '#e879f9' : '#c084fc',
+                  life: 18,
+                  maxLife: 18
+                });
+              }
+            }
+          });
+          // Gravitational wave ring pulse
+          this.screenShake = Math.max(this.screenShake, 8);
+        }
+
+        // Continuous spiral matter-stream particles
+        if (this.frameCount % 4 === 0) {
+          const streamAng = this.frameCount * 0.22;
+          for (let arm = 0; arm < 2; arm++) {
+            const armAng = streamAng + arm * Math.PI;
+            const startR = 130 + Math.sin(this.frameCount * 0.08 + arm) * 20;
+            const sx = bhX + Math.cos(armAng) * startR;
+            const sy = bhY + Math.sin(armAng) * startR * 0.6;
+            const dist3 = Math.hypot(sx - bhX, sy - bhY);
+            if (dist3 > 1) {
+              this.particles.push({
+                x: sx,
+                y: sy,
+                vx: ((bhX - sx) / dist3) * 5.5 - Math.sin(armAng) * 2.2,
+                vy: ((bhY - sy) / dist3) * 5.5 + Math.cos(armAng) * 2.2,
+                size: Math.random() * 5 + 2,
+                color: arm === 0 ? '#e879f9' : '#c084fc',
+                life: 12,
+                maxLife: 12
+              });
+            }
+          }
+        }
+
+        stageGimmickManager.clearHazardsNear(bhX, bhY, 150);
+
+        if (this.frameCount % 5 === 0) {
+          const grid = this.getActiveGrid();
+          if (grid.length > 0) {
+            const centerR = Math.floor(bhY / ts);
+            const centerC = Math.floor(bhX / ts);
+            const radiusTiles = Math.floor(150 / ts);
+
+            for (let r = Math.max(0, centerR - radiusTiles); r <= Math.min(grid.length - 1, centerR + radiusTiles); r++) {
+              for (let c = Math.max(0, centerC - radiusTiles); c <= Math.min((grid[r]?.length || 0) - 1, centerC + radiusTiles); c++) {
+                const tileX = c * ts + ts / 2;
+                const tileY = r * ts + ts / 2;
+                if (Math.hypot(tileX - bhX, tileY - bhY) <= 150) {
+                  const char = grid[r][c];
+                  if (char === '#' || char === '=' || char === 'H' || char === '*') {
+                    let isPortalFloor = false;
+                    if (r > 0 && grid[r - 1] && grid[r - 1][c] === 'P') isPortalFloor = true;
+                    if (!isPortalFloor) {
+                      this.setGridTile(r, c, '.');
+                      this.spawnDustParticles(tileX, tileY, 6, '#c084fc');
+                    }
+                  }
+                }
+              }
+            }
+          }
         }
       }
 
@@ -4807,6 +5761,15 @@ export class GameEngine {
 
         const centerPointX = this.carpetBombingStartX + this.pWidth / 2;
 
+        // Decrement per-enemy carpet bomb cooldowns every fire-stream tick (every 3 frames)
+        if (this.carpetBombingFireStreamTimer % 3 === 0) {
+          this.enemies.forEach(enemy => {
+            if ((enemy as any).carpetBombDamageCooldown > 0) {
+              (enemy as any).carpetBombDamageCooldown--;
+            }
+          });
+        }
+
         if (this.carpetBombingFireStreamTimer % 3 === 0) {
           soundService.playShoot();
 
@@ -4843,9 +5806,13 @@ export class GameEngine {
             this.enemies.forEach(enemy => {
               if (enemy.hp <= 0) return;
               if (Math.abs(enemy.x + enemy.width / 2 - dropX) < 65) {
-                this.damageEnemy(enemy, Math.floor(this.stats.attack * 1.8));
-                enemy.burnTimer = 30;
-                enemy.burnLingerTimer = 120;
+                // Cap impact damage to once every 15 fire-stream ticks = 0.25s at 60fps
+                if (((enemy as any).carpetBombDamageCooldown || 0) <= 0) {
+                  this.damageEnemy(enemy, Math.floor(this.stats.attack * 1.8));
+                  enemy.burnTimer = 30;
+                  enemy.burnLingerTimer = 120;
+                  (enemy as any).carpetBombDamageCooldown = 5; // 5 ticks × 3 frames = 15 frames = 0.25s
+                }
               }
             });
 
@@ -4969,7 +5936,7 @@ export class GameEngine {
         ) {
           if (isElectric) {
             enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
-            if (enemy.burnTickTimer % 30 === 0) {
+            if (enemy.burnTickTimer % 15 === 0) {
               this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.6)));
               enemy.stunnedTimer = 12;
               this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'ELECTROCUTED! ⚡', '#06b6d4');
@@ -4979,8 +5946,8 @@ export class GameEngine {
             enemy.burnLingerTimer = 120;
 
             enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
-            if (enemy.burnTickTimer % 30 === 0) {
-              this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.5)));
+            if (enemy.burnTickTimer % 15 === 0) {
+              this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.25)));
               this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'BURN! 🔥', '#ea580c');
             }
           }
@@ -5095,6 +6062,22 @@ export class GameEngine {
       } else {
         this.birdX += (dx / dist) * (speed * 1.1);
         this.birdY += (dy / dist) * (speed * 1.1);
+      }
+    }
+
+    // Fire trail particles behind the bird during rampage
+    if (isRampage && this.frameCount % 3 === 0) {
+      for (let t = 0; t < 2; t++) {
+        this.particles.push({
+          x: this.birdX + (Math.random() - 0.5) * 10,
+          y: this.birdY + (Math.random() - 0.5) * 10,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 2,
+          size: Math.random() * 5 + 2,
+          color: t % 2 === 0 ? '#f97316' : '#fef08a',
+          life: 10,
+          maxLife: 10
+        });
       }
     }
   }
@@ -5424,6 +6407,40 @@ export class GameEngine {
               this.ctx.beginPath();
               this.ctx.arc(ex + 8, ey + 8, 3.5, 0, Math.PI * 2);
               this.ctx.arc(ex + 26, ey + 14, 2.5, 0, Math.PI * 2);
+              this.ctx.fill();
+            }
+          } else if (themeType === 'space') {
+            this.ctx.fillStyle = '#020617';
+            this.ctx.fillRect(ex, ey, ts, ts);
+
+            const pulseAlpha = 0.75 + Math.sin(this.frameCount * 0.15 + c * 1.5) * 0.2;
+            this.ctx.fillStyle = `rgba(6, 182, 212, ${pulseAlpha})`;
+            this.ctx.fillRect(ex, ey + 4, ts, ts - 4);
+
+            let auraGrad = this.gradientCache.get(`antimatter_${r}`);
+            if (!auraGrad) {
+              auraGrad = this.ctx.createLinearGradient(0, ey - 44, 0, ey + ts);
+              auraGrad.addColorStop(0, 'rgba(6, 182, 212, 0.0)');
+              auraGrad.addColorStop(0.5, 'rgba(168, 85, 247, 0.35)');
+              auraGrad.addColorStop(1, 'rgba(6, 182, 212, 0.6)');
+              this.gradientCache.set(`antimatter_${r}`, auraGrad);
+            }
+            this.ctx.fillStyle = auraGrad;
+            this.ctx.fillRect(ex, ey - 44, ts, ts + 44);
+
+            this.ctx.strokeStyle = '#e879f9';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            const waveY = ey + 6 + Math.sin(this.frameCount * 0.2 + c * 0.8) * 3;
+            this.ctx.moveTo(ex, waveY);
+            this.ctx.lineTo(ex + ts, waveY);
+            this.ctx.stroke();
+
+            if ((this.frameCount + c * 5) % 20 < 10) {
+              this.ctx.fillStyle = (this.frameCount + c) % 2 === 0 ? '#38bdf8' : '#e879f9';
+              this.ctx.beginPath();
+              this.ctx.arc(ex + 8, ey + 8 + Math.sin(this.frameCount * 0.1) * 3, 3, 0, Math.PI * 2);
+              this.ctx.arc(ex + 26, ey + 14 + Math.cos(this.frameCount * 0.1) * 3, 2.5, 0, Math.PI * 2);
               this.ctx.fill();
             }
           } else {
@@ -5950,7 +6967,74 @@ export class GameEngine {
         const cx = proj.x + proj.width / 2;
         const cy = proj.y + proj.height / 2;
 
-        if (proj.width > 50) {
+        if ((proj as any).isShadowraze) {
+          // ── Shadowraze scorch zone ──────────────────────────────────────
+          const radius = proj.width / 2;
+          const age = this.frameCount - ((proj as any).birthFrame || this.frameCount);
+          const lifeRatio = Math.max(0, (proj as any).life / 14);
+          const pulse = Math.sin(this.frameCount * 0.35) * 0.08 + 0.92;
+
+          // Shockwave expansion ring
+          if (age < 10) {
+            const swR = radius + age * 18;
+            const swAlpha = 0.85 * (1 - age / 10);
+            this.ctx.strokeStyle = `rgba(239, 68, 68, ${swAlpha})`;
+            this.ctx.lineWidth = 4 - age * 0.35;
+            this.ctx.beginPath();
+            this.ctx.arc(cx, cy, swR, 0, Math.PI * 2);
+            this.ctx.stroke();
+          }
+
+          // Outer crimson corona haze
+          const coronaGrad = this.ctx.createRadialGradient(cx, cy, radius * 0.4, cx, cy, radius * 1.35);
+          coronaGrad.addColorStop(0, `rgba(127, 29, 29, ${lifeRatio * 0.55})`);
+          coronaGrad.addColorStop(0.55, `rgba(159, 18, 57, ${lifeRatio * 0.30})`);
+          coronaGrad.addColorStop(1, 'rgba(24,24,27,0)');
+          this.ctx.fillStyle = coronaGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, radius * 1.35, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Void core — deep dark gradient
+          const coreGrad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, radius * pulse);
+          coreGrad.addColorStop(0, `rgba(24, 24, 27, ${lifeRatio * 0.98})`);
+          coreGrad.addColorStop(0.45, `rgba(127, 29, 29, ${lifeRatio * 0.80})`);
+          coreGrad.addColorStop(0.75, `rgba(239, 68, 68, ${lifeRatio * 0.50})`);
+          coreGrad.addColorStop(1, `rgba(239, 68, 68, 0)`);
+          this.ctx.fillStyle = coreGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, radius * pulse, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Rotating crimson tendril arcs
+          const arcDefs = [
+            { speed: 0.14, gap: 1.45, r: radius * 0.62, w: 3.5, color: '#ef4444' },
+            { speed: -0.10, gap: 1.25, r: radius * 0.78, w: 2.5, color: '#9f1239' },
+            { speed: 0.08, gap: 1.65, r: radius * 0.91, w: 2.0, color: 'rgba(239,68,68,0.55)' },
+          ];
+          this.ctx.globalAlpha = lifeRatio;
+          for (const a of arcDefs) {
+            const a0 = this.frameCount * a.speed;
+            this.ctx.strokeStyle = a.color;
+            this.ctx.lineWidth = a.w;
+            this.ctx.shadowColor = '#ef4444';
+            this.ctx.shadowBlur = 7;
+            this.ctx.beginPath();
+            this.ctx.arc(cx, cy, a.r, a0, a0 + Math.PI * a.gap);
+            this.ctx.stroke();
+            this.ctx.beginPath();
+            this.ctx.arc(cx, cy, a.r, a0 + Math.PI, a0 + Math.PI * (2 - a.gap * 0.7));
+            this.ctx.stroke();
+          }
+          this.ctx.shadowBlur = 0;
+          this.ctx.globalAlpha = 1;
+
+          // Void eye at centre
+          this.ctx.fillStyle = `rgba(10, 10, 10, ${lifeRatio})`;
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, 8 * pulse, 0, Math.PI * 2);
+          this.ctx.fill();
+        } else if (proj.width > 50) {
           const radius = proj.width / 2;
           const grad = this.ctx.createRadialGradient(cx, cy, 4, cx, cy, radius);
           grad.addColorStop(0, 'rgba(239, 68, 68, 0.8)');
@@ -5975,6 +7059,33 @@ export class GameEngine {
           this.ctx.arc(cx, cy, proj.width / 2, 0, Math.PI * 2);
           this.ctx.fill();
         }
+        this.ctx.restore();
+      } else if (proj.type === 'wisp_orb') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const isHoming = ((proj as any).homingTimer || 0) > 0;
+
+        const grad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, proj.width * 1.3);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.4, isHoming ? '#38bdf8' : '#fef08a');
+        grad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, proj.width * 1.3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = isHoming ? '#38bdf8' : '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, proj.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, proj.width / 4, 0, Math.PI * 2);
+        this.ctx.fill();
+
         this.ctx.restore();
       } else {
         this.ctx.fillRect(proj.x, proj.y, proj.width, proj.height);
@@ -6452,6 +7563,114 @@ export class GameEngine {
         const hpPct = Math.max(0, enemy.hp / enemy.maxHp);
         this.ctx.fillStyle = '#38bdf8';
         this.ctx.fillRect(hbX, hbY, hbW * hpPct, 8);
+      } else if (enemy.type === 'alien') {
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.strokeStyle = '#a855f7';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(bx + bw / 2, by + bh / 2, bw / 2, bh / 2, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#c084fc';
+        this.ctx.beginPath();
+        this.ctx.arc(bx + bw / 2 + (enemy.facing * 4), by + bh / 2 - 4, 7, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(bx + bw / 2 + (enemy.facing * 4), by + bh / 2 - 4, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.fillRect(enemy.facing === 1 ? bx + bw : bx - 14, by + bh / 2 - 2, 14, 4);
+
+        const hbW = bw;
+        const hbX = bx;
+        const hbY = by - 14;
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        this.ctx.fillRect(hbX, hbY, hbW, 6);
+        const hpPct = Math.max(0, enemy.hp / enemy.maxHp);
+        this.ctx.fillStyle = '#a855f7';
+        this.ctx.fillRect(hbX, hbY, hbW * hpPct, 6);
+      } else if (enemy.type === 'giant_wisp') {
+        const cx = enemy.x + enemy.width / 2;
+        const cy = enemy.y + enemy.height / 2;
+        const r = enemy.width / 2;
+
+        // Dynamic growing & shrinking pulse effect
+        const growShrink = Math.sin(this.frameCount * 0.05) * 16;
+        const currentR = r + growShrink;
+
+        const grad = this.ctx.createRadialGradient(cx, cy, 10, cx, cy, currentR);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.3, '#38bdf8');
+        grad.addColorStop(0.7, '#818cf8');
+        grad.addColorStop(1, 'rgba(79, 70, 229, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, currentR, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#c084fc';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, (currentR * 0.55) + Math.cos(this.frameCount * 0.15) * 4, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        const orbitAngle = enemy.wispOrbitAngle || 0;
+        const orbitRadius = 90 + Math.sin(this.frameCount * 0.05) * 25;
+        for (let i = 0; i < 4; i++) {
+          const ang = orbitAngle + (i * Math.PI) / 2;
+          const sx = cx + Math.cos(ang) * orbitRadius;
+          const sy = cy + Math.sin(ang) * orbitRadius;
+
+          const orbPulse = 14 + Math.sin(this.frameCount * 0.1 + i) * 3;
+          this.ctx.fillStyle = '#fef08a';
+          this.ctx.beginPath();
+          this.ctx.arc(sx, sy, orbPulse, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.beginPath();
+          this.ctx.arc(sx, sy, orbPulse * 0.45, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        if (enemy.wispDetonating) {
+          this.ctx.save();
+          this.ctx.strokeStyle = '#ef4444';
+          this.ctx.lineWidth = 4;
+          this.ctx.setLineDash([8, 6]);
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, 400, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = 'rgba(239, 68, 68, 0.2)';
+          this.ctx.beginPath();
+          const timerVal = enemy.wispDetonationTimer !== undefined ? enemy.wispDetonationTimer : 120;
+          this.ctx.arc(cx, cy, (1 - timerVal / 120) * 400, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.restore();
+        }
+
+        const hbW = enemy.width + 60;
+        const hbX = cx - hbW / 2;
+        const hbY = enemy.y - 36;
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(hbX, hbY, hbW, 12);
+        const hpPct = Math.max(0, enemy.hp / enemy.maxHp);
+        this.ctx.fillStyle = enemy.wispDetonating ? '#ef4444' : '#38bdf8';
+        this.ctx.fillRect(hbX, hbY, hbW * hpPct, 12);
+        this.ctx.strokeStyle = '#eab308';
+        this.ctx.lineWidth = 2;
+        this.ctx.strokeRect(hbX, hbY, hbW, 12);
       } else if (enemy.type === 'skeleton_archer') {
         if (enemy.isBonePile) {
           this.ctx.fillStyle = '#e2e8f0';
@@ -6689,12 +7908,34 @@ export class GameEngine {
     if (this.birdActive) {
       this.ctx.save();
       const isRampage = this.birdRampageTimer > 0;
+
       if (isRampage) {
-        this.ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
+        // Rampage aura — pulsing fire ring
+        const auraPulse = Math.sin(this.frameCount * 0.22) * 4;
+        const auraGrad = this.ctx.createRadialGradient(this.birdX, this.birdY, 4, this.birdX, this.birdY, 24 + auraPulse);
+        auraGrad.addColorStop(0, 'rgba(249, 115, 22, 0.8)');
+        auraGrad.addColorStop(0.5, 'rgba(245, 158, 11, 0.4)');
+        auraGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        this.ctx.fillStyle = auraGrad;
         this.ctx.beginPath();
-        this.ctx.arc(this.birdX, this.birdY, 18, 0, Math.PI * 2);
+        this.ctx.arc(this.birdX, this.birdY, 24 + auraPulse, 0, Math.PI * 2);
         this.ctx.fill();
+
+        // Rotating fire ring arcs
+        const ra0 = this.frameCount * 0.18;
+        this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(this.birdX, this.birdY, 18 + auraPulse * 0.5, ra0, ra0 + Math.PI * 1.4);
+        this.ctx.stroke();
+        this.ctx.strokeStyle = 'rgba(253, 186, 116, 0.7)';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(this.birdX, this.birdY, 22 + auraPulse * 0.5, -ra0, -ra0 + Math.PI * 1.1);
+        this.ctx.stroke();
       }
+
+      // Bird body
       this.ctx.fillStyle = isRampage ? '#f97316' : '#38bdf8';
       this.ctx.strokeStyle = isRampage ? '#7c2d12' : '#0369a1';
       this.ctx.lineWidth = 1.5;
@@ -6703,6 +7944,7 @@ export class GameEngine {
       this.ctx.fill();
       this.ctx.stroke();
 
+      // Wings
       const wingFlap = Math.sin(this.frameCount * 0.4) * 6;
       this.ctx.fillStyle = isRampage ? '#fef08a' : '#7dd3fc';
       this.ctx.beginPath();
@@ -6717,10 +7959,22 @@ export class GameEngine {
       this.ctx.lineTo(this.birdX, this.birdY + 4);
       this.ctx.closePath();
       this.ctx.fill();
+
+      // Beak
+      const birdFacing = this.birdState === 'swooping' && this.birdTargetEnemy
+        ? (this.birdTargetEnemy.x > this.birdX ? 1 : -1) : 1;
+      this.ctx.fillStyle = isRampage ? '#fbbf24' : '#facc15';
+      this.ctx.beginPath();
+      this.ctx.moveTo(this.birdX + birdFacing * 7, this.birdY);
+      this.ctx.lineTo(this.birdX + birdFacing * 13, this.birdY - 1.5);
+      this.ctx.lineTo(this.birdX + birdFacing * 13, this.birdY + 1.5);
+      this.ctx.closePath();
+      this.ctx.fill();
+
       this.ctx.restore();
     }
 
-    if (this.skeletonDeathTimer <= 0 && this.frozenDeathTimer <= 0 && this.electrocutionDeathTimer <= 0 && this.reaperDeathTimer <= 0) {
+    if (this.skeletonDeathTimer <= 0 && this.frozenDeathTimer <= 0 && this.electrocutionDeathTimer <= 0 && this.reaperDeathTimer <= 0 && this.antimatterDeathTimer <= 0) {
       this.ctx.save();
 
       const isSpinning = this.selectedDraco === 'Jumpmon' && this.jumpmonSpinActive;
@@ -6800,12 +8054,42 @@ export class GameEngine {
         accentColor = '#ca8a04';
         bellyColor = '#fef08a';
         detailColor = '#06b6d4';
+      } else if (this.selectedDraco === 'Enigmon') {
+        mainColor = '#333388';
+        accentColor = '#581c87';
+        bellyColor = '#c084fc';
+        detailColor = '#e879f9';
       }
 
       const px = this.px;
       const py = this.py;
       const pw = this.pWidth;
       const ph = this.pHeight;
+
+      if (this.selectedDraco === 'Enigmon') {
+        this.ctx.save();
+        const auraPulse = Math.sin(this.frameCount * 0.12) * 3;
+        const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, pw / 2 + 12 + auraPulse);
+        grad.addColorStop(0, 'rgba(192, 132, 252, 0.4)');
+        grad.addColorStop(0.6, 'rgba(88, 28, 135, 0.2)');
+        grad.addColorStop(1, 'rgba(59, 7, 100, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 12 + auraPulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        for (let d = 0; d < 2; d++) {
+          const dang = this.frameCount * 0.08 + d * Math.PI;
+          const dx = px + pw / 2 + Math.cos(dang) * (pw / 2 + 10);
+          const dy = py + ph / 2 + Math.sin(dang) * 10;
+          this.ctx.fillStyle = '#c084fc';
+          this.ctx.beginPath();
+          this.ctx.arc(dx, dy, 3, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+        this.ctx.restore();
+      }
 
       if (this.shadowAfterimages.length > 0) {
         this.shadowAfterimages.forEach(img => {
@@ -7060,6 +8344,318 @@ export class GameEngine {
         this.ctx.beginPath();
         this.ctx.arc(px + pw / 2, bodyY + ph / 2, pw + 8, 0, Math.PI * 2);
         this.ctx.stroke();
+        this.ctx.restore();
+      }
+
+      if ((this as any).enigmonPulseActive && (this as any).enigmonPulseTimer > 0) {
+        this.ctx.save();
+        const pulseX = (this as any).enigmonPulseX || (this.px + this.pWidth / 2);
+        const pulseY = (this as any).enigmonPulseY || (this.py + this.pHeight);
+        const pTimer = (this as any).enigmonPulseTimer as number;
+        const pLife = 180;
+        // Fade in first 15 frames, fade out last 20
+        const pAlpha = Math.min(1, Math.min(pTimer / 20, (pLife - pTimer + 1) / 15));
+        const pPulse = Math.sin(this.frameCount * 0.22) * 0.10 + 0.90;
+        const zoneRx = 200;
+        const zoneRy = 40;
+
+        this.ctx.setLineDash([]);
+
+        // ── Outer gravitational haze ──────────────────────────────────────
+        const hazeGrad = this.ctx.createRadialGradient(pulseX, pulseY, zoneRy * 0.3, pulseX, pulseY, zoneRx * 1.15);
+        hazeGrad.addColorStop(0, `rgba(168, 85, 247, ${pAlpha * 0.22 * pPulse})`);
+        hazeGrad.addColorStop(0.5, `rgba(88, 28, 135, ${pAlpha * 0.12})`);
+        hazeGrad.addColorStop(1, 'rgba(59, 7, 100, 0)');
+        this.ctx.fillStyle = hazeGrad;
+        this.ctx.beginPath();
+        this.ctx.ellipse(pulseX, pulseY, zoneRx * 1.18, zoneRy * 1.5, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // ── Tidal distortion lines radiating outward ─────────────────────
+        const tidalCount = 12;
+        for (let t = 0; t < tidalCount; t++) {
+          const baseAng = (t / tidalCount) * Math.PI * 2 + this.frameCount * 0.016;
+          const innerRx = zoneRx * 0.45;
+          const innerRy = zoneRy * 0.45;
+          const outerRx = zoneRx * (0.90 + Math.sin(this.frameCount * 0.08 + t) * 0.08);
+          const outerRy = zoneRy * (0.90 + Math.sin(this.frameCount * 0.08 + t) * 0.08);
+          const lineAlpha = pAlpha * (0.08 + 0.05 * Math.sin(this.frameCount * 0.12 + t));
+          this.ctx.strokeStyle = `rgba(192, 132, 252, ${lineAlpha})`;
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(pulseX + Math.cos(baseAng) * innerRx, pulseY + Math.sin(baseAng) * innerRy);
+          this.ctx.lineTo(pulseX + Math.cos(baseAng) * outerRx, pulseY + Math.sin(baseAng) * outerRy);
+          this.ctx.stroke();
+        }
+
+        // ── Fill — layered elliptic rings ────────────────────────────────
+        const fillGrad = this.ctx.createRadialGradient(pulseX, pulseY, zoneRy * 0.1, pulseX, pulseY, zoneRx);
+        fillGrad.addColorStop(0, `rgba(232, 121, 249, ${pAlpha * 0.70})`);
+        fillGrad.addColorStop(0.35, `rgba(168, 85, 247, ${pAlpha * 0.45 * pPulse})`);
+        fillGrad.addColorStop(0.7, `rgba(88, 28, 135, ${pAlpha * 0.25})`);
+        fillGrad.addColorStop(1, 'rgba(59, 7, 100, 0)');
+        this.ctx.fillStyle = fillGrad;
+        this.ctx.beginPath();
+        this.ctx.ellipse(pulseX, pulseY, zoneRx * pPulse, zoneRy * pPulse, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // ── Rotating elliptic arc rings ───────────────────────────────────
+        const ellipseArcs = [
+          { rx: zoneRx * 0.92, ry: zoneRy * 0.92, speed: 0.012, gap: 1.55, color: '#e879f9', w: 2.5 },
+          { rx: zoneRx * 0.74, ry: zoneRy * 0.74, speed: -0.009, gap: 1.35, color: '#c084fc', w: 2.0 },
+          { rx: zoneRx * 0.55, ry: zoneRy * 0.55, speed: 0.018, gap: 1.70, color: '#a855f7', w: 1.5 },
+          { rx: zoneRx * 1.02, ry: zoneRy * 1.02, speed: -0.007, gap: 1.20, color: 'rgba(232,121,249,0.35)', w: 1.0 },
+        ];
+        this.ctx.globalAlpha = pAlpha;
+        for (const ea of ellipseArcs) {
+          const rot = this.frameCount * ea.speed;
+          this.ctx.save();
+          this.ctx.translate(pulseX, pulseY);
+          this.ctx.rotate(rot);
+          this.ctx.strokeStyle = ea.color;
+          this.ctx.lineWidth = ea.w;
+          this.ctx.shadowColor = ea.color;
+          this.ctx.shadowBlur = 6;
+          this.ctx.beginPath();
+          this.ctx.ellipse(0, 0, ea.rx * pPulse, ea.ry * pPulse, 0, 0, Math.PI * ea.gap);
+          this.ctx.stroke();
+          this.ctx.beginPath();
+          this.ctx.ellipse(0, 0, ea.rx * pPulse, ea.ry * pPulse, 0, Math.PI, Math.PI + Math.PI * (2 - ea.gap) * 0.75);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+        this.ctx.shadowBlur = 0;
+        this.ctx.globalAlpha = 1;
+
+        // ── Inner singularity orb ─────────────────────────────────────────
+        const orbGrad = this.ctx.createRadialGradient(pulseX, pulseY, 1, pulseX, pulseY, zoneRy * 0.75 * pPulse);
+        orbGrad.addColorStop(0, `rgba(255, 255, 255, ${pAlpha * 0.90})`);
+        orbGrad.addColorStop(0.3, `rgba(232, 121, 249, ${pAlpha * 0.75})`);
+        orbGrad.addColorStop(0.7, `rgba(88, 28, 135, ${pAlpha * 0.40})`);
+        orbGrad.addColorStop(1, 'rgba(59, 7, 100, 0)');
+        this.ctx.fillStyle = orbGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(pulseX, pulseY, zoneRy * 0.75 * pPulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // ── Pulse ripple ring on damage tick (every 60 frames) ────────────
+        const tickMod = pTimer % 60;
+        if (tickMod > 53) {
+          const rProg = (tickMod - 53) / 7;
+          const rippleRx = zoneRx * rProg;
+          const rippleRy = zoneRy * rProg;
+          const rippleAlpha = pAlpha * (1 - rProg) * 0.9;
+          this.ctx.strokeStyle = `rgba(232, 121, 249, ${rippleAlpha})`;
+          this.ctx.lineWidth = 3.5 - rProg * 2.5;
+          this.ctx.beginPath();
+          this.ctx.ellipse(pulseX, pulseY, Math.max(1, rippleRx), Math.max(1, rippleRy), 0, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+
+        // ── Continuous spiral particles (spawned here for visual only) ────
+        if (this.frameCount % 5 === 0) {
+          const sAng = this.frameCount * 0.25;
+          for (let arm = 0; arm < 2; arm++) {
+            const armAng = sAng + arm * Math.PI;
+            const sRx = zoneRx * 0.85;
+            const sRy = zoneRy * 0.85;
+            this.particles.push({
+              x: pulseX + Math.cos(armAng) * sRx,
+              y: pulseY + Math.sin(armAng) * sRy,
+              vx: -Math.cos(armAng) * 3.5 - Math.sin(armAng) * 1.5,
+              vy: -Math.sin(armAng) * 3.5 * 0.2 + Math.cos(armAng) * 0.8,
+              size: Math.random() * 4 + 2,
+              color: arm === 0 ? '#e879f9' : '#c084fc',
+              life: 14,
+              maxLife: 14
+            });
+          }
+        }
+
+        this.ctx.restore();
+      }
+
+      if ((this as any).enigmonBlackHoleActive && (this as any).enigmonBlackHoleTimer > 0) {
+        this.ctx.save();
+        const bhX = (this as any).enigmonBlackHoleX || (this.px + this.pFacing * 400);
+        const bhY = (this as any).enigmonBlackHoleY || (this.py + this.pHeight / 2);
+        const coreRadius = 38;
+        const pullRadius = 150;
+        const bhTimer = (this as any).enigmonBlackHoleTimer as number;
+        const bhLife = 180;
+        // Fade-in on first 18 frames, fade-out on last 24
+        const lifeAlpha = Math.min(1, Math.min(bhTimer / 24, (bhLife - bhTimer + 1) / 18));
+        const pulse = Math.sin(this.frameCount * 0.18) * 0.12 + 0.88;
+
+        this.ctx.setLineDash([]);
+
+        // ── Hawking radiation outer glow haze ──────────────────────────────
+        const hazeGrad = this.ctx.createRadialGradient(bhX, bhY, coreRadius * 1.2, bhX, bhY, pullRadius * 1.15);
+        hazeGrad.addColorStop(0, `rgba(232, 121, 249, ${lifeAlpha * 0.18 * pulse})`);
+        hazeGrad.addColorStop(0.5, `rgba(88, 28, 135, ${lifeAlpha * 0.10})`);
+        hazeGrad.addColorStop(1, 'rgba(59, 7, 100, 0)');
+        this.ctx.fillStyle = hazeGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(bhX, bhY, pullRadius * 1.15, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // ── Gravitational lensing distortion rays ─────────────────────────
+        const rayCount = 14;
+        for (let r = 0; r < rayCount; r++) {
+          const rayAng = (r / rayCount) * Math.PI * 2 + this.frameCount * 0.012;
+          const rayLen = pullRadius * (0.55 + Math.sin(this.frameCount * 0.07 + r * 0.9) * 0.18);
+          const innerR = coreRadius * 1.55;
+          this.ctx.strokeStyle = `rgba(192, 132, 252, ${lifeAlpha * (0.06 + 0.04 * Math.sin(this.frameCount * 0.1 + r))})`;
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(bhX + Math.cos(rayAng) * innerR, bhY + Math.sin(rayAng) * innerR * 0.7);
+          this.ctx.lineTo(bhX + Math.cos(rayAng) * (innerR + rayLen), bhY + Math.sin(rayAng) * (innerR + rayLen) * 0.7);
+          this.ctx.stroke();
+        }
+
+        // ── Gravity well dark gradient ─────────────────────────────────────
+        const wellGrad = this.ctx.createRadialGradient(bhX, bhY, coreRadius, bhX, bhY, pullRadius);
+        wellGrad.addColorStop(0, `rgba(0, 0, 0, ${lifeAlpha * 0.92})`);
+        wellGrad.addColorStop(0.35, `rgba(20, 4, 44, ${lifeAlpha * 0.70})`);
+        wellGrad.addColorStop(0.65, `rgba(59, 7, 100, ${lifeAlpha * 0.38})`);
+        wellGrad.addColorStop(1, 'rgba(59, 7, 100, 0)');
+        this.ctx.fillStyle = wellGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(bhX, bhY, pullRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // ── Accretion disk (tilted ellipse with hot gradient) ──────────────
+        this.ctx.save();
+        const diskR = coreRadius * 2.4 * pulse;
+        const diskGrad = this.ctx.createLinearGradient(bhX - diskR, bhY, bhX + diskR, bhY);
+        diskGrad.addColorStop(0,   `rgba(232, 121, 249, ${lifeAlpha * 0.0})`);
+        diskGrad.addColorStop(0.2, `rgba(232, 121, 249, ${lifeAlpha * 0.75})`);
+        diskGrad.addColorStop(0.38,`rgba(255, 220, 255, ${lifeAlpha * 0.95})`);
+        diskGrad.addColorStop(0.5, `rgba(192, 132, 252, ${lifeAlpha * 0.70})`);
+        diskGrad.addColorStop(0.62,`rgba(255, 220, 255, ${lifeAlpha * 0.95})`);
+        diskGrad.addColorStop(0.8, `rgba(232, 121, 249, ${lifeAlpha * 0.75})`);
+        diskGrad.addColorStop(1,   `rgba(232, 121, 249, ${lifeAlpha * 0.0})`);
+        this.ctx.fillStyle = diskGrad;
+        this.ctx.beginPath();
+        this.ctx.ellipse(bhX, bhY, diskR, diskR * 0.18, this.frameCount * 0.005, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        // ── Event horizon — pure black void ──────────────────────────────
+        this.ctx.fillStyle = '#000000';
+        this.ctx.beginPath();
+        this.ctx.arc(bhX, bhY, coreRadius * pulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // ── Photon sphere — layered arcs ──────────────────────────────────
+        const arcConfigs = [
+          { r: coreRadius + 4, speed: 0.13, gap: 1.55, color: '#e879f9', width: 3.5 },
+          { r: coreRadius + 11, speed: -0.09, gap: 1.35, color: '#c084fc', width: 2.5 },
+          { r: coreRadius + 19, speed: 0.07, gap: 1.6, color: '#a855f7', width: 2.0 },
+          { r: coreRadius + 27, speed: -0.05, gap: 1.8, color: 'rgba(232,121,249,0.5)', width: 1.5 },
+        ];
+        this.ctx.globalAlpha = lifeAlpha;
+        for (const arc of arcConfigs) {
+          const a0 = this.frameCount * arc.speed;
+          this.ctx.strokeStyle = arc.color;
+          this.ctx.lineWidth = arc.width;
+          this.ctx.shadowColor = arc.color;
+          this.ctx.shadowBlur = 8;
+          this.ctx.beginPath();
+          this.ctx.arc(bhX, bhY, arc.r * pulse, a0, a0 + Math.PI * arc.gap);
+          this.ctx.stroke();
+          this.ctx.beginPath();
+          this.ctx.arc(bhX, bhY, arc.r * pulse, a0 + Math.PI, a0 + Math.PI + Math.PI * (2 - arc.gap) * 0.8);
+          this.ctx.stroke();
+        }
+        this.ctx.shadowBlur = 0;
+        this.ctx.globalAlpha = 1;
+
+        // ── Gravitational wave pulse ring every 30 frames ─────────────────
+        const bhTimerMod = bhTimer % 30;
+        if (bhTimerMod > 24) {
+          const rippleProg = (bhTimerMod - 24) / 6;
+          const rippleR = coreRadius + rippleProg * pullRadius;
+          const rippleAlpha = lifeAlpha * (1 - rippleProg) * 0.7;
+          this.ctx.strokeStyle = `rgba(232, 121, 249, ${rippleAlpha})`;
+          this.ctx.lineWidth = 3 - rippleProg * 2;
+          this.ctx.beginPath();
+          this.ctx.arc(bhX, bhY, rippleR, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+
+        // ── Pull zone boundary ────────────────────────────────────────────
+        this.ctx.strokeStyle = `rgba(192, 132, 252, ${lifeAlpha * 0.35})`;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.setLineDash([6, 10]);
+        this.ctx.beginPath();
+        this.ctx.arc(bhX, bhY, pullRadius, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        this.ctx.restore();
+      }
+
+      if (this.isChanneling && this.channelingTimer > 0) {
+        this.ctx.save();
+        const cx = this.px + this.pWidth / 2;
+        const cy = this.py - 38;
+        const barW = 80;
+        const barH = 8;
+        const barX = cx - barW / 2;
+        const pct = Math.max(0, this.channelingTimer / this.channelingMaxDuration);
+
+        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+        this.ctx.fillRect(barX, cy, barW, barH);
+
+        const barGrad = this.ctx.createLinearGradient(barX, cy, barX + barW, cy);
+        barGrad.addColorStop(0, '#c084fc');
+        barGrad.addColorStop(1, '#e879f9');
+        this.ctx.fillStyle = barGrad;
+        this.ctx.fillRect(barX, cy, barW * pct, barH);
+
+        this.ctx.strokeStyle = '#e879f9';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(barX, cy, barW, barH);
+
+        this.ctx.font = 'bold 9px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.shadowColor = '#c084fc';
+        this.ctx.shadowBlur = 6;
+        this.ctx.fillText('CHANNELING (MOVE TO CANCEL) 🕳️', cx, cy - 6);
+
+        if (this.channelingSpell === 'black_hole') {
+          const bhX = (this as any).enigmonBlackHoleX;
+          const bhY = (this as any).enigmonBlackHoleY;
+          if (bhX !== undefined && bhY !== undefined) {
+            this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.7)';
+            this.ctx.lineWidth = 2.5;
+            this.ctx.setLineDash([6, 4]);
+            this.ctx.beginPath();
+            this.ctx.moveTo(cx, this.py + this.pHeight / 2);
+            const midX = (cx + bhX) / 2;
+            const midY = (this.py + this.pHeight / 2 + bhY) / 2 + Math.sin(this.frameCount * 0.2) * 15;
+            this.ctx.quadraticCurveTo(midX, midY, bhX, bhY);
+            this.ctx.stroke();
+
+            if (this.frameCount % 3 === 0) {
+              const t = (this.frameCount % 30) / 30;
+              const px = (1 - t) * cx + t * bhX;
+              const py = (1 - t) * (this.py + this.pHeight / 2) + t * bhY + Math.sin(t * Math.PI) * -15;
+              this.particles.push({
+                x: px,
+                y: py,
+                vx: (Math.random() - 0.5) * 3,
+                vy: (Math.random() - 0.5) * 3,
+                size: Math.random() * 5 + 2,
+                color: '#e879f9',
+                life: 15,
+                maxLife: 15
+              });
+            }
+          }
+        }
         this.ctx.restore();
       }
 
@@ -7810,6 +9406,98 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    if (this.antimatterDeathTimer > 0) {
+      this.antimatterDeathTimer--;
+      if (this.antimatterDeathTimer === 0) {
+        this.callbacks.onPlayerDeath();
+      }
+
+      const progress = (90 - this.antimatterDeathTimer) / 90;
+      const alpha = Math.min(1.0, this.antimatterDeathTimer / 20);
+      const shrink = 1.0 - progress * 0.85;
+      this.ctx.save();
+
+      const px = this.px;
+      const py = this.py;
+      const pw = this.pWidth;
+      const ph = this.pHeight;
+      const cx = px + pw / 2;
+      const cy = py + ph / 2;
+
+      // Cyan/magenta outer shockwave ring on start
+      if (this.antimatterDeathTimer > 60) {
+        const ringAlpha = (this.antimatterDeathTimer - 60) / 30;
+        const ringR = (1 - ringAlpha) * 110 + 10;
+        const ringGrad = this.ctx.createRadialGradient(cx, cy, ringR * 0.4, cx, cy, ringR);
+        ringGrad.addColorStop(0, `rgba(6, 182, 212, ${ringAlpha * 0.6})`);
+        ringGrad.addColorStop(0.5, `rgba(232, 121, 249, ${ringAlpha * 0.4})`);
+        ringGrad.addColorStop(1, 'rgba(0,0,0,0)');
+        this.ctx.fillStyle = ringGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, ringR, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // Spiraling antimatter orbital particles
+      this.ctx.globalAlpha = alpha;
+      for (let o = 0; o < 8; o++) {
+        const orbitAngle = this.frameCount * 0.18 + (o * Math.PI * 2) / 8;
+        const orbitR = (22 + o * 5) * shrink;
+        const ox = cx + Math.cos(orbitAngle) * orbitR;
+        const oy = cy + Math.sin(orbitAngle) * orbitR;
+        this.ctx.fillStyle = o % 2 === 0 ? '#06b6d4' : '#e879f9';
+        this.ctx.beginPath();
+        this.ctx.arc(ox, oy, (3 * shrink + 1), 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // Fragmented body disintegrating
+      if (this.antimatterDeathTimer > 15) {
+        const silAlpha = alpha * shrink;
+        const fragCount = 8;
+        for (let f = 0; f < fragCount; f++) {
+          const col = f % 2;
+          const row = Math.floor(f / 2);
+          const fragX = cx - pw * shrink * 0.5 + col * pw * shrink * 0.5 + Math.sin(this.frameCount * 0.3 + f) * progress * 12;
+          const fragY = py + row * (ph * shrink / 4) + Math.cos(this.frameCount * 0.25 + f) * progress * 10;
+          const fragW = pw * shrink * 0.45;
+          const fragH = ph * shrink * 0.23;
+          this.ctx.fillStyle = f % 3 === 0 ? '#06b6d4' : f % 3 === 1 ? '#e879f9' : '#a5f3fc';
+          this.ctx.globalAlpha = silAlpha * (1 - progress * 0.6);
+          this.ctx.fillRect(fragX, fragY, fragW, fragH);
+        }
+
+        // Atom symbol overlay
+        this.ctx.globalAlpha = alpha * shrink * 0.85;
+        this.ctx.strokeStyle = '#06b6d4';
+        this.ctx.lineWidth = 2 * shrink;
+        for (let a = 0; a < 3; a++) {
+          this.ctx.save();
+          this.ctx.translate(cx, cy);
+          this.ctx.rotate(a * Math.PI / 3 + this.frameCount * 0.05);
+          this.ctx.beginPath();
+          this.ctx.ellipse(0, 0, 14 * shrink, 5 * shrink, 0, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+        this.ctx.globalAlpha = alpha;
+        this.ctx.fillStyle = '#e879f9';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, 4 * shrink, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // Screen flash at start
+      if (this.antimatterDeathTimer > 78) {
+        const flashAlpha = (this.antimatterDeathTimer - 78) / 12;
+        this.ctx.globalAlpha = flashAlpha * 0.5;
+        this.ctx.fillStyle = '#06b6d4';
+        this.ctx.fillRect(0, 0, this.canvas.width + 2000, this.canvas.height + 2000);
+      }
+
+      this.ctx.restore();
+    }
+
     if (this.playerRootedTimer > 0) {
       this.ctx.save();
       this.ctx.strokeStyle = '#22c55e';
@@ -7824,7 +9512,7 @@ export class GameEngine {
       this.ctx.restore();
     }
 
-    if (this.skeletonDeathTimer <= 0) {
+    if (this.skeletonDeathTimer <= 0 && this.antimatterDeathTimer <= 0) {
       const px = this.px;
       const py = this.py;
       const pw = this.pWidth;
@@ -7851,25 +9539,55 @@ export class GameEngine {
       const startY = this.py + this.pHeight / 2;
       const endX = this.flymonLaserEndPos.x;
       const endY = this.flymonLaserEndPos.y;
+      const laserAlpha = Math.min(1, this.laserBeamDuration / 12);
 
-      this.ctx.strokeStyle = 'rgba(244, 63, 94, 0.75)';
-      this.ctx.lineWidth = 24;
+      // Outer glow layer (widest, most transparent)
+      this.ctx.strokeStyle = `rgba(244, 63, 94, ${laserAlpha * 0.30})`;
+      this.ctx.lineWidth = 44;
+      this.ctx.lineCap = 'round';
       this.ctx.beginPath();
       this.ctx.moveTo(startX, startY);
       this.ctx.lineTo(endX, endY);
       this.ctx.stroke();
 
-      this.ctx.strokeStyle = '#ffffff';
-      this.ctx.lineWidth = 10;
+      // Mid crimson layer
+      this.ctx.strokeStyle = `rgba(244, 63, 94, ${laserAlpha * 0.75})`;
+      this.ctx.lineWidth = 22;
       this.ctx.beginPath();
       this.ctx.moveTo(startX, startY);
       this.ctx.lineTo(endX, endY);
       this.ctx.stroke();
 
-      this.ctx.fillStyle = '#fda4af';
+      // Hot core
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${laserAlpha * 0.95})`;
+      this.ctx.lineWidth = 8;
       this.ctx.beginPath();
-      this.ctx.arc(endX, endY, 14, 0, Math.PI * 2);
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(endX, endY);
+      this.ctx.stroke();
+
+      // Impact flare at endpoint
+      const flareGrad = this.ctx.createRadialGradient(endX, endY, 2, endX, endY, 28);
+      flareGrad.addColorStop(0, `rgba(255, 255, 255, ${laserAlpha})`);
+      flareGrad.addColorStop(0.4, `rgba(244, 63, 94, ${laserAlpha * 0.85})`);
+      flareGrad.addColorStop(1, 'rgba(244, 63, 94, 0)');
+      this.ctx.fillStyle = flareGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(endX, endY, 28, 0, Math.PI * 2);
       this.ctx.fill();
+
+      // Rotating flare arcs at impact
+      const fa0 = this.frameCount * 0.22;
+      this.ctx.strokeStyle = `rgba(251, 113, 133, ${laserAlpha * 0.9})`;
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(endX, endY, 18, fa0, fa0 + Math.PI * 1.3);
+      this.ctx.stroke();
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${laserAlpha * 0.7})`;
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(endX, endY, 22, -fa0, -fa0 + Math.PI * 1.0);
+      this.ctx.stroke();
 
       this.ctx.restore();
     }
@@ -8400,20 +10118,62 @@ export class GameEngine {
       this.arrowShowerDuration--;
       if (this.arrowShowerDuration <= 0) {
         this.arrowShowerActive = false;
+        // Closing burst
+        for (let p = 0; p < 24; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 8 + 3;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 80,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: Math.random() * 7 + 3,
+            color: p % 3 === 0 ? '#10b981' : p % 3 === 1 ? '#34d399' : '#a7f3d0',
+            life: 22,
+            maxLife: 22
+          });
+        }
       } else if (this.frameCount % 3 === 0) {
         const rx = this.px - 380 + Math.random() * 760;
+        const arrowColor = Math.random() > 0.5 ? '#10b981' : '#34d399';
         this.projectiles.push({
           x: rx,
           y: Math.max(0, this.py - 320),
           vx: (Math.random() - 0.5) * 1.5,
           vy: 14.0,
-          width: 9,
-          height: 22,
+          width: 10,
+          height: 26,
           isEnemy: false,
           damage: Math.floor(this.stats.attack * 1.6),
-          color: '#10b981',
+          color: arrowColor,
           type: 'arrow'
         });
+        // Comet trail for this arrow
+        for (let t = 0; t < 4; t++) {
+          this.particles.push({
+            x: rx + (Math.random() - 0.5) * 6,
+            y: Math.max(0, this.py - 320) + t * 7,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: -3.5,
+            size: Math.random() * 4 + 2,
+            color: t % 2 === 0 ? '#34d399' : '#a7f3d0',
+            life: 14,
+            maxLife: 14
+          });
+        }
+        // Sky shimmer ambient
+        if (this.frameCount % 6 === 0) {
+          this.particles.push({
+            x: rx + (Math.random() - 0.5) * 30,
+            y: Math.max(0, this.py - 320 + Math.random() * 60),
+            vx: (Math.random() - 0.5) * 1.0,
+            vy: Math.random() * 1.5,
+            size: Math.random() * 5 + 2,
+            color: '#6ee7b7',
+            life: 18,
+            maxLife: 18
+          });
+        }
       }
     }
 
@@ -8443,28 +10203,63 @@ export class GameEngine {
             const ey = enemy.y + enemy.height / 2;
 
             if (ex >= minX - enemy.width / 2 && ex <= maxX + enemy.width / 2 && Math.abs(ey - startY) < (30 + enemy.height / 2)) {
-              this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.50));
-              enemy.vx = this.pFacing * 2.0;
-              if (this.frameCount % 4 === 0) {
+              // Damage tick every 15 frames = 0.25s at 60fps
+              if (this.frameCount % 15 === 0) {
+                this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.0));
+                enemy.vx = this.pFacing * 3.0;
+                this.screenShake = 10;
+                // Big damage tick burst
+                for (let bp = 0; bp < 14; bp++) {
+                  const bang = Math.random() * Math.PI * 2;
+                  const bspd = Math.random() * 8 + 3;
+                  this.particles.push({
+                    x: ex,
+                    y: ey,
+                    vx: Math.cos(bang) * bspd,
+                    vy: Math.sin(bang) * bspd,
+                    size: Math.random() * 7 + 3,
+                    color: bp % 3 === 0 ? '#f43f5e' : bp % 3 === 1 ? '#ffffff' : '#fbbf24',
+                    life: 22,
+                    maxLife: 22
+                  });
+                }
+              }
+              // Continuous laser singe particles
+              if (this.frameCount % 3 === 0) {
                 this.spawnDustParticles(ex, ey, 5, '#f43f5e');
               }
             }
           }
         });
 
+        // Laser beam plasma trail particles
         if (this.frameCount % 2 === 0) {
           const randomDist = Math.random() * 1000;
           const px = startX + this.pFacing * randomDist;
+          // Primary plasma particle
           this.particles.push({
             x: px,
             y: startY + (Math.random() * 20 - 10),
             vx: this.pFacing * (Math.random() * 4 + 2),
-            vy: (Math.random() - 0.5) * 3,
-            size: Math.random() * 5 + 2,
+            vy: (Math.random() - 0.5) * 4,
+            size: Math.random() * 6 + 2,
             color: Math.random() > 0.5 ? '#f43f5e' : '#ffffff',
             life: 15,
             maxLife: 15
           });
+          // Secondary scatter sparks
+          if (Math.random() < 0.4) {
+            this.particles.push({
+              x: px + (Math.random() - 0.5) * 10,
+              y: startY + (Math.random() * 30 - 15),
+              vx: (Math.random() - 0.5) * 5,
+              vy: (Math.random() - 0.5) * 5,
+              size: Math.random() * 4 + 1,
+              color: '#fb7185',
+              life: 10,
+              maxLife: 10
+            });
+          }
         }
       }
     }

@@ -339,6 +339,112 @@ class SoundService {
     playCrystalChime(783.99, 0.18, 0.35);
   }
 
+  public playBlackHoleActivation() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+
+    // Deep sub-bass gravitational rumble
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(55, now);
+    subOsc.frequency.exponentialRampToValueAtTime(28, now + 1.2);
+    subGain.gain.setValueAtTime(0, now);
+    subGain.gain.linearRampToValueAtTime(this.sfxVolume * 0.9, now + 0.08);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+    subOsc.connect(subGain);
+    subGain.connect(this.ctx.destination);
+    subOsc.start(now);
+    subOsc.stop(now + 1.2);
+
+    // Mid-range gravitational collapse tone
+    const midOsc = this.ctx.createOscillator();
+    const midGain = this.ctx.createGain();
+    midOsc.type = 'sawtooth';
+    midOsc.frequency.setValueAtTime(220, now);
+    midOsc.frequency.exponentialRampToValueAtTime(40, now + 0.9);
+    const midFilter = this.ctx.createBiquadFilter();
+    midFilter.type = 'lowpass';
+    midFilter.frequency.setValueAtTime(600, now);
+    midFilter.frequency.exponentialRampToValueAtTime(80, now + 0.9);
+    midGain.gain.setValueAtTime(this.sfxVolume * 0.55, now);
+    midGain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
+    midOsc.connect(midFilter);
+    midFilter.connect(midGain);
+    midGain.connect(this.ctx.destination);
+    midOsc.start(now);
+    midOsc.stop(now + 0.9);
+
+    // Spacetime distortion white-noise burst
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.4);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const bufData = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) bufData[i] = Math.random() * 2 - 1;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(120, now);
+    noiseFilter.Q.setValueAtTime(0.8, now);
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(this.sfxVolume * 0.4, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start(now);
+    noise.stop(now + 0.4);
+
+    // High-pitched event horizon ring (photon sphere)
+    const ringOsc = this.ctx.createOscillator();
+    const ringGain = this.ctx.createGain();
+    ringOsc.type = 'sine';
+    ringOsc.frequency.setValueAtTime(880, now + 0.05);
+    ringOsc.frequency.exponentialRampToValueAtTime(220, now + 0.6);
+    ringGain.gain.setValueAtTime(0, now + 0.05);
+    ringGain.gain.linearRampToValueAtTime(this.sfxVolume * 0.35, now + 0.15);
+    ringGain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    ringOsc.connect(ringGain);
+    ringGain.connect(this.ctx.destination);
+    ringOsc.start(now + 0.05);
+    ringOsc.stop(now + 0.6);
+  }
+
+  public playBlackHolePulse() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+
+    // Gravitational wave pulse — deep thump
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, now);
+    osc.frequency.exponentialRampToValueAtTime(30, now + 0.45);
+    gain.gain.setValueAtTime(this.sfxVolume * 0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.45);
+
+    // High harmonic overtone
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'triangle';
+    osc2.frequency.setValueAtTime(320, now);
+    osc2.frequency.exponentialRampToValueAtTime(110, now + 0.3);
+    gain2.gain.setValueAtTime(this.sfxVolume * 0.25, now);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(now);
+    osc2.stop(now + 0.3);
+  }
+
   public playBGM() {
     this.initCtx();
     if (!this.ctx || this.musicInterval || !this.isMusicEnabled || this.isMuted) return;

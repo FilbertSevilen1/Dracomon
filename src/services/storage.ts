@@ -148,6 +148,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Enigmon: {
+      level: 1,
+      exp: 0,
+      hp: 20,
+      attack: 8,
+      defense: 3,
+      speed: 7,
+      jump: 11,
+      range: 12,
+      unlocked: false,
+      energyRegen: 1.2,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -285,6 +297,20 @@ export const storageService = {
             range: 6,
             unlocked: false,
             energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Enigmon) {
+          parsed.dracos.Enigmon = {
+            level: 1,
+            exp: 0,
+            hp: 20,
+            attack: 8,
+            defense: 3,
+            speed: 7,
+            jump: 11,
+            range: 12,
+            unlocked: false,
+            energyRegen: 1.2,
           };
         }
 

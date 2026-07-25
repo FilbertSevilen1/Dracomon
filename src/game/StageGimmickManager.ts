@@ -7,7 +7,8 @@ const BOSS_TYPES = new Set([
   'shadow_overlord',
   'dragon_king',
   'king_kong',
-  'immortal_gladiator'
+  'immortal_gladiator',
+  'giant_wisp'
 ]);
 
 export interface LavaFireball {
@@ -107,6 +108,23 @@ export interface DragonBreathZone {
   destroyOnExpire: boolean;
 }
 
+export interface SpaceComet {
+  id: number;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+  radius: number;
+  trail: Array<{ x: number; y: number }>;
+}
+
+export interface StageBlackHole {
+  id: number;
+  x: number;
+  y: number;
+  radius: number;
+}
+
 export class StageGimmickManager {
   public lavaFireballs: LavaFireball[] = [];
   public fallingSnowflakes: FallingSnowflake[] = [];
@@ -117,6 +135,8 @@ export class StageGimmickManager {
   public skyDragons: GiantSkyDragon[] = [];
   public dragonBreathProjectiles: DragonBreathProjectile[] = [];
   public dragonBreathZones: DragonBreathZone[] = [];
+  public spaceComets: SpaceComet[] = [];
+  public stageBlackHoles: StageBlackHole[] = [];
 
   public playerLavaBurnTimer: number = 0;
   public playerSlowTimer: number = 0;
@@ -135,10 +155,18 @@ export class StageGimmickManager {
     this.skyDragons = [];
     this.dragonBreathProjectiles = [];
     this.dragonBreathZones = [];
+    this.spaceComets = [];
+    this.stageBlackHoles = [];
     this.playerLavaBurnTimer = 0;
     this.playerSlowTimer = 0;
     this.playerPoisonBlindTimer = 0;
     this.timerCount = 0;
+  }
+
+  public clearHazardsNear(x: number, y: number, radius: number) {
+    this.stageBlackHoles = this.stageBlackHoles.filter(bh => Math.hypot(bh.x - x, bh.y - y) > radius);
+    this.spaceComets = this.spaceComets.filter(c => Math.hypot(c.x - x, c.y - y) > radius);
+    this.lavaFireballs = this.lavaFireballs.filter(f => Math.hypot(f.x - x, f.y - y) > radius);
   }
 
   public update(
@@ -159,6 +187,7 @@ export class StageGimmickManager {
       spawnParticles: (x: number, y: number, color: string, count: number) => void;
       setGridTile: (r: number, c: number, char: string) => void;
       onDestroyPickups?: (r: number, c: number) => void;
+      onPullPlayer?: (forceX: number, forceY: number) => void;
     }
   ) {
     this.timerCount++;
@@ -674,6 +703,119 @@ export class StageGimmickManager {
         }
       }
     }
+
+    if (themeType === 'space') {
+      this.stageBlackHoles = [];
+      if (grid && grid.length > 0) {
+        for (let r = 0; r < grid.length; r++) {
+          for (let c = 0; c < (grid[r]?.length || 0); c++) {
+            if (grid[r][c] === 'H') {
+              this.stageBlackHoles.push({
+                id: r * 1000 + c,
+                x: c * tileSize + tileSize / 2,
+                y: r * tileSize + tileSize / 2,
+                radius: 300
+              });
+            }
+          }
+        }
+      }
+
+      this.stageBlackHoles.forEach((bh) => {
+        const dist = Math.hypot(pxMid - bh.x, pyMid - bh.y);
+        if (dist <= bh.radius && pHP > 0) {
+          callbacks.spawnParticles(pxMid, pyMid, '#06b6d4', 2);
+          const pullIntensity = (1 - dist / bh.radius) * 1.3;
+          callbacks.onPullPlayer?.(((bh.x - pxMid) / dist) * pullIntensity, ((bh.y - pyMid) / dist) * pullIntensity);
+
+          if (dist < 32) {
+            callbacks.onInstaKillPlayer('Disintegrated in Antimatter Field');
+            callbacks.addFloatingText(pxMid, py - 20, 'DISSOLVED IN ANTIMATTER FIELD! ⚛️💥', '#06b6d4');
+            soundService.playHit();
+          }
+        }
+
+        enemies.forEach(e => {
+          if (e.hp <= 0) return;
+          const ex = e.x + e.width / 2;
+          const ey = e.y + e.height / 2;
+          const edist = Math.hypot(ex - bh.x, ey - bh.y);
+          if (edist <= bh.radius) {
+            const pullSpd = 1.35;
+            e.x += ((bh.x - ex) / edist) * pullSpd;
+            e.y += ((bh.y - ey) / edist) * pullSpd;
+
+            if (edist < 35) {
+              e.hp = 0;
+              callbacks.addFloatingText(ex, ey - 20, 'ANTIMATTER DISINTEGRATED! ⚛️💥', '#06b6d4');
+              callbacks.spawnParticles(ex, ey, '#06b6d4', 15);
+              callbacks.spawnParticles(ex, ey, '#e879f9', 15);
+            }
+          }
+        });
+      });
+
+      if (this.timerCount % 45 === 0 && grid.length > 0) {
+        const mapWidth = (grid[0]?.length || 60) * tileSize;
+        const groupCount = 1 + Math.floor(Math.random() * 3);
+
+        for (let k = 0; k < groupCount; k++) {
+          const spawnX = Math.min(mapWidth + 300, Math.max(100, pxMid + (Math.random() - 0.25) * 1100));
+          const spawnY = py - 350 - Math.random() * 300;
+          this.spaceComets.push({
+            id: this.nextEntityId++,
+            x: spawnX,
+            y: spawnY,
+            vx: -6.5 - Math.random() * 7.0,
+            vy: 3.0 + Math.random() * 5.0,
+            radius: 12 + Math.random() * 8,
+            trail: []
+          });
+        }
+      }
+
+      for (let i = this.spaceComets.length - 1; i >= 0; i--) {
+        const comet = this.spaceComets[i];
+        comet.x += comet.vx;
+        comet.y += comet.vy;
+
+        comet.trail.push({ x: comet.x, y: comet.y });
+        if (comet.trail.length > 6) comet.trail.shift();
+
+        const dist = Math.hypot(comet.x - pxMid, comet.y - pyMid);
+        if (dist < comet.radius + pWidth / 2 && pHP > 0) {
+          callbacks.onDamagePlayer(15, 'Space Comet Impact');
+          callbacks.addFloatingText(pxMid, py - 24, 'COMET BULLET IMPACT -15 HP! ☄️💥', '#ef4444');
+          callbacks.spawnParticles(pxMid, pyMid, '#c084fc', 18);
+          soundService.playHit();
+          this.spaceComets.splice(i, 1);
+          continue;
+        }
+
+        const r = Math.floor(comet.y / tileSize);
+        const c = Math.floor(comet.x / tileSize);
+        if (r >= 0 && r < grid.length && c >= 0 && c < (grid[0]?.length || 0)) {
+          const char = grid[r][c];
+          if (char === '#' || char === '=') {
+            let isPortalFloor = false;
+            if (r > 0 && grid[r - 1] && grid[r - 1][c] === 'P') isPortalFloor = true;
+            if (!isPortalFloor) {
+              callbacks.setGridTile(r, c, '.');
+              callbacks.onDestroyPickups?.(r, c);
+            }
+            callbacks.spawnParticles(comet.x, comet.y, '#e879f9', 16);
+            callbacks.spawnParticles(comet.x, comet.y, '#c084fc', 12);
+            soundService.playHit();
+            this.spaceComets.splice(i, 1);
+            continue;
+          }
+        }
+
+        if (comet.y > grid.length * tileSize + 100 || comet.x < -200) {
+          this.spaceComets.splice(i, 1);
+        }
+      }
+    }
   }
 
   public draw(
@@ -692,6 +834,90 @@ export class StageGimmickManager {
   ) {
     const pxMid = px + pWidth / 2;
     const pyMid = py + pHeight / 2;
+
+    if (themeType === 'space') {
+      // Draw Antimatter Field Singularities
+      this.stageBlackHoles.forEach((bh) => {
+        ctx.save();
+        const pulse = Math.sin(this.timerCount * 0.1) * 6;
+
+        const outerGrad = ctx.createRadialGradient(bh.x, bh.y, 10, bh.x, bh.y, 80);
+        outerGrad.addColorStop(0, 'rgba(6, 182, 212, 0.9)');
+        outerGrad.addColorStop(0.4, 'rgba(168, 85, 247, 0.5)');
+        outerGrad.addColorStop(1, 'rgba(3, 7, 18, 0.0)');
+        ctx.fillStyle = outerGrad;
+        ctx.beginPath();
+        ctx.arc(bh.x, bh.y, 80 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.6)';
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 6]);
+        ctx.beginPath();
+        ctx.arc(bh.x, bh.y, 120, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#e879f9';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(bh.x, bh.y, 36, this.timerCount * 0.07, this.timerCount * 0.07 + Math.PI * 1.6);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#06b6d4';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.arc(bh.x, bh.y, 48, -this.timerCount * 0.09, -this.timerCount * 0.09 + Math.PI * 1.4);
+        ctx.stroke();
+
+        ctx.fillStyle = '#020617';
+        ctx.beginPath();
+        ctx.arc(bh.x, bh.y, 26, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (let o = 0; o < 3; o++) {
+          const oAng = this.timerCount * 0.08 + (o * Math.PI * 2) / 3;
+          const ox = bh.x + Math.cos(oAng) * 32;
+          const oy = bh.y + Math.sin(oAng) * 32;
+          ctx.fillStyle = o % 2 === 0 ? '#06b6d4' : '#e879f9';
+          ctx.beginPath();
+          ctx.arc(ox, oy, 4, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        ctx.font = 'bold 9px monospace';
+        ctx.textAlign = 'center';
+        ctx.fillStyle = '#38bdf8';
+        ctx.shadowColor = '#06b6d4';
+        ctx.shadowBlur = 6;
+        ctx.fillText('⚛️ ANTIMATTER FIELD', bh.x, bh.y - 42);
+        ctx.restore();
+      });
+
+      // Draw Space Comets
+      this.spaceComets.forEach((comet) => {
+        ctx.save();
+        // Draw Trail
+        for (let i = 0; i < comet.trail.length; i++) {
+          const pt = comet.trail[i];
+          const alpha = (i + 1) / comet.trail.length;
+          ctx.fillStyle = `rgba(192, 132, 252, ${alpha * 0.6})`;
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y, comet.radius * (0.3 + 0.7 * alpha), 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Comet Head Core
+        const headGrad = ctx.createRadialGradient(comet.x, comet.y, 2, comet.x, comet.y, comet.radius);
+        headGrad.addColorStop(0, '#ffffff');
+        headGrad.addColorStop(0.4, '#e879f9');
+        headGrad.addColorStop(1, '#7e22ce');
+        ctx.fillStyle = headGrad;
+        ctx.beginPath();
+        ctx.arc(comet.x, comet.y, comet.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      });
+    }
 
     if (themeType === 'volcano') {
       this.lavaFireballs.forEach((fb) => {

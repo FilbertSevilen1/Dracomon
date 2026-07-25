@@ -7,6 +7,7 @@ import { GameScreen } from '../../components/GameScreen';
 import { InventoryModal } from '../../components/InventoryModal';
 import { SettingsModal } from '../../components/SettingsModal';
 import { soundService } from '../../services/sound';
+import { STAGES } from '../../game/LevelManager';
 
 function PlayContent() {
   const router = useRouter();
@@ -37,7 +38,7 @@ function PlayContent() {
     const stageParam = searchParams.get('stage');
     if (stageParam) {
       const parsed = parseInt(stageParam, 10);
-      if (!isNaN(parsed) && parsed >= 1 && parsed <= 11) {
+      if (!isNaN(parsed) && parsed >= 1 && parsed <= STAGES.length) {
         setCurrentStage(parsed);
       }
     }
@@ -55,7 +56,7 @@ function PlayContent() {
           onStageClear={() => markStageCleared(currentStage)}
           onNextLevel={() => {
             markStageCleared(currentStage);
-            setCurrentStage(Math.min(currentStage + 1, 11));
+            setCurrentStage(Math.min(currentStage + 1, STAGES.length));
           }}
           onQuit={() => {
             soundService.playClick();

@@ -30,9 +30,33 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.2.0',
+    date: 'July 25, 2026',
+    tag: 'Enigmon & Outerspace Sphere Expansion (Current)',
+    badgeColor: 'bg-purple-600 text-white font-black shadow-sm',
+    summary: 'Introduces new Cosmic hero Enigmon with Schwarzschild Pulse & Black Hole singularity ultimate, Stage 12 Outerspace Sphere with black hole hazard zones and bullet-hell comet streams, Alien laser snipers, and the Giant Wisp Supernova boss. Massive animation overhaul pass across Enigmon abilities, Shadowmon, Archermon, Whitemon, and Flymon ultimates.',
+    highlights: [
+      'New Hero - Enigmon: Cosmic dragon hero firing small dark matter particles capped at 500px range.',
+      'Special Skill - Schwarzschild Pulse: Creates a 300px radius pulse dealing base damage + 3% enemy max HP damage each second for 3 seconds (cooldown 5s).',
+      'Ultimate Skill - Black Hole (300 Energy): Channeling spell that creates a 50px radius black hole 400px in front, pulling enemies & platforms in 400px radius at 80px/s (destroying sucked platforms except exit portal floor). Enemies within 150px are stunned during the 3s duration.',
+      'New Stage 12 - Outerspace Sphere: Deep cosmic realm featuring black hole singularity gravity traps (sucks players within 300px, squeezing into a small dot on contact) and bullet-hell comet streams that destroy ground tiles.',
+      'New Enemy - Alien Sniper: Moves towards player first before firing a travelling homing laser (1s duration, 500px range, 3s interval).',
+      'New Boss - Giant Wisp Overlord: Dota 2 Io-inspired boss with 4 orbiting energy spheres dealing contact damage. On death, enters a 2-second Supernova detonation phase before exploding in a massive 400px area burst.',
+      'Antimatter Death FX: Unique death animation for Outerspace Sphere hazard contacts — shockwave ring, atom orbit rings, 8 spiraling cyan/magenta orbital particles, and a fragmented disintegration silhouette.',
+      'Black Hole Visual Overhaul: Completely redrawn with Hawking radiation haze, 14 rotating gravitational lensing rays, animated accretion disk (tilted hot-gradient ellipse), 4-layer photon sphere arcs with glow, and expanding gravitational wave ripple rings every 30 frames.',
+      'Black Hole Sound Overhaul: New 4-layer activation sound (sub-bass rumble, sawtooth collapse, noise burst, photon ring) and gravitational wave pulse thump every 30 frames during the ability.',
+      'Schwarzschild Zone Visual Overhaul: Layered elliptic rings, 12 rotating tidal distortion lines, inner singularity orb, expanding elliptic ripple on each damage tick, and dual spiral matter-stream particles.',
+      'Shadowraze Visual Overhaul: Void implosion — 52 particles (void shards + crimson embers), 7 dark tendril pillars shooting upward, rotating crimson arc tendrils, shockwave expansion ring, and a void eye at centre.',
+      'Shadowmon Soul Blast Overhaul: 3-arm dark soul vortex spiraling inward during charge-up, crimson rising pillars from beneath the player, 12 crimson particle bursts per wave on release.',
+      'Archermon Ultimate Overhaul: 36-particle uniform wind charge burst on activation, arrow shower now spawns 3 green sparkle trail particles per arrow for a dense falling-star rain effect.',
+      'Whitemon Primal Roar Overhaul: 48-particle fire ring shockwave on activation (orange, yellow, cyan, white), rampage bird now has pulsing fire aura, rotating arc rings, a directional beak, and orange fire trail particles.',
+      'Flymon Laser Beam Overhaul: 3-layer gradient beam (outer glow 44px, mid crimson 22px, hot white core 8px), radial impact flare at endpoint with rotating arc rings, fade-in/out alpha, and crimson ring burst on activation.',
+    ],
+  },
+  {
     version: '0.1.9',
     date: 'July 24, 2026',
-    tag: 'Interactive Hero Previews & Hotkey Indicators (Current)',
+    tag: 'Interactive Hero Previews & Hotkey Indicators',
     badgeColor: 'bg-amber-500 text-stone-950 font-black shadow-sm',
     summary: 'Introduces live in-game 3-tab Hero Combat Previews (Basic Attack, Skill, Ultimate) vs Immortal Slime on both Homepage and /heroes pages, cleans up the Hero Section layout, adds visible hotkey badges to all game HUD and modal controls, and moves the Quick Heal Potion beside skills.',
     highlights: [
@@ -245,7 +269,7 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  const [openVersion, setOpenVersion] = useState<string | null>('0.1.9');
+  const [openVersion, setOpenVersion] = useState<string | null>('0.2.0');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();
