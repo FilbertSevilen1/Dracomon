@@ -335,11 +335,11 @@ export class StageGimmickManager {
     }
 
     if (themeType === 'temple') {
-      if (this.timerCount % 240 === 0) {
+      if (this.timerCount % 120 === 0) {
         this.thunderboltStrikes.push({
           id: this.nextEntityId++,
           x: pxMid + (Math.random() - 0.5) * 450,
-          timer: 240,
+          timer: 120,
           striking: false
         });
       }
@@ -348,28 +348,24 @@ export class StageGimmickManager {
         const tb = this.thunderboltStrikes[i];
         tb.timer--;
 
-        if (tb.timer <= 60) {
-          let targetRow = grid.length;
-          let solidCount = 0;
+        if (tb.timer <= 30) {
+          // Pierce through all platforms — find the bottom-most solid row
+          let targetRow = grid.length - 1;
           const centerCol = Math.floor(tb.x / tileSize);
-          for (let r = 0; r < grid.length; r++) {
-            let rowHasSolid = false;
+          for (let r = grid.length - 1; r >= 0; r--) {
+            let found = false;
             for (let c = centerCol - 1; c <= centerCol + 1; c++) {
               if (c >= 0 && c < (grid[r]?.length || 0)) {
-                if (grid[r][c] === '#') {
-                  rowHasSolid = true;
+                if (grid[r][c] === '#' || grid[r][c] === '=') {
+                  targetRow = r;
+                  found = true;
+                  break;
                 }
               }
             }
-            if (rowHasSolid) {
-              solidCount++;
-              if (solidCount === 3) {
-                targetRow = r;
-                break;
-              }
-            }
+            if (found) break;
           }
-          const groundY = targetRow * tileSize;
+          const groundY = (targetRow + 1) * tileSize;
 
           if (!tb.striking) {
             tb.striking = true;
@@ -377,16 +373,16 @@ export class StageGimmickManager {
             callbacks.spawnParticles(tb.x, groundY, '#fef08a', 25);
           }
 
-          const playerFeet = py + pHeight;
-          if (Math.abs(pxMid - tb.x) < 48 && playerFeet <= groundY + 15 && pHP > 0) {
+          // Player is hit anywhere within the lightning column
+          if (Math.abs(pxMid - tb.x) < 48 && pHP > 0) {
             callbacks.onInstaKillPlayer('Divine Thunderbolt Strike');
             callbacks.addFloatingText(pxMid, py - 20, 'DIVINE THUNDERBOLT STRIKE! ⚡💥', '#eab308');
             soundService.playThunderboltDeath();
           }
 
+          // Enemies are hit anywhere within the lightning column (no floor restriction)
           enemies.forEach((enemy) => {
-            const enemyFeet = enemy.y + enemy.height;
-            if (enemy.hp > 0 && Math.abs((enemy.x + enemy.width / 2) - tb.x) < 56 && enemyFeet <= groundY + 15) {
+            if (enemy.hp > 0 && Math.abs((enemy.x + enemy.width / 2) - tb.x) < 56) {
               if (enemy.type !== 'immortal_gladiator') {
                 enemy.stunTimer = 60;
               }
@@ -1001,32 +997,28 @@ export class StageGimmickManager {
       this.thunderboltStrikes.forEach((tb) => {
         ctx.save();
 
-        let targetRow = activeGrid.length;
-        let solidCount = 0;
+        // Pierce through all platforms — find the bottom-most solid row for the beam
+        let targetRow = activeGrid.length - 1;
         const centerCol = Math.floor(tb.x / ts);
-        for (let r = 0; r < activeGrid.length; r++) {
-          let rowHasSolid = false;
+        for (let r = activeGrid.length - 1; r >= 0; r--) {
+          let found = false;
           for (let c = centerCol - 1; c <= centerCol + 1; c++) {
             if (c >= 0 && c < (activeGrid[r]?.length || 0)) {
-              if (activeGrid[r][c] === '#') {
-                rowHasSolid = true;
+              if (activeGrid[r][c] === '#' || activeGrid[r][c] === '=') {
+                targetRow = r;
+                found = true;
+                break;
               }
             }
           }
-          if (rowHasSolid) {
-            solidCount++;
-            if (solidCount === 3) {
-              targetRow = r;
-              break;
-            }
-          }
+          if (found) break;
         }
 
         const groundY = targetRow * ts;
         const beamTop = cameraY - 100;
         const beamHeight = Math.max(20, groundY - beamTop);
 
-        if (!tb.striking) {
+        if (tb.timer > 30) {
           const warningAlpha = 0.12 + Math.sin(tb.timer * 0.2) * 0.08;
           ctx.fillStyle = `rgba(234, 179, 8, ${warningAlpha})`;
           ctx.fillRect(tb.x - 48, beamTop, 96, beamHeight);

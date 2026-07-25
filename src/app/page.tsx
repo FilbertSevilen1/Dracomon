@@ -1598,6 +1598,10 @@ export default function Home() {
             onLevelUpWithCoins={(name) => levelUpDracoWithCoins(name)}
             onClose={() => setShowSelection(false)}
             onSwitchTier={switchTier}
+            showLevelUp={showLevelUp}
+            levelUpInfo={levelUpInfo}
+            onApplyBonus={applyLevelUpBonus}
+            pendingLevelUps={pendingLevelUps}
           />
         )}
 

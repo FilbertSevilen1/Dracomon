@@ -14,6 +14,10 @@ export default function HeroesPage() {
     unlockDraco,
     levelUpDracoWithCoins,
     switchTier,
+    showLevelUp,
+    levelUpInfo,
+    applyLevelUpBonus,
+    pendingLevelUps,
   } = useGameState();
 
   return (
@@ -58,6 +62,10 @@ export default function HeroesPage() {
               levelUpDracoWithCoins(name);
             }}
             onSwitchTier={switchTier}
+            showLevelUp={showLevelUp}
+            levelUpInfo={levelUpInfo}
+            onApplyBonus={applyLevelUpBonus}
+            pendingLevelUps={pendingLevelUps}
           />
         </div>
       </main>

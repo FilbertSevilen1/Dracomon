@@ -2321,6 +2321,19 @@ export class GameEngine {
   }
 
   private damageEnemy(enemy: Enemy, damage: number) {
+    if (this.isBossType(enemy.type)) {
+      const pxMid = this.px + this.pWidth / 2;
+      const pyMid = this.py + this.pHeight / 2;
+      const exMid = enemy.x + enemy.width / 2;
+      const eyMid = enemy.y + enemy.height / 2;
+      const distToPlayer = Math.hypot(pxMid - exMid, pyMid - eyMid);
+      if (distToPlayer > 800) {
+        soundService.playBlock();
+        this.addFloatingText(exMid, enemy.y - 15, 'IMMUNE! (>800px) 🛡️', '#38bdf8');
+        return;
+      }
+    }
+
     const finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 1 : damage;
     const damageDealt = Math.max(1, finalDamage - Math.floor(enemy.defense / 2));
 
@@ -2711,7 +2724,7 @@ export class GameEngine {
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'giant_wisp'].includes(type);
+    return ['king_slime', 'miniboss', 'fire_golem', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp'].includes(type);
   }
 
   private updatePhysics() {

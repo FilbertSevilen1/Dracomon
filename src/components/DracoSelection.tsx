@@ -4,6 +4,8 @@ import { SaveData, TierType } from '../types/game';
 import { Shield, Zap, Lock, Sparkles, Coins, Award, X, Check, ArrowUpRight, Search } from 'lucide-react';
 import { soundService } from '../services/sound';
 import { HeroDemoCanvas } from './HeroDemoCanvas';
+import { LevelUpModal } from './LevelUpModal';
+import { PlayerStats } from '../types/game';
 
 interface DracoSelectionProps {
   saveData: SaveData;
@@ -13,6 +15,16 @@ interface DracoSelectionProps {
   onClose?: () => void;
   onSwitchTier?: (tier: TierType) => void;
   isFullPage?: boolean;
+  showLevelUp?: boolean;
+  levelUpInfo?: {
+    dracoName: string;
+    oldLevel: number;
+    newLevel: number;
+    baseIncrease: Partial<PlayerStats>;
+    bonusRoll: number;
+  } | null;
+  onApplyBonus?: (stat: keyof PlayerStats) => void;
+  pendingLevelUps?: any[];
 }
 
 const DRACO_META: {
@@ -351,6 +363,10 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   onClose,
   onSwitchTier,
   isFullPage = false,
+  showLevelUp,
+  levelUpInfo,
+  onApplyBonus,
+  pendingLevelUps,
 }) => {
   const equippedDraco = saveData.selectedDraco;
   const [selectedName, setSelectedName] = useState<string>(equippedDraco);
@@ -380,10 +396,10 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   const isEquipped = equippedDraco === selectedName;
   const canAfford = coins >= inspectedMeta.cost;
   const lvl = inspectedData.level || 1;
-  const hp = inspectedData.hp || 10;
-  const att = inspectedData.attack || 1;
-  const def = inspectedData.defense || 1;
-  const spd = inspectedData.speed || 1;
+  const hp = Math.round((inspectedData.hp || 10) * 10) / 10;
+  const att = Math.round((inspectedData.attack || 1) * 10) / 10;
+  const def = Math.round((inspectedData.defense || 1) * 10) / 10;
+  const spd = Math.round((inspectedData.speed || 1) * 10) / 10;
 
   const levelUpCost = lvl * 100;
   const canLevelUp = isUnlocked && lvl < 15 && coins >= levelUpCost;
@@ -758,26 +774,48 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
     </div>
   );
 
+  const modalElement = showLevelUp && levelUpInfo && onApplyBonus && (
+    <LevelUpModal
+      key={`${levelUpInfo.dracoName}-${levelUpInfo.oldLevel}-${levelUpInfo.newLevel}-${pendingLevelUps?.length || 0}`}
+      dracoName={levelUpInfo.dracoName}
+      oldLevel={levelUpInfo.oldLevel}
+      newLevel={levelUpInfo.newLevel}
+      baseIncrease={levelUpInfo.baseIncrease}
+      bonusRoll={levelUpInfo.bonusRoll}
+      currentStats={saveData.dracos[levelUpInfo.dracoName] as any}
+      onApplyBonus={onApplyBonus}
+      pendingCount={pendingLevelUps?.length || 0}
+    />
+  );
+
   if (isFullPage) {
-    return content;
+    return (
+      <>
+        {content}
+        {modalElement}
+      </>
+    );
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-stone-900/50 backdrop-blur-md"
-    >
+    <>
       <motion.div
-        initial={{ scale: 0.96, y: 10 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.96, y: 10 }}
-        className="w-full max-w-5xl"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-3 md:p-6 bg-stone-900/50 backdrop-blur-md"
       >
-        {content}
+        <motion.div
+          initial={{ scale: 0.96, y: 10 }}
+          animate={{ scale: 1, y: 0 }}
+          exit={{ scale: 0.96, y: 10 }}
+          className="w-full max-w-5xl"
+        >
+          {content}
+        </motion.div>
       </motion.div>
-    </motion.div>
+      {modalElement}
+    </>
   );
 };
 
