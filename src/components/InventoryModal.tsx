@@ -154,7 +154,8 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
                     <div className="grid grid-cols-2 gap-3">
                       {statLabels.map(({ key, label, desc }) => {
-                        const currentVal = dracoDetails ? (dracoDetails as any)[key] || 0 : 0;
+                        const rawVal = dracoDetails ? (dracoDetails as any)[key] || 0 : 0;
+                        const currentVal = Math.round(rawVal * 10) / 10;
                         const isCapped = (key === 'speed' && currentVal >= 20) || (key === 'jump' && currentVal >= 14);
 
                         return (

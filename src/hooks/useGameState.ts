@@ -184,7 +184,7 @@ export function useGameState() {
           if (stat === 'speed' && oldVal >= 20) return prev;
           if (stat === 'jump' && oldVal >= 14) return prev;
 
-          let newVal = oldVal + 0.1;
+          let newVal = Math.round((oldVal + 0.1) * 10) / 10;
           if (stat === 'speed') newVal = Math.min(20, newVal);
           if (stat === 'jump') newVal = Math.min(14, newVal);
 
@@ -340,12 +340,12 @@ export function useGameState() {
       if (draco) {
         if (stat === 'energyRegen') {
           const currentRegen = draco.energyRegen || 1.0;
-          draco.energyRegen = Math.min(10.0, currentRegen + 0.1 * levelUpInfo.bonusRoll);
+          draco.energyRegen = Math.round(Math.min(10.0, currentRegen + 0.1 * levelUpInfo.bonusRoll) * 10) / 10;
         } else {
           const oldStatVal = (draco as any)[stat] || 0;
           if (stat === 'speed' && oldStatVal >= 20) return prev;
           if (stat === 'jump' && oldStatVal >= 14) return prev;
-          let newVal = oldStatVal + levelUpInfo.bonusRoll;
+          let newVal = Math.round((oldStatVal + levelUpInfo.bonusRoll) * 10) / 10;
           if (stat === 'speed') newVal = Math.min(20, newVal);
           if (stat === 'jump') newVal = Math.min(14, newVal);
           (draco as any)[stat] = newVal;

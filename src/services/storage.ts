@@ -315,8 +315,14 @@ export const storageService = {
         }
 
         Object.keys(parsed.dracos).forEach(key => {
-          if (parsed.dracos[key] && (parsed.dracos[key] as any).energyRegen === undefined) {
-            (parsed.dracos[key] as any).energyRegen = 1.0;
+          const d = parsed.dracos[key] as any;
+          if (d) {
+            if (d.energyRegen === undefined) d.energyRegen = 1.0;
+            ['hp', 'attack', 'defense', 'speed', 'jump', 'range', 'energyRegen'].forEach(stat => {
+              if (typeof d[stat] === 'number') {
+                d[stat] = Math.round(d[stat] * 10) / 10;
+              }
+            });
           }
         });
 
