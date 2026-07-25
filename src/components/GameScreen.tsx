@@ -115,6 +115,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
     return () => {
       engine.destroy();
+      soundService.stopBGM();
     };
   }, [stageNum, selectedDraco]);
 

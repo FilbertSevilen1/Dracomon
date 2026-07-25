@@ -64,7 +64,8 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.08);
   }
 
-  public playJump() {
+  public playJump(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -112,7 +113,8 @@ class SoundService {
     playBeep(1318.51, now + 0.08, 0.18);
   }
 
-  public playHit() {
+  public playHit(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -133,7 +135,8 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.2);
   }
 
-  public playShoot() {
+  public playShoot(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -154,7 +157,8 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.2);
   }
 
-  public playBlock() {
+  public playBlock(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -204,7 +208,8 @@ class SoundService {
     });
   }
 
-  public playScytheDeath() {
+  public playScytheDeath(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -234,7 +239,8 @@ class SoundService {
     subOsc.stop(now + 0.5);
   }
 
-  public playThunderboltDeath() {
+  public playThunderboltDeath(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -281,7 +287,8 @@ class SoundService {
     osc.stop(now + 0.4);
   }
 
-  public playLavaDeath() {
+  public playLavaDeath(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -309,7 +316,8 @@ class SoundService {
     osc.stop(now + 0.6);
   }
 
-  public playIceDeath() {
+  public playIceDeath(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -339,7 +347,8 @@ class SoundService {
     playCrystalChime(783.99, 0.18, 0.35);
   }
 
-  public playBlackHoleActivation() {
+  public playBlackHoleActivation(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
@@ -412,7 +421,8 @@ class SoundService {
     ringOsc.stop(now + 0.6);
   }
 
-  public playBlackHolePulse() {
+  public playBlackHolePulse(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 

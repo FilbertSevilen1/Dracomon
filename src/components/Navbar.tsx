@@ -73,6 +73,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
     return false;
   };
 
+  /* ── Stop BGM on non-game pages ────────────────────────────────── */
+  useEffect(() => {
+    if (pathname !== '/play') {
+      soundService.stopBGM();
+    }
+  }, [pathname]);
+
   /* ── Live save sync ─────────────────────────────────────────────── */
   useEffect(() => { setLiveSaveData(saveData); }, [saveData]);
 

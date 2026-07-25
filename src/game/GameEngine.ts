@@ -853,8 +853,8 @@ export class GameEngine {
         } else if (char === 'G') {
           this.enemies.push({
             id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 90,
+            x: ex + 0,
+            y: ey - 50,
             vx: -0.7,
             vy: 0,
             width: 90,
@@ -2256,7 +2256,7 @@ export class GameEngine {
       this.thundermonUltTimer = Math.max(65, validEnemies.length * delayPerHit + 45);
     }
     else if (this.selectedDraco === 'Enigmon') {
-      soundService.playBlackHoleActivation();
+      soundService.playBlackHoleActivation(this.isDemoMode);
       const targetBlackHoleX = Math.max(100, this.px + this.pFacing * 300);
       const targetBlackHoleY = this.py + this.pHeight / 2;
 
@@ -2344,7 +2344,7 @@ export class GameEngine {
         enemy.wispDetonating = true;
         enemy.wispDetonationTimer = 120;
         enemy.hp = 1;
-        soundService.playShoot();
+        soundService.playShoot(this.isDemoMode);
         const cx = enemy.x + enemy.width / 2;
         const cy = enemy.y + enemy.height / 2;
         this.addFloatingText(cx, cy - 20, 'SUPERNOVA DETONATION IN 2s! 💥💥', '#ef4444');
@@ -2531,14 +2531,14 @@ export class GameEngine {
     this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
 
     if (this.isBossType(enemy.type) && !this.isSurvivalMode) {
-      const otherBosses = this.enemies.filter(e => e.id !== enemy.id && this.isBossType(e.type));
+      const otherBosses = this.enemies.filter(e => e.id !== enemy.id && this.isBossType(e.type) && e.hp > 0);
       if (otherBosses.length === 0) {
         this.exitPortalActive = true;
         if (!this.exitPortalPos) {
           this.exitPortalPos = { x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height / 2 };
         }
 
-        soundService.playLevelUp();
+        soundService.playLevelUp(this.isDemoMode);
         this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 60, 'FINAL BOSS SLAIN! EXIT PORTAL SPAWNED! 🌀✨', '#a855f7');
 
         for (let i = 0; i < 45; i++) {
@@ -2699,7 +2699,7 @@ export class GameEngine {
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'fire_golem', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp'].includes(type);
+    return ['king_slime', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp'].includes(type);
   }
 
   private updatePhysics() {
@@ -5355,7 +5355,7 @@ export class GameEngine {
         });
 
         if ((this as any).enigmonBlackHoleTimer % 30 === 0) {
-          soundService.playBlackHolePulse();
+          soundService.playBlackHolePulse(this.isDemoMode);
           this.enemies.forEach(e => {
             if (e.hp <= 0) return;
             const ex = e.x + e.width / 2;
