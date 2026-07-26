@@ -2538,7 +2538,7 @@ export class GameEngine {
           this.exitPortalPos = { x: enemy.x + enemy.width / 2, y: enemy.y + enemy.height / 2 };
         }
 
-        soundService.playLevelUp(this.isDemoMode);
+        soundService.playLevelUp();
         this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 60, 'FINAL BOSS SLAIN! EXIT PORTAL SPAWNED! 🌀✨', '#a855f7');
 
         for (let i = 0; i < 45; i++) {
