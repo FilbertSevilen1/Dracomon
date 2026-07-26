@@ -659,13 +659,11 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     >
                       {isEquipped ? (
                         <>
-                          <Check className="w-4 h-4 text-emerald-500 shrink-0" />
-                          Active Companion
+                          Active
                         </>
                       ) : (
                         <>
-                          <ArrowUpRight className="w-4 h-4 shrink-0" />
-                          Equip Hero
+                          Equip
                         </>
                       )}
                     </button>

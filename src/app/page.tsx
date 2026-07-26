@@ -600,9 +600,6 @@ export default function Home() {
 
                     {}
                     <div className="pt-2">
-                      <span className="text-[11px] font-mono font-bold text-stone-500 block mb-2 uppercase tracking-widest">
-                        ► Select Active Draco:
-                      </span>
                       <div className="flex flex-wrap gap-2.5">
                         {companionShowcase.map((item) => {
                           const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
@@ -663,7 +660,7 @@ export default function Home() {
                   </div>
 
                   {/* HERO SHOWCASE CONTAINER - LIVE ULTIMATE DEMO & SELECTION GRID */}
-                  <div className="md:col-span-5 w-full bg-white/70 backdrop-blur-md p-4 sm:p-5 rounded-3xl border border-stone-200/80 shadow-xl space-y-3.5 select-none">
+                  <div className="md:col-span-5 w-full h-full bg-white/70 backdrop-blur-md p-4 sm:p-5 rounded-3xl border border-stone-200/80 shadow-xl space-y-3.5 select-none">
                     
                     {/* LIVE 5-SECOND ULTIMATE ANIMATION DEMO CANVAS */}
                     <div className="w-full">
@@ -676,16 +673,12 @@ export default function Home() {
                           <Sparkles className="w-3.5 h-3.5" />
                         </div>
                         <div>
-                          <h3 className="text-xs font-extrabold text-stone-900 font-display">Select Hero to Preview Ultimate</h3>
-                          <p className="text-[9px] text-stone-500 font-mono">1-Click to test 5-second loop demo vs Immortal Slime</p>
+                          <h3 className="text-xs font-extrabold text-stone-900 font-display">Select Hero to Preview</h3>
                         </div>
                       </div>
-                      <span className="text-[9px] font-mono font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full shadow-sm">
-                        11 Companions
-                      </span>
                     </div>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-[220px] overflow-y-auto p-1.5">
+                    <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-[320px] overflow-y-auto p-1.5">
                       {companionShowcase.map((item) => {
                         const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
                         const isEquipped = activeDracoName === item.name;
@@ -950,15 +943,15 @@ export default function Home() {
                             <div className="shrink-0">
                               {isSelected ? (
                                 <span className="px-2.5 py-1 text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500 text-stone-950 rounded-md shadow-sm flex items-center gap-1 border border-amber-400">
-                                  <Sparkles className="w-3 h-3 text-stone-950 fill-stone-950" /> [ EQUIPPED ]
+                                  <Sparkles className="w-3 h-3 text-stone-950 fill-stone-950" /> EQUIPPED
                                 </span>
                               ) : isUnlocked ? (
                                 <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 rounded-md flex items-center gap-1">
-                                  <Check className="w-3 h-3 text-emerald-600" /> [ UNLOCKED ]
+                                  <Check className="w-3 h-3 text-emerald-600" /> UNLOCKED
                                 </span>
                               ) : (
                                 <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-stone-200 text-stone-700 border border-stone-300 rounded-md flex items-center gap-1">
-                                  <Lock className="w-3 h-3 text-stone-500" /> [ LOCKED ]
+                                  <Lock className="w-3 h-3 text-stone-500" /> LOCKED
                                 </span>
                               )}
                             </div>
@@ -1037,7 +1030,7 @@ export default function Home() {
                               className="w-full py-3 rounded-xl text-xs font-mono font-extrabold bg-amber-500 text-stone-950 border border-amber-400 shadow-md cursor-default flex items-center justify-center gap-1.5"
                             >
                               <Sparkles className="w-4 h-4 text-stone-950 fill-stone-950" />
-                              <span>[ EQUIPPED • ACTIVE PARTNER ]</span>
+                              <span>EQUIPPED</span>
                             </button>
                             <button
                               onClick={() => {
@@ -1068,7 +1061,7 @@ export default function Home() {
                               className="w-full py-3 rounded-xl text-xs font-mono font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5"
                             >
                               <Check className="w-4 h-4" />
-                              <span>[ EQUIP COMPANION ]</span>
+                              <span>EQUIP COMPANION</span>
                             </button>
                             <button
                               onClick={() => {
@@ -1109,12 +1102,12 @@ export default function Home() {
                             {canAfford ? (
                               <>
                                 <Coins className="w-4 h-4 text-amber-400 fill-amber-400" />
-                                <span>[ UNLOCK ({item.cost} COINS) ]</span>
+                                <span>UNLOCK ({item.cost} COINS)</span>
                               </>
                             ) : (
                               <>
                                 <Lock className="w-4 h-4" />
-                                <span>[ NEED {item.cost} COINS ]</span>
+                                <span>NEED {item.cost} COINS</span>
                               </>
                             )}
                           </button>
@@ -1677,7 +1670,7 @@ export default function Home() {
           <div className="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-4 gap-8 text-left text-xs">
             <div className="space-y-3">
               <span className="text-lg font-black text-stone-900 flex items-center gap-1 font-display">
-                🐉 DRACOMON RPG
+                🐉 DRACOMON
               </span>
               <p className="text-stone-500 leading-relaxed text-[11px]">
                 Offline platforming dragon action RPG built with HTML5 Canvas 2D engine & React.
@@ -1716,13 +1709,13 @@ export default function Home() {
                 className="px-4 py-2 bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-900 rounded-xl text-[11px] font-mono font-black transition-all flex items-center gap-1.5"
               >
                 <ScrollText className="w-3.5 h-3.5 text-rose-400" />
-                View Full Patch Notes (/version)
+                View Full Patch Notes
               </Link>
             </div>
           </div>
 
           <div className="mt-8 pt-6 border-t border-stone-100 text-center text-[11px] text-stone-400 font-mono">
-            © {new Date().getFullYear()} Dracomon RPG Realm. All rights reserved. Offline Save Persistence Enabled.
+            © {new Date().getFullYear()} Dracomon. All rights reserved.
           </div>
         </footer>
     </div>

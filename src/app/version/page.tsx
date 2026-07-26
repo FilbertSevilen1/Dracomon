@@ -157,7 +157,7 @@ const VERSION_LOGS: VersionLog[] = [
   {
     version: '0.1.4',
     date: 'July 23, 2026',
-    tag: 'Stage Gimmicks & Performance Overhaul (Current)',
+    tag: 'Stage Gimmicks & Performance Overhaul',
     badgeColor: 'bg-rose-500 text-white font-black shadow-sm',
     summary: 'Overhauled Sky Heavens & Primordial Core Stage Gimmicks, optimized Canvas particle rendering for smooth 60 FPS, and made falling into the void an instant death.',
     highlights: [
@@ -284,7 +284,7 @@ const VERSION_LOGS: VersionLog[] = [
   {
     version: '0.0.1',
     date: 'June 2026',
-    tag: 'Welcome to Dracomon (Genesis Release)',
+    tag: 'Welcome to Dracomon',
     badgeColor: 'bg-stone-200 text-stone-800 border border-stone-300 font-bold',
     summary: 'The initial genesis launch of Dracomon RPG platformer.',
     highlights: [

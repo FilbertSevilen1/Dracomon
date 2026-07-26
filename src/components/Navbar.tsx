@@ -129,7 +129,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
         >
           <span className="text-2xl leading-none">🐉</span>
           <span className="hidden sm:inline text-lg md:text-xl">DRACOMON</span>
-          <span className="hidden sm:inline text-amber-500 font-extrabold text-sm md:text-base">RPG</span>
         </Link>
 
         {/* ── Desktop Full Nav ── */}
