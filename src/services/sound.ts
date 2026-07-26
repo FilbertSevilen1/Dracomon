@@ -179,7 +179,8 @@ class SoundService {
     osc.stop(this.ctx.currentTime + 0.12);
   }
 
-  public playLevelUp() {
+  public playLevelUp(isDemo = false) {
+    if (isDemo) return;
     this.initCtx();
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 

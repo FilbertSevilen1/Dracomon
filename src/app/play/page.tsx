@@ -8,6 +8,7 @@ import { InventoryModal } from '../../components/InventoryModal';
 import { SettingsModal } from '../../components/SettingsModal';
 import { soundService } from '../../services/sound';
 import { STAGES } from '../../game/LevelManager';
+import { LevelUpModal } from '../../components/LevelUpModal';
 
 function PlayContent() {
   const router = useRouter();
@@ -27,6 +28,10 @@ function PlayContent() {
     resetGameSave,
     exportSave,
     importSave,
+    showLevelUp,
+    levelUpInfo,
+    pendingLevelUps,
+    applyLevelUpBonus,
   } = useGameState();
 
   const activePotionCount = saveData.inventory.find(i => i.id === 'potion')?.quantity || 0;
@@ -89,6 +94,19 @@ function PlayContent() {
           onExportSave={exportSave}
           onImportSave={importSave}
           onClose={() => setShowSettings(false)}
+        />
+      )}
+
+      {showLevelUp && levelUpInfo && (
+        <LevelUpModal
+          dracoName={levelUpInfo.dracoName}
+          oldLevel={levelUpInfo.oldLevel}
+          newLevel={levelUpInfo.newLevel}
+          baseIncrease={levelUpInfo.baseIncrease}
+          bonusRoll={levelUpInfo.bonusRoll}
+          currentStats={saveData.dracos[levelUpInfo.dracoName]}
+          onApplyBonus={applyLevelUpBonus}
+          pendingCount={pendingLevelUps.length}
         />
       )}
     </div>

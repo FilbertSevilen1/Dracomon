@@ -307,7 +307,15 @@ export function useGameState() {
 
       if (newPendingItems.length > 0) {
         soundService.playLevelUp();
-        setPendingLevelUps(prevList => [...prevList, ...newPendingItems]);
+        setPendingLevelUps(prevList => {
+          const combined = [...prevList, ...newPendingItems];
+          // Show the modal immediately if it isn't already open
+          if (combined.length === newPendingItems.length) {
+            setLevelUpInfo(combined[0]);
+            setShowLevelUp(true);
+          }
+          return combined;
+        });
       }
 
       updatedDracos[activeName] = {
@@ -512,14 +520,7 @@ export function useGameState() {
       };
     });
 
-    setPendingLevelUps(prevList => {
-      if (prevList.length > 0 && !showLevelUp) {
-        setLevelUpInfo(prevList[0]);
-        setShowLevelUp(true);
-      }
-      return prevList;
-    });
-  }, [showLevelUp, updateSaveState]);
+  }, [updateSaveState]);
 
   return {
     saveData,
