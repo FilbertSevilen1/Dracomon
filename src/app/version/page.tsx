@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { soundService } from '../../services/sound';
 import { Navbar } from '../../components/Navbar';
+import { Footer } from '../../components/Footer';
 
 interface VersionLog {
   version: string;
@@ -406,20 +407,8 @@ export default function VersionPage() {
         </div>
       </main>
 
-      {}
-      <footer className="w-full border-t border-stone-200 bg-white py-6 px-6 md:px-12 text-center text-xs font-mono text-stone-500 z-10">
-        <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <span>© {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1</span>
-          <Link
-            href="/"
-            onClick={() => soundService.playClick()}
-            className="text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
-          >
-            <Gamepad2 className="w-4 h-4" />
-            <span>Launch Game</span>
-          </Link>
-        </div>
-      </footer>
+      {/* FOOTER */}
+      <Footer />
     </div>
   );
 }

@@ -284,6 +284,11 @@ export class GameEngine {
   private shadowmonUltActive: boolean = false;
   private shadowmonUltTimer: number = 0;
   private shadowmonUltStacksUsed: number = 0;
+  private shadowmonSkillActive: boolean = false;
+  private shadowmonSkillTimer: number = 0;
+  private shadowmonSkillX: number = 0;
+  private shadowmonSkillY: number = 0;
+  private thundermonDashTrail: { x: number; y: number; facing: number; alpha: number }[] = [];
 
   private groundBurnZones: GroundBurnZone[] = [];
   private groundBurnIdCounter: number = 0;
@@ -436,6 +441,11 @@ export class GameEngine {
       this.pHP = 9999;
       this.pMaxHP = 9999;
       this.pEnergy = this.getMaxEnergy();
+
+      // Give Shadowmon 5 stacks in demo preview
+      if (this.selectedDraco === 'Shadowmon') {
+        this.shadowmonStacks = 5;
+      }
 
       const positions = [260, 320, 380];
       this.enemies = positions.map((posX, idx) => ({
@@ -1060,20 +1070,24 @@ export class GameEngine {
         isEnemy: false,
         damage: this.stats.attack,
         color: '#10b981',
-        type: 'arrow'
-      });
+        type: 'arrow',
+        rangeCap: 600,
+        startX: this.px
+      } as any);
       this.spawnDustParticles(slashX, slashY, 5, '#34d399');
     } else if (this.selectedDraco === 'Shieldmon') {
       soundService.playHit();
 
       this.pvx += this.pFacing * 4;
-      this.checkMeleeHit(this.px + (this.pFacing === 1 ? this.pWidth : -24), this.py, 36, this.pHeight, this.stats.attack, true);
+      // Melee reach doubled: width 72 (from 36)
+      this.checkMeleeHit(this.px + (this.pFacing === 1 ? this.pWidth : -48), this.py - 4, 72, this.pHeight + 8, this.stats.attack, true);
       this.spawnDustParticles(slashX, slashY, 8, '#60a5fa');
     } else if (this.selectedDraco === 'Assassinmon') {
       soundService.playHit();
 
       this.pvx += this.pFacing * 2.5;
-      this.checkMeleeHit(this.px - 16, this.py - 8, this.pWidth + 40, this.pHeight + 16, this.stats.attack, true);
+      // Melee reach doubled: extra width +80 (from +40)
+      this.checkMeleeHit(this.px - 32, this.py - 12, this.pWidth + 80, this.pHeight + 24, this.stats.attack, true);
       this.spawnDustParticles(slashX, slashY, 8, '#c084fc');
 
       for (let k = 0; k < 5; k++) {
@@ -1103,8 +1117,10 @@ export class GameEngine {
         isEnemy: false,
         damage: Math.floor(this.stats.attack * 0.95),
         color: '#f43f5e',
-        type: 'arrow'
-      });
+        type: 'arrow',
+        rangeCap: 600,
+        startX: this.px
+      } as any);
       this.spawnDustParticles(slashX, slashY, 4, '#fda4af');
     } else if (this.selectedDraco === 'Whitemon') {
       soundService.playShoot();
@@ -1120,8 +1136,10 @@ export class GameEngine {
         isEnemy: false,
         damage: Math.floor(this.stats.attack * 1.15),
         color: '#e2e8f0',
-        type: 'axe'
-      });
+        type: 'axe',
+        rangeCap: 600,
+        startX: this.px
+      } as any);
       this.attackCooldown = 22;
       this.spawnDustParticles(slashX, slashY, 6, '#e2e8f0');
     } else if (this.selectedDraco === 'Magemon') {
@@ -1138,8 +1156,10 @@ export class GameEngine {
         isEnemy: false,
         damage: this.stats.attack,
         color: '#a855f7',
-        type: 'arcane_orb'
-      });
+        type: 'arcane_orb',
+        rangeCap: 600,
+        startX: this.px
+      } as any);
       this.spawnDustParticles(slashX, slashY, 6, '#c084fc');
       // Arcane burst ring on orb spawn
       for (let p = 0; p < 10; p++) {
@@ -1170,7 +1190,9 @@ export class GameEngine {
         damage: Math.floor(this.stats.attack * 1.1),
         color: '#ef4444',
         type: 'dark_energy' as any,
-        isBasic: true
+        isBasic: true,
+        rangeCap: 600,
+        startX: this.px
       } as any);
       this.spawnDustParticles(slashX, slashY, 8, '#ef4444');
     } else if (this.selectedDraco === 'Bombamon') {
@@ -1187,8 +1209,10 @@ export class GameEngine {
         isEnemy: false,
         damage: Math.floor(this.stats.attack * 1.15),
         color: '#f97316',
-        type: 'fireball'
-      });
+        type: 'fireball',
+        rangeCap: 600,
+        startX: this.px
+      } as any);
 
       for (let p = 0; p < 8; p++) {
         this.particles.push({
@@ -1207,13 +1231,14 @@ export class GameEngine {
 
       this.attackDuration = 10;
       this.attackCooldown = 18;
-      const ballX = this.px + (this.pFacing === 1 ? this.pWidth + 16 : -24);
+      const ballX = this.px + (this.pFacing === 1 ? this.pWidth + 32 : -48);
       const ballY = this.py + this.pHeight / 2;
 
+      // Melee reach doubled: radius 130 (from 65)
       this.enemies.forEach(enemy => {
         if (enemy.hp <= 0) return;
         const dist = Math.hypot((enemy.x + enemy.width / 2) - ballX, (enemy.y + enemy.height / 2) - ballY);
-        if (dist < 65) {
+        if (dist < 130) {
           this.damageEnemy(enemy, Math.floor(this.stats.attack * 1.25));
           this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#06b6d4');
         }
@@ -1247,7 +1272,7 @@ export class GameEngine {
         damage: Math.floor(this.stats.attack * 1.15),
         color: '#c084fc',
         type: 'dark_matter' as any,
-        rangeCap: 500,
+        rangeCap: 600,
         startX: this.px
       } as any);
 
@@ -1277,7 +1302,7 @@ export class GameEngine {
         damage: Math.floor(this.stats.attack * 1.15),
         color: '#93c5fd',
         type: 'crescent_beam' as any,
-        rangeCap: 800,
+        rangeCap: 600,
         startX: this.px
       } as any);
 
@@ -1295,7 +1320,8 @@ export class GameEngine {
       }
     } else {
       soundService.playHit();
-      this.checkMeleeHit(this.px - 12, this.py - 12, this.pWidth + 24, this.pHeight + 24, this.stats.attack, true);
+      // Default / Jumpmon melee reach doubled: extra width +48 (from +24)
+      this.checkMeleeHit(this.px - 24, this.py - 16, this.pWidth + 48, this.pHeight + 32, this.stats.attack, true);
       this.spawnDustParticles(slashX, slashY, 10, '#fbbf24');
     }
   }
@@ -1515,6 +1541,11 @@ export class GameEngine {
       soundService.playHit();
       this.screenShake = 42;
       this.addFloatingText(targetX, targetY - 44, '☠ SHADOWRAZE ☠', '#ef4444');
+
+      this.shadowmonSkillActive = true;
+      this.shadowmonSkillTimer = 35;
+      this.shadowmonSkillX = targetX;
+      this.shadowmonSkillY = targetY;
 
       this.enemies.forEach(enemy => {
         if (enemy.hp > 0) {
@@ -1952,22 +1983,26 @@ export class GameEngine {
     }
   }
 
-  private getMaxEnergy(): number {
-    switch (this.selectedDraco) {
+  public static getMaxEnergyForDraco(selectedDraco: string): number {
+    switch (selectedDraco) {
       case 'Jumpmon': return 100;
       case 'Archermon': return 80;
       case 'Shieldmon': return 80;
       case 'Assassinmon': return 120;
       case 'Flymon': return 140;
       case 'Whitemon': return 140;
-      case 'Magemon': return 300;
+      case 'Magemon': return 200;
       case 'Shadowmon': return 160;
       case 'Bombamon': return 180;
-      case 'Thundermon': return 240;
-      case 'Enigmon': return 200;
+      case 'Thundermon': return 160;
+      case 'Enigmon': return 160;
       case 'Lunarmon': return 200;
       default: return 100;
     }
+  }
+
+  private getMaxEnergy(): number {
+    return GameEngine.getMaxEnergyForDraco(this.selectedDraco);
   }
 
   private getUltimateName(): string {
@@ -2007,7 +2042,7 @@ export class GameEngine {
   }
 
   private getUltimateCost(): number {
-    if (this.selectedDraco === 'Magemon') return 150;
+    if (this.selectedDraco === 'Magemon') return 100;
     return this.getMaxEnergy();
   }
 
@@ -3814,6 +3849,16 @@ export class GameEngine {
     if (this.thundermonDashActive) {
       this.thundermonDashTimer--;
 
+      this.thundermonDashTrail.push({
+        x: this.px,
+        y: this.py,
+        facing: this.pFacing,
+        alpha: 1.0
+      });
+      if (this.thundermonDashTrail.length > 8) {
+        this.thundermonDashTrail.shift();
+      }
+
       if (this.frameCount % 2 === 0) {
         this.particles.push({
           x: this.px + Math.random() * this.pWidth,
@@ -3865,6 +3910,7 @@ export class GameEngine {
       if (this.thundermonDashTimer <= 0) {
         this.thundermonDashActive = false;
         (this as any).thundermonDashHitIds = null;
+        this.thundermonDashTrail = [];
       }
     }
 
@@ -5026,7 +5072,7 @@ export class GameEngine {
         else if (proj.type === 'dark_energy') {
           proj.x += proj.vx;
           (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
-          if (proj.x < -100 || proj.x > this.levelWidth + 100 || (proj as any).traveledDist >= 800) {
+          if (proj.x < -100 || proj.x > this.levelWidth + 100 || (proj as any).traveledDist >= ((proj as any).rangeCap || 800)) {
             this.projectiles.splice(index, 1);
             return;
           }
@@ -5035,7 +5081,7 @@ export class GameEngine {
           proj.x += proj.vx;
           proj.y += proj.vy;
           (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
-          if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth || (proj as any).traveledDist >= 800) {
+          if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth || (proj as any).traveledDist >= ((proj as any).rangeCap || 800)) {
             this.projectiles.splice(index, 1);
             return;
           }
@@ -5538,7 +5584,7 @@ export class GameEngine {
             const ex = e.x + e.width / 2;
             const ey = e.y + e.height / 2;
             if (Math.hypot(ex - bhX, ey - bhY) <= 150) {
-              const bhDmg = Math.floor(this.stats.attack * 2.5) + Math.floor((e.maxHp || 100) * 0.05);
+              const bhDmg = Math.floor(this.stats.attack * 1.2) + Math.floor((e.maxHp || 100) * 0.02);
               this.damageEnemy(e, bhDmg);
               this.addFloatingText(ex, e.y - 15, `⚫ SINGULARITY -${bhDmg} HP! 🕳️`, '#e879f9');
               // Spiral-inward death particles for each enemy hit
@@ -9396,17 +9442,61 @@ export class GameEngine {
       this.ctx.restore();
     });
 
+    if (this.thundermonDashActive) {
+      this.ctx.save();
+      this.thundermonDashTrail.forEach((trail, idx) => {
+        const trailAlpha = ((idx + 1) / Math.max(1, this.thundermonDashTrail.length)) * 0.65;
+        this.ctx.save();
+        this.ctx.globalAlpha = trailAlpha;
+
+        this.ctx.fillStyle = '#06b6d4';
+        this.ctx.fillRect(trail.x, trail.y, this.pWidth, this.pHeight);
+
+        this.ctx.strokeStyle = '#facc15';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.strokeRect(trail.x - 2, trail.y - 2, this.pWidth + 4, this.pHeight + 4);
+
+        const ang = this.frameCount * 0.4 + idx * 0.8;
+        const lx = trail.x + this.pWidth / 2 + Math.cos(ang) * 24;
+        const ly = trail.y + this.pHeight / 2 + Math.sin(ang) * 24;
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(trail.x + this.pWidth / 2, trail.y + this.pHeight / 2);
+        this.ctx.lineTo((trail.x + lx) / 2 + (Math.random() - 0.5) * 12, (trail.y + ly) / 2 + (Math.random() - 0.5) * 12);
+        this.ctx.lineTo(lx, ly);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      });
+      this.ctx.restore();
+    }
+
     if (this.thundermonUltActive) {
       this.ctx.save();
 
+      // Celestial Storm Vortex Background Flash
       if (this.thundermonUltTimer > 45) {
         const flashAlpha = (this.thundermonUltTimer - 45) / 15;
-        this.ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha * 0.65})`;
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha * 0.7})`;
         this.ctx.fillRect(this.cameraX - 100, this.cameraY - 100, (this.canvas.width || 800) + 200, (this.canvas.height || 600) + 200);
       } else if (this.frameCount % 4 === 0 || this.frameCount % 4 === 1) {
-        this.ctx.fillStyle = 'rgba(6, 182, 212, 0.18)';
+        this.ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
         this.ctx.fillRect(this.cameraX - 100, this.cameraY - 100, (this.canvas.width || 800) + 200, (this.canvas.height || 600) + 200);
       }
+
+      // Sky Storm Vortex Cloud Ring
+      const skyVortexX = this.px + this.pWidth / 2;
+      const skyVortexY = Math.max(0, this.cameraY - 120);
+      const vortexGrad = this.ctx.createRadialGradient(skyVortexX, skyVortexY, 20, skyVortexX, skyVortexY, 400);
+      vortexGrad.addColorStop(0, 'rgba(250, 204, 21, 0.45)');
+      vortexGrad.addColorStop(0.3, 'rgba(6, 182, 212, 0.35)');
+      vortexGrad.addColorStop(0.7, 'rgba(15, 23, 42, 0.6)');
+      vortexGrad.addColorStop(1, 'rgba(15, 23, 42, 0)');
+      this.ctx.fillStyle = vortexGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(skyVortexX, skyVortexY, 400, 0, Math.PI * 2);
+      this.ctx.fill();
 
       const playerCenterX = this.px + this.pWidth / 2;
       const playerCenterY = this.py + this.pHeight / 2;
@@ -9421,11 +9511,18 @@ export class GameEngine {
           const skyY = Math.max(0, this.cameraY - 300);
           this.ctx.save();
 
-          this.ctx.fillStyle = 'rgba(234, 179, 8, 0.35)';
-          this.ctx.fillRect(enemyX - 25, skyY, 50, enemyY - skyY + 30);
+          // ── Layer 1: Celestial Outer Plasma Aura (60px wide) ─────────────
+          this.ctx.strokeStyle = 'rgba(6, 182, 212, 0.32)';
+          this.ctx.lineWidth = 60;
+          this.ctx.lineCap = 'round';
+          this.ctx.beginPath();
+          this.ctx.moveTo(enemyX, skyY);
+          this.ctx.lineTo(enemyX, enemyY);
+          this.ctx.stroke();
 
-          this.ctx.strokeStyle = 'rgba(254, 240, 138, 0.95)';
-          this.ctx.lineWidth = 6;
+          // ── Layer 2: Mid Electric Gold Lightning Pillar (28px wide) ──────
+          this.ctx.strokeStyle = 'rgba(250, 204, 21, 0.75)';
+          this.ctx.lineWidth = 28;
           this.ctx.beginPath();
           this.ctx.moveTo(enemyX, skyY);
 
@@ -9440,8 +9537,9 @@ export class GameEngine {
           }
           this.ctx.stroke();
 
+          // ── Layer 3: Blinding White Core Lightning Bolt (8px wide) ────────
           this.ctx.strokeStyle = 'rgba(255, 255, 255, 1.0)';
-          this.ctx.lineWidth = 3;
+          this.ctx.lineWidth = 8;
           this.ctx.beginPath();
           this.ctx.moveTo(enemyX, skyY);
           for (let s = 1; s <= segments; s++) {
@@ -9451,23 +9549,25 @@ export class GameEngine {
           }
           this.ctx.stroke();
 
+          // ── Layer 4: Electric Tesla Orbit Arcs ─────────────────────────────
           for (let a = 0; a < 6; a++) {
             const arcAngle = (this.frameCount * 0.4 + a * Math.PI / 3);
-            const arcR = 18 + Math.sin(this.frameCount * 0.6 + a) * 8;
+            const arcR = 24 + Math.sin(this.frameCount * 0.6 + a) * 10;
             const ax = enemyX + Math.cos(arcAngle) * arcR;
             const ay = enemyY + Math.sin(arcAngle) * arcR;
 
             this.ctx.strokeStyle = a % 2 === 0 ? '#fef08a' : '#38bdf8';
-            this.ctx.lineWidth = 2;
+            this.ctx.lineWidth = 2.5;
             this.ctx.beginPath();
             this.ctx.moveTo(enemyX, enemyY);
-            const midX = (enemyX + ax) / 2 + (Math.random() - 0.5) * 12;
-            const midY = (enemyY + ay) / 2 + (Math.random() - 0.5) * 12;
+            const midX = (enemyX + ax) / 2 + (Math.random() - 0.5) * 16;
+            const midY = (enemyY + ay) / 2 + (Math.random() - 0.5) * 16;
             this.ctx.lineTo(midX, midY);
             this.ctx.lineTo(ax, ay);
             this.ctx.stroke();
           }
 
+          // ── Layer 5: Target Disintegration Flash ──────────────────────────
           if (this.frameCount % 4 < 2) {
             this.ctx.fillStyle = 'rgba(234, 179, 8, 0.7)';
             this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
@@ -9477,16 +9577,16 @@ export class GameEngine {
             this.ctx.fillRect(enemy.x + 4, enemyY - 2, enemy.width - 8, 3);
           }
 
-          this.ctx.fillStyle = 'rgba(6, 182, 212, 0.45)';
+          // ── Layer 6: Ground Terminal Crater & Expanding Shockwaves ───────
+          const craterGrad = this.ctx.createRadialGradient(enemyX, enemyY, 6, enemyX, enemyY, 65);
+          craterGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+          craterGrad.addColorStop(0.3, 'rgba(6, 182, 212, 0.8)');
+          craterGrad.addColorStop(0.65, 'rgba(250, 204, 21, 0.4)');
+          craterGrad.addColorStop(1, 'rgba(250, 204, 21, 0)');
+          this.ctx.fillStyle = craterGrad;
           this.ctx.beginPath();
-          this.ctx.ellipse(enemyX, enemyY + enemy.height / 2, 38, 14, 0, 0, Math.PI * 2);
+          this.ctx.arc(enemyX, enemyY, 65, 0, Math.PI * 2);
           this.ctx.fill();
-
-          this.ctx.strokeStyle = '#facc15';
-          this.ctx.lineWidth = 3;
-          this.ctx.beginPath();
-          this.ctx.ellipse(enemyX, enemyY + enemy.height / 2, 26, 9, 0, 0, Math.PI * 2);
-          this.ctx.stroke();
 
           this.ctx.restore();
         }
@@ -9499,36 +9599,171 @@ export class GameEngine {
       this.ctx.save();
       const bx = this.px + this.pWidth / 2;
       const by = this.py + this.pHeight / 2;
+      const churn = this.frameCount * 0.16;
 
       if (this.carpetBombingChannelTimer > 0) {
+        // ── CHARGE PHASE: Inferno Vortex Charging ─────────────────────────
         const chargeProgress = 1 - (this.carpetBombingChannelTimer / 35);
-        const rad = 25 + chargeProgress * 30;
-        this.ctx.strokeStyle = '#f97316';
-        this.ctx.lineWidth = 4;
-        this.ctx.beginPath();
-        this.ctx.arc(bx, by, rad, 0, Math.PI * 2);
-        this.ctx.stroke();
+        const pulse = Math.sin(this.frameCount * 0.4) * 0.12 + 0.88;
 
-        this.ctx.fillStyle = 'rgba(254, 240, 138, 0.4)';
+        // Wide heat shimmer outer glow
+        const heatGrad = this.ctx.createRadialGradient(bx, by, 10, bx, by, 75 * pulse);
+        heatGrad.addColorStop(0, `rgba(255, 200, 50, ${0.55 * chargeProgress})`);
+        heatGrad.addColorStop(0.4, `rgba(249, 115, 22, ${0.45 * chargeProgress})`);
+        heatGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        this.ctx.fillStyle = heatGrad;
         this.ctx.beginPath();
-        this.ctx.arc(bx, by, rad * 0.7, 0, Math.PI * 2);
+        this.ctx.arc(bx, by, 75 * pulse, 0, Math.PI * 2);
         this.ctx.fill();
-      } else {
-        const rad = Math.max(40, this.carpetBombingSpreadRadius);
-        const streamGrad = this.ctx.createLinearGradient(bx, by, bx, by + 400);
-        streamGrad.addColorStop(0, 'rgba(254, 240, 138, 0.95)');
-        streamGrad.addColorStop(0.3, 'rgba(249, 115, 22, 0.85)');
-        streamGrad.addColorStop(0.85, 'rgba(239, 68, 68, 0.75)');
-        streamGrad.addColorStop(1, 'rgba(239, 68, 68, 0.0)');
 
-        this.ctx.fillStyle = streamGrad;
+        // Rotating fire vortex arms
+        const armCount = 6;
+        for (let arm = 0; arm < armCount; arm++) {
+          const ang = churn * 0.5 + arm * (Math.PI * 2 / armCount);
+          const r1 = (20 + chargeProgress * 18) * pulse;
+          const r2 = (40 + chargeProgress * 30) * pulse;
+          const x1 = bx + Math.cos(ang) * r1;
+          const y1 = by + Math.sin(ang) * r1 * 0.7;
+          const x2 = bx + Math.cos(ang + 0.5) * r2;
+          const y2 = by + Math.sin(ang + 0.5) * r2 * 0.7;
+          this.ctx.strokeStyle = arm % 2 === 0
+            ? `rgba(249, 115, 22, ${0.85 * chargeProgress * pulse})`
+            : `rgba(254, 240, 138, ${0.7 * chargeProgress * pulse})`;
+          this.ctx.lineWidth = 3 + chargeProgress * 3;
+          this.ctx.lineCap = 'round';
+          this.ctx.beginPath();
+          this.ctx.moveTo(bx, by);
+          this.ctx.quadraticCurveTo(x1, y1, x2, y2);
+          this.ctx.stroke();
+        }
+
+        // Hot inner white core
+        const coreGrad = this.ctx.createRadialGradient(bx, by, 2, bx, by, 18 * pulse);
+        coreGrad.addColorStop(0, `rgba(255, 255, 255, ${chargeProgress})`);
+        coreGrad.addColorStop(0.4, `rgba(254, 215, 0, ${0.8 * chargeProgress})`);
+        coreGrad.addColorStop(1, 'rgba(249, 115, 22, 0)');
+        this.ctx.fillStyle = coreGrad;
         this.ctx.beginPath();
-        this.ctx.moveTo(bx - 12, by + 12);
-        this.ctx.lineTo(bx + 12, by + 12);
-        this.ctx.lineTo(bx + rad, by + 420);
-        this.ctx.lineTo(bx - rad, by + 420);
+        this.ctx.arc(bx, by, 18 * pulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+      } else {
+        // ── ACTIVE PHASE: Carpet Bombing Inferno ───────────────────────────
+        const rad = Math.max(40, this.carpetBombingSpreadRadius);
+        const timeLeft = this.carpetBombingTimer / 120;
+        const pulse = Math.sin(this.frameCount * 0.28) * 0.1 + 0.9;
+
+        // 1. Hellfire sky aura above Bombamon
+        const skyAuraGrad = this.ctx.createRadialGradient(bx, by - 20, 10, bx, by - 20, 120);
+        skyAuraGrad.addColorStop(0, `rgba(255, 180, 20, ${0.55 * pulse})`);
+        skyAuraGrad.addColorStop(0.4, `rgba(239, 68, 68, ${0.35 * pulse})`);
+        skyAuraGrad.addColorStop(1, 'rgba(120, 20, 0, 0)');
+        this.ctx.fillStyle = skyAuraGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(bx, by - 20, 120, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 2. Left fire stream cone
+        const leftStreamGrad = this.ctx.createLinearGradient(bx, by, bx - rad * 1.1, by + 380);
+        leftStreamGrad.addColorStop(0, `rgba(255, 240, 100, ${0.92 * pulse})`);
+        leftStreamGrad.addColorStop(0.2, `rgba(249, 115, 22, ${0.85})`);
+        leftStreamGrad.addColorStop(0.6, `rgba(220, 38, 38, ${0.7})`);
+        leftStreamGrad.addColorStop(1, 'rgba(120, 10, 0, 0)');
+        this.ctx.fillStyle = leftStreamGrad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx - 10, by + 10);
+        this.ctx.bezierCurveTo(
+          bx - rad * 0.3 + Math.sin(churn) * 12, by + 120,
+          bx - rad * 0.7 + Math.sin(churn + 1) * 14, by + 240,
+          bx - rad * 1.1 + Math.sin(churn * 0.7) * 18, by + 380
+        );
+        this.ctx.lineTo(bx - rad * 0.9 + Math.sin(churn * 0.7) * 14, by + 380);
+        this.ctx.bezierCurveTo(
+          bx - rad * 0.5 + Math.sin(churn + 1.5) * 10, by + 240,
+          bx - rad * 0.2 + Math.sin(churn + 0.5) * 8, by + 120,
+          bx + 10, by + 10
+        );
         this.ctx.closePath();
         this.ctx.fill();
+
+        // 3. Right fire stream cone
+        const rightStreamGrad = this.ctx.createLinearGradient(bx, by, bx + rad * 1.1, by + 380);
+        rightStreamGrad.addColorStop(0, `rgba(255, 240, 100, ${0.92 * pulse})`);
+        rightStreamGrad.addColorStop(0.2, `rgba(249, 115, 22, ${0.85})`);
+        rightStreamGrad.addColorStop(0.6, `rgba(220, 38, 38, ${0.7})`);
+        rightStreamGrad.addColorStop(1, 'rgba(120, 10, 0, 0)');
+        this.ctx.fillStyle = rightStreamGrad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx + 10, by + 10);
+        this.ctx.bezierCurveTo(
+          bx + rad * 0.3 + Math.sin(churn + 2) * 12, by + 120,
+          bx + rad * 0.7 + Math.sin(churn + 3) * 14, by + 240,
+          bx + rad * 1.1 + Math.sin(churn * 0.8) * 18, by + 380
+        );
+        this.ctx.lineTo(bx + rad * 0.9 + Math.sin(churn * 0.8) * 14, by + 380);
+        this.ctx.bezierCurveTo(
+          bx + rad * 0.5 + Math.sin(churn + 2.5) * 10, by + 240,
+          bx + rad * 0.2 + Math.sin(churn + 2) * 8, by + 120,
+          bx - 10, by + 10
+        );
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 4. Center downpour streak
+        const centerGrad = this.ctx.createLinearGradient(bx, by, bx, by + 340);
+        centerGrad.addColorStop(0, `rgba(255, 255, 200, ${0.95 * pulse})`);
+        centerGrad.addColorStop(0.25, `rgba(249, 115, 22, 0.9)`);
+        centerGrad.addColorStop(0.7, `rgba(239, 68, 68, 0.7)`);
+        centerGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        this.ctx.fillStyle = centerGrad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx - 12, by + 10);
+        this.ctx.lineTo(bx + 12, by + 10);
+        this.ctx.lineTo(bx + 8 + Math.sin(churn * 1.2) * 10, by + 340);
+        this.ctx.lineTo(bx - 8 + Math.sin(churn * 1.2) * 10, by + 340);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 5. Cascading ember sparks along the stream edges
+        for (let e = 0; e < 6; e++) {
+          const emberT = ((churn * 1.8 + e * 1.1) % 1.0);
+          const side = e % 2 === 0 ? -1 : 1;
+          const ex2 = bx + side * (rad * 0.8 * emberT + Math.sin(churn + e) * 15);
+          const ey2 = by + 20 + emberT * 320;
+          const emberR = 3 + Math.sin(churn * 2 + e) * 2;
+          this.ctx.fillStyle = e % 3 === 0 ? '#fef08a' : e % 3 === 1 ? '#f97316' : '#ef4444';
+          this.ctx.beginPath();
+          this.ctx.arc(ex2, ey2, emberR, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        // 6. Impact explosion craters at ground drop points
+        const centerPointX = this.carpetBombingStartX + this.pWidth / 2;
+        const dropPoints = [centerPointX - rad, centerPointX, centerPointX + rad];
+        dropPoints.forEach((dropX, di) => {
+          const impactY = by + 370;
+          const impactPulse = Math.sin(this.frameCount * 0.35 + di * 1.5) * 0.15 + 0.85;
+          const impactR = (28 + di * 8) * impactPulse;
+
+          const impactGrad = this.ctx.createRadialGradient(dropX, impactY, 4, dropX, impactY, impactR);
+          impactGrad.addColorStop(0, `rgba(255, 255, 200, 0.95)`);
+          impactGrad.addColorStop(0.3, `rgba(249, 115, 22, 0.8)`);
+          impactGrad.addColorStop(0.7, `rgba(239, 68, 68, 0.4)`);
+          impactGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          this.ctx.fillStyle = impactGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(dropX, impactY, impactR, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Expanding flame ring
+          const ringR = ((this.frameCount * 5 + di * 30) % 55) + 8;
+          const ringAlpha = 1 - ringR / 63;
+          this.ctx.strokeStyle = `rgba(249, 115, 22, ${ringAlpha * 0.8})`;
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.arc(dropX, impactY, ringR, 0, Math.PI * 2);
+          this.ctx.stroke();
+        });
       }
 
       this.ctx.restore();
@@ -9812,6 +10047,302 @@ export class GameEngine {
       this.ctx.beginPath();
       this.ctx.arc(sx, sy, 55, 0, Math.PI * 2);
       this.ctx.fill();
+
+      this.ctx.restore();
+    }
+
+    if (this.shadowmonSkillActive && this.shadowmonSkillTimer > 0) {
+      this.shadowmonSkillTimer--;
+      if (this.shadowmonSkillTimer <= 0) {
+        this.shadowmonSkillActive = false;
+      }
+
+      this.ctx.save();
+      const sx = this.shadowmonSkillX;
+      const sy = this.shadowmonSkillY;
+      const beamH = 125;                            // pillar height in px
+      const beamTop = sy - beamH;
+      const alpha = Math.min(1.0, this.shadowmonSkillTimer / 6);
+      const churn = this.frameCount * 0.18;
+
+      // ── 1. Wide inky smoke shroud (outermost) ──────────────────────────────
+      const smokeGrad = this.ctx.createLinearGradient(sx, beamTop, sx, sy);
+      smokeGrad.addColorStop(0, `rgba(5, 0, 10, 0)`);
+      smokeGrad.addColorStop(0.3, `rgba(30, 0, 15, ${0.55 * alpha})`);
+      smokeGrad.addColorStop(0.8, `rgba(10, 0, 5, ${0.8 * alpha})`);
+      smokeGrad.addColorStop(1, `rgba(0, 0, 0, ${alpha})`);
+      this.ctx.fillStyle = smokeGrad;
+      // Irregular smoke blob shape using bezier curves
+      this.ctx.beginPath();
+      this.ctx.moveTo(sx - 45, sy);
+      this.ctx.bezierCurveTo(
+        sx - 55 + Math.sin(churn) * 12, sy - beamH * 0.35,
+        sx - 40 + Math.sin(churn + 1) * 15, sy - beamH * 0.7,
+        sx + Math.sin(churn * 0.7) * 18, beamTop
+      );
+      this.ctx.bezierCurveTo(
+        sx + 40 + Math.sin(churn + 2) * 14, sy - beamH * 0.7,
+        sx + 50 + Math.sin(churn + 0.5) * 12, sy - beamH * 0.35,
+        sx + 45, sy
+      );
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // ── 2. Dark void eruption pillar (mid layer) ───────────────────────────
+      const voidGrad = this.ctx.createLinearGradient(sx, beamTop, sx, sy);
+      voidGrad.addColorStop(0, `rgba(80, 0, 30, 0)`);
+      voidGrad.addColorStop(0.2, `rgba(120, 10, 40, ${0.7 * alpha})`);
+      voidGrad.addColorStop(0.65, `rgba(60, 0, 20, ${0.9 * alpha})`);
+      voidGrad.addColorStop(1, `rgba(5, 0, 0, ${alpha})`);
+      this.ctx.fillStyle = voidGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(sx - 22, sy);
+      this.ctx.bezierCurveTo(
+        sx - 28 + Math.sin(churn + 0.8) * 8, sy - beamH * 0.4,
+        sx - 20 + Math.sin(churn + 1.6) * 10, sy - beamH * 0.75,
+        sx + Math.sin(churn * 0.6 + 0.5) * 10, beamTop
+      );
+      this.ctx.bezierCurveTo(
+        sx + 20 + Math.sin(churn + 2.4) * 9, sy - beamH * 0.75,
+        sx + 24 + Math.sin(churn + 1.2) * 8, sy - beamH * 0.4,
+        sx + 22, sy
+      );
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // ── 3. Jagged dark-energy tendrils erupting outward ────────────────────
+      const tendrilCount = 8;
+      for (let t = 0; t < tendrilCount; t++) {
+        const baseAng = (t / tendrilCount) * Math.PI * 2 + churn * 0.15;
+        const len = 25 + Math.sin(churn + t * 1.3) * 15;
+        const midY = sy - beamH * (0.2 + (t % 3) * 0.25);
+        const tx1 = sx + Math.cos(baseAng) * len;
+        const ty1 = midY + Math.sin(baseAng) * len * 0.5;
+        const tx2 = sx + Math.cos(baseAng + 0.4) * (len * 0.55);
+        const ty2 = midY + Math.sin(baseAng + 0.4) * (len * 0.4);
+
+        this.ctx.strokeStyle = t % 2 === 0
+          ? `rgba(120, 0, 30, ${0.7 * alpha})`
+          : `rgba(40, 0, 15, ${0.85 * alpha})`;
+        this.ctx.lineWidth = 2 + Math.sin(churn + t) * 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(sx, midY);
+        this.ctx.lineTo(tx2, ty2);
+        this.ctx.lineTo(tx1, ty1);
+        this.ctx.stroke();
+      }
+
+      // ── 4. Ground rupture cracks radiating outward ─────────────────────────
+      const crackCount = 6;
+      for (let c = 0; c < crackCount; c++) {
+        const crackAng = (c / crackCount) * Math.PI * 2 + Math.sin(this.frameCount * 0.05 + c) * 0.3;
+        const crackLen = 30 + Math.sin(churn * 0.4 + c * 1.7) * 14;
+        const cx2 = sx + Math.cos(crackAng) * crackLen;
+        const cy2 = sy + Math.sin(crackAng) * crackLen * 0.35;
+        const midX2 = (sx + cx2) / 2 + Math.sin(churn + c * 2.1) * 8;
+        const midY2 = (sy + cy2) / 2 + Math.cos(churn + c * 1.4) * 4;
+
+        this.ctx.strokeStyle = `rgba(60, 0, 10, ${0.9 * alpha})`;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(sx, sy);
+        this.ctx.lineTo(midX2, midY2);
+        this.ctx.lineTo(cx2, cy2);
+        this.ctx.stroke();
+      }
+
+      // ── 5. Hot inner core — deep blood-red glow ────────────────────────────
+      const coreGrad = this.ctx.createRadialGradient(sx, sy - beamH * 0.15, 4, sx, sy, 42);
+      coreGrad.addColorStop(0, `rgba(200, 30, 30, ${0.9 * alpha})`);
+      coreGrad.addColorStop(0.4, `rgba(100, 5, 10, ${0.65 * alpha})`);
+      coreGrad.addColorStop(1, 'rgba(10, 0, 0, 0)');
+      this.ctx.fillStyle = coreGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(sx, sy - beamH * 0.15, 42, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // ── 6. Rising ash motes ─────────────────────────────────────────────────
+      for (let a = 0; a < 5; a++) {
+        const ashX = sx + Math.sin(churn * 0.9 + a * 2.2) * 18;
+        const ashY = sy - beamH * 0.35 - ((churn * 28 + a * 22) % beamH);
+        const ashR = 2 + Math.sin(churn + a) * 1.5;
+        this.ctx.fillStyle = a % 2 === 0
+          ? `rgba(60, 0, 15, ${0.75 * alpha})`
+          : `rgba(20, 0, 5, ${0.55 * alpha})`;
+        this.ctx.beginPath();
+        this.ctx.arc(ashX, ashY, ashR, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      this.ctx.restore();
+    }
+
+    // ── SHADOWMON ULTIMATE: Dark Soul Implosion ───────────────────────────────
+    if (this.shadowmonUltActive) {
+      const cx = this.px + this.pWidth / 2;
+      const cy = this.py + this.pHeight / 2;
+      const progress = (90 - this.shadowmonUltTimer) / 90;   // 0→1 as charge builds
+      const stacks = this.shadowmonUltStacksUsed;
+      const churn = this.frameCount * 0.14;
+
+      this.ctx.save();
+
+      // ── 1. Spreading dark void ground stain ──────────────────────────────
+      const stainR = 50 + progress * (120 + stacks * 20);
+      const stainGrad = this.ctx.createRadialGradient(cx, cy + this.pHeight * 0.4, 8, cx, cy + this.pHeight * 0.4, stainR);
+      stainGrad.addColorStop(0, `rgba(0, 0, 0, ${0.85})`);
+      stainGrad.addColorStop(0.45, `rgba(30, 0, 10, ${0.65})`);
+      stainGrad.addColorStop(1, 'rgba(10, 0, 5, 0)');
+      this.ctx.fillStyle = stainGrad;
+      this.ctx.beginPath();
+      this.ctx.ellipse(cx, cy + this.pHeight * 0.4, stainR, stainR * 0.38, 0, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // ── 2. Radiating void fracture cracks from player feet ───────────────
+      const crackCount = 4 + stacks;
+      for (let c = 0; c < crackCount; c++) {
+        const baseAng = (c / crackCount) * Math.PI + Math.sin(churn * 0.3 + c) * 0.2;
+        const crackLen = (35 + stacks * 12 + progress * 50) * (0.85 + Math.sin(churn + c * 1.9) * 0.15);
+        const footY = cy + this.pHeight * 0.5;
+
+        // Main crack
+        const ex = cx + Math.cos(baseAng) * crackLen;
+        const ey = footY + Math.sin(baseAng) * crackLen * 0.3;
+        const m1x = cx + Math.cos(baseAng + 0.2) * crackLen * 0.45 + Math.sin(churn + c) * 6;
+        const m1y = footY + Math.sin(baseAng + 0.2) * crackLen * 0.3 * 0.45 + Math.cos(churn + c) * 3;
+        this.ctx.strokeStyle = `rgba(15, 0, 5, ${0.95})`;
+        this.ctx.lineWidth = 2.5 - c * 0.1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, footY);
+        this.ctx.lineTo(m1x, m1y);
+        this.ctx.lineTo(ex, ey);
+        this.ctx.stroke();
+
+        // Branch crack
+        const branchAng = baseAng - 0.35 + Math.sin(c * 2.3) * 0.2;
+        const bx = cx + Math.cos(branchAng) * crackLen * 0.6;
+        const by = footY + Math.sin(branchAng) * crackLen * 0.3 * 0.6;
+        this.ctx.strokeStyle = `rgba(50, 0, 10, ${0.7})`;
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(m1x, m1y);
+        this.ctx.lineTo(bx, by);
+        this.ctx.stroke();
+      }
+
+      // ── 3. Churning dark smoke implosion blobs ───────────────────────────
+      const blobCount = 3 + stacks;
+      for (let b = 0; b < blobCount; b++) {
+        const bAng = (b / blobCount) * Math.PI * 2 + churn * 0.22;
+        const bR = (55 + b * 18 + progress * 40) * (0.9 + Math.sin(churn + b) * 0.1);
+        const bx = cx + Math.cos(bAng) * bR * 0.9;
+        const by = cy + Math.sin(bAng) * bR * 0.55;
+        const blobSize = (18 + stacks * 4 + progress * 22) * (0.85 + Math.sin(churn * 1.3 + b * 2.1) * 0.15);
+        const blobGrad = this.ctx.createRadialGradient(bx, by, 2, bx, by, blobSize);
+        blobGrad.addColorStop(0, `rgba(5, 0, 0, ${0.9})`);
+        blobGrad.addColorStop(0.5, `rgba(40, 0, 12, ${0.6})`);
+        blobGrad.addColorStop(1, 'rgba(10, 0, 5, 0)');
+        this.ctx.fillStyle = blobGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(bx, by, blobSize, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // ── 4. Inward-rushing dark corruption streaks ─────────────────────────
+      if (progress > 0.2) {
+        const streakCount = 6 + stacks * 2;
+        for (let sk = 0; sk < streakCount; sk++) {
+          const skAng = (sk / streakCount) * Math.PI * 2 + churn * 0.08 + sk * 0.4;
+          const outerR = 80 + stacks * 15 + progress * 60;
+          const innerR = 10;
+          const alpha2 = (progress - 0.2) / 0.8;
+          const ox = cx + Math.cos(skAng) * outerR;
+          const oy = cy + Math.sin(skAng) * outerR * 0.6;
+          const ix = cx + Math.cos(skAng) * innerR;
+          const iy = cy + Math.sin(skAng) * innerR * 0.6;
+          // Jagged midpoint
+          const mx = (ox + ix) / 2 + Math.sin(churn * 1.5 + sk * 2.7) * 14;
+          const my = (oy + iy) / 2 + Math.cos(churn * 1.2 + sk * 1.9) * 8;
+          this.ctx.strokeStyle = sk % 3 === 0
+            ? `rgba(100, 0, 20, ${0.75 * alpha2})`
+            : sk % 3 === 1
+              ? `rgba(30, 0, 8, ${0.9 * alpha2})`
+              : `rgba(5, 0, 2, ${0.95 * alpha2})`;
+          this.ctx.lineWidth = 1.5 + Math.sin(churn + sk) * 0.8;
+          this.ctx.beginPath();
+          this.ctx.moveTo(ox, oy);
+          this.ctx.lineTo(mx, my);
+          this.ctx.lineTo(ix, iy);
+          this.ctx.stroke();
+        }
+      }
+
+      // ── 5. Void corruption shadow engulfing the player ────────────────────
+      const engulfR = 20 + progress * (30 + stacks * 6);
+      const engulfGrad = this.ctx.createRadialGradient(cx, cy, 4, cx, cy, engulfR);
+      engulfGrad.addColorStop(0, `rgba(0, 0, 0, ${0.95})`);
+      engulfGrad.addColorStop(0.4, `rgba(60, 0, 15, ${0.75})`);
+      engulfGrad.addColorStop(0.8, `rgba(20, 0, 5, ${0.4})`);
+      engulfGrad.addColorStop(1, 'rgba(5, 0, 0, 0)');
+      this.ctx.fillStyle = engulfGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, engulfR, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // ── 6. Rising dark embers / ash motes ─────────────────────────────────
+      for (let a = 0; a < 4 + stacks; a++) {
+        const ashX = cx + Math.sin(churn * 0.7 + a * 1.8) * (25 + stacks * 6);
+        const ashY = cy + this.pHeight * 0.3 - ((churn * 22 + a * 18) % (60 + stacks * 10));
+        const ashR = 1.5 + Math.sin(churn + a * 2) * 1;
+        this.ctx.fillStyle = a % 2 === 0
+          ? `rgba(80, 0, 15, 0.8)`
+          : `rgba(20, 0, 5, 0.6)`;
+        this.ctx.beginPath();
+        this.ctx.arc(ashX, ashY, ashR, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // ── 7. Blood-red corrupted core glow ──────────────────────────────────
+      const coreR = 10 + progress * (16 + stacks * 3);
+      const coreGrad2 = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, coreR);
+      coreGrad2.addColorStop(0, `rgba(180, 10, 10, ${0.95})`);
+      coreGrad2.addColorStop(0.5, `rgba(80, 0, 5, ${0.7})`);
+      coreGrad2.addColorStop(1, 'rgba(10, 0, 0, 0)');
+      this.ctx.fillStyle = coreGrad2;
+      this.ctx.beginPath();
+      this.ctx.arc(cx, cy, coreR, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // ── 8. Final void explosion burst (last 10 frames) ────────────────────
+      if (this.shadowmonUltTimer <= 10) {
+        const burstProg = (10 - this.shadowmonUltTimer) / 10;
+        // Dark shockwave (not circle — polygon-ish via canvas transform)
+        for (let sh = 0; sh < 3; sh++) {
+          const shDelay = sh * 0.25;
+          const shProg = Math.max(0, burstProg - shDelay);
+          const shR = shProg * (160 + sh * 45);
+          const shAlpha = Math.max(0, 0.9 - shProg * 1.5);
+          this.ctx.strokeStyle = sh === 0
+            ? `rgba(120, 0, 20, ${shAlpha})`
+            : sh === 1
+              ? `rgba(40, 0, 8, ${shAlpha})`
+              : `rgba(5, 0, 2, ${shAlpha})`;
+          this.ctx.lineWidth = 5 - sh;
+          this.ctx.beginPath();
+          // Jagged polygon burst instead of clean circle
+          const sides = 10 + sh * 4;
+          for (let v = 0; v <= sides; v++) {
+            const vAng = (v / sides) * Math.PI * 2;
+            const vR = shR * (0.85 + Math.sin(v * 3.7 + sh * 1.2) * 0.15);
+            const vx = cx + Math.cos(vAng) * vR;
+            const vy = cy + Math.sin(vAng) * vR * 0.7;
+            if (v === 0) this.ctx.moveTo(vx, vy);
+            else this.ctx.lineTo(vx, vy);
+          }
+          this.ctx.closePath();
+          this.ctx.stroke();
+        }
+      }
 
       this.ctx.restore();
     }
@@ -10208,54 +10739,110 @@ export class GameEngine {
       const endX = this.flymonLaserEndPos.x;
       const endY = this.flymonLaserEndPos.y;
       const laserAlpha = Math.min(1, this.laserBeamDuration / 12);
+      const pulse = Math.sin(this.frameCount * 0.22) * 0.15 + 0.85;
 
-      // Outer glow layer (widest, most transparent)
-      this.ctx.strokeStyle = `rgba(244, 63, 94, ${laserAlpha * 0.30})`;
-      this.ctx.lineWidth = 44;
+      // ── 1. Muzzle Charge Singularity Core at Flymon's chest ───────────────
+      const muzzleGrad = this.ctx.createRadialGradient(startX, startY, 4, startX, startY, 48 * pulse);
+      muzzleGrad.addColorStop(0, `rgba(255, 255, 255, ${laserAlpha})`);
+      muzzleGrad.addColorStop(0.25, `rgba(244, 63, 94, ${laserAlpha * 0.95})`);
+      muzzleGrad.addColorStop(0.65, `rgba(159, 18, 57, ${laserAlpha * 0.5})`);
+      muzzleGrad.addColorStop(1, 'rgba(159, 18, 57, 0)');
+      this.ctx.fillStyle = muzzleGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(startX, startY, 48 * pulse, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Muzzle rotating orbital rings (blackhole style)
+      for (let r = 0; r < 3; r++) {
+        const ringR = (22 + r * 10) * pulse;
+        const ringAng = this.frameCount * 0.15 * (r % 2 === 0 ? 1 : -1) + r;
+        this.ctx.save();
+        this.ctx.translate(startX, startY);
+        this.ctx.rotate(ringAng);
+        this.ctx.scale(1.0, 0.4);
+        this.ctx.strokeStyle = `rgba(251, 113, 133, ${laserAlpha * 0.8})`;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.restore();
+      }
+
+      // ── 2. Outer Heatwave & Chromatic Beam Atmosphere ─────────────────────
+      this.ctx.strokeStyle = `rgba(244, 63, 94, ${laserAlpha * 0.28 * pulse})`;
+      this.ctx.lineWidth = 64;
       this.ctx.lineCap = 'round';
       this.ctx.beginPath();
       this.ctx.moveTo(startX, startY);
       this.ctx.lineTo(endX, endY);
       this.ctx.stroke();
 
-      // Mid crimson layer
-      this.ctx.strokeStyle = `rgba(244, 63, 94, ${laserAlpha * 0.75})`;
-      this.ctx.lineWidth = 22;
+      // ── 3. Mid Crimson Plasma Glow Beam ───────────────────────────────────
+      this.ctx.strokeStyle = `rgba(225, 29, 72, ${laserAlpha * 0.75})`;
+      this.ctx.lineWidth = 32;
       this.ctx.beginPath();
       this.ctx.moveTo(startX, startY);
       this.ctx.lineTo(endX, endY);
       this.ctx.stroke();
 
-      // Hot core
-      this.ctx.strokeStyle = `rgba(255, 255, 255, ${laserAlpha * 0.95})`;
-      this.ctx.lineWidth = 8;
+      // ── 4. Double Rotating Plasma Helix Laser Coils (Blackhole standard) ─
+      const beamDx = endX - startX;
+      const beamDy = endY - startY;
+      const beamDist = Math.hypot(beamDx, beamDy) || 1;
+      const normX = beamDx / beamDist;
+      const normY = beamDy / beamDist;
+      const perpX = -normY;
+      const perpY = normX;
+
+      for (let helix = 0; helix < 2; helix++) {
+        const sign = helix === 0 ? 1 : -1;
+        this.ctx.strokeStyle = helix === 0 ? `rgba(255, 255, 255, ${laserAlpha * 0.85})` : `rgba(254, 205, 211, ${laserAlpha * 0.75})`;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+
+        const steps = 32;
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const currX = startX + beamDx * t;
+          const currY = startY + beamDy * t;
+          const offset = Math.sin(t * Math.PI * 8 + this.frameCount * 0.25 * sign) * 16 * sign;
+          const px = currX + perpX * offset;
+          const py = currY + perpY * offset;
+          if (i === 0) this.ctx.moveTo(px, py);
+          else this.ctx.lineTo(px, py);
+        }
+        this.ctx.stroke();
+      }
+
+      // ── 5. Hot Blinding White Core ────────────────────────────────────────
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${laserAlpha * 0.98})`;
+      this.ctx.lineWidth = 10;
       this.ctx.beginPath();
       this.ctx.moveTo(startX, startY);
       this.ctx.lineTo(endX, endY);
       this.ctx.stroke();
 
-      // Impact flare at endpoint
-      const flareGrad = this.ctx.createRadialGradient(endX, endY, 2, endX, endY, 28);
+      // ── 6. Terminal Endpoint Impact Singularity Flare ──────────────────────
+      const flareGrad = this.ctx.createRadialGradient(endX, endY, 4, endX, endY, 60);
       flareGrad.addColorStop(0, `rgba(255, 255, 255, ${laserAlpha})`);
-      flareGrad.addColorStop(0.4, `rgba(244, 63, 94, ${laserAlpha * 0.85})`);
-      flareGrad.addColorStop(1, 'rgba(244, 63, 94, 0)');
+      flareGrad.addColorStop(0.3, `rgba(244, 63, 94, ${laserAlpha * 0.85})`);
+      flareGrad.addColorStop(0.65, `rgba(159, 18, 57, ${laserAlpha * 0.4})`);
+      flareGrad.addColorStop(1, 'rgba(159, 18, 57, 0)');
       this.ctx.fillStyle = flareGrad;
       this.ctx.beginPath();
-      this.ctx.arc(endX, endY, 28, 0, Math.PI * 2);
+      this.ctx.arc(endX, endY, 60, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Rotating flare arcs at impact
-      const fa0 = this.frameCount * 0.22;
-      this.ctx.strokeStyle = `rgba(251, 113, 133, ${laserAlpha * 0.9})`;
-      this.ctx.lineWidth = 3;
-      this.ctx.beginPath();
-      this.ctx.arc(endX, endY, 18, fa0, fa0 + Math.PI * 1.3);
-      this.ctx.stroke();
-      this.ctx.strokeStyle = `rgba(255, 255, 255, ${laserAlpha * 0.7})`;
-      this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
-      this.ctx.arc(endX, endY, 22, -fa0, -fa0 + Math.PI * 1.0);
-      this.ctx.stroke();
+      // Impact expanding shockwave rings
+      for (let s = 0; s < 3; s++) {
+        const sRadius = ((this.frameCount * 3 + s * 20) % 50) + 10;
+        const sAlpha = (1 - sRadius / 60) * laserAlpha;
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${sAlpha})`;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(endX, endY, sRadius, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
 
       this.ctx.restore();
     }

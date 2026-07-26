@@ -3,6 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import { Navbar } from '../../components/Navbar';
+import { Footer } from '../../components/Footer';
 import { DracoSelection } from '../../components/DracoSelection';
 import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
@@ -36,7 +37,7 @@ export default function HeroesPage() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-6">
           <div>
             <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight font-display">
-              Hero Roster <span className="text-amber-500">& Selection</span>
+              Hero Roster <span className="text-amber-500">&amp; Selection</span>
             </h1>
             <p className="text-xs md:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
               View all dracos, compare base attributes, unlock new companions, and equip your active partner.
@@ -71,18 +72,7 @@ export default function HeroesPage() {
       </main>
 
       {/* FOOTER */}
-      <footer className="w-full border-t border-stone-200 bg-white py-6 px-6 md:px-12 text-center text-xs font-mono text-stone-500 z-10">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
-          <span>© {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1</span>
-          <Link
-            href="/"
-            onClick={() => soundService.playClick()}
-            className="text-amber-600 hover:text-amber-700 font-bold flex items-center gap-1"
-          >
-            <span>Launch Campaign Game</span>
-          </Link>
-        </div>
-      </footer>
+      <Footer />
     </div>
   );
 }

@@ -41,14 +41,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const [hp, setHp] = useState(10);
   const [maxHp, setMaxHp] = useState(10);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [energy, setEnergy] = useState(() => {
-    const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : selected === 'Enigmon' ? 200 : selected === 'Lunarmon' ? 200 : 100;
-  });
-  const [maxEnergy, setMaxEnergy] = useState(() => {
-    const selected = saveData.selectedDraco;
-    return selected === 'Archermon' ? 60 : selected === 'Shieldmon' ? 80 : selected === 'Assassinmon' ? 150 : selected === 'Flymon' ? 200 : selected === 'Whitemon' ? 120 : selected === 'Magemon' ? 300 : selected === 'Bombamon' ? 120 : selected === 'Thundermon' ? 200 : selected === 'Enigmon' ? 200 : selected === 'Lunarmon' ? 200 : 100;
-  });
+  const [energy, setEnergy] = useState(() => GameEngine.getMaxEnergyForDraco(saveData.selectedDraco));
+  const [maxEnergy, setMaxEnergy] = useState(() => GameEngine.getMaxEnergyForDraco(saveData.selectedDraco));
   const [gameState, setGameState] = useState<'playing' | 'paused' | 'gameover' | 'victory'>('playing');
 
   const selectedDraco = saveData.selectedDraco;
@@ -59,7 +53,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const requiredExp = level * 30;
   const expPercent = Math.min(100, Math.max(0, (exp / requiredExp) * 100));
   const hpPercent = Math.min(100, Math.max(0, (hp / maxHp) * 100));
-  const ultCost = selectedDraco === 'Magemon' ? 150 : maxEnergy;
+  const ultCost = selectedDraco === 'Magemon' ? 100 : maxEnergy;
 
   const callbacksRef = useRef({ onCoinCollect, onItemCollect, onEnemyDefeat, onStageClear });
   useEffect(() => {
@@ -206,7 +200,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const handleRestart = () => {
     soundService.playClick();
     setGameState('playing');
-    const defaultMaxEnergy = selectedDraco === 'Archermon' ? 60 : selectedDraco === 'Shieldmon' ? 80 : selectedDraco === 'Assassinmon' ? 150 : selectedDraco === 'Flymon' ? 200 : selectedDraco === 'Whitemon' ? 120 : selectedDraco === 'Magemon' ? 300 : selectedDraco === 'Bombamon' ? 120 : selectedDraco === 'Thundermon' ? 200 : selectedDraco === 'Enigmon' ? 200 : selectedDraco === 'Lunarmon' ? 200 : 100;
+    const defaultMaxEnergy = GameEngine.getMaxEnergyForDraco(selectedDraco);
     setEnergy(defaultMaxEnergy);
 
     if (engineRef.current) {
