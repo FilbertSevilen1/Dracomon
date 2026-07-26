@@ -59,7 +59,21 @@ export const HeroDemoCanvas: React.FC<HeroDemoCanvasProps> = ({ selectedDraco })
     }, 300);
 
     // 10-second loop duration
-    const LOOP_DURATION = 7000;
+    let LOOP_DURATION = 5000;
+    switch (actionType) {
+      case 'attack':
+        LOOP_DURATION = 2000;
+        break;
+      case 'special':
+        LOOP_DURATION = 4000;
+        break;
+      case 'ultimate':
+        LOOP_DURATION = 7000;
+        break;
+    
+      default:
+        break;
+    }
     let startTime = performance.now();
     let loopAnimId: number;
 
