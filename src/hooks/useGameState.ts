@@ -250,7 +250,17 @@ export function useGameState() {
     bonusRoll: number;
   }[]>([]);
 
+  const pendingLevelUpRef = useRef<{
+    dracoName: string;
+    oldLevel: number;
+    newLevel: number;
+    baseIncrease: Partial<PlayerStats>;
+    bonusRoll: number;
+  }[]>([]);
+
   const handleEnemyDefeated = useCallback((expGain: number, coinsGain: number) => {
+    pendingLevelUpRef.current = [];
+
     updateSaveState(prev => {
       const activeName = prev.selectedDraco;
       const draco = prev.dracos[activeName];
@@ -307,15 +317,8 @@ export function useGameState() {
 
       if (newPendingItems.length > 0) {
         soundService.playLevelUp();
-        setPendingLevelUps(prevList => {
-          const combined = [...prevList, ...newPendingItems];
-          // Show the modal immediately if it isn't already open
-          if (combined.length === newPendingItems.length) {
-            setLevelUpInfo(combined[0]);
-            setShowLevelUp(true);
-          }
-          return combined;
-        });
+        // Store in ref so we can open the modal outside the state updater
+        pendingLevelUpRef.current = newPendingItems;
       }
 
       updatedDracos[activeName] = {
@@ -335,6 +338,17 @@ export function useGameState() {
         dracos: updatedDracos
       };
     });
+
+    // Open modal outside the state updater so React doesn't swallow the setState calls
+    if (pendingLevelUpRef.current.length > 0) {
+      const items = pendingLevelUpRef.current;
+      setPendingLevelUps(prevList => {
+        const combined = [...prevList, ...items];
+        return combined;
+      });
+      setLevelUpInfo(items[0]);
+      setShowLevelUp(true);
+    }
   }, [updateSaveState]);
 
   const applyLevelUpBonus = useCallback((stat: keyof PlayerStats) => {

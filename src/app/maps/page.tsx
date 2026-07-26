@@ -34,7 +34,6 @@ export default function MapsPage() {
   const [showSettings, setShowSettings] = useState(false);
 
   const currentTier = saveData.tier || 'Free';
-  const maxUnlockedStage = saveData.player.level || 1;
 
   // Strip the "Stage N: " prefix from the name to get the display title
   const getDisplayName = (fullName: string) => {
@@ -70,8 +69,8 @@ export default function MapsPage() {
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
           {STAGES.map((stg, index) => {
             const stageNum = index + 1;
-            const completed = saveData.completedStages || [];
-            const isUnlocked = stageNum === 1 || stageNum <= maxUnlockedStage || currentTier === 'Premium' || currentTier === 'Basic' || completed.includes(stageNum) || completed.includes(stageNum - 1);
+            const completed = saveData.completedStages || [1];
+            const isUnlocked = stageNum === 1 || currentTier === 'Premium' || currentTier === 'Basic' || completed.includes(stageNum - 1);
             const displayName = getDisplayName(stg.name);
 
             return (
