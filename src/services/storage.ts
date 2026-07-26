@@ -160,6 +160,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.2,
     },
+    Lunarmon: {
+      level: 1,
+      exp: 0,
+      hp: 20,
+      attack: 9,
+      defense: 3,
+      speed: 7.5,
+      jump: 11,
+      range: 10,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -311,6 +323,20 @@ export const storageService = {
             range: 12,
             unlocked: false,
             energyRegen: 1.2,
+          };
+        }
+        if (!parsed.dracos.Lunarmon) {
+          parsed.dracos.Lunarmon = {
+            level: 1,
+            exp: 0,
+            hp: 20,
+            attack: 9,
+            defense: 3,
+            speed: 7.5,
+            jump: 11,
+            range: 10,
+            unlocked: false,
+            energyRegen: 1.0,
           };
         }
 

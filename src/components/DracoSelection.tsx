@@ -149,6 +149,16 @@ const DRACO_META: {
     colorClass: 'text-purple-400 border-purple-800 bg-purple-950',
     bgGradient: 'from-purple-900 via-indigo-950 to-black',
   },
+  Lunarmon: {
+    role: 'Lunar / Eclipse Guardian',
+    abilityName: 'Moonbeam Strike',
+    abilityDesc: 'Calls a vertical moonbeam from above onto the nearest enemy within 800px, dealing damage, mini-stunning, and restoring energy.',
+    ultimateName: 'Lunar Eclipse',
+    ultimateDesc: 'Triggers a lunar eclipse cinematic — bombards all enemies in 1200px with moonbeams, then launches above to fire a giant rotating beam for 3s (A/D to aim). Deals 0.25× attack damage per tick.',
+    cost: 450,
+    colorClass: 'text-indigo-300 border-indigo-700 bg-indigo-950',
+    bgGradient: 'from-indigo-900 via-blue-950 to-slate-900',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
@@ -175,6 +185,32 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
         {/* Chest Singularity Core */}
         <circle cx="50" cy="62" r="8" fill="#000000" stroke="#c084fc" strokeWidth="2" />
         <circle cx="50" cy="62" r="3" fill="#e879f9" />
+      </svg>
+    );
+  }
+
+  if (name === 'Lunarmon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.25)" />
+        {/* Moon halo ring */}
+        <ellipse cx="50" cy="50" rx="40" ry="12" fill="none" stroke="#93c5fd" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+        {/* Wings */}
+        <path d="M 28 44 Q 6 18 30 30 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="1.5" />
+        <path d="M 72 44 Q 94 18 70 30 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="1.5" />
+        {/* Body */}
+        <rect x="34" y="34" width="32" height="42" rx="10" fill="#1e1b4b" stroke="#818cf8" strokeWidth="2.5" />
+        {/* Crescent horn tips */}
+        <path d="M 36 34 L 28 16 L 42 26 Z" fill="#4f46e5" stroke="#818cf8" strokeWidth="1.2" />
+        <path d="M 64 34 L 72 16 L 58 26 Z" fill="#4f46e5" stroke="#818cf8" strokeWidth="1.2" />
+        {/* Eyes */}
+        <circle cx="44" cy="46" r="3" fill="#e0e7ff" />
+        <circle cx="56" cy="46" r="3" fill="#e0e7ff" />
+        <circle cx="44" cy="46" r="1.2" fill="#6366f1" />
+        <circle cx="56" cy="46" r="1.2" fill="#6366f1" />
+        {/* Crescent moon chest emblem */}
+        <circle cx="50" cy="62" r="8" fill="#312e81" stroke="#818cf8" strokeWidth="1.5" />
+        <path d="M 50 55 A 7 7 0 1 1 50 69 A 4 4 0 1 0 50 55 Z" fill="#c7d2fe" />
       </svg>
     );
   }

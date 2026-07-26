@@ -297,6 +297,21 @@ export class GameEngine {
   private carpetBombingStartY: number = 0;
   private carpetBombingFireStreamTimer: number = 0;
 
+  private lunarmonUltActive: boolean = false;
+  private lunarmonUltPhase: 'cinematic' | 'bombarding' | 'jumping' | 'laser' = 'cinematic';
+  private lunarmonUltTimer: number = 0;
+  private lunarmonUltChannelTimer: number = 0;
+  private lunarmonUltStartX: number = 0;
+  private lunarmonUltStartY: number = 0;
+  private lunarmonUltJumpY: number = 0;
+  private lunarmonUltJumpProgress: number = 0;
+  private lunarmonUltBeamAngle: number = Math.PI / 2; // Pointing downward
+  private lunarmonTargets: { enemy: Enemy; strikeTimer: number; struck: boolean; beamTimer?: number; beamX?: number; beamY?: number }[] = [];
+  private lunarmonSkillActive: boolean = false;
+  private lunarmonSkillTimer: number = 0;
+  private lunarmonSkillX: number = 0;
+  private lunarmonSkillY: number = 0;
+
   private stageNum: number;
   private isDemoMode: boolean = false;
 
@@ -1248,6 +1263,36 @@ export class GameEngine {
           maxLife: 14
         });
       }
+    } else if (this.selectedDraco === 'Lunarmon') {
+      soundService.playShoot();
+      const beamVx = this.pFacing * (this.stats.speed + 8);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 22,
+        y: this.py + this.pHeight / 2 - 6,
+        vx: beamVx,
+        vy: 0,
+        width: 22,
+        height: 12,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 1.15),
+        color: '#93c5fd',
+        type: 'crescent_beam' as any,
+        rangeCap: 800,
+        startX: this.px
+      } as any);
+
+      for (let p = 0; p < 8; p++) {
+        this.particles.push({
+          x: slashX,
+          y: slashY + (Math.random() - 0.5) * 10,
+          vx: this.pFacing * (Math.random() * 4 + 2),
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 4 + 2,
+          color: p % 2 === 0 ? '#93c5fd' : '#c7d2fe',
+          life: 14,
+          maxLife: 14
+        });
+      }
     } else {
       soundService.playHit();
       this.checkMeleeHit(this.px - 12, this.py - 12, this.pWidth + 24, this.pHeight + 24, this.stats.attack, true);
@@ -1706,6 +1751,60 @@ export class GameEngine {
           maxLife: 30
         });
       }
+    } else if (this.selectedDraco === 'Lunarmon') {
+      soundService.playShoot();
+      this.specialCooldown = 240;
+
+      const pxMid = this.px + this.pWidth / 2;
+      let targetEnemy: Enemy | null = null;
+      let minDistance = 800;
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dist = Math.hypot((enemy.x + enemy.width / 2) - pxMid, (enemy.y + enemy.height / 2) - (this.py + this.pHeight / 2));
+        if (dist <= minDistance) {
+          minDistance = dist;
+          targetEnemy = enemy;
+        }
+      });
+
+      const strikeX = targetEnemy ? (targetEnemy as Enemy).x + (targetEnemy as Enemy).width / 2 : this.px + this.pFacing * 250;
+      const strikeY = targetEnemy ? (targetEnemy as Enemy).y + (targetEnemy as Enemy).height : this.py + this.pHeight;
+
+      if (targetEnemy) {
+        this.damageEnemy(targetEnemy, Math.floor(this.stats.attack * 2.2));
+        (targetEnemy as Enemy).stunnedTimer = 30; // mini stun 0.5s
+      }
+
+      // Activate 24-frame (0.4s) high-quality animated vertical Moonbeam pillar
+      this.lunarmonSkillActive = true;
+      this.lunarmonSkillTimer = 24;
+      this.lunarmonSkillX = strikeX;
+      this.lunarmonSkillY = strikeY;
+
+      // Gain 25 energy
+      this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + 25);
+      if (this.callbacks.onEnergyChange) {
+        this.callbacks.onEnergyChange(this.pEnergy, this.getMaxEnergy());
+      }
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'MOONBEAM! 🌙⚡ (+25 Energy)', '#93c5fd');
+
+      // Burst particle explosion at Moonbeam impact ground
+      for (let p = 0; p < 45; p++) {
+        const pAng = Math.random() * Math.PI * 2;
+        const pSpd = Math.random() * 7 + 2;
+        this.particles.push({
+          x: strikeX + (Math.random() - 0.5) * 30,
+          y: strikeY - Math.random() * 40,
+          vx: Math.cos(pAng) * pSpd,
+          vy: Math.sin(pAng) * pSpd - 2,
+          size: Math.random() * 6 + 2,
+          color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#93c5fd' : '#e0e7ff',
+          life: 22,
+          maxLife: 22
+        });
+      }
     }
   }
 
@@ -1866,6 +1965,7 @@ export class GameEngine {
       case 'Bombamon': return 180;
       case 'Thundermon': return 240;
       case 'Enigmon': return 200;
+      case 'Lunarmon': return 200;
       default: return 100;
     }
   }
@@ -1883,6 +1983,7 @@ export class GameEngine {
       case 'Bombamon': return 'Eternal Flare!';
       case 'Thundermon': return 'Raigeki';
       case 'Enigmon': return 'Black Hole';
+      case 'Lunarmon': return 'Lunar Eclipse';
       default: return 'Ultimate';
     }
   }
@@ -1900,6 +2001,7 @@ export class GameEngine {
       case 'Bombamon': return 'Burn everything into ashes, ETERNAL FLARE!';
       case 'Thundermon': return 'Feel the wrath of the heavens... RAIGEKI!';
       case 'Enigmon': return 'Singularity unleash... BLACK HOLE!';
+      case 'Lunarmon': return 'Shine bright in darkness... LUNAR ECLIPSE!';
       default: return 'Unleash full power!';
     }
   }
@@ -2289,6 +2391,58 @@ export class GameEngine {
           maxLife: 34
         });
       }
+    }
+    else if (this.selectedDraco === 'Lunarmon') {
+      soundService.playLevelUp(this.isDemoMode);
+      this.lunarmonUltActive = true;
+      this.lunarmonUltPhase = 'cinematic';
+      this.lunarmonUltChannelTimer = 45; // 45 frames cinematic eclipse animation
+      this.lunarmonUltTimer = 180; // 3 seconds laser duration after jump
+      this.lunarmonUltStartX = this.px;
+      this.lunarmonUltStartY = this.py;
+      this.lunarmonUltBeamAngle = Math.PI / 2; // Default facing down
+
+      const playerCenterX = this.px + this.pWidth / 2;
+      const playerCenterY = this.py + this.pHeight / 2;
+      const validEnemies = this.enemies
+        .filter(enemy => enemy.hp > 0 && Math.hypot((enemy.x + enemy.width / 2) - playerCenterX, (enemy.y + enemy.height / 2) - playerCenterY) <= 1200)
+        .sort((a, b) => {
+          const distA = Math.hypot((a.x + a.width / 2) - playerCenterX, (a.y + a.height / 2) - playerCenterY);
+          const distB = Math.hypot((b.x + b.width / 2) - playerCenterX, (b.y + b.height / 2) - playerCenterY);
+          return distA - distB;
+        });
+
+      // 0.5s interval = 30 frames between each target strike
+      const delayPerHit = 30;
+      this.lunarmonTargets = validEnemies.map((enemy, idx) => ({
+        enemy,
+        strikeTimer: idx * delayPerHit,
+        struck: false
+      }));
+
+      let targetY = this.py;
+      const maxRise = 320;
+      for (let offset = 0; offset <= maxRise; offset += 10) {
+        const checkY = this.py - offset;
+        const colLeft = Math.floor(this.px / this.level.tileSize);
+        const colRight = Math.floor((this.px + this.pWidth) / this.level.tileSize);
+        const row = Math.floor(checkY / this.level.tileSize);
+        const grid = this.getActiveGrid();
+        let hit = false;
+        if (row >= 0 && row < grid.length) {
+          if (colLeft >= 0 && colLeft < grid[row].length && (grid[row][colLeft] === '#' || grid[row][colLeft] === '=')) hit = true;
+          if (colRight >= 0 && colRight < grid[row].length && (grid[row][colRight] === '#' || grid[row][colRight] === '=')) hit = true;
+        }
+        if (hit || checkY < 30) {
+          targetY = Math.max(30, checkY + 45);
+          break;
+        }
+        targetY = checkY;
+      }
+      this.lunarmonUltJumpY = targetY;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'LUNAR ECLIPSE! 🌑✨', '#c7d2fe');
+      this.screenShake = 40;
     }
 
     this.birdX = this.px;
@@ -4508,6 +4662,29 @@ export class GameEngine {
         }
       }
 
+      if ((proj as any).type === 'crescent_beam') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2,
+            size: Math.random() * 4 + 2,
+            color: '#93c5fd',
+            life: 10,
+            maxLife: 10
+          });
+        }
+        const distTraveled = Math.abs(proj.x - ((proj as any).startX || proj.x));
+        if (distTraveled >= ((proj as any).rangeCap || 800)) {
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 6, '#93c5fd');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+      }
+
       if ((proj as any).type === 'wisp_orb') {
         if ((proj as any).homingTimer > 0) {
           (proj as any).homingTimer--;
@@ -5930,6 +6107,202 @@ export class GameEngine {
         this.cameraZoom = 1.0;
         this.screenShake = 20;
         this.raigekiTargets = [];
+      }
+    }
+
+    if (this.lunarmonUltActive) {
+      this.pInvulnerableFrames = 180;
+      this.pvx = 0;
+      this.pvy = 0;
+
+      if (this.lunarmonUltPhase === 'cinematic') {
+        this.px = this.lunarmonUltStartX;
+        this.py = this.lunarmonUltStartY;
+        this.cameraZoomTargetX = this.px + this.pWidth / 2;
+        this.cameraZoomTargetY = this.py + this.pHeight / 2;
+        this.lunarmonUltChannelTimer--;
+
+        if (this.lunarmonUltChannelTimer === 0) {
+          if (this.lunarmonTargets.length > 0) {
+            this.lunarmonUltPhase = 'bombarding';
+          } else {
+            this.lunarmonUltPhase = 'jumping';
+            this.lunarmonUltJumpProgress = 0;
+          }
+        }
+      } else if (this.lunarmonUltPhase === 'bombarding') {
+        this.px = this.lunarmonUltStartX;
+        this.py = this.lunarmonUltStartY;
+
+        let allStruck = true;
+        this.lunarmonTargets.forEach(target => {
+          if (!target.struck) {
+            allStruck = false;
+            if (target.strikeTimer <= 0) {
+              target.struck = true;
+              target.beamTimer = 24; // 24 frames active beam rendering
+              target.beamX = target.enemy.x + target.enemy.width / 2;
+              target.beamY = target.enemy.y + target.enemy.height;
+              const enemy = target.enemy;
+              if (enemy.hp <= 0) return;
+
+              soundService.playShoot();
+              this.screenShake = 25;
+
+              this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.5));
+              enemy.stunnedTimer = 45;
+
+              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'ECLIPSE MOONBEAM! 🌙⚡', '#93c5fd');
+
+              for (let p = 0; p < 35; p++) {
+                const pAng = Math.random() * Math.PI * 2;
+                const pSpd = Math.random() * 7 + 2;
+                this.particles.push({
+                  x: enemy.x + enemy.width / 2 + (Math.random() - 0.5) * 20,
+                  y: enemy.y + enemy.height - Math.random() * 30,
+                  vx: Math.cos(pAng) * pSpd,
+                  vy: Math.sin(pAng) * pSpd - 2,
+                  size: Math.random() * 6 + 2,
+                  color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#93c5fd' : '#e0e7ff',
+                  life: 20,
+                  maxLife: 20
+                });
+              }
+            } else {
+              target.strikeTimer--;
+            }
+          }
+        });
+
+        if (allStruck) {
+          this.lunarmonUltPhase = 'jumping';
+          this.lunarmonUltJumpProgress = 0;
+        }
+      } else if (this.lunarmonUltPhase === 'jumping') {
+        this.lunarmonUltJumpProgress += 0.04; // 25 frames jump animation (~0.4s)
+        const t = Math.min(1.0, this.lunarmonUltJumpProgress);
+        // Smooth ease-out quad interpolation upward
+        const easeOut = 1 - (1 - t) * (1 - t);
+        this.px = this.lunarmonUltStartX;
+        this.py = this.lunarmonUltStartY + (this.lunarmonUltJumpY - this.lunarmonUltStartY) * easeOut;
+
+        // Upward trail aura particles during jump
+        for (let p = 0; p < 4; p++) {
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 20,
+            y: this.py + this.pHeight,
+            vx: (Math.random() - 0.5) * 2,
+            vy: Math.random() * 4 + 2,
+            size: Math.random() * 5 + 2,
+            color: p % 2 === 0 ? '#93c5fd' : '#c7d2fe',
+            life: 15,
+            maxLife: 15
+          });
+        }
+
+        if (t >= 1.0) {
+          this.lunarmonUltPhase = 'laser';
+          this.screenShake = 30;
+          soundService.playJump();
+        }
+      } else if (this.lunarmonUltPhase === 'laser') {
+        this.px = this.lunarmonUltStartX;
+        this.py = this.lunarmonUltJumpY;
+        this.lunarmonUltTimer--;
+
+        // Radial beam control: A (left) rotates clockwise (+angle), D (right) rotates counter-clockwise (-angle)
+        if (this.keys['a'] || this.keys['A'] || this.keys['ArrowLeft']) {
+          this.lunarmonUltBeamAngle += 0.04;
+        }
+        if (this.keys['d'] || this.keys['D'] || this.keys['ArrowRight']) {
+          this.lunarmonUltBeamAngle -= 0.04;
+        }
+
+        // Clamp beam angle so it aims downward/sideways (between 0.2 rad and Math.PI - 0.2 rad)
+        this.lunarmonUltBeamAngle = Math.max(0.2, Math.min(Math.PI - 0.2, this.lunarmonUltBeamAngle));
+
+        // Damage tick every 15 frames = 0.25s at 60fps (0.25 tick damage requested)
+        const isDamageTick = this.lunarmonUltTimer % 15 === 0;
+
+        const bx = this.px + this.pWidth / 2;
+        const by = this.py + this.pHeight / 2;
+        const beamLength = 850;
+        const endX = bx + Math.cos(this.lunarmonUltBeamAngle) * beamLength;
+        const endY = by + Math.sin(this.lunarmonUltBeamAngle) * beamLength;
+
+        if (isDamageTick) {
+          soundService.playShoot();
+          // Check collision along beam line vs enemies
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+
+            // Distance from point (ex, ey) to line segment (bx, by) -> (endX, endY)
+            const dx = endX - bx;
+            const dy = endY - by;
+            const lenSq = dx * dx + dy * dy;
+            let t = ((ex - bx) * dx + (ey - by) * dy) / lenSq;
+            t = Math.max(0, Math.min(1, t));
+            const projX = bx + t * dx;
+            const projY = by + t * dy;
+            const distToBeam = Math.hypot(ex - projX, ey - projY);
+
+            if (distToBeam < 50) {
+              this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.8)));
+              this.addFloatingText(ex, ey - 10, 'CELESTIAL TICK! ⚡', '#93c5fd');
+
+              // Impact explosion particles on enemy hit
+              for (let hitP = 0; hitP < 8; hitP++) {
+                const hitAng = Math.random() * Math.PI * 2;
+                const hitSpd = Math.random() * 6 + 2;
+                this.particles.push({
+                  x: ex,
+                  y: ey,
+                  vx: Math.cos(hitAng) * hitSpd,
+                  vy: Math.sin(hitAng) * hitSpd,
+                  size: Math.random() * 6 + 3,
+                  color: hitP % 2 === 0 ? '#93c5fd' : '#e0e7ff',
+                  life: 16,
+                  maxLife: 16
+                });
+              }
+            }
+          });
+        }
+
+        // AAA Beam Particle FX: Orbiting spiral particles along beam axis + ground impact flare
+        for (let p = 0; p < 8; p++) {
+          const distProgress = Math.random();
+          const pDist = beamLength * distProgress;
+          const axisX = bx + Math.cos(this.lunarmonUltBeamAngle) * pDist;
+          const axisY = by + Math.sin(this.lunarmonUltBeamAngle) * pDist;
+
+          const spiralPerpAngle = this.lunarmonUltBeamAngle + Math.PI / 2;
+          const spiralOffset = Math.sin(this.frameCount * 0.3 + distProgress * 12 + p) * (18 + Math.random() * 12);
+          const pX = axisX + Math.cos(spiralPerpAngle) * spiralOffset;
+          const pY = axisY + Math.sin(spiralPerpAngle) * spiralOffset;
+
+          this.particles.push({
+            x: pX,
+            y: pY,
+            vx: Math.cos(this.lunarmonUltBeamAngle) * (Math.random() * 4 + 2),
+            vy: Math.sin(this.lunarmonUltBeamAngle) * (Math.random() * 4 + 2),
+            size: Math.random() * 5 + 2,
+            color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#93c5fd' : '#c7d2fe',
+            life: 14,
+            maxLife: 14
+          });
+        }
+
+        if (this.lunarmonUltTimer <= 0) {
+          this.lunarmonUltActive = false;
+          this.px = this.lunarmonUltStartX;
+          this.py = this.lunarmonUltStartY;
+          this.pvx = 0;
+          this.pvy = 0;
+          this.cameraZoom = 1.0;
+        }
       }
     }
 
@@ -8084,6 +8457,11 @@ export class GameEngine {
         accentColor = '#581c87';
         bellyColor = '#c084fc';
         detailColor = '#e879f9';
+      } else if (this.selectedDraco === 'Lunarmon') {
+        mainColor = '#1e1b4b';
+        accentColor = '#312e81';
+        bellyColor = '#c7d2fe';
+        detailColor = '#93c5fd';
       }
 
       const px = this.px;
@@ -9152,6 +9530,288 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
       }
+
+      this.ctx.restore();
+    }
+
+    if (this.lunarmonUltActive) {
+      this.ctx.save();
+
+      // Draw Eclipse Sky backdrop animation
+      if (this.lunarmonUltPhase === 'cinematic' || this.lunarmonUltPhase === 'bombarding') {
+        const camX = this.cameraX;
+        const camY = this.cameraY;
+        const cw = this.canvas.width;
+        const ch = this.canvas.height;
+
+        // Dark sky overlay
+        this.ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
+        this.ctx.fillRect(camX, camY, cw, ch);
+
+        // Sun / Moon in the sky
+        const moonX = camX + cw / 2;
+        const moonY = camY + 80;
+
+        // Glowing Moon Base
+        this.ctx.fillStyle = '#e0e7ff';
+        this.ctx.beginPath();
+        this.ctx.arc(moonX, moonY, 40, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Eclipse Shadow overlay progressing
+        const progress = 1 - (this.lunarmonUltChannelTimer / 45);
+        const shadowOffsetX = (1 - progress) * 70 - 15;
+        this.ctx.fillStyle = '#090d16';
+        this.ctx.beginPath();
+        this.ctx.arc(moonX + shadowOffsetX, moonY, 39, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Corona Aura Ring
+        this.ctx.strokeStyle = '#818cf8';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(moonX, moonY, 44, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Render AAA Vertical Moonbeams for active pre-jump bombardment targets
+        this.lunarmonTargets.forEach(target => {
+          if (target.struck && target.beamTimer && target.beamTimer > 0) {
+            target.beamTimer--;
+            const bx = target.beamX || (target.enemy.x + target.enemy.width / 2);
+            const by = target.beamY || (target.enemy.y + target.enemy.height);
+            const skyY = Math.max(0, this.cameraY - 250);
+            const alpha = Math.min(1.0, target.beamTimer / 8);
+
+            // Layer 1: Outer Atmosphere Glow (75px)
+            this.ctx.strokeStyle = `rgba(79, 70, 229, ${0.35 * alpha})`;
+            this.ctx.lineWidth = 75;
+            this.ctx.lineCap = 'round';
+            this.ctx.beginPath();
+            this.ctx.moveTo(bx, skyY);
+            this.ctx.lineTo(bx, by);
+            this.ctx.stroke();
+
+            // Layer 2: Pulsing Blue Plasma Halo (48px)
+            const pulse = 48 + Math.sin(this.frameCount * 0.35 + bx) * 6;
+            this.ctx.strokeStyle = `rgba(147, 197, 253, ${0.55 * alpha})`;
+            this.ctx.lineWidth = pulse;
+            this.ctx.beginPath();
+            this.ctx.moveTo(bx, skyY);
+            this.ctx.lineTo(bx, by);
+            this.ctx.stroke();
+
+            // Layer 3: Cyan Core Plasma (24px)
+            this.ctx.strokeStyle = `rgba(199, 210, 254, ${0.9 * alpha})`;
+            this.ctx.lineWidth = 24;
+            this.ctx.beginPath();
+            this.ctx.moveTo(bx, skyY);
+            this.ctx.lineTo(bx, by);
+            this.ctx.stroke();
+
+            // Layer 4: Pure White Core Line (10px)
+            this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            this.ctx.lineWidth = 10;
+            this.ctx.beginPath();
+            this.ctx.moveTo(bx, skyY);
+            this.ctx.lineTo(bx, by);
+            this.ctx.stroke();
+
+            // Layer 5: Rotating Horizontal Orbital Rings
+            for (let r = 0; r < 4; r++) {
+              const ringY = skyY + ((this.frameCount * 15 + r * 80) % Math.max(50, by - skyY));
+              const ringR = 28 + Math.sin(this.frameCount * 0.3 + r) * 5;
+
+              this.ctx.save();
+              this.ctx.translate(bx, ringY);
+              this.ctx.scale(1.0, 0.3);
+              this.ctx.strokeStyle = r % 2 === 0 ? `rgba(147, 197, 253, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+              this.ctx.lineWidth = 3;
+              this.ctx.beginPath();
+              this.ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+              this.ctx.stroke();
+              this.ctx.restore();
+            }
+
+            // Layer 6: Ground Terminal Impact Explosion Ring
+            const impactGrad = this.ctx.createRadialGradient(bx, by, 8, bx, by, 60);
+            impactGrad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+            impactGrad.addColorStop(0.35, `rgba(147, 197, 253, ${0.85 * alpha})`);
+            impactGrad.addColorStop(0.75, `rgba(79, 70, 229, ${0.4 * alpha})`);
+            impactGrad.addColorStop(1, 'rgba(79, 70, 229, 0)');
+
+            this.ctx.fillStyle = impactGrad;
+            this.ctx.beginPath();
+            this.ctx.arc(bx, by, 60, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        });
+      } else if (this.lunarmonUltPhase === 'laser') {
+        const bx = this.px + this.pWidth / 2;
+        const by = this.py + this.pHeight / 2;
+        const beamLength = 850;
+        const endX = bx + Math.cos(this.lunarmonUltBeamAngle) * beamLength;
+        const endY = by + Math.sin(this.lunarmonUltBeamAngle) * beamLength;
+
+        // LAYER 1: Ambient Outer Cosmic Nebula Atmosphere (width 80px)
+        this.ctx.strokeStyle = 'rgba(79, 70, 229, 0.25)';
+        this.ctx.lineWidth = 80;
+        this.ctx.lineCap = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx, by);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 2: Pulsing Blue Halo Aura (width 52px + pulse)
+        const pulseWidth = 52 + Math.sin(this.frameCount * 0.25) * 8;
+        this.ctx.strokeStyle = 'rgba(147, 197, 253, 0.45)';
+        this.ctx.lineWidth = pulseWidth;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx, by);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 3: Radiant Cyan Plasma Body (width 26px)
+        this.ctx.strokeStyle = 'rgba(199, 210, 254, 0.85)';
+        this.ctx.lineWidth = 26;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx, by);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 4: Pure White Core Singularity Line (width 10px)
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 10;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx, by);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 5: Rotating Energy Rings wrapping along the beam shaft (Black hole aesthetic)
+        const perpAngle = this.lunarmonUltBeamAngle + Math.PI / 2;
+        for (let r = 0; r < 7; r++) {
+          const ringDist = ((this.frameCount * 12 + r * 120) % beamLength);
+          const rx = bx + Math.cos(this.lunarmonUltBeamAngle) * ringDist;
+          const ry = by + Math.sin(this.lunarmonUltBeamAngle) * ringDist;
+          const ringRadius = 24 + Math.sin(this.frameCount * 0.2 + r) * 6;
+
+          this.ctx.save();
+          this.ctx.translate(rx, ry);
+          this.ctx.rotate(this.lunarmonUltBeamAngle);
+          this.ctx.scale(0.35, 1.0); // Elliptical ring perspective
+
+          this.ctx.strokeStyle = r % 2 === 0 ? '#93c5fd' : '#ffffff';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        }
+
+        // LAYER 6: Caster Core Corona Bloom Ring at Lunarmon's chest
+        const coreBloomGrad = this.ctx.createRadialGradient(bx, by, 6, bx, by, 50);
+        coreBloomGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        coreBloomGrad.addColorStop(0.4, 'rgba(147, 197, 253, 0.8)');
+        coreBloomGrad.addColorStop(0.8, 'rgba(79, 70, 229, 0.4)');
+        coreBloomGrad.addColorStop(1, 'rgba(79, 70, 229, 0)');
+
+        this.ctx.fillStyle = coreBloomGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(bx, by, 50, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // LAYER 7: Ground / Terminal Impact Flare Ring at beam tip
+        const tipFlareGrad = this.ctx.createRadialGradient(endX, endY, 8, endX, endY, 65);
+        tipFlareGrad.addColorStop(0, 'rgba(255, 255, 255, 1.0)');
+        tipFlareGrad.addColorStop(0.35, 'rgba(147, 197, 253, 0.85)');
+        tipFlareGrad.addColorStop(0.75, 'rgba(99, 102, 241, 0.5)');
+        tipFlareGrad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+        this.ctx.fillStyle = tipFlareGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(endX, endY, 65, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      this.ctx.restore();
+    }
+
+    if (this.lunarmonSkillActive && this.lunarmonSkillTimer > 0) {
+      this.lunarmonSkillTimer--;
+      if (this.lunarmonSkillTimer <= 0) {
+        this.lunarmonSkillActive = false;
+      }
+
+      this.ctx.save();
+      const sx = this.lunarmonSkillX;
+      const sy = this.lunarmonSkillY;
+      const skyY = Math.max(0, this.cameraY - 200);
+
+      const alpha = Math.min(1.0, this.lunarmonSkillTimer / 8);
+
+      // LAYER 1: Outer Celestial Nebula Atmosphere (width 70px)
+      this.ctx.strokeStyle = `rgba(79, 70, 229, ${0.3 * alpha})`;
+      this.ctx.lineWidth = 70;
+      this.ctx.lineCap = 'round';
+      this.ctx.beginPath();
+      this.ctx.moveTo(sx, skyY);
+      this.ctx.lineTo(sx, sy);
+      this.ctx.stroke();
+
+      // LAYER 2: Pulsing Blue Halo Aura (width 44px + pulse)
+      const pulseWidth = 44 + Math.sin(this.frameCount * 0.3) * 6;
+      this.ctx.strokeStyle = `rgba(147, 197, 253, ${0.5 * alpha})`;
+      this.ctx.lineWidth = pulseWidth;
+      this.ctx.beginPath();
+      this.ctx.moveTo(sx, skyY);
+      this.ctx.lineTo(sx, sy);
+      this.ctx.stroke();
+
+      // LAYER 3: Radiant Cyan Plasma Body (width 22px)
+      this.ctx.strokeStyle = `rgba(199, 210, 254, ${0.9 * alpha})`;
+      this.ctx.lineWidth = 22;
+      this.ctx.beginPath();
+      this.ctx.moveTo(sx, skyY);
+      this.ctx.lineTo(sx, sy);
+      this.ctx.stroke();
+
+      // LAYER 4: Pure White Core Beam Line (width 8px)
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      this.ctx.lineWidth = 8;
+      this.ctx.beginPath();
+      this.ctx.moveTo(sx, skyY);
+      this.ctx.lineTo(sx, sy);
+      this.ctx.stroke();
+
+      // LAYER 5: Rotating Horizontal Orbital Energy Rings along vertical pillar
+      for (let r = 0; r < 4; r++) {
+        const ringY = skyY + ((this.frameCount * 14 + r * 90) % Math.max(50, sy - skyY));
+        const ringRadius = 26 + Math.sin(this.frameCount * 0.25 + r) * 5;
+
+        this.ctx.save();
+        this.ctx.translate(sx, ringY);
+        this.ctx.scale(1.0, 0.3); // Elliptical perspective for horizontal ring
+
+        this.ctx.strokeStyle = r % 2 === 0 ? `rgba(147, 197, 253, ${alpha})` : `rgba(255, 255, 255, ${alpha})`;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      }
+
+      // LAYER 6: Ground Terminal Impact Explosion Ring
+      const impactGrad = this.ctx.createRadialGradient(sx, sy, 6, sx, sy, 55);
+      impactGrad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+      impactGrad.addColorStop(0.4, `rgba(147, 197, 253, ${0.8 * alpha})`);
+      impactGrad.addColorStop(0.8, `rgba(79, 70, 229, ${0.3 * alpha})`);
+      impactGrad.addColorStop(1, 'rgba(79, 70, 229, 0)');
+
+      this.ctx.fillStyle = impactGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(sx, sy, 55, 0, Math.PI * 2);
+      this.ctx.fill();
 
       this.ctx.restore();
     }

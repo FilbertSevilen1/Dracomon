@@ -30,9 +30,22 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.2.2',
+    date: 'July 26, 2026',
+    tag: 'New Hero - Lunarmon! (Current)',
+    badgeColor: 'bg-indigo-600 text-white font-black shadow-sm',
+    summary: 'Introduces new Lunar hero Lunarmon featuring Crescent Moon energy beam basic attack (800px range), Moonbeam strike skill (mini-stun, damage, energy gain), and Lunar Eclipse ultimate with sky eclipse animation, screen-wide bombardment (1200px), and a 3-second controllable radial giant beam (A/D rotation).',
+    highlights: [
+      'New Hero - Lunarmon: Celestial dragon hero firing crescent moon energy beams capped at 800px range.',
+      'Basic Attack - Crescent Moon Energy Beam: Shoots a glowing crescent projectile traversing up to 800px range.',
+      'Special Skill - Moonbeam Strike: Summons a vertical moonbeam onto the nearest enemy within 800px, dealing damage, mini-stunning for 0.5s, and granting +25 Energy.',
+      'Ultimate Skill - Lunar Eclipse (200 Energy): Displays a sky moon eclipse animation, bombards all enemies within 1200px radius with moonbeams, then launches skyward to fire a giant radial beam for 3 seconds (A/D keys rotate clockwise/counter-clockwise, dealing 0.25× tick damage every 0.25s).',
+    ],
+  },
+  {
     version: '0.2.1',
     date: 'July 25, 2026',
-    tag: 'Mobile Navbar Optimization & Maps Redirect (Current)',
+    tag: 'Mobile Navbar Optimization & Maps Redirect',
     badgeColor: 'bg-sky-600 text-white font-black shadow-sm',
     summary: 'Optimizes the Navbar for mobile screens by collapsing the game logo to a dragon emoji, shrinking the active hero badge to an icon, and displaying all navigation links (Home, Heroes, Maps, Membership, Patch Notes) as icon-only buttons with tooltips on mobile. Also redirects the "Play Campaign Stage" button on the landing page directly to /maps.',
     highlights: [
@@ -284,7 +297,7 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  const [openVersion, setOpenVersion] = useState<string | null>('0.2.1');
+  const [openVersion, setOpenVersion] = useState<string | null>('0.2.2');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();

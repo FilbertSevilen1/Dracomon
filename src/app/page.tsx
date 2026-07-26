@@ -479,6 +479,34 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Lunarmon',
+      title: 'Celestial Eclipse Guardian',
+      cost: 450,
+      role: 'Lunar / Eclipse Guardian',
+      lore: 'Sovereign guardian of night skies. Lunarmon channels lunar energy into crescent moon beams (800px range) and calls down vertical Moonbeams onto foes to restore energy. During a Lunar Eclipse, Lunarmon bombards all enemies within 1200px and takes flight to fire a controllable giant radial beam!',
+      signatureSkill: 'Moonbeam Strike (800px Range • Mini Stun • Energy Gain)',
+      ultimateSkill: 'Lunar Eclipse (1200px Moonbeam Bombardment + 3s Controllable Radial Giant Beam)',
+      color: 'indigo',
+      tagColor: 'bg-indigo-950 text-indigo-300 border-indigo-700 font-mono',
+      attackType: 'Crescent Moon Energy Beam (800px Range)',
+      hp: saveData.dracos['Lunarmon']?.hp || 20,
+      atk: saveData.dracos['Lunarmon']?.attack || 9,
+      def: saveData.dracos['Lunarmon']?.defense || 3,
+      spd: saveData.dracos['Lunarmon']?.speed || 7.5,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
+          <path d="M 28 44 Q 6 18 30 30 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="1.5" />
+          <path d="M 72 44 Q 94 18 70 30 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="1.5" />
+          <rect x="34" y="34" width="32" height="42" rx="10" fill="#1e1b4b" stroke="#818cf8" strokeWidth="2.5" />
+          <circle cx="44" cy="46" r="3" fill="#e0e7ff" />
+          <circle cx="56" cy="46" r="3" fill="#e0e7ff" />
+          <path d="M 50 55 A 7 7 0 1 1 50 69 A 4 4 0 1 0 50 55 Z" fill="#c7d2fe" />
+        </svg>
+      ),
+    },
   ];
 
   const faqs = [

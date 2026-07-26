@@ -9,6 +9,7 @@ import { SettingsModal } from '../../components/SettingsModal';
 import { soundService } from '../../services/sound';
 import { STAGES } from '../../game/LevelManager';
 import { LevelUpModal } from '../../components/LevelUpModal';
+import { PlayerStats } from '../../types/game';
 
 function PlayContent() {
   const router = useRouter();
@@ -104,7 +105,7 @@ function PlayContent() {
           newLevel={levelUpInfo.newLevel}
           baseIncrease={levelUpInfo.baseIncrease}
           bonusRoll={levelUpInfo.bonusRoll}
-          currentStats={saveData.dracos[levelUpInfo.dracoName]}
+          currentStats={saveData.dracos[levelUpInfo.dracoName] as unknown as PlayerStats}
           onApplyBonus={applyLevelUpBonus}
           pendingCount={pendingLevelUps.length}
         />
