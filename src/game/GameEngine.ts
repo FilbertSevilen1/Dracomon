@@ -2,6 +2,114 @@ import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
+import {
+  FT_CHANNEL_INTERRUPTED,
+  FT_PORTAL_ENTERED,
+  FT_EXIT_PORTAL_CLEARED,
+  FT_DEFEAT_BOSS_FIRST,
+  FT_FINAL_BOSS_SLAIN,
+  FT_DOUBLE_JUMP_FIRE,
+  FT_DOUBLE_JUMP_NATURE,
+  FT_DOUBLE_JUMP_ICE,
+  FT_FAST_PLUNGE,
+  FT_SHIELD_CHARGE,
+  FT_SHADOW_DASH,
+  FT_GUST_PUSH_BACK,
+  FT_MEGA_SPIN,
+  FT_SHIELD_TRAMPLE_DASH,
+  FT_BIRD_SUMMONED,
+  FT_NOT_ENOUGH_ENERGY_30,
+  FT_SHADOWRAZE,
+  FT_HOMING_BOMB_ROCK,
+  FT_ELECTROTACKLE,
+  FT_SCHWARZSCHILD_PULSE,
+  FT_MOONBEAM,
+  FT_CHAOS_METEOR,
+  FT_SUN_STRIKE,
+  FT_TORNADO,
+  FT_HEAL,
+  FT_DAMAGE,
+  FT_BLOCKED,
+  FT_STUNNED,
+  FT_ROOTED,
+  FT_BOING,
+  FT_BOUNCE_STRIKE,
+  FT_FELL_VOID,
+  FT_GROUND_SHOCKWAVE,
+  FT_LANDMINE_DETONATED,
+  FT_COIN_PICKUP,
+  FT_POTION_PICKUP,
+  FT_UPGRADE_STONE_PICKUP,
+  FT_EXP_REWARD,
+  FT_COIN_REWARD,
+  FT_SKELETON_DESTROYED,
+  FT_KING_KONG_SLAIN,
+  FT_GIANT_WISP_SLAIN,
+  FT_ULTIMATE_CINEMATIC,
+  FT_AREA_KATANA_SLASH,
+  FT_DIMENSIONAL_SHATTER,
+  FT_SINGULARITY_DAMAGE,
+  FT_PULSE_DAMAGE,
+  FT_SUPERNOVA_DETONATION,
+  FT_SUPERNOVA_EXPLOSION,
+  FT_METEOR_IMPACT_ORANGE,
+  FT_METEOR_IMPACT_RED,
+  FT_SOLAR_EXPLOSION,
+  FT_STUNNED_TORNADO,
+  FT_LIFTED_TORNADO,
+  FT_SOUL_WAVE_HIT,
+  FT_ELECTRIC_EXPLOSION,
+  FT_SHIELD_BURST,
+  FT_TRAMPLED,
+  FT_DARK_SOUL_STACK,
+  FT_CHARGING_SOUL_BLAST,
+  FT_DOUBLE_ARROW_RAIN,
+  FT_SKYWARD_ARROW_SHOT,
+  FT_HYPER_CHARGED_LASER,
+  FT_BLACK_HOLE_SINGULARITY,
+  FT_AVATAR_STATE,
+  FT_METEOR_SMACKDOWN,
+  FT_SINGLE_SLASH_OF_DEATH,
+  FT_AEGIS_SHIELD_DOME,
+  FT_RAIGEKI_THUNDERBOLTS,
+  FT_TRIO_ORB_BLAST,
+  FT_PRIMAL_ROAR,
+  FT_LUNAR_ECLIPSE,
+  FT_CHARGING_CARPET_BOMBING,
+  FT_CARPET_BOMBING_FLAME,
+  FT_ARENA_ERUPTED,
+  FT_ARENA_SURVIVED,
+  FT_REAPED_BY_DEATH,
+  FT_THUNDERSTRUCK,
+  FT_ABSOLUTE_FROZEN,
+  FT_DISSOLVED_ANTIMATTER,
+  FT_MOLTEN_LAVA_MELTED,
+  FT_TOXIC_SWAMP,
+  FT_WHIRLPOOL,
+  FT_SHADOW_CLOUD_DAMAGE,
+  FT_DISINTEGRATED_BONES,
+  FT_ECLIPSE_MOONBEAM,
+  FT_CELESTIAL_TICK,
+  FT_ELECTROCUTED,
+  FT_BURN,
+  FT_LEVIATHAN_VORTEX,
+  FT_HOMING_LASER,
+  FT_STUNNED_2S,
+  FT_GORILLA_LEAP,
+  FT_SEISMIC_GROUND_SLAM,
+  FT_GLADIATOR_RUSH_STUN,
+  FT_SKELETON_REVIVED,
+  FT_BIRD_DAMAGE,
+  FT_NEED_ENERGY,
+  FT_ULTIMATE_UNLOCK_LV5,
+  FT_NO_ENEMIES_IN_RANGE,
+  FT_GLADIATOR_RUSH,
+  FT_IMMUNE_OUT_OF_RANGE,
+  FT_AIR_DODGED_STUN,
+  FT_BURN_EXPLOSION,
+  FT_PRIMORDIAL_GOD_CONQUERED,
+  FT_SOUL_BLAST_WAVES,
+} from './FloatingTextMessages';
 
 interface FloatingText {
   x: number;
@@ -372,7 +480,7 @@ export class GameEngine {
     if (this.channelingSpell === 'black_hole') {
       (this as any).enigmonBlackHoleActive = false;
       (this as any).enigmonBlackHoleTimer = 0;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, `CHANNEL INTERRUPTED (${reason.toUpperCase()})! 🚫`, '#f87171');
+      const _ftCI = FT_CHANNEL_INTERRUPTED(reason); this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, _ftCI.text, _ftCI.color);
       soundService.playHit();
     }
 
@@ -979,7 +1087,7 @@ export class GameEngine {
       if (this.level.maps && this.level.maps.length > 0) {
         this.currentSubMapIndex = (this.currentSubMapIndex + 1) % this.level.maps.length;
         this.initLevelEntities();
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'PORTAL ENTERED! 🌀', '#a855f7');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_PORTAL_ENTERED.text, FT_PORTAL_ENTERED.color);
       }
       return;
     }
@@ -992,13 +1100,13 @@ export class GameEngine {
       if (dist < 40) {
         if (this.exitPortalActive) {
           soundService.playLevelUp();
-          this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'EXIT PORTAL ENTERED! STAGE CLEARED! 🌀✨', '#a855f7');
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_EXIT_PORTAL_CLEARED.text, FT_EXIT_PORTAL_CLEARED.color);
           this.callbacks.onStageClear();
           this.isPaused = true;
           return;
         } else {
           if (this.frameCount % 45 === 0) {
-            this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'DEFEAT THE BOSS FIRST TO UNLOCK PORTAL! 🔒', '#ef4444');
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_DEFEAT_BOSS_FIRST.text, FT_DEFEAT_BOSS_FIRST.color);
           }
         }
       }
@@ -1031,19 +1139,19 @@ export class GameEngine {
 
       if (this.selectedDraco === 'Jumpmon') {
         this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 12, '#f59e0b');
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'Double Jump!', '#fbbf24');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_DOUBLE_JUMP_FIRE.text, FT_DOUBLE_JUMP_FIRE.color);
       } else if (this.selectedDraco === 'Archermon') {
         this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 10, '#34d399');
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'Double Jump!', '#34d399');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_DOUBLE_JUMP_NATURE.text, FT_DOUBLE_JUMP_NATURE.color);
       } else {
         this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 10, '#60a5fa');
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'Double Jump!', '#60a5fa');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_DOUBLE_JUMP_ICE.text, FT_DOUBLE_JUMP_ICE.color);
       }
     } else if (this.selectedDraco === 'Jumpmon' && !this.pGrounded && !this.isPlunging) {
       this.isPlunging = true;
       this.pvy = 16;
       soundService.playHit();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'FAST PLUNGE!', '#fbbf24');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_FAST_PLUNGE.text, FT_FAST_PLUNGE.color);
     }
   }
 
@@ -1337,7 +1445,7 @@ export class GameEngine {
 
       this.pvx = this.pFacing * 14;
       this.checkMeleeHit(this.px - 20, this.py, this.pWidth + 60, this.pHeight, this.stats.attack * 2.0);
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'SHIELD CHARGE! 🛡️', '#60a5fa');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_SHIELD_CHARGE.text, FT_SHIELD_CHARGE.color);
 
       for (let i = 0; i < 15; i++) {
         this.particles.push({
@@ -1361,7 +1469,7 @@ export class GameEngine {
       this.pvy = 0;
 
       this.checkMeleeHit(this.px - 30, this.py - 10, this.pWidth + 140, this.pHeight + 20, Math.floor(this.stats.attack * 2.4));
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'SHADOW DASH! 🥷💨', '#a855f7');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_SHADOW_DASH.text, FT_SHADOW_DASH.color);
 
       for (let i = 0; i < 18; i++) {
         this.particles.push({
@@ -1393,7 +1501,7 @@ export class GameEngine {
             enemy.vx = this.pFacing * 4.5;
             enemy.vy = -2.5;
             this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#fda4af');
-            this.addFloatingText(enemy.x, enemy.y - 15, 'GUST PUSH BACK! 🌪️💨', '#f43f5e');
+            this.addFloatingText(enemy.x, enemy.y - 15, FT_GUST_PUSH_BACK.text, FT_GUST_PUSH_BACK.color);
           }
         }
       });
@@ -1436,7 +1544,7 @@ export class GameEngine {
       this.isAttacking = true;
       this.attackDuration = 25;
       this.checkMeleeHit(this.px - 30, this.py - 30, this.pWidth + 60, this.pHeight + 60, Math.floor(this.stats.attack * 1.6));
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'MEGA SPIN! ⚔️🔥', '#fbbf24');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_MEGA_SPIN.text, FT_MEGA_SPIN.color);
 
       for (let p = 0; p < 16; p++) {
         const ang = Math.random() * Math.PI * 2;
@@ -1460,7 +1568,7 @@ export class GameEngine {
       this.pvx = this.pFacing * 24.0;
       this.pInvulnerableFrames = 24;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'SHIELD TRAMPLE DASH! 🛡️⚡', '#3b82f6');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_SHIELD_TRAMPLE_DASH.text, FT_SHIELD_TRAMPLE_DASH.color);
       this.screenShake = 18;
       (this as any).shieldmonDashHitIds = new Set();
     } else if (this.selectedDraco === 'Archermon') {
@@ -1488,7 +1596,7 @@ export class GameEngine {
       this.birdActive = true;
       this.birdX = this.px;
       this.birdY = this.py - 40;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'BIRD FAMILIAR SUMMONED! 🦅', '#38bdf8');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_BIRD_SUMMONED.text, FT_BIRD_SUMMONED.color);
       for (let i = 0; i < 10; i++) {
         this.particles.push({
           x: this.px + Math.random() * 20 - 10,
@@ -1504,7 +1612,7 @@ export class GameEngine {
     } else if (this.selectedDraco === 'Magemon') {
       if (this.pEnergy < 30) {
         soundService.playHit();
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'NOT ENOUGH ENERGY! (30 Req.) ⚡', '#ef4444');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_NOT_ENOUGH_ENERGY_30.text, FT_NOT_ENOUGH_ENERGY_30.color);
         return;
       }
 
@@ -1540,7 +1648,7 @@ export class GameEngine {
 
       soundService.playHit();
       this.screenShake = 42;
-      this.addFloatingText(targetX, targetY - 44, '☠ SHADOWRAZE ☠', '#ef4444');
+      this.addFloatingText(targetX, targetY - 44, FT_SHADOWRAZE.text, FT_SHADOWRAZE.color);
 
       this.shadowmonSkillActive = true;
       this.shadowmonSkillTimer = 35;
@@ -1624,7 +1732,7 @@ export class GameEngine {
         isHoming: true,
         groundBurnOnImpact: true
       } as any);
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'HOMING BOMB ROCK! 🪨💣🔥', '#ea580c');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_HOMING_BOMB_ROCK.text, FT_HOMING_BOMB_ROCK.color);
 
       for (let p = 0; p < 12; p++) {
         this.particles.push({
@@ -1708,7 +1816,7 @@ export class GameEngine {
         this.pvx = dashDir * 22.0;
       }
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'ELECTROTACKLE! ⚡💨', '#06b6d4');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_ELECTROTACKLE.text, FT_ELECTROTACKLE.color);
 
       this.groundBurnZones.push({
         id: this.groundBurnIdCounter++,
@@ -1764,7 +1872,7 @@ export class GameEngine {
       (this as any).enigmonPulseX = targetX;
       (this as any).enigmonPulseY = targetY;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'SCHWARZSCHILD PULSE! 🌀🌌', '#c084fc');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_SCHWARZSCHILD_PULSE.text, FT_SCHWARZSCHILD_PULSE.color);
 
       // Schwarzschild activation — ring implosion burst
       for (let p = 0; p < 40; p++) {
@@ -1819,7 +1927,7 @@ export class GameEngine {
         this.callbacks.onEnergyChange(this.pEnergy, this.getMaxEnergy());
       }
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'MOONBEAM! 🌙⚡ (+25 Energy)', '#93c5fd');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_MOONBEAM.text, FT_MOONBEAM.color);
 
       // Burst particle explosion at Moonbeam impact ground
       for (let p = 0; p < 45; p++) {
@@ -1886,7 +1994,7 @@ export class GameEngine {
           maxLife: 18
         });
       }
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'CHAOS METEOR! ☄️', '#f97316');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_CHAOS_METEOR.text, FT_CHAOS_METEOR.color);
     } else if (spellType === 1) {
       const targetX = nearestEnemy ? (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 : fallbackTargetX;
       const targetY = nearestEnemy ? (nearestEnemy as Enemy).y : this.py;
@@ -1933,7 +2041,7 @@ export class GameEngine {
           maxLife: 16
         });
       }
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'TORNADO! 🌪️', '#06b6d4');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_TORNADO.text, FT_TORNADO.color);
     }
   }
 
@@ -1953,7 +2061,7 @@ export class GameEngine {
       channelTimer: 45,
       targetX: targetX
     });
-    this.addFloatingText(targetX - 20, (targetY || this.py) - 15, 'SUN STRIKE! ☀️💥', '#f59e0b');
+    this.addFloatingText(targetX - 20, (targetY || this.py) - 15, FT_SUN_STRIKE.text, FT_SUN_STRIKE.color);
   }
 
   private checkMeleeHit(x: number, y: number, w: number, h: number, damage: number, stopOnFirstHit = false) {
@@ -2052,7 +2160,7 @@ export class GameEngine {
     const dracoLevel = (this.stats as any).level || 1;
     if (dracoLevel < 5) {
       soundService.playHit();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'ULTIMATE UNLOCKS AT LV.5! 🔒', '#a855f7');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_ULTIMATE_UNLOCK_LV5.text, FT_ULTIMATE_UNLOCK_LV5.color);
       return;
     }
 
@@ -2066,13 +2174,13 @@ export class GameEngine {
       soundService.playLevelUp();
     } else {
       soundService.playHit();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'NEED MORE ENERGY! ⚡', '#f59e0b');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_NEED_ENERGY.text, FT_NEED_ENERGY.color);
     }
   }
 
   private unleashUltimate() {
     soundService.playLevelUp();
-    this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, `${this.getUltimateName().toUpperCase()}!!! 💥`, '#ef4444');
+    const _ftUlt = FT_ULTIMATE_CINEMATIC(this.getUltimateName()); this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, _ftUlt.text, _ftUlt.color);
 
     if (this.selectedDraco === 'Jumpmon') {
       soundService.playLevelUp();
@@ -2086,7 +2194,7 @@ export class GameEngine {
       this.cameraZoomTargetX = this.px + this.pWidth / 2;
       this.cameraZoomTargetY = this.py + this.pHeight / 2;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'METEOR SMACKDOWN! 🌋', '#ef4444');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_METEOR_SMACKDOWN.text, FT_METEOR_SMACKDOWN.color);
 
       for (let p = 0; p < 24; p++) {
         this.particles.push({
@@ -2110,7 +2218,7 @@ export class GameEngine {
       this.cameraZoomTargetX = this.px + this.pWidth / 2;
       this.cameraZoomTargetY = this.py + this.pHeight / 2;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '★ SKYWARD ARROW SHOT ★', '#10b981');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_SKYWARD_ARROW_SHOT.text, FT_SKYWARD_ARROW_SHOT.color);
       this.screenShake = 20;
 
       // Wind charge burst — spiral outward rings
@@ -2133,14 +2241,14 @@ export class GameEngine {
       this.avatarActive = true;
       this.avatarDuration = 240;
       this.pInvulnerableFrames = 240;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'AVATAR STATE! 🛡️⚡', '#60a5fa');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_AVATAR_STATE.text, FT_AVATAR_STATE.color);
 
       this.enemies.forEach(enemy => {
         if (Math.abs(this.px - enemy.x) < 350) {
           enemy.stunnedTimer = 120;
           this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.5));
           this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#3b82f6');
-          this.addFloatingText(enemy.x, enemy.y - 15, 'STUNNED 2s! 💫', '#60a5fa');
+          this.addFloatingText(enemy.x, enemy.y - 15, FT_STUNNED_2S.text, FT_STUNNED_2S.color);
         }
       });
     }
@@ -2158,7 +2266,7 @@ export class GameEngine {
       });
 
       if (!bestTarget) {
-        this.addFloatingText(this.px, this.py - 10, 'NO ENEMIES IN RANGE!', '#94a3b8');
+        this.addFloatingText(this.px, this.py - 10, FT_NO_ENEMIES_IN_RANGE.text, FT_NO_ENEMIES_IN_RANGE.color);
         return;
       }
 
@@ -2173,7 +2281,7 @@ export class GameEngine {
       this.assassinmonUltimateTimer = 0;
       this.musouSlashActive = true;
       this.pInvulnerableFrames = 100;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SINGLE SLASH OF DEATH! 🗡️✨', '#c084fc');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_SINGLE_SLASH_OF_DEATH.text, FT_SINGLE_SLASH_OF_DEATH.color);
     }
     else if (this.selectedDraco === 'Flymon') {
       soundService.playLevelUp();
@@ -2182,7 +2290,7 @@ export class GameEngine {
       this.laserBeamActive = true;
       this.laserBeamDuration = 90;
       this.screenShake = 18;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '⚡ HYPER CHARGED LASER ⚡', '#f43f5e');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_HYPER_CHARGED_LASER.text, FT_HYPER_CHARGED_LASER.color);
 
       // Charging burst — crimson ring explosion
       for (let p = 0; p < 30; p++) {
@@ -2202,7 +2310,7 @@ export class GameEngine {
     }
     else if (this.selectedDraco === 'Whitemon') {
       soundService.playLevelUp();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '🦁 PRIMAL ROAR 🦁', '#f97316');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_PRIMAL_ROAR.text, FT_PRIMAL_ROAR.color);
       this.screenShake = 35;
 
       // Fire ring shockwave
@@ -2255,7 +2363,7 @@ export class GameEngine {
       this.shieldmonShieldTargetY = this.shieldmonUltCastY;
       this.shieldmonUltDamageDealt = false;
 
-      this.addFloatingText(this.shieldmonUltCastX, this.py - 35, 'AEGIS SHIELD DOME! 🛡️🏰⚡', '#3b82f6');
+      this.addFloatingText(this.shieldmonUltCastX, this.py - 35, FT_AEGIS_SHIELD_DOME.text, FT_AEGIS_SHIELD_DOME.color);
       this.screenShake = 20;
     }
     else if (this.selectedDraco === 'Magemon') {
@@ -2269,7 +2377,7 @@ export class GameEngine {
       this.pvy = -6;
       this.pGrounded = false;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'TRIO ORB BLAST! 🔮✨', '#a855f7');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_TRIO_ORB_BLAST.text, FT_TRIO_ORB_BLAST.color);
 
       for (let p = 0; p < 24; p++) {
         const ang = Math.random() * Math.PI * 2;
@@ -2298,7 +2406,7 @@ export class GameEngine {
       this.pvy = -6;
       this.pGrounded = false;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, `CHARGING SOUL BLAST (${this.shadowmonStacks}/5 STACKS)... 🔴⚡`, '#ef4444');
+      const _ftSoul = FT_CHARGING_SOUL_BLAST(this.shadowmonStacks); this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, _ftSoul.text, _ftSoul.color);
 
       for (let p = 0; p < 30; p++) {
         const ang = Math.random() * Math.PI * 2;
@@ -2342,7 +2450,7 @@ export class GameEngine {
       this.cameraZoomTargetX = this.carpetBombingX + this.pWidth / 2;
       this.cameraZoomTargetY = this.carpetBombingY + this.pHeight / 2;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'CHARGING CARPET BOMBING... 🐉🔥', '#f97316');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_CHARGING_CARPET_BOMBING.text, FT_CHARGING_CARPET_BOMBING.color);
       this.screenShake = 35;
 
       for (let p = 0; p < 30; p++) {
@@ -2369,7 +2477,7 @@ export class GameEngine {
       this.cameraZoomTargetY = this.py + this.pHeight / 2;
       this.screenShake = 35;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'RAIGEKI THUNDERBOLTS! ⚡🌩️', '#06b6d4');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_RAIGEKI_THUNDERBOLTS.text, FT_RAIGEKI_THUNDERBOLTS.color);
 
       const playerCenterX = this.px + this.pWidth / 2;
       const playerCenterY = this.py + this.pHeight / 2;
@@ -2407,7 +2515,7 @@ export class GameEngine {
       (this as any).enigmonBlackHoleX = targetBlackHoleX;
       (this as any).enigmonBlackHoleY = targetBlackHoleY;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '✦ BLACK HOLE SINGULARITY ✦ (MOVE TO CANCEL)', '#e879f9');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_BLACK_HOLE_SINGULARITY.text, FT_BLACK_HOLE_SINGULARITY.color);
       this.screenShake = 45;
 
       // Implosion burst — particles fly inward from a ring
@@ -2476,7 +2584,7 @@ export class GameEngine {
       }
       this.lunarmonUltJumpY = targetY;
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'LUNAR ECLIPSE! 🌑✨', '#c7d2fe');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_LUNAR_ECLIPSE.text, FT_LUNAR_ECLIPSE.color);
       this.screenShake = 40;
     }
 
@@ -2493,7 +2601,7 @@ export class GameEngine {
       const distToPlayer = Math.hypot(pxMid - exMid, pyMid - eyMid);
       if (distToPlayer > 800) {
         soundService.playBlock();
-        this.addFloatingText(exMid, enemy.y - 15, 'IMMUNE! (>800px) 🛡️', '#38bdf8');
+        this.addFloatingText(exMid, enemy.y - 15, FT_IMMUNE_OUT_OF_RANGE.text, FT_IMMUNE_OUT_OF_RANGE.color);
         return;
       }
     }
@@ -2536,7 +2644,7 @@ export class GameEngine {
         soundService.playShoot(this.isDemoMode);
         const cx = enemy.x + enemy.width / 2;
         const cy = enemy.y + enemy.height / 2;
-        this.addFloatingText(cx, cy - 20, 'SUPERNOVA DETONATION IN 2s! 💥💥', '#ef4444');
+        this.addFloatingText(cx, cy - 20, FT_SUPERNOVA_DETONATION.text, FT_SUPERNOVA_DETONATION.color);
       }
       return;
     }
@@ -2544,7 +2652,7 @@ export class GameEngine {
     if ((enemy.burnTimer && enemy.burnTimer > 0) || (enemy.burnLingerTimer && enemy.burnLingerTimer > 0)) {
       soundService.playHit();
       this.screenShake = 22;
-      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'BOOM! BURN EXPLOSION! 💥 (120 DMG)', '#f97316');
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, FT_BURN_EXPLOSION.text, FT_BURN_EXPLOSION.color);
 
       const expX = enemy.x + enemy.width / 2;
       const expY = enemy.y + enemy.height / 2;
@@ -2662,7 +2770,7 @@ export class GameEngine {
         amount: 2,
         collected: false
       });
-      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'PRIMORDIAL GOD CONQUERED! 👑', '#f59e0b');
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_PRIMORDIAL_GOD_CONQUERED.text, FT_PRIMORDIAL_GOD_CONQUERED.color);
     } else if (enemy.type === 'skeleton_archer') {
       const currentRevives = enemy.reviveCount || 0;
       if (currentRevives < 2) {
@@ -2675,7 +2783,7 @@ export class GameEngine {
       } else {
         expReward = 0;
         coinReward = 0;
-        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'SKELETON DESTROYED! 💀', '#94a3b8');
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, FT_SKELETON_DESTROYED.text, FT_SKELETON_DESTROYED.color);
       }
     } else if (enemy.type === 'king_kong') {
       expReward = 550;
@@ -2689,7 +2797,7 @@ export class GameEngine {
         amount: 3,
         collected: false
       });
-      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'KING KONG SLAIN! 🦍👑', '#f59e0b');
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_KING_KONG_SLAIN.text, FT_KING_KONG_SLAIN.color);
     } else if (enemy.type === 'giant_wisp') {
       expReward = 500;
       coinReward = 800;
@@ -2702,15 +2810,15 @@ export class GameEngine {
         amount: 3,
         collected: false
       });
-      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, 'GIANT WISP OVERLORD SLAIN! 🌌✨', '#c084fc');
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_GIANT_WISP_SLAIN.text, FT_GIANT_WISP_SLAIN.color);
     }
 
     expReward = Math.floor(expReward * 0.2);
     coinReward = Math.floor(coinReward * 0.2);
 
     this.callbacks.onEnemyDefeat(expReward, coinReward);
-    this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, `+${expReward} EXP`, '#3b82f6');
-    this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, `+${coinReward} Coins`, '#eab308');
+    const _ftExp = FT_EXP_REWARD(expReward); this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, _ftExp.text, _ftExp.color);
+    const _ftCoinR = FT_COIN_REWARD(coinReward); this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, _ftCoinR.text, _ftCoinR.color);
 
     if (!this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
       this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + 15);
@@ -2728,7 +2836,7 @@ export class GameEngine {
         }
 
         soundService.playLevelUp(this.isDemoMode);
-        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 60, 'FINAL BOSS SLAIN! EXIT PORTAL SPAWNED! 🌀✨', '#a855f7');
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 60, FT_FINAL_BOSS_SLAIN.text, FT_FINAL_BOSS_SLAIN.color);
 
         for (let i = 0; i < 45; i++) {
           this.particles.push({
@@ -2751,7 +2859,7 @@ export class GameEngine {
   public healPlayer(amount: number) {
     this.pHP = Math.min(this.pMaxHP, this.pHP + amount);
     this.callbacks.onHpChange(this.pHP, this.pMaxHP);
-    this.addFloatingText(this.px + this.pWidth / 2, this.py, `+${amount} HP`, '#10b981');
+    const _ftHeal = FT_HEAL(amount); this.addFloatingText(this.px + this.pWidth / 2, this.py, _ftHeal.text, _ftHeal.color);
     this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 12, '#34d399');
   }
 
@@ -2774,7 +2882,7 @@ export class GameEngine {
 
     if (this.shieldActive) {
       soundService.playBlock();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'BLOCKED!', '#60a5fa');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_BLOCKED.text, FT_BLOCKED.color);
       this.pInvulnerableFrames = 30;
 
       const dir = this.px > sourceX ? 1 : -1;
@@ -2788,7 +2896,7 @@ export class GameEngine {
     this.pInvulnerableFrames = 60;
 
     soundService.playHit();
-    this.addFloatingText(this.px + this.pWidth / 2, this.py, `-${netDamage} HP`, '#ef4444');
+    const _ftDmg = FT_DAMAGE(netDamage); this.addFloatingText(this.px + this.pWidth / 2, this.py, _ftDmg.text, _ftDmg.color);
     this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 10, '#ef4444');
 
     const dir = this.px > sourceX ? 1 : -1;
@@ -2901,7 +3009,7 @@ export class GameEngine {
           this.arenaExploded = true;
           this.screenShake = 40;
           soundService.playHit();
-          this.addFloatingText(this.px + this.pWidth / 2, this.py - 60, 'ARENA ERUPTED! IMMORTAL GLADIATOR AWAKENED! 🌋💀', '#ef4444');
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 60, FT_ARENA_ERUPTED.text, FT_ARENA_ERUPTED.color);
 
           for (let p = 0; p < 80; p++) {
             this.particles.push({
@@ -3045,7 +3153,7 @@ export class GameEngine {
         if (this.survivalTimer === 0) {
           this.exitPortalActive = true;
           soundService.playLevelUp();
-          this.addFloatingText(this.px + this.pWidth / 2, this.py - 60, 'ARENA SURVIVED! EXIT PORTAL UNLOCKED! 🛡️🏆', '#f59e0b');
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 60, FT_ARENA_SURVIVED.text, FT_ARENA_SURVIVED.color);
 
           if (this.exitPortalPos) {
             for (let i = 0; i < 50; i++) {
@@ -3112,7 +3220,7 @@ export class GameEngine {
         });
 
         soundService.playHit();
-        this.addFloatingText(this.musouSlashX, this.musouSlashY - 15, `AREA KATANA SLASH (${hitCount} ENEMIES)! 🗡️✨`, '#c084fc');
+        const _ftKatana = FT_AREA_KATANA_SLASH(hitCount); this.addFloatingText(this.musouSlashX, this.musouSlashY - 15, _ftKatana.text, _ftKatana.color);
       }
       else if (this.assassinmonUltimateTimer === 12) {
         let hitCount = 0;
@@ -3180,7 +3288,7 @@ export class GameEngine {
           });
         }
 
-        this.addFloatingText(this.musouSlashX, this.musouSlashY - 75, `DIMENSIONAL SHATTER (${hitCount} ENEMIES)! 🗡️💥`, '#ef4444', true);
+        const _ftShatter = FT_DIMENSIONAL_SHATTER(hitCount); this.addFloatingText(this.musouSlashX, this.musouSlashY - 75, _ftShatter.text, _ftShatter.color, true);
       }
       else if (this.assassinmonUltimateTimer >= 50) {
         this.px = this.musouOriginalPx;
@@ -3330,7 +3438,7 @@ export class GameEngine {
               this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.2));
               enemy.stunnedTimer = 90;
               this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 20, '#f97316');
-              this.addFloatingText(enemy.x, enemy.y - 75, 'METEOR IMPACT! 🌋💥', '#ef4444', true);
+              this.addFloatingText(enemy.x, enemy.y - 75, FT_METEOR_IMPACT_RED.text, FT_METEOR_IMPACT_RED.color, true);
 
               for (let p = 0; p < 14; p++) {
                 this.particles.push({
@@ -3415,7 +3523,7 @@ export class GameEngine {
         this.screenShake = 22;
         this.arrowShowerActive = true;
         this.arrowShowerDuration = 360;
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 75, '🏹 DOUBLE ARROW RAIN (6s)! 🏹', '#10b981', true);
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 75, FT_DOUBLE_ARROW_RAIN.text, FT_DOUBLE_ARROW_RAIN.color, true);
       }
     }
 
@@ -3794,13 +3902,7 @@ export class GameEngine {
           }
         });
 
-        this.addFloatingText(
-          this.px + this.pWidth / 2,
-          this.py - 75,
-          `☠ SOUL BLAST x${totalWaves} ☠`,
-          '#ef4444',
-          true
-        );
+        const _ftSoulB = FT_SOUL_BLAST_WAVES(totalWaves); this.addFloatingText(this.px + this.pWidth / 2, this.py - 75, _ftSoulB.text, _ftSoulB.color, true);
 
         this.shadowmonStacks = 0;
       }
@@ -3822,7 +3924,7 @@ export class GameEngine {
             enemy.vx = this.pFacing * 12.0;
             enemy.vy = -5.0;
             this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 16, '#3b82f6');
-            this.addFloatingText(enemy.x, enemy.y - 20, 'TRAMPLED! 🛡️💥', '#3b82f6');
+            this.addFloatingText(enemy.x, enemy.y - 20, FT_TRAMPLED.text, FT_TRAMPLED.color);
           }
         }
       });
@@ -3887,7 +3989,7 @@ export class GameEngine {
 
             soundService.playHit();
             this.screenShake = 20;
-            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, 'ELECTRIC EXPLOSION! ⚡💥', '#06b6d4');
+            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, FT_ELECTRIC_EXPLOSION.text, FT_ELECTRIC_EXPLOSION.color);
 
             for (let p = 0; p < 18; p++) {
               const ang = Math.random() * Math.PI * 2;
@@ -3961,7 +4063,7 @@ export class GameEngine {
               this.damageEnemy(enemy, Math.floor(this.stats.attack * 9.5));
               enemy.vx = (enemy.x + enemy.width / 2 > this.shieldmonUltCastX ? 1 : -1) * 8.0;
               enemy.vy = -12.0;
-              this.addFloatingText(enemy.x, enemy.y - 30, 'SHIELD BURST! 🛡️⚡💥', '#fbbf24');
+              this.addFloatingText(enemy.x, enemy.y - 30, FT_SHIELD_BURST.text, FT_SHIELD_BURST.color);
             }
           });
         }
@@ -4016,7 +4118,7 @@ export class GameEngine {
       this.playerStunnedTimer--;
       this.pvx = 0;
       if (this.frameCount % 12 === 0) {
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'STUNNED! 💫', '#ef4444');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_STUNNED.text, FT_STUNNED.color);
       }
       if (this.isChanneling) this.cancelChanneling('Stun');
       return;
@@ -4085,7 +4187,7 @@ export class GameEngine {
     if (touchedVineTrap && this.playerRootedTimer <= 0) {
       this.playerRootedTimer = 120;
       soundService.playHit();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'ROOTED 2s! 🌿🔒', '#22c55e');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_ROOTED.text, FT_ROOTED.color);
       this.spawnDustParticles(pxMid, pyFeet, 14, '#15803d');
     }
 
@@ -4095,7 +4197,7 @@ export class GameEngine {
       this.skeletonDeathTimer = 90;
       soundService.playLavaDeath();
       this.callbacks.onHpChange?.(0, this.pMaxHP);
-      this.addFloatingText(pxMid, this.py - 20, 'TOXIC ACID SWAMP MELTDOWN! ☠️🧪', '#22c55e');
+      this.addFloatingText(pxMid, this.py - 20, FT_TOXIC_SWAMP.text, FT_TOXIC_SWAMP.color);
 
       for (let i = 0; i < 25; i++) {
         this.particles.push({
@@ -4127,7 +4229,7 @@ export class GameEngine {
             this.pvx = 0;
             this.pvy = 0;
             this.screenShake = 25;
-            this.addFloatingText(pxMid, this.py - 20, 'REAPED BY DEATH! 💀⚔️', '#a855f7');
+            this.addFloatingText(pxMid, this.py - 20, FT_REAPED_BY_DEATH.text, FT_REAPED_BY_DEATH.color);
 
             for (let i = 0; i < 30; i++) {
               this.particles.push({
@@ -4145,10 +4247,10 @@ export class GameEngine {
             this.pHP = Math.max(1, this.pHP - shadowDmg);
             this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
             soundService.playHit();
+            const _ftShadowDmg = FT_SHADOW_CLOUD_DAMAGE(shadowDmg); this.addFloatingText(pxMid, this.py - 20, _ftShadowDmg.text, _ftShadowDmg.color);
             this.pvy = -8.5;
             this.pvx = -this.pFacing * 3.5;
             this.screenShake = 15;
-            this.addFloatingText(pxMid, this.py - 20, `SHADOW CLOUD -${shadowDmg} HP! 💀☁️`, '#a855f7');
 
             for (let i = 0; i < 15; i++) {
               this.particles.push({
@@ -4173,7 +4275,7 @@ export class GameEngine {
           this.skeletonDeathTimer = 90;
           this.pvx = 0;
           this.pvy = 0;
-          this.addFloatingText(pxMid, this.py - 20, 'SUCKED INTO WHIRLPOOL! 🌀💀', '#06b6d4');
+          this.addFloatingText(pxMid, this.py - 20, FT_WHIRLPOOL.text, FT_WHIRLPOOL.color);
 
           for (let i = 0; i < 30; i++) {
             const ang = Math.random() * Math.PI * 2;
@@ -4195,7 +4297,7 @@ export class GameEngine {
         this.pvx = 0;
         this.pvy = 0;
         this.screenShake = 35;
-        this.addFloatingText(pxMid, this.py - 20, 'THUNDERSTRUCK! ⚡💥', '#eab308');
+        this.addFloatingText(pxMid, this.py - 20, FT_THUNDERSTRUCK.text, FT_THUNDERSTRUCK.color);
 
         for (let i = 0; i < 30; i++) {
           this.particles.push({
@@ -4214,7 +4316,7 @@ export class GameEngine {
         this.frozenDeathTimer = 999999;
         this.pvx = 0;
         this.pvy = 0;
-        this.addFloatingText(pxMid, this.py - 20, 'ABSOLUTE FROZEN! 🧊❄️', '#38bdf8');
+        this.addFloatingText(pxMid, this.py - 20, FT_ABSOLUTE_FROZEN.text, FT_ABSOLUTE_FROZEN.color);
 
         for (let i = 0; i < 25; i++) {
           this.particles.push({
@@ -4238,7 +4340,7 @@ export class GameEngine {
         this.pvx = 0;
         this.pvy = 0;
         this.screenShake = 30;
-        this.addFloatingText(pxMid, this.py - 20, 'DISSOLVED IN ANTIMATTER FIELD! ⚛️💥', '#06b6d4');
+        this.addFloatingText(pxMid, this.py - 20, FT_DISSOLVED_ANTIMATTER.text, FT_DISSOLVED_ANTIMATTER.color);
 
         for (let i = 0; i < 30; i++) {
           const ang = Math.random() * Math.PI * 2;
@@ -4257,7 +4359,7 @@ export class GameEngine {
       } else {
         soundService.playLavaDeath();
         this.skeletonDeathTimer = 90;
-        this.addFloatingText(pxMid, this.py - 20, 'MOLTEN LAVA MELTED! 🌋🔥', '#ef4444');
+        this.addFloatingText(pxMid, this.py - 20, FT_MOLTEN_LAVA_MELTED.text, FT_MOLTEN_LAVA_MELTED.color);
 
         for (let i = 0; i < 25; i++) {
           this.particles.push({
@@ -4566,7 +4668,7 @@ export class GameEngine {
             maxLife: 20
           });
         }
-        this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'GROUND SHOCKWAVE! 🔥', '#ef4444');
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_GROUND_SHOCKWAVE.text, FT_GROUND_SHOCKWAVE.color);
       }
     }
 
@@ -4599,7 +4701,7 @@ export class GameEngine {
           soundService.playJump();
 
           this.spawnDustParticles(this.px + this.pWidth / 2, enemy.y, 18, '#ef4444');
-          this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'BOUNCE STRIKE! 💥', '#fbbf24');
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_BOUNCE_STRIKE.text, FT_BOUNCE_STRIKE.color);
           break;
         }
       }
@@ -4609,7 +4711,7 @@ export class GameEngine {
       this.pHP = 0;
       this.callbacks.onHpChange?.(0, this.pMaxHP);
       soundService.playHit();
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'FELL INTO THE VOID! 💀', '#ef4444');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_FELL_VOID.text, FT_FELL_VOID.color);
       this.callbacks.onPlayerDeath();
     }
 
@@ -4622,7 +4724,7 @@ export class GameEngine {
       this.pGrounded = false;
       this.jumpCount = 1;
       this.trampolineCooldown = 15;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, 'BOING! 🌀', '#38bdf8');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_BOING.text, FT_BOING.color);
 
       for (let i = 0; i < 8; i++) {
         this.particles.push({
@@ -4665,13 +4767,13 @@ export class GameEngine {
 
         if (pickup.type === 'coin') {
           this.callbacks.onCoinCollect(pickup.amount);
-          this.addFloatingText(pickup.x, pickup.y, `+${pickup.amount} Coins`, '#fbbf24');
+          const _ftCoin = FT_COIN_PICKUP(pickup.amount); this.addFloatingText(pickup.x, pickup.y, _ftCoin.text, _ftCoin.color);
         } else if (pickup.type === 'potion') {
           this.callbacks.onItemCollect('potion');
-          this.addFloatingText(pickup.x, pickup.y, '+1 Potion', '#10b981');
+          this.addFloatingText(pickup.x, pickup.y, FT_POTION_PICKUP.text, FT_POTION_PICKUP.color);
         } else if (pickup.type === 'upgrade_stone') {
           this.callbacks.onItemCollect('upgrade_stone');
-          this.addFloatingText(pickup.x, pickup.y, '+1 Upgrade Stone', '#a855f7');
+          this.addFloatingText(pickup.x, pickup.y, FT_UPGRADE_STONE_PICKUP.text, FT_UPGRADE_STONE_PICKUP.color);
         }
       }
     });
@@ -4970,7 +5072,7 @@ export class GameEngine {
 
             this.checkMeleeHit(proj.x - 40, proj.y - 20, 120, 60, proj.damage);
             this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height, 20, '#f97316');
-            this.addFloatingText(proj.x, proj.y - 10, 'METEOR IMPACT! ☄️💥', '#f97316');
+            this.addFloatingText(proj.x, proj.y - 10, FT_METEOR_IMPACT_ORANGE.text, FT_METEOR_IMPACT_ORANGE.color);
 
             this.projectiles.push({
               x: proj.x,
@@ -5010,7 +5112,7 @@ export class GameEngine {
               soundService.playShoot();
               (proj as any).isExploding = true;
               (proj as any).explosionTimer = 20;
-              this.addFloatingText(proj.targetX! - 20, this.py - 20, 'SOLAR EXPLOSION! ☀️💥', '#f59e0b');
+              this.addFloatingText(proj.targetX! - 20, this.py - 20, FT_SOLAR_EXPLOSION.text, FT_SOLAR_EXPLOSION.color);
             }
             return;
           }
@@ -5124,7 +5226,7 @@ export class GameEngine {
                 this.damageEnemy(enemy, proj.damage);
                 soundService.playHit();
                 this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#f59e0b');
-                this.addFloatingText(enemy.x, enemy.y - 10, 'STUNNED! 💫', '#fbbf24');
+                this.addFloatingText(enemy.x, enemy.y - 10, FT_STUNNED_TORNADO.text, FT_STUNNED_TORNADO.color);
               }
             } else if (proj.type === 'tornado') {
               const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
@@ -5134,7 +5236,7 @@ export class GameEngine {
                 enemy.suspendedTimer = 90;
                 this.damageEnemy(enemy, proj.damage);
                 soundService.playHit();
-                this.addFloatingText(enemy.x, enemy.y - 15, 'LIFTED INTO TORNADO! 🌪️', '#06b6d4');
+                this.addFloatingText(enemy.x, enemy.y - 15, FT_LIFTED_TORNADO.text, FT_LIFTED_TORNADO.color);
               }
             } else if (proj.type === 'dark_energy') {
               if ((proj as any).isBasic) {
@@ -5150,7 +5252,7 @@ export class GameEngine {
                   this.damageEnemy(enemy, proj.damage);
                   soundService.playHit();
                   this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#ef4444');
-                  this.addFloatingText(enemy.x, enemy.y - 15, 'SOUL WAVE HIT! 🔴🌊', '#ef4444');
+                  this.addFloatingText(enemy.x, enemy.y - 15, FT_SOUL_WAVE_HIT.text, FT_SOUL_WAVE_HIT.color);
                 }
               }
             } else if (proj.type === 'giant_cleave') {
@@ -5239,7 +5341,7 @@ export class GameEngine {
           enemy.hasRevived = true;
           enemy.reviveCount = (enemy.reviveCount || 0) + 1;
           soundService.playLevelUp();
-          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, `SKELETON REVIVED! (${enemy.reviveCount}/2) 💀⚡`, '#e2e8f0');
+          const _ftRevive = FT_SKELETON_REVIVED(enemy.reviveCount!); this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, _ftRevive.text, _ftRevive.color);
           this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 16, '#e2e8f0');
         }
         return;
@@ -5330,7 +5432,7 @@ export class GameEngine {
           enemy.suckCooldown--;
           if (enemy.suckCooldown <= 0) {
             enemy.suckTimer = 150;
-            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'LEVIATHAN VORTEX CAST! 🌀🐳', '#0ea5e9');
+            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, FT_LEVIATHAN_VORTEX.text, FT_LEVIATHAN_VORTEX.color);
             soundService.playShoot();
           }
 
@@ -5434,7 +5536,7 @@ export class GameEngine {
               type: 'alien_laser' as any,
               life: 60
             } as any);
-            this.addFloatingText(enemy.x, enemy.y - 15, 'HOMING LASER FIRED! 🛸', '#a855f7');
+            this.addFloatingText(enemy.x, enemy.y - 15, FT_HOMING_LASER.text, FT_HOMING_LASER.color);
           }
         }
       } else if (enemy.type === 'giant_wisp') {
@@ -5493,7 +5595,7 @@ export class GameEngine {
           enemy.wispDetonationTimer = 120;
           enemy.hp = 1;
           soundService.playShoot();
-          this.addFloatingText(cx, cy - 20, 'SUPERNOVA DETONATION IN 2s! 💥💥', '#ef4444');
+          this.addFloatingText(cx, cy - 20, FT_SUPERNOVA_DETONATION.text, FT_SUPERNOVA_DETONATION.color);
         }
 
         if (enemy.wispDetonating) {
@@ -5508,7 +5610,7 @@ export class GameEngine {
             const distToPlayer = Math.hypot(pxMid - cx, pyMid - cy);
             if (distToPlayer <= 400 && this.pHP > 0) {
               this.handlePlayerHit(50, cx);
-              this.addFloatingText(pxMid, this.py - 20, 'SUPERNOVA EXPLOSION -50 HP! 💥☄️', '#ef4444');
+              this.addFloatingText(pxMid, this.py - 20, FT_SUPERNOVA_EXPLOSION.text, FT_SUPERNOVA_EXPLOSION.color);
             }
 
             this.screenShake = 35;
@@ -5549,7 +5651,7 @@ export class GameEngine {
             if (inOval) {
               const pulseDmg = Math.floor(this.stats.attack * 1.2) + Math.floor((e.maxHp || 100) * 0.03);
               this.damageEnemy(e, pulseDmg);
-              this.addFloatingText(ex, e.y - 15, `PULSE -${pulseDmg} HP! 🌀`, '#c084fc');
+              const _ftPulse = FT_PULSE_DAMAGE(pulseDmg); this.addFloatingText(ex, e.y - 15, _ftPulse.text, _ftPulse.color);
               this.spawnDustParticles(ex, ey, 10, '#c084fc');
             }
           });
@@ -5586,7 +5688,7 @@ export class GameEngine {
             if (Math.hypot(ex - bhX, ey - bhY) <= 150) {
               const bhDmg = Math.floor(this.stats.attack * 1.2) + Math.floor((e.maxHp || 100) * 0.02);
               this.damageEnemy(e, bhDmg);
-              this.addFloatingText(ex, e.y - 15, `⚫ SINGULARITY -${bhDmg} HP! 🕳️`, '#e879f9');
+              const _ftSing = FT_SINGULARITY_DAMAGE(bhDmg); this.addFloatingText(ex, e.y - 15, _ftSing.text, _ftSing.color);
               // Spiral-inward death particles for each enemy hit
               for (let p = 0; p < 10; p++) {
                 const ang = Math.random() * Math.PI * 2;
@@ -5819,7 +5921,7 @@ export class GameEngine {
           enemy.chargeCooldownTimer = 180;
           enemy.chargeTimer = 60;
           soundService.playJump();
-          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 25, 'GLADIATOR RUSH CHARGE! 🛡️💨', '#ef4444');
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 25, FT_GLADIATOR_RUSH.text, FT_GLADIATOR_RUSH.color);
         }
 
         if ((enemy.chargeTimer || 0) > 0) {
@@ -5871,7 +5973,7 @@ export class GameEngine {
           enemy.isLeaping = true;
           enemy.jumpCount = (enemy.jumpCount || 0) + 1;
           soundService.playJump();
-          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, `GORILLA LEAP! (${enemy.jumpCount}/3) 🦍`, '#f97316');
+          const _ftGorilla = FT_GORILLA_LEAP(enemy.jumpCount!); this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, _ftGorilla.text, _ftGorilla.color);
         }
 
         if (enemy.isLeaping && grounded) {
@@ -5903,10 +6005,10 @@ export class GameEngine {
                 if (this.playerStunCooldown <= 0) {
                   this.playerStunnedTimer = 120;
                   this.playerStunCooldown = 150;
-                  this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'SEISMIC GROUND SLAM! STUNNED 2s! 🦍💥', '#ef4444');
+                  this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_SEISMIC_GROUND_SLAM.text, FT_SEISMIC_GROUND_SLAM.color);
                 }
               } else {
-                this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'AIR DODGED STUN! 🦘✨', '#38bdf8');
+                this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_AIR_DODGED_STUN.text, FT_AIR_DODGED_STUN.color);
               }
             }
           } else {
@@ -5957,7 +6059,7 @@ export class GameEngine {
           if (this.playerStunCooldown <= 0) {
             this.playerStunnedTimer = 60;
             this.playerStunCooldown = 90;
-            this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'GLADIATOR RUSH STUN! STUNNED 1.0s! 🛡️💥', '#ef4444');
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_GLADIATOR_RUSH_STUN.text, FT_GLADIATOR_RUSH_STUN.color);
             soundService.playHit();
           }
         }
@@ -5995,7 +6097,7 @@ export class GameEngine {
 
         if (this.carpetBombingChannelTimer === 0) {
           soundService.playShoot();
-          this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, 'CARPET BOMBING FLAME BREATH! 🔥🌋', '#ef4444');
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_CARPET_BOMBING_FLAME.text, FT_CARPET_BOMBING_FLAME.color);
           this.screenShake = 40;
         }
       } else {
@@ -6114,7 +6216,7 @@ export class GameEngine {
 
             if (enemy.hp <= 0) {
               enemy.isBonePile = true;
-              this.addFloatingText(enemy.x, enemy.y - 15, 'DISINTEGRATED TO BONES! ⚡🦴', '#facc15');
+              this.addFloatingText(enemy.x, enemy.y - 15, FT_DISINTEGRATED_BONES.text, FT_DISINTEGRATED_BONES.color);
 
               for (let b = 0; b < 16; b++) {
                 this.particles.push({
@@ -6198,7 +6300,7 @@ export class GameEngine {
               this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.5));
               enemy.stunnedTimer = 45;
 
-              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'ECLIPSE MOONBEAM! 🌙⚡', '#93c5fd');
+              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, FT_ECLIPSE_MOONBEAM.text, FT_ECLIPSE_MOONBEAM.color);
 
               for (let p = 0; p < 35; p++) {
                 const pAng = Math.random() * Math.PI * 2;
@@ -6296,7 +6398,7 @@ export class GameEngine {
 
             if (distToBeam < 50) {
               this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.8)));
-              this.addFloatingText(ex, ey - 10, 'CELESTIAL TICK! ⚡', '#93c5fd');
+              this.addFloatingText(ex, ey - 10, FT_CELESTIAL_TICK.text, FT_CELESTIAL_TICK.color);
 
               // Impact explosion particles on enemy hit
               for (let hitP = 0; hitP < 8; hitP++) {
@@ -6383,7 +6485,7 @@ export class GameEngine {
             if (enemy.burnTickTimer % 15 === 0) {
               this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.6)));
               enemy.stunnedTimer = 12;
-              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'ELECTROCUTED! ⚡', '#06b6d4');
+              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_ELECTROCUTED.text, FT_ELECTROCUTED.color);
             }
           } else {
             enemy.burnTimer = 30;
@@ -6392,7 +6494,7 @@ export class GameEngine {
             enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
             if (enemy.burnTickTimer % 15 === 0) {
               this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.25)));
-              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, 'BURN! 🔥', '#ea580c');
+              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_BURN.text, FT_BURN.color);
             }
           }
         }
@@ -6486,7 +6588,7 @@ export class GameEngine {
           soundService.playHit();
 
           this.spawnDustParticles(tx, ty, 8, isRampage ? '#f97316' : '#38bdf8');
-          this.addFloatingText(tx, ty - 10, `${damage} 🦅`, isRampage ? '#f97316' : '#38bdf8');
+          const _ftBirdDmg = FT_BIRD_DAMAGE(damage, isRampage); this.addFloatingText(tx, ty - 10, _ftBirdDmg.text, _ftBirdDmg.color);
 
           this.birdState = 'returning';
           this.birdAttackCooldown = isRampage ? 10 : 40;
@@ -11650,7 +11752,7 @@ export class GameEngine {
 
       soundService.playHit();
       this.handlePlayerHit(4, x);
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'LANDMINE DETONATED! 💥', '#ef4444');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, FT_LANDMINE_DETONATED.text, FT_LANDMINE_DETONATED.color);
 
       for (let i = 0; i < 20; i++) {
         this.particles.push({

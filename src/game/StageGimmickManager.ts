@@ -1,4 +1,21 @@
 import { soundService } from '../services/sound';
+import {
+  FT_LAVA_BURN,
+  FT_ERUPTING_FIREBALL,
+  FT_FROSTBITE_SLOW,
+  FT_POISON_FOG,
+  FT_DIVINE_TB_STRIKE,
+  FT_DEVOURED_SKY_DRAGON,
+  FT_INFERNO_FIRE,
+  FT_TOXIC_DRAGON_POISON,
+  FT_GLACIAL_ICE_SLOW,
+  FT_CRUSHED_GIANT_METEOR,
+  FT_BOSS_METEOR_IMPACT,
+  FT_CRUSHED_BY_METEOR,
+  FT_DISSOLVED_ANTIMATTER,
+  FT_ANTIMATTER_DISINTEGRATED,
+  FT_COMET_BULLET_IMPACT,
+} from './FloatingTextMessages';
 
 const BOSS_TYPES = new Set([
   'miniboss',
@@ -199,7 +216,8 @@ export class StageGimmickManager {
       if (this.playerLavaBurnTimer % 60 === 0 && pHP > 0) {
         const burnDamage = Math.max(1, Math.floor(pMaxHP * 0.1));
         callbacks.onDamagePlayer(burnDamage, 'Lava Burn');
-        callbacks.addFloatingText(pxMid, py - 20, `LAVA BURN -${burnDamage} HP! 🔥`, '#ef4444');
+        const ftLavaBurn = FT_LAVA_BURN(burnDamage);
+        callbacks.addFloatingText(pxMid, py - 20, ftLavaBurn.text, ftLavaBurn.color);
         callbacks.spawnParticles(pxMid, pyMid, '#f97316', 8);
       }
     }
@@ -245,7 +263,7 @@ export class StageGimmickManager {
         if (dist < fb.radius + pWidth / 2 && pHP > 0) {
           callbacks.onDamagePlayer(12, 'Lava Fireball');
           this.playerLavaBurnTimer = 120;
-          callbacks.addFloatingText(pxMid, py - 24, 'ERUPTING FIREBALL BURN! 🔥', '#ef4444');
+          callbacks.addFloatingText(pxMid, py - 24, FT_ERUPTING_FIREBALL.text, FT_ERUPTING_FIREBALL.color);
           callbacks.spawnParticles(pxMid, pyMid, '#f97316', 20);
           soundService.playHit();
           this.lavaFireballs.splice(i, 1);
@@ -280,7 +298,7 @@ export class StageGimmickManager {
         if (dist < sf.size + pWidth / 2 && pHP > 0) {
           callbacks.onDamagePlayer(8, 'Falling Ice Spike');
           this.playerSlowTimer = 90;
-          callbacks.addFloatingText(pxMid, py - 20, 'FROSTBITE SLOW! 🧊❄️', '#38bdf8');
+          callbacks.addFloatingText(pxMid, py - 20, FT_FROSTBITE_SLOW.text, FT_FROSTBITE_SLOW.color);
           callbacks.spawnParticles(pxMid, pyMid, '#38bdf8', 15);
           soundService.playIceDeath();
           this.fallingSnowflakes.splice(i, 1);
@@ -327,7 +345,7 @@ export class StageGimmickManager {
           if (this.timerCount % 30 === 0) {
             callbacks.onDamagePlayer(6, 'Poison Fog');
             this.playerPoisonBlindTimer = 60;
-            callbacks.addFloatingText(pxMid, py - 20, 'POISON FOG BLINDNESS! ☠️👁️', '#a855f7');
+            callbacks.addFloatingText(pxMid, py - 20, FT_POISON_FOG.text, FT_POISON_FOG.color);
             callbacks.spawnParticles(pxMid, pyMid, '#c084fc', 12);
           }
         }
@@ -376,7 +394,7 @@ export class StageGimmickManager {
           // Player is hit anywhere within the lightning column
           if (Math.abs(pxMid - tb.x) < 48 && pHP > 0) {
             callbacks.onInstaKillPlayer('Divine Thunderbolt Strike');
-            callbacks.addFloatingText(pxMid, py - 20, 'DIVINE THUNDERBOLT STRIKE! ⚡💥', '#eab308');
+            callbacks.addFloatingText(pxMid, py - 20, FT_DIVINE_TB_STRIKE.text, FT_DIVINE_TB_STRIKE.color);
             soundService.playThunderboltDeath();
           }
 
@@ -485,7 +503,7 @@ export class StageGimmickManager {
           pHP > 0
         ) {
           callbacks.onInstaKillPlayer('Devoured by Giant Sky Dragon');
-          callbacks.addFloatingText(pxMid, py - 20, 'DEVOURED BY GIANT SKY DRAGON! 🐉💀', '#ef4444');
+          callbacks.addFloatingText(pxMid, py - 20, FT_DEVOURED_SKY_DRAGON.text, FT_DEVOURED_SKY_DRAGON.color);
           soundService.playHit();
         }
 
@@ -587,18 +605,19 @@ export class StageGimmickManager {
             if (this.timerCount % 60 === 0) {
               const burnDamage = Math.max(1, Math.floor(pMaxHP * 0.1));
               callbacks.onDamagePlayer(burnDamage, 'Sky Fire Dragon Inferno');
-              callbacks.addFloatingText(pxMid, py - 20, `INFERNO FIRE -${burnDamage} HP! 🔥`, '#ef4444');
+              const ftInferno = FT_INFERNO_FIRE(burnDamage);
+              callbacks.addFloatingText(pxMid, py - 20, ftInferno.text, ftInferno.color);
             }
           } else if (zone.type === 'poison') {
             if (this.timerCount % 60 === 0) {
               callbacks.onDamagePlayer(6, 'Sky Poison Dragon Acid');
-              callbacks.addFloatingText(pxMid, py - 20, 'TOXIC DRAGON POISON -6 HP! ☠️🧪', '#22c55e');
+              callbacks.addFloatingText(pxMid, py - 20, FT_TOXIC_DRAGON_POISON.text, FT_TOXIC_DRAGON_POISON.color);
             }
           } else if (zone.type === 'ice') {
             this.playerSlowTimer = 180;
             if (this.timerCount % 60 === 0) {
               callbacks.onDamagePlayer(5, 'Sky Ice Dragon Frost');
-              callbacks.addFloatingText(pxMid, py - 20, 'GLACIAL ICE SLOW! 🧊❄️', '#38bdf8');
+              callbacks.addFloatingText(pxMid, py - 20, FT_GLACIAL_ICE_SLOW.text, FT_GLACIAL_ICE_SLOW.color);
             }
           }
         }
@@ -658,7 +677,7 @@ export class StageGimmickManager {
           if (m.y >= m.targetY) {
             if (Math.abs(pxMid - m.targetX) < 48 && Math.abs(pyMid - m.targetY) < 48 && pHP > 0) {
               callbacks.onInstaKillPlayer('Crushed by Giant Falling Meteor');
-              callbacks.addFloatingText(pxMid, py - 20, 'CRUSHED BY GIANT METEOR! ☄️💥', '#ef4444');
+              callbacks.addFloatingText(pxMid, py - 20, FT_CRUSHED_GIANT_METEOR.text, FT_CRUSHED_GIANT_METEOR.color);
             }
 
             for (let c = m.c - 1; c <= m.c + 1; c++) {
@@ -681,11 +700,11 @@ export class StageGimmickManager {
                   if (enemy.type !== 'immortal_gladiator') {
                     enemy.stunTimer = 60;
                   }
-                  callbacks.addFloatingText(ex, enemy.y - 15, 'BOSS METEOR IMPACT -60 HP! ☄️💥', '#ef4444');
+                  callbacks.addFloatingText(ex, enemy.y - 15, FT_BOSS_METEOR_IMPACT.text, FT_BOSS_METEOR_IMPACT.color);
                   callbacks.spawnParticles(ex, ey, '#f97316', 10);
                 } else {
                   enemy.hp = 0;
-                  callbacks.addFloatingText(ex, enemy.y - 15, 'CRUSHED BY METEOR! ☄️💥', '#ef4444');
+                  callbacks.addFloatingText(ex, enemy.y - 15, FT_CRUSHED_BY_METEOR.text, FT_CRUSHED_BY_METEOR.color);
                   callbacks.spawnParticles(ex, ey, '#ef4444', 12);
                 }
               }
@@ -728,7 +747,7 @@ export class StageGimmickManager {
 
           if (dist < 32) {
             callbacks.onInstaKillPlayer('Disintegrated in Antimatter Field');
-            callbacks.addFloatingText(pxMid, py - 20, 'DISSOLVED IN ANTIMATTER FIELD! ⚛️💥', '#06b6d4');
+            callbacks.addFloatingText(pxMid, py - 20, FT_DISSOLVED_ANTIMATTER.text, FT_DISSOLVED_ANTIMATTER.color);
             soundService.playHit();
           }
         }
@@ -736,7 +755,7 @@ export class StageGimmickManager {
         enemies.forEach(e => {
           if (e.hp <= 0) return;
           const ex = e.x + e.width / 2;
-          const ey = e.y + e.height / 2;
+          const ey = e.y + e.width / 2;
           const edist = Math.hypot(ex - bh.x, ey - bh.y);
           if (edist <= bh.radius) {
             const pullSpd = 1.35;
@@ -745,7 +764,7 @@ export class StageGimmickManager {
 
             if (edist < 35) {
               e.hp = 0;
-              callbacks.addFloatingText(ex, ey - 20, 'ANTIMATTER DISINTEGRATED! ⚛️💥', '#06b6d4');
+              callbacks.addFloatingText(ex, ey - 20, FT_ANTIMATTER_DISINTEGRATED.text, FT_ANTIMATTER_DISINTEGRATED.color);
               callbacks.spawnParticles(ex, ey, '#06b6d4', 15);
               callbacks.spawnParticles(ex, ey, '#e879f9', 15);
             }
@@ -783,7 +802,7 @@ export class StageGimmickManager {
         const dist = Math.hypot(comet.x - pxMid, comet.y - pyMid);
         if (dist < comet.radius + pWidth / 2 && pHP > 0) {
           callbacks.onDamagePlayer(15, 'Space Comet Impact');
-          callbacks.addFloatingText(pxMid, py - 24, 'COMET BULLET IMPACT -15 HP! ☄️💥', '#ef4444');
+          callbacks.addFloatingText(pxMid, py - 24, FT_COMET_BULLET_IMPACT.text, FT_COMET_BULLET_IMPACT.color);
           callbacks.spawnParticles(pxMid, pyMid, '#c084fc', 18);
           soundService.playHit();
           this.spaceComets.splice(i, 1);
