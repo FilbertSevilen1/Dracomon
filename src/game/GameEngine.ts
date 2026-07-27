@@ -1,4 +1,4 @@
-﻿import { PlayerStats, InventoryItem } from '../types/game';
+import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
@@ -1015,7 +1015,21 @@ export class GameEngine {
     if (this.isDemoMode) return;
     window.addEventListener('keydown', this.handleKeyDown);
     window.addEventListener('keyup', this.handleKeyUp);
+    window.addEventListener('blur', this.handleBlur);
+    document.addEventListener('visibilitychange', this.handleVisibilityChange);
   }
+
+  private handleBlur = () => {
+    this.keys = {};
+  };
+
+  private handleVisibilityChange = () => {
+    if (document.hidden) {
+      this.keys = {};
+    } else {
+      this.lastTime = performance.now();
+    }
+  };
 
   private handleKeyDown = (e: KeyboardEvent) => {
     const key = e.key.toLowerCase();
@@ -11421,16 +11435,28 @@ export class GameEngine {
   private run = (timestamp?: number) => {
     if (this.isPaused) return;
 
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
+
     this.animationFrameId = requestAnimationFrame(this.run);
 
     const now = timestamp || performance.now();
+
+    if (!this.lastTime || now < this.lastTime) {
+      this.lastTime = now;
+      return;
+    }
+
     const elapsed = now - this.lastTime;
 
     if (elapsed < this.frameInterval - 1) {
       return;
     }
 
-    if (elapsed > 1000) {
+    // Reset lastTime if lag spike/tab switch > 100ms to prevent burst catch-up speed ticks
+    if (elapsed > 100) {
       this.lastTime = now;
     } else {
       this.lastTime = now - (elapsed % this.frameInterval);
@@ -11704,7 +11730,7 @@ export class GameEngine {
 
   public pause() {
     this.isPaused = true;
-    if (this.animationFrameId) {
+    if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
@@ -11713,6 +11739,10 @@ export class GameEngine {
   public resume() {
     if (!this.isPaused) return;
     this.isPaused = false;
+    if (this.animationFrameId !== null) {
+      cancelAnimationFrame(this.animationFrameId);
+      this.animationFrameId = null;
+    }
     this.lastTime = performance.now();
     this.run();
   }
@@ -11722,6 +11752,8 @@ export class GameEngine {
     if (!this.isDemoMode) {
       window.removeEventListener('keydown', this.handleKeyDown);
       window.removeEventListener('keyup', this.handleKeyUp);
+      window.removeEventListener('blur', this.handleBlur);
+      document.removeEventListener('visibilitychange', this.handleVisibilityChange);
     }
   }
 
