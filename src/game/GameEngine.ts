@@ -1,4 +1,4 @@
-import { PlayerStats, InventoryItem } from '../types/game';
+﻿import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
@@ -233,6 +233,7 @@ export class GameEngine {
 
   private animationFrameId: number | null = null;
   private lastTime = 0;
+  private accumulator = 0;
   private isPaused = false;
   private targetFps = 60;
   private frameInterval = 1000 / 60;
@@ -2515,17 +2516,17 @@ export class GameEngine {
       this.thundermonUltTimer = Math.max(65, validEnemies.length * delayPerHit + 45);
     }
     else if (this.selectedDraco === 'Enigmon') {
-      soundService.playBlackHoleActivation(this.isDemoMode);
+      soundService.playBlackHoleActivation();
       const targetBlackHoleX = Math.max(100, this.px + this.pFacing * 300);
       const targetBlackHoleY = this.py + this.pHeight / 2;
 
       this.isChanneling = true;
       this.channelingSpell = 'black_hole';
-      this.channelingTimer = 180;
-      this.channelingMaxDuration = 180;
+      this.channelingTimer = 240;
+      this.channelingMaxDuration = 240;
 
       (this as any).enigmonBlackHoleActive = true;
-      (this as any).enigmonBlackHoleTimer = 180;
+      (this as any).enigmonBlackHoleTimer = 240;
       (this as any).enigmonBlackHoleX = targetBlackHoleX;
       (this as any).enigmonBlackHoleY = targetBlackHoleY;
 
@@ -4306,90 +4307,90 @@ export class GameEngine {
             });
           }
         } else if (themeType === 'temple') {
-        soundService.playThunderboltDeath();
-        this.electrocutionDeathTimer = 90;
-        this.pvx = 0;
-        this.pvy = 0;
-        this.screenShake = 35;
-        this.addFloatingText(pxMid, this.py - 20, FT_THUNDERSTRUCK.text, FT_THUNDERSTRUCK.color);
+          soundService.playThunderboltDeath();
+          this.electrocutionDeathTimer = 90;
+          this.pvx = 0;
+          this.pvy = 0;
+          this.screenShake = 35;
+          this.addFloatingText(pxMid, this.py - 20, FT_THUNDERSTRUCK.text, FT_THUNDERSTRUCK.color);
 
-        for (let i = 0; i < 30; i++) {
-          this.particles.push({
-            x: pxMid + (Math.random() - 0.5) * 40,
-            y: pyFeet,
-            vx: (Math.random() - 0.5) * 6,
-            vy: -Math.random() * 8 - 2,
-            size: Math.random() * 8 + 4,
-            color: i % 3 === 0 ? '#fef08a' : i % 3 === 1 ? '#eab308' : '#38bdf8',
-            life: 35,
-            maxLife: 35
-          });
-        }
-      } else if (themeType === 'ice') {
-        soundService.playIceDeath();
-        this.frozenDeathTimer = 999999;
-        this.pvx = 0;
-        this.pvy = 0;
-        this.addFloatingText(pxMid, this.py - 20, FT_ABSOLUTE_FROZEN.text, FT_ABSOLUTE_FROZEN.color);
+          for (let i = 0; i < 30; i++) {
+            this.particles.push({
+              x: pxMid + (Math.random() - 0.5) * 40,
+              y: pyFeet,
+              vx: (Math.random() - 0.5) * 6,
+              vy: -Math.random() * 8 - 2,
+              size: Math.random() * 8 + 4,
+              color: i % 3 === 0 ? '#fef08a' : i % 3 === 1 ? '#eab308' : '#38bdf8',
+              life: 35,
+              maxLife: 35
+            });
+          }
+        } else if (themeType === 'ice') {
+          soundService.playIceDeath();
+          this.frozenDeathTimer = 999999;
+          this.pvx = 0;
+          this.pvy = 0;
+          this.addFloatingText(pxMid, this.py - 20, FT_ABSOLUTE_FROZEN.text, FT_ABSOLUTE_FROZEN.color);
 
-        for (let i = 0; i < 25; i++) {
-          this.particles.push({
-            x: pxMid + (Math.random() - 0.5) * 30,
-            y: pyFeet,
-            vx: (Math.random() - 0.5) * 5,
-            vy: -Math.random() * 6 - 2,
-            size: Math.random() * 8 + 4,
-            color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#7dd3fc' : '#38bdf8',
-            life: 30,
-            maxLife: 30
-          });
-        }
+          for (let i = 0; i < 25; i++) {
+            this.particles.push({
+              x: pxMid + (Math.random() - 0.5) * 30,
+              y: pyFeet,
+              vx: (Math.random() - 0.5) * 5,
+              vy: -Math.random() * 6 - 2,
+              size: Math.random() * 8 + 4,
+              color: i % 3 === 0 ? '#ffffff' : i % 3 === 1 ? '#7dd3fc' : '#38bdf8',
+              life: 30,
+              maxLife: 30
+            });
+          }
 
-        setTimeout(() => {
-          this.callbacks.onPlayerDeath();
-        }, 1000);
-      } else if (themeType === 'space') {
-        soundService.playHit();
-        this.antimatterDeathTimer = 90;
-        this.pvx = 0;
-        this.pvy = 0;
-        this.screenShake = 30;
-        this.addFloatingText(pxMid, this.py - 20, FT_DISSOLVED_ANTIMATTER.text, FT_DISSOLVED_ANTIMATTER.color);
+          setTimeout(() => {
+            this.callbacks.onPlayerDeath();
+          }, 1000);
+        } else if (themeType === 'space') {
+          soundService.playHit();
+          this.antimatterDeathTimer = 90;
+          this.pvx = 0;
+          this.pvy = 0;
+          this.screenShake = 30;
+          this.addFloatingText(pxMid, this.py - 20, FT_DISSOLVED_ANTIMATTER.text, FT_DISSOLVED_ANTIMATTER.color);
 
-        for (let i = 0; i < 30; i++) {
-          const ang = Math.random() * Math.PI * 2;
-          const spd = Math.random() * 6 + 2;
-          this.particles.push({
-            x: pxMid + (Math.random() - 0.5) * 20,
-            y: pyFeet - Math.random() * this.pHeight,
-            vx: Math.cos(ang) * spd,
-            vy: Math.sin(ang) * spd - 2,
-            size: Math.random() * 7 + 3,
-            color: i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#e879f9' : '#a5f3fc',
-            life: 35,
-            maxLife: 35
-          });
-        }
-      } else {
-        soundService.playLavaDeath();
-        this.skeletonDeathTimer = 90;
-        this.addFloatingText(pxMid, this.py - 20, FT_MOLTEN_LAVA_MELTED.text, FT_MOLTEN_LAVA_MELTED.color);
+          for (let i = 0; i < 30; i++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 6 + 2;
+            this.particles.push({
+              x: pxMid + (Math.random() - 0.5) * 20,
+              y: pyFeet - Math.random() * this.pHeight,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd - 2,
+              size: Math.random() * 7 + 3,
+              color: i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#e879f9' : '#a5f3fc',
+              life: 35,
+              maxLife: 35
+            });
+          }
+        } else {
+          soundService.playLavaDeath();
+          this.skeletonDeathTimer = 90;
+          this.addFloatingText(pxMid, this.py - 20, FT_MOLTEN_LAVA_MELTED.text, FT_MOLTEN_LAVA_MELTED.color);
 
-        for (let i = 0; i < 25; i++) {
-          this.particles.push({
-            x: pxMid + (Math.random() - 0.5) * 30,
-            y: pyFeet,
-            vx: (Math.random() - 0.5) * 5,
-            vy: -Math.random() * 6 - 2,
-            size: Math.random() * 8 + 4,
-            color: i % 3 === 0 ? '#fef08a' : i % 3 === 1 ? '#f97316' : '#ef4444',
-            life: 30,
-            maxLife: 30
-          });
+          for (let i = 0; i < 25; i++) {
+            this.particles.push({
+              x: pxMid + (Math.random() - 0.5) * 30,
+              y: pyFeet,
+              vx: (Math.random() - 0.5) * 5,
+              vy: -Math.random() * 6 - 2,
+              size: Math.random() * 8 + 4,
+              color: i % 3 === 0 ? '#fef08a' : i % 3 === 1 ? '#f97316' : '#ef4444',
+              life: 30,
+              maxLife: 30
+            });
+          }
         }
       }
     }
-  }
 
     stageGimmickManager.update(
       this.level.theme.type,
@@ -5672,111 +5673,7 @@ export class GameEngine {
         }
       }
 
-      if ((this as any).enigmonBlackHoleActive && (this as any).enigmonBlackHoleTimer > 0) {
-        (this as any).enigmonBlackHoleTimer--;
-        const bhX = (this as any).enigmonBlackHoleX;
-        const bhY = (this as any).enigmonBlackHoleY;
 
-        this.enemies.forEach(e => {
-          if (e.hp <= 0) return;
-          const ex = e.x + e.width / 2;
-          const ey = e.y + e.height / 2;
-          const dx = bhX - ex;
-          const dy = bhY - ey;
-          const dist = Math.hypot(dx, dy);
-
-          if (dist <= 150) {
-            const pullSpeed = 1.33;
-            e.x += (dx / dist) * pullSpeed;
-            e.y += (dy / dist) * pullSpeed;
-            e.stunnedTimer = 30;
-          }
-        });
-
-        if ((this as any).enigmonBlackHoleTimer % 30 === 0) {
-          soundService.playBlackHolePulse(this.isDemoMode);
-          this.enemies.forEach(e => {
-            if (e.hp <= 0) return;
-            const ex = e.x + e.width / 2;
-            const ey = e.y + e.height / 2;
-            if (Math.hypot(ex - bhX, ey - bhY) <= 150) {
-              const bhDmg = Math.floor(this.stats.attack * 1.2) + Math.floor((e.maxHp || 100) * 0.02);
-              this.damageEnemy(e, bhDmg);
-              const _ftSing = FT_SINGULARITY_DAMAGE(bhDmg); this.addFloatingText(ex, e.y - 15, _ftSing.text, _ftSing.color);
-              // Spiral-inward death particles for each enemy hit
-              for (let p = 0; p < 10; p++) {
-                const ang = Math.random() * Math.PI * 2;
-                const dist2 = Math.hypot(ex - bhX, ey - bhY);
-                this.particles.push({
-                  x: ex + Math.cos(ang) * 12,
-                  y: ey + Math.sin(ang) * 12,
-                  vx: ((bhX - ex) / dist2) * (4 + Math.random() * 4),
-                  vy: ((bhY - ey) / dist2) * (4 + Math.random() * 4),
-                  size: Math.random() * 6 + 2,
-                  color: p % 2 === 0 ? '#e879f9' : '#c084fc',
-                  life: 18,
-                  maxLife: 18
-                });
-              }
-            }
-          });
-          // Gravitational wave ring pulse
-          this.screenShake = Math.max(this.screenShake, 8);
-        }
-
-        // Continuous spiral matter-stream particles
-        if (this.frameCount % 4 === 0) {
-          const streamAng = this.frameCount * 0.22;
-          for (let arm = 0; arm < 2; arm++) {
-            const armAng = streamAng + arm * Math.PI;
-            const startR = 130 + Math.sin(this.frameCount * 0.08 + arm) * 20;
-            const sx = bhX + Math.cos(armAng) * startR;
-            const sy = bhY + Math.sin(armAng) * startR * 0.6;
-            const dist3 = Math.hypot(sx - bhX, sy - bhY);
-            if (dist3 > 1) {
-              this.particles.push({
-                x: sx,
-                y: sy,
-                vx: ((bhX - sx) / dist3) * 5.5 - Math.sin(armAng) * 2.2,
-                vy: ((bhY - sy) / dist3) * 5.5 + Math.cos(armAng) * 2.2,
-                size: Math.random() * 5 + 2,
-                color: arm === 0 ? '#e879f9' : '#c084fc',
-                life: 12,
-                maxLife: 12
-              });
-            }
-          }
-        }
-
-        stageGimmickManager.clearHazardsNear(bhX, bhY, 150);
-
-        if (this.frameCount % 5 === 0) {
-          const grid = this.getActiveGrid();
-          if (grid.length > 0) {
-            const centerR = Math.floor(bhY / ts);
-            const centerC = Math.floor(bhX / ts);
-            const radiusTiles = Math.floor(150 / ts);
-
-            for (let r = Math.max(0, centerR - radiusTiles); r <= Math.min(grid.length - 1, centerR + radiusTiles); r++) {
-              for (let c = Math.max(0, centerC - radiusTiles); c <= Math.min((grid[r]?.length || 0) - 1, centerC + radiusTiles); c++) {
-                const tileX = c * ts + ts / 2;
-                const tileY = r * ts + ts / 2;
-                if (Math.hypot(tileX - bhX, tileY - bhY) <= 150) {
-                  const char = grid[r][c];
-                  if (char === '#' || char === '=' || char === 'H' || char === '*') {
-                    let isPortalFloor = false;
-                    if (r > 0 && grid[r - 1] && grid[r - 1][c] === 'P') isPortalFloor = true;
-                    if (!isPortalFloor) {
-                      this.setGridTile(r, c, '.');
-                      this.spawnDustParticles(tileX, tileY, 6, '#c084fc');
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
 
       if (
         enemy.type === 'goblin_archer' ||
@@ -6079,6 +5976,143 @@ export class GameEngine {
         }
       }
     });
+
+    if ((this as any).enigmonBlackHoleActive && (this as any).enigmonBlackHoleTimer > 0) {
+      (this as any).enigmonBlackHoleTimer--;
+      const bhX = (this as any).enigmonBlackHoleX;
+      const bhY = (this as any).enigmonBlackHoleY;
+      const bhTimer = (this as any).enigmonBlackHoleTimer as number;
+      const totalDuration = 240;
+      const ts = this.level.tileSize;
+
+      const outerSuckRadius = 450; // 300px more outer suck zone (150 + 300 = 450)
+      const innerRadius = 150;
+
+      this.enemies.forEach(e => {
+        if (e.hp <= 0) return;
+        const ex = e.x + e.width / 2;
+        const ey = e.y + e.height / 2;
+        const dx = bhX - ex;
+        const dy = bhY - ey;
+        const dist = Math.hypot(dx, dy);
+
+        if (dist <= outerSuckRadius && dist > 0) {
+          const isBoss = this.isBossType(e.type);
+          let pullSpeed = 0;
+          if (dist <= innerRadius) {
+            pullSpeed = isBoss ? 3.0 : 7.5; // Strong inner singularity pull
+          } else {
+            const pullFactor = 1 - (dist - innerRadius) / (outerSuckRadius - innerRadius);
+            pullSpeed = (isBoss ? 1.5 : 3.0) + pullFactor * (isBoss ? 2.5 : 4.5); // Smoothly pulls distant enemies in
+          }
+
+          // Directly move enemy towards Black Hole center
+          e.x += (dx / dist) * pullSpeed;
+          e.y += (dy / dist) * pullSpeed;
+
+          // Override enemy velocity so gravitational pull overpowers regular AI movement
+          e.vx = (dx / dist) * pullSpeed * 0.6;
+          e.vy = (dy / dist) * pullSpeed * 0.6;
+        }
+      });
+
+      if (bhTimer % 30 === 0) {
+        soundService.playBlackHolePulse(this.isDemoMode);
+
+        // Ramped damage scaling over duration (0s to 4s)
+        const channelProgress = Math.min(1.0, Math.max(0, (totalDuration - bhTimer) / totalDuration));
+        const rampMultiplier = 0.35 + 1.15 * channelProgress; // 0.35x -> 1.50x over 4 seconds
+
+        this.enemies.forEach(e => {
+          if (e.hp <= 0) return;
+          const ex = e.x + e.width / 2;
+          const ey = e.y + e.height / 2;
+          const dist = Math.hypot(ex - bhX, ey - bhY);
+
+          if (dist <= innerRadius + 40) {
+            const isBoss = this.isBossType(e.type);
+            // Bosses take reduced flat % damage per pulse (0.4% vs 2.0%) to prevent instant melting
+            const maxHpRatio = isBoss ? 0.004 : 0.02;
+            const baseDmg = Math.floor(this.stats.attack * (isBoss ? 0.75 : 1.2) * rampMultiplier);
+            const maxHpDmg = Math.floor((e.maxHp || 100) * maxHpRatio * rampMultiplier);
+            const bhDmg = Math.max(1, baseDmg + maxHpDmg);
+
+            this.damageEnemy(e, bhDmg);
+            const _ftSing = FT_SINGULARITY_DAMAGE(bhDmg); this.addFloatingText(ex, e.y - 15, _ftSing.text, _ftSing.color);
+            // Spiral-inward death particles for each enemy hit
+            for (let p = 0; p < 10; p++) {
+              const ang = Math.random() * Math.PI * 2;
+              const dist2 = Math.hypot(ex - bhX, ey - bhY) || 1;
+              this.particles.push({
+                x: ex + Math.cos(ang) * 12,
+                y: ey + Math.sin(ang) * 12,
+                vx: ((bhX - ex) / dist2) * (4 + Math.random() * 4),
+                vy: ((bhY - ey) / dist2) * (4 + Math.random() * 4),
+                size: Math.random() * 6 + 2,
+                color: p % 2 === 0 ? '#e879f9' : '#c084fc',
+                life: 18,
+                maxLife: 18
+              });
+            }
+          }
+        });
+        // Gravitational wave ring pulse
+        this.screenShake = Math.max(this.screenShake, 8);
+      }
+
+      // Continuous spiral matter-stream particles
+      if (this.frameCount % 4 === 0) {
+        const streamAng = this.frameCount * 0.22;
+        for (let arm = 0; arm < 2; arm++) {
+          const armAng = streamAng + arm * Math.PI;
+          const startR = 130 + Math.sin(this.frameCount * 0.08 + arm) * 20;
+          const sx = bhX + Math.cos(armAng) * startR;
+          const sy = bhY + Math.sin(armAng) * startR * 0.6;
+          const dist3 = Math.hypot(sx - bhX, sy - bhY);
+          if (dist3 > 1) {
+            this.particles.push({
+              x: sx,
+              y: sy,
+              vx: ((bhX - sx) / dist3) * 5.5 - Math.sin(armAng) * 2.2,
+              vy: ((bhY - sy) / dist3) * 5.5 + Math.cos(armAng) * 2.2,
+              size: Math.random() * 5 + 2,
+              color: arm === 0 ? '#e879f9' : '#c084fc',
+              life: 12,
+              maxLife: 12
+            });
+          }
+        }
+      }
+
+      stageGimmickManager.clearHazardsNear(bhX, bhY, 150);
+
+      if (this.frameCount % 5 === 0) {
+        const grid = this.getActiveGrid();
+        if (grid.length > 0) {
+          const centerR = Math.floor(bhY / ts);
+          const centerC = Math.floor(bhX / ts);
+          const radiusTiles = Math.floor(150 / ts);
+
+          for (let r = Math.max(0, centerR - radiusTiles); r <= Math.min(grid.length - 1, centerR + radiusTiles); r++) {
+            for (let c = Math.max(0, centerC - radiusTiles); c <= Math.min((grid[r]?.length || 0) - 1, centerC + radiusTiles); c++) {
+              const tileX = c * ts + ts / 2;
+              const tileY = r * ts + ts / 2;
+              if (Math.hypot(tileX - bhX, tileY - bhY) <= 150) {
+                const char = grid[r][c];
+                if (char === '#' || char === '=' || char === 'H' || char === '*') {
+                  let isPortalFloor = false;
+                  if (r > 0 && grid[r - 1] && grid[r - 1][c] === 'P') isPortalFloor = true;
+                  if (!isPortalFloor) {
+                    this.setGridTile(r, c, '.');
+                    this.spawnDustParticles(tileX, tileY, 6, '#c084fc');
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
 
     if (this.carpetBombingActive) {
       this.pInvulnerableFrames = 180;
@@ -9045,9 +9079,9 @@ export class GameEngine {
         const bhX = (this as any).enigmonBlackHoleX || (this.px + this.pFacing * 400);
         const bhY = (this as any).enigmonBlackHoleY || (this.py + this.pHeight / 2);
         const coreRadius = 38;
-        const pullRadius = 150;
+        const pullRadius = 450;
         const bhTimer = (this as any).enigmonBlackHoleTimer as number;
-        const bhLife = 180;
+        const bhLife = 240;
         // Fade-in on first 18 frames, fade-out on last 24
         const lifeAlpha = Math.min(1, Math.min(bhTimer / 24, (bhLife - bhTimer + 1) / 18));
         const pulse = Math.sin(this.frameCount * 0.18) * 0.12 + 0.88;
@@ -9093,13 +9127,13 @@ export class GameEngine {
         this.ctx.save();
         const diskR = coreRadius * 2.4 * pulse;
         const diskGrad = this.ctx.createLinearGradient(bhX - diskR, bhY, bhX + diskR, bhY);
-        diskGrad.addColorStop(0,   `rgba(232, 121, 249, ${lifeAlpha * 0.0})`);
+        diskGrad.addColorStop(0, `rgba(232, 121, 249, ${lifeAlpha * 0.0})`);
         diskGrad.addColorStop(0.2, `rgba(232, 121, 249, ${lifeAlpha * 0.75})`);
-        diskGrad.addColorStop(0.38,`rgba(255, 220, 255, ${lifeAlpha * 0.95})`);
+        diskGrad.addColorStop(0.38, `rgba(255, 220, 255, ${lifeAlpha * 0.95})`);
         diskGrad.addColorStop(0.5, `rgba(192, 132, 252, ${lifeAlpha * 0.70})`);
-        diskGrad.addColorStop(0.62,`rgba(255, 220, 255, ${lifeAlpha * 0.95})`);
+        diskGrad.addColorStop(0.62, `rgba(255, 220, 255, ${lifeAlpha * 0.95})`);
         diskGrad.addColorStop(0.8, `rgba(232, 121, 249, ${lifeAlpha * 0.75})`);
-        diskGrad.addColorStop(1,   `rgba(232, 121, 249, ${lifeAlpha * 0.0})`);
+        diskGrad.addColorStop(1, `rgba(232, 121, 249, ${lifeAlpha * 0.0})`);
         this.ctx.fillStyle = diskGrad;
         this.ctx.beginPath();
         this.ctx.ellipse(bhX, bhY, diskR, diskR * 0.18, this.frameCount * 0.005, 0, Math.PI * 2);
@@ -11432,7 +11466,7 @@ export class GameEngine {
     }
   }
 
-  private run = (timestamp?: number) => {
+  private run = () => {
     if (this.isPaused) return;
 
     if (this.animationFrameId !== null) {
@@ -11442,26 +11476,41 @@ export class GameEngine {
 
     this.animationFrameId = requestAnimationFrame(this.run);
 
-    const now = timestamp || performance.now();
+    const now = performance.now();
 
-    if (!this.lastTime || now < this.lastTime) {
+    if (!this.lastTime) {
       this.lastTime = now;
       return;
     }
 
-    const elapsed = now - this.lastTime;
+    let elapsed = now - this.lastTime;
+    this.lastTime = now;
 
-    if (elapsed < this.frameInterval - 1) {
-      return;
+    // Reset accumulator & cap elapsed if lag spike/tab switch/large delay > 100ms
+    if (elapsed > 100 || elapsed < 0) {
+      elapsed = this.frameInterval;
+      this.accumulator = 0;
     }
 
-    // Reset lastTime if lag spike/tab switch > 100ms to prevent burst catch-up speed ticks
-    if (elapsed > 100) {
-      this.lastTime = now;
-    } else {
-      this.lastTime = now - (elapsed % this.frameInterval);
+    this.accumulator += elapsed;
+
+    // Execute at most 2 physics updates per RAF frame to strictly prevent hyper-speed catchup acceleration
+    let updates = 0;
+    while (this.accumulator >= this.frameInterval && updates < 2) {
+      this.updateGameLogic();
+      this.accumulator -= this.frameInterval;
+      updates++;
     }
 
+    // Clear excess accumulator remainder if lagging to keep game speed locked strictly at 60 FPS
+    if (this.accumulator > this.frameInterval * 2) {
+      this.accumulator = 0;
+    }
+
+    this.draw();
+  };
+
+  private updateGameLogic() {
     this.frameCount++;
 
     if (this.ultimateCinematicActive) {
@@ -11486,8 +11535,6 @@ export class GameEngine {
         this.ultimateCinematicActive = false;
         this.unleashUltimate();
       }
-
-      this.draw();
       return;
     }
 
@@ -11724,12 +11771,11 @@ export class GameEngine {
       this.cameraX = Math.max(0, Math.min(this.levelWidth - this.canvas.width, this.cameraX));
       this.cameraY = 0;
     }
-
-    this.draw();
-  };
+  }
 
   public pause() {
     this.isPaused = true;
+    this.accumulator = 0;
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
@@ -11743,6 +11789,7 @@ export class GameEngine {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;
     }
+    this.accumulator = 0;
     this.lastTime = performance.now();
     this.run();
   }
