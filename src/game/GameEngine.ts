@@ -1,4 +1,4 @@
-import { PlayerStats, InventoryItem } from '../types/game';
+﻿import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
@@ -912,7 +912,7 @@ export class GameEngine {
             attack: 30,
             defense: 22,
             facing: -1,
-            shootCooldown: 60,
+            shootCooldown: 90,
             state: 'patrol',
             animFrame: 0,
             name: 'PRIMORDIAL DRAGON KING'
