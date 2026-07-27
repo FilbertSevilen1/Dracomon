@@ -6031,9 +6031,8 @@ export class GameEngine {
 
           if (dist <= innerRadius + 40) {
             const isBoss = this.isBossType(e.type);
-            // Bosses take reduced flat % damage per pulse (0.4% vs 2.0%) to prevent instant melting
-            const maxHpRatio = isBoss ? 0.004 : 0.02;
-            const baseDmg = Math.floor(this.stats.attack * (isBoss ? 0.75 : 1.2) * rampMultiplier);
+            const maxHpRatio = isBoss ? 0.016 : 0.02;
+            const baseDmg = Math.floor(this.stats.attack * (isBoss ? 4 : 5) * rampMultiplier);
             const maxHpDmg = Math.floor((e.maxHp || 100) * maxHpRatio * rampMultiplier);
             const bhDmg = Math.max(1, baseDmg + maxHpDmg);
 
