@@ -526,14 +526,13 @@ export function useGameState() {
 
   const markStageCleared = useCallback((stageNum: number) => {
     updateSaveState(prev => {
-      const currentCompleted = prev.completedStages || [1];
-      const nextStages = new Set([...currentCompleted, stageNum, stageNum + 1]);
+      const currentCompleted = prev.completedStages || [];
+      const nextStages = new Set([...currentCompleted, stageNum]);
       return {
         ...prev,
         completedStages: Array.from(nextStages)
       };
     });
-
   }, [updateSaveState]);
 
   return {

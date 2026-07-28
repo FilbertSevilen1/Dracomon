@@ -31,9 +31,23 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.2.3',
+    date: 'July 29, 2026',
+    tag: 'Live Fullscreen Roster & Map Bug Fixes (Current)',
+    badgeColor: 'bg-rose-600 text-white font-black shadow-sm',
+    summary: 'Upgrades the landing page Hero section to a gorgeous, full-screen background canvas displaying all 12 Dracos executing skills and ultimates on floating platforms. Adds a premium stats & roster control card on the right. Fixes the level selection bug where Stage 2 would remain unlocked after resetting progress.',
+    highlights: [
+      'Full-Screen Live Background: Upgraded the Hero landing section to a full-screen background experience featuring all 12 Dracos in a single battle simulation.',
+      'Wandering & Casting Actions: All 12 companions walk, double jump, and execute their signature and ultimate spells against slimes with text and particle feedback.',
+      'Premium Roster Card: Replaced the duplicate demo canvas in the right column with a sleek glassmorphism stats panel displaying active Draco lore and HP, ATK, DEF, and SPD attributes.',
+      'Campaign Unlock Bug Fixed: Corrected the stage completion logic to properly lock subsequent stages after a progress reset.',
+      'Stable Webpack Server: Updated the local development script to utilize webpack, preventing fatal Rust Turbopack panics on Windows.',
+    ],
+  },
+  {
     version: '0.2.2',
     date: 'July 26, 2026',
-    tag: 'New Hero - Lunarmon! (Current)',
+    tag: 'New Hero - Lunarmon!',
     badgeColor: 'bg-indigo-600 text-white font-black shadow-sm',
     summary: 'Introduces new Lunar hero Lunarmon featuring Crescent Moon energy beam basic attack (800px range), Moonbeam strike skill (mini-stun, damage, energy gain), and Lunar Eclipse ultimate with sky eclipse animation, screen-wide bombardment (1200px), and a 3-second controllable radial giant beam (A/D rotation).',
     highlights: [
@@ -298,7 +312,7 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  const [openVersion, setOpenVersion] = useState<string | null>('0.2.2');
+  const [openVersion, setOpenVersion] = useState<string | null>('0.2.3');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();
