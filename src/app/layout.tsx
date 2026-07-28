@@ -9,7 +9,7 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Dracomon - Single Player 2D Platform RPG",
+  title: "Dracoman - Single Player 2D Platform RPG",
   description: "Explore levels, defeat patrolling enemies, collect loot, gain EXP, and upgrade your companion Draco. Play directly in your browser.",
 };
 

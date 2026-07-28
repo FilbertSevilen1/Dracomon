@@ -51,14 +51,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
     };
     storageService.saveGame(updated);
     soundService.updateVolumes(volume, sfxVolume, music);
-    window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: updated }));
+    window.dispatchEvent(new CustomEvent('Dracoman_save_updated', { detail: updated }));
   };
 
   const resetGameSave = () => {
     const freshData = storageService.resetGame();
     soundService.updateVolumes(freshData.settings.volume, freshData.settings.sfxVolume ?? 80, freshData.settings.music);
     soundService.playClick();
-    window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: freshData }));
+    window.dispatchEvent(new CustomEvent('Dracoman_save_updated', { detail: freshData }));
   };
 
   const exportSave = () => storageService.exportSave(liveSaveData);
@@ -67,7 +67,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
     const imported = storageService.importSave(dataStr);
     if (imported) {
       soundService.updateVolumes(imported.settings.volume, imported.settings.sfxVolume ?? 80, imported.settings.music);
-      window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: imported }));
+      window.dispatchEvent(new CustomEvent('Dracoman_save_updated', { detail: imported }));
       return true;
     }
     return false;
@@ -85,10 +85,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
 
   useEffect(() => {
     const handleUpdate = () => setLiveSaveData(storageService.loadGame());
-    window.addEventListener('dracomon_save_updated', handleUpdate);
+    window.addEventListener('Dracoman_save_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
-      window.removeEventListener('dracomon_save_updated', handleUpdate);
+      window.removeEventListener('Dracoman_save_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -128,7 +128,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           className="flex items-center gap-1.5 font-mono font-black tracking-tight text-stone-900 hover:opacity-90 transition-opacity shrink-0"
         >
           <span className="text-2xl leading-none">🐉</span>
-          <span className="hidden sm:inline text-lg md:text-xl">DRACOMON</span>
+          <span className="hidden sm:inline text-lg md:text-xl">Dracoman</span>
         </Link>
 
         {/* ── Desktop Full Nav ── */}

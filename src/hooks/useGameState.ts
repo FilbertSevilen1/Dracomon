@@ -37,10 +37,10 @@ export function useGameState() {
 
     handleUpdate();
 
-    window.addEventListener('dracomon_save_updated', handleUpdate);
+    window.addEventListener('Dracoman_save_updated', handleUpdate);
     window.addEventListener('storage', handleUpdate);
     return () => {
-      window.removeEventListener('dracomon_save_updated', handleUpdate);
+      window.removeEventListener('Dracoman_save_updated', handleUpdate);
       window.removeEventListener('storage', handleUpdate);
     };
   }, []);
@@ -55,10 +55,10 @@ export function useGameState() {
       const next = updater(prev);
       storageService.saveGame(next);
       if (typeof window !== 'undefined') {
-          setTimeout(() => {
-            window.dispatchEvent(new CustomEvent('dracomon_save_updated', { detail: next }));
-          }, 0);
-        }
+        setTimeout(() => {
+          window.dispatchEvent(new CustomEvent('Dracoman_save_updated', { detail: next }));
+        }, 0);
+      }
       return next;
     });
   }, []);
@@ -484,33 +484,33 @@ export function useGameState() {
         const d = updatedDracos[name];
         if (!d) return;
 
-          if (newTier === 'Basic') {
-            d.unlocked = true;
-            const targetLevel = Math.max(5, d.level || 1);
-            const levelDiff = targetLevel - (d.level || 1);
-            d.level = targetLevel;
+        if (newTier === 'Basic') {
+          d.unlocked = true;
+          const targetLevel = Math.max(5, d.level || 1);
+          const levelDiff = targetLevel - (d.level || 1);
+          d.level = targetLevel;
 
-            const boost = Math.max(4, levelDiff * 1);
-            d.hp = (d.hp || 18) + boost;
-            d.attack = (d.attack || 4) + boost;
-            d.defense = (d.defense || 2) + boost;
-            d.speed = Math.min(20, (d.speed || 5) + boost);
-            d.jump = Math.min(14, (d.jump || 10) + boost);
-            d.range = (d.range || 1) + boost;
-          } else if (newTier === 'Premium') {
-            d.unlocked = true;
-            const targetLevel = Math.max(10, d.level || 1);
-            const levelDiff = targetLevel - (d.level || 1);
-            d.level = targetLevel;
+          const boost = Math.max(4, levelDiff * 1);
+          d.hp = (d.hp || 18) + boost;
+          d.attack = (d.attack || 4) + boost;
+          d.defense = (d.defense || 2) + boost;
+          d.speed = Math.min(20, (d.speed || 5) + boost);
+          d.jump = Math.min(14, (d.jump || 10) + boost);
+          d.range = (d.range || 1) + boost;
+        } else if (newTier === 'Premium') {
+          d.unlocked = true;
+          const targetLevel = Math.max(10, d.level || 1);
+          const levelDiff = targetLevel - (d.level || 1);
+          d.level = targetLevel;
 
-            const boost = Math.max(9, levelDiff * 1);
-            d.hp = (d.hp || 18) + boost;
-            d.attack = (d.attack || 4) + boost;
-            d.defense = (d.defense || 2) + boost;
-            d.speed = Math.min(20, (d.speed || 5) + boost);
-            d.jump = Math.min(14, (d.jump || 10) + boost);
-            d.range = (d.range || 1) + boost;
-          }
+          const boost = Math.max(9, levelDiff * 1);
+          d.hp = (d.hp || 18) + boost;
+          d.attack = (d.attack || 4) + boost;
+          d.defense = (d.defense || 2) + boost;
+          d.speed = Math.min(20, (d.speed || 5) + boost);
+          d.jump = Math.min(14, (d.jump || 10) + boost);
+          d.range = (d.range || 1) + boost;
+        }
       });
 
       const unlockedList = newTier !== 'Free' ? allNames : prev.unlockedDraco;

@@ -1322,7 +1322,7 @@ export default function Home() {
                     </div>
                     <h3 className="text-2xl font-black text-stone-900 font-display">Support the Developer</h3>
                     <p className="text-xs text-stone-500 leading-relaxed">
-                      If you enjoyed playing Dracomon, consider supporting the developers! Your donations help us add new characters, mechanics, and stages to the realm.
+                      If you enjoyed playing Dracoman, consider supporting the developers! Your donations help us add new characters, mechanics, and stages to the realm.
                     </p>
                   </div>
 
@@ -1383,7 +1383,7 @@ export default function Home() {
                           <input
                             type="email"
                             required
-                            placeholder="keeper@dracomon.dev"
+                            placeholder="keeper@Dracoman.dev"
                             value={contactEmail}
                             onChange={e => setContactEmail(e.target.value)}
                             className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:outline-none focus:border-amber-500"

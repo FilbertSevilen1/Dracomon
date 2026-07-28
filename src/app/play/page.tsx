@@ -118,7 +118,7 @@ export default function PlayPage() {
   return (
     <Suspense fallback={
       <div className="w-screen h-screen bg-stone-950 flex items-center justify-center text-amber-400 font-mono font-bold text-sm">
-        <span>LOADING DRACOMON RPG... 🐉⚡</span>
+        <span>LOADING Dracoman RPG... 🐉⚡</span>
       </div>
     }>
       <PlayContent />

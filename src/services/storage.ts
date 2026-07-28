@@ -1,6 +1,6 @@
 import { SaveData, InventoryItem } from '../types/game';
 
-export const STORAGE_KEY = 'dracomon_save_v1';
+export const STORAGE_KEY = 'Dracoman_save_v1';
 
 export const DEFAULT_ITEMS: InventoryItem[] = [
   {

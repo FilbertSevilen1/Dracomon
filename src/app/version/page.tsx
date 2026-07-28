@@ -50,7 +50,7 @@ const VERSION_LOGS: VersionLog[] = [
     badgeColor: 'bg-sky-600 text-white font-black shadow-sm',
     summary: 'Optimizes the Navbar for mobile screens by collapsing the game logo to a dragon emoji, shrinking the active hero badge to an icon, and displaying all navigation links (Home, Heroes, Maps, Membership, Patch Notes) as icon-only buttons with tooltips on mobile. Also redirects the "Play Campaign Stage" button on the landing page directly to /maps.',
     highlights: [
-      'Mobile Logo Collapse: The DRACOMON RPG logo shows only the 🐉 dragon emoji on mobile, full logo text on ≥sm breakpoints.',
+      'Mobile Logo Collapse: The Dracoman RPG logo shows only the 🐉 dragon emoji on mobile, full logo text on ≥sm breakpoints.',
       'Icon-Only Mobile Nav: Home, Heroes, Maps, Membership, and Patch Notes nav links collapse to icon buttons (Home, Swords, Map, Crown, ScrollText) on mobile, with title tooltips for accessibility.',
       'Compact Hero Badge: Active hero badge shows only the Sparkles ⚡ icon on mobile — full name + level on ≥sm breakpoints — saving significant horizontal space.',
       'Compact Tier Badge: Membership tier badge shows Crown icon on mobile, full "X TIER" text on desktop.',
@@ -205,7 +205,7 @@ const VERSION_LOGS: VersionLog[] = [
     date: 'July 22, 2026',
     tag: 'Refined Realms',
     badgeColor: 'bg-amber-500 text-stone-950 font-black shadow-sm',
-    summary: 'Expanded the Dracomon web portal with dedicated pages for Heroes, Maps, Membership, and Patch Notes — all with a unified premium UI.',
+    summary: 'Expanded the Dracoman web portal with dedicated pages for Heroes, Maps, Membership, and Patch Notes — all with a unified premium UI.',
     highlights: [
       'New Page - /heroes: Full-page Draco Sanctuary roster manager with 2-panel inspect layout and real-time hero name filter.',
       'New Page - /maps: Dedicated campaign stage showcase for all 11 stages. Clicking Play now launches the level directly without redirecting.',
@@ -285,9 +285,9 @@ const VERSION_LOGS: VersionLog[] = [
   {
     version: '0.0.1',
     date: 'June 2026',
-    tag: 'Welcome to Dracomon',
+    tag: 'Welcome to Dracoman',
     badgeColor: 'bg-stone-200 text-stone-800 border border-stone-300 font-bold',
-    summary: 'The initial genesis launch of Dracomon RPG platformer.',
+    summary: 'The initial genesis launch of Dracoman RPG platformer.',
     highlights: [
       'Added Jumpmon (Warrior), Archermon (Ranger), and Shieldmon (Defender).',
       'Stage 1: Green Hills, Stage 2: Volcanic Peak, Stage 3: Sky Ruins, Stage 4: Crystal Cave.',
@@ -324,7 +324,7 @@ export default function VersionPage() {
             Patch Notes <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 bg-clip-text text-transparent">& Updates</span>
           </h1>
           <p className="text-xs md:text-sm text-stone-500 max-w-2xl leading-relaxed">
-            Detailed logs for every major expansion, hero release, and system update in Dracomon RPG.
+            Detailed logs for every major expansion, hero release, and system update in Dracoman RPG.
             Click any version panel below to expand its full changelog.
           </p>
         </div>

@@ -16,7 +16,7 @@ export const Footer: React.FC = () => {
             onClick={() => soundService.playClick()}
             className="text-lg font-black text-stone-900 flex items-center gap-1 font-display hover:opacity-90 transition-opacity"
           >
-            🐉 DRACOMON
+            🐉 Dracoman
           </Link>
           <p className="text-stone-500 leading-relaxed text-[11px]">
             Offline platforming dragon action RPG built with HTML5 Canvas 2D engine &amp; Next.js / React.
@@ -91,7 +91,7 @@ export const Footer: React.FC = () => {
       </div>
 
       <div className="mt-8 pt-6 border-t border-stone-100 text-center text-[11px] text-stone-400 font-mono">
-        © {new Date().getFullYear()} Dracomon RPG • FilbertSevilen1. All rights reserved.
+        © {new Date().getFullYear()} Dracoman RPG • FilbertSevilen1. All rights reserved.
       </div>
     </footer>
   );
