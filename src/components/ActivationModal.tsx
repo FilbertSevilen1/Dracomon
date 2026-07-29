@@ -58,7 +58,7 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
                   onVerify();
                 }
               }}
-              placeholder="e.g. dracoman_basic_tier"
+              placeholder=""
               className={`w-full px-4 py-3 bg-stone-50 border rounded-2xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 ${
                 activationError
                   ? 'border-rose-300 focus:ring-rose-500/20 text-rose-600 focus:border-rose-300'
