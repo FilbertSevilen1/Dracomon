@@ -33,7 +33,7 @@ const VERSION_LOGS: VersionLog[] = [
   {
     version: '0.2.4',
     date: 'July 29, 2026',
-    tag: 'Lunar Palace & Goddess (Current)',
+    tag: 'Lunar Palace & Goddess',
     badgeColor: 'bg-indigo-600 text-white font-black shadow-sm',
     summary: 'Introduces Stage 13 Lunar Palace with low gravity platforming physics, a 2.5-second random direction warning-laser lunar beam gimmick, rescaled balanced boss stats, beautiful themed parallax backgrounds for all stages, fluid organic non-blocky visual assets for all 10 campaign bosses, and the Lunar Goddess boss.',
     highlights: [
@@ -48,7 +48,7 @@ const VERSION_LOGS: VersionLog[] = [
   {
     version: '0.2.3',
     date: 'July 29, 2026',
-    tag: 'Live Fullscreen Roster & Map Bug Fixes (Current)',
+    tag: 'Live Fullscreen Roster & Map Bug Fixes',
     badgeColor: 'bg-rose-600 text-white font-black shadow-sm',
     summary: 'Upgrades the landing page Hero section to a gorgeous, full-screen background canvas displaying all 12 Dracos executing skills and ultimates on floating platforms. Adds a premium stats & roster control card on the right. Fixes the level selection bug where Stage 2 would remain unlocked after resetting progress.',
     highlights: [
