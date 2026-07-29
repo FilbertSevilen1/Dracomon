@@ -4679,7 +4679,7 @@ export class GameEngine {
     if (this.pvy > 10) this.pvy = 10;
     if (this.pvy < -14) this.pvy = -14;
 
-    const newPx = this.px + this.pvx;
+    const newPx = Math.max(0, Math.min(this.levelWidth - this.pWidth, this.px + this.pvx));
     if (this.pvx !== 0) {
       const leftEdge = newPx;
       const rightEdge = newPx + this.pWidth;
@@ -4694,9 +4694,10 @@ export class GameEngine {
       } else {
         this.pvx = 0;
       }
+    } else {
+      // Keep clamped even if not moving (e.g. from knockback/teleports)
+      this.px = Math.max(0, Math.min(this.levelWidth - this.pWidth, this.px));
     }
-    // Hard-clamp X to grid bounds — prevents overshooting past edge portals
-    this.px = Math.max(0, Math.min(this.levelWidth - this.pWidth, this.px));
 
     let newPy = this.py + this.pvy;
     if (newPy < 0) {
@@ -4783,10 +4784,6 @@ export class GameEngine {
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_GROUND_SHOCKWAVE.text, FT_GROUND_SHOCKWAVE.color);
       }
     }
-
-    // Hard-clamp player within level boundaries (X and Y)
-    this.px = Math.max(0, Math.min(this.levelWidth - this.pWidth, this.px));
-    this.py = Math.max(0, Math.min(this.levelHeight - this.pHeight, this.py));
 
     if (this.selectedDraco === 'Jumpmon' && this.isPlunging && !this.pGrounded && this.pvy > 0) {
       if (Math.random() < 0.7) {
