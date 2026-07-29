@@ -25,7 +25,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     level: 1,
     totalExp: 0,
   },
-  unlockedDraco: ['Jumpmon'],
+  unlockedDraco: ['Jumpmon', 'Archermon', 'Shieldmon'],
   selectedDraco: 'Jumpmon',
   dracos: {
     Jumpmon: {
@@ -49,7 +49,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       speed: 5,
       jump: 10.5,
       range: 10,
-      unlocked: false,
+      unlocked: true,
       energyRegen: 1.0,
     },
     Shieldmon: {
@@ -61,7 +61,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       speed: 6,
       jump: 10,
       range: 1,
-      unlocked: false,
+      unlocked: true,
       energyRegen: 1.0,
     },
     Assassinmon: {
@@ -199,6 +199,15 @@ export const storageService = {
         if (!parsed.inventory) parsed.inventory = [];
         if (!parsed.settings.sfxVolume) parsed.settings.sfxVolume = 80;
         if (!parsed.tier) parsed.tier = 'Free';
+
+        if (!parsed.unlockedDraco) parsed.unlockedDraco = ['Jumpmon', 'Archermon', 'Shieldmon'];
+        if (!parsed.unlockedDraco.includes('Jumpmon')) parsed.unlockedDraco.push('Jumpmon');
+        if (!parsed.unlockedDraco.includes('Archermon')) parsed.unlockedDraco.push('Archermon');
+        if (!parsed.unlockedDraco.includes('Shieldmon')) parsed.unlockedDraco.push('Shieldmon');
+
+        if (parsed.dracos.Jumpmon) parsed.dracos.Jumpmon.unlocked = true;
+        if (parsed.dracos.Archermon) parsed.dracos.Archermon.unlocked = true;
+        if (parsed.dracos.Shieldmon) parsed.dracos.Shieldmon.unlocked = true;
 
         if (parsed.dracos.Assasinmon) {
           parsed.dracos.Assassinmon = {

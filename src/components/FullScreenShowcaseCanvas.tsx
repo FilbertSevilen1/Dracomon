@@ -126,20 +126,20 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
       const w = canvas.width;
       const h = canvas.height;
 
-      // Define 6 floating platforms at various screen heights/widths
+      // Define 6 floating platforms at various screen heights/widths (slightly shifted higher for fullscreen)
       platforms = [
         // Ground Floor
         { x: 0, y: h - 45, width: w, height: 45 },
         // Mid Left
-        { x: w * 0.08, y: h * 0.72, width: w * 0.22, height: 18 },
+        { x: w * 0.08, y: h * 0.66, width: w * 0.22, height: 18 },
         // Mid Right
-        { x: w * 0.7, y: h * 0.74, width: w * 0.22, height: 18 },
+        { x: w * 0.7, y: h * 0.68, width: w * 0.22, height: 18 },
         // Center
-        { x: w * 0.35, y: h * 0.55, width: w * 0.3, height: 18 },
+        { x: w * 0.35, y: h * 0.49, width: w * 0.3, height: 18 },
         // Upper Left
-        { x: w * 0.15, y: h * 0.38, width: w * 0.2, height: 18 },
+        { x: w * 0.15, y: h * 0.32, width: w * 0.2, height: 18 },
         // Upper Right
-        { x: w * 0.65, y: h * 0.35, width: w * 0.2, height: 18 },
+        { x: w * 0.65, y: h * 0.29, width: w * 0.2, height: 18 },
       ];
     };
 

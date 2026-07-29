@@ -31,6 +31,21 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.2.4',
+    date: 'July 29, 2026',
+    tag: 'Lunar Palace & Goddess (Current)',
+    badgeColor: 'bg-indigo-600 text-white font-black shadow-sm',
+    summary: 'Introduces Stage 13 Lunar Palace with low gravity platforming physics, a 2.5-second random direction warning-laser lunar beam gimmick, rescaled balanced boss stats, beautiful themed parallax backgrounds for all stages, fluid organic non-blocky visual assets for all 10 campaign bosses, and the Lunar Goddess boss.',
+    highlights: [
+      'Stage 13 - Lunar Palace: Adds the mystical Moon fortress featuring low gravity physics (reduced player descent velocity for floaty high-altitude jumps).',
+      'Lunar Beam Gimmick: Integrates a continuous 150-frame cycles lunar beam hazard. Displays a dotted warning projection for 2s (120 frames), then fires a lethal 0.5s (30 frames) raycasted laser blocked by platforms.',
+      'Lunar Goddess Boss: Encounter a new boss with fan-shaped mini projectile cosmic stars and a vertical Lunar Eclipse Beam barrage channelling skill.',
+      'Parallax Backgrounds: Overhauls background rendering with dynamic camera-scroll-bound multi-depth decorations tailored to each level theme (e.g. tree lines, ruins columns, mountain ridges, floating sky clouds, space nebulas).',
+      'Fluid Non-Blocky Boss Visuals: Replaced flat rectangular drawings for all bosses with smooth rounded shapes, glowing cores, energy visors/horns/wings, and radiant drop shadows.',
+      'Balanced Progression Rescale: Rebalanced HP, ATK, and DEF across all 13 stages to ensure a challenging, linear difficulty curve.',
+    ],
+  },
+  {
     version: '0.2.3',
     date: 'July 29, 2026',
     tag: 'Live Fullscreen Roster & Map Bug Fixes (Current)',
@@ -312,7 +327,7 @@ const VERSION_LOGS: VersionLog[] = [
 ];
 
 export default function VersionPage() {
-  const [openVersion, setOpenVersion] = useState<string | null>('0.2.3');
+  const [openVersion, setOpenVersion] = useState<string | null>('0.2.4');
 
   const toggleVersion = (version: string) => {
     soundService.playClick();

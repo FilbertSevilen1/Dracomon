@@ -76,7 +76,7 @@ export const Footer: React.FC = () => {
         <div className="space-y-3">
           <h4 className="font-extrabold text-stone-900 uppercase tracking-wider font-mono">Release Info</h4>
           <p className="text-stone-400 text-[11px] font-mono">
-            Version: <strong className="text-stone-700">v0.2.2 Lunarmon</strong> <br />
+            Version: <strong className="text-stone-700">v0.2.4 Lunar Goddess</strong> <br />
             Stack: React 19, Next.js 15, Canvas 2D
           </p>
           <Link

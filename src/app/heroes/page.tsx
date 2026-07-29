@@ -7,6 +7,7 @@ import { Footer } from '../../components/Footer';
 import { DracoSelection } from '../../components/DracoSelection';
 import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
+import { ActivationModal } from '../../components/ActivationModal';
 
 export default function HeroesPage() {
   const {
@@ -19,6 +20,13 @@ export default function HeroesPage() {
     levelUpInfo,
     applyLevelUpBonus,
     pendingLevelUps,
+    activationTier,
+    setActivationTier,
+    activationCodeInput,
+    setActivationCodeInput,
+    activationError,
+    setActivationError,
+    handleVerifyCode,
   } = useGameState();
 
   return (
@@ -70,6 +78,19 @@ export default function HeroesPage() {
           />
         </div>
       </main>
+
+      <ActivationModal
+        activationTier={activationTier}
+        activationCodeInput={activationCodeInput}
+        activationError={activationError}
+        onCodeChange={setActivationCodeInput}
+        onVerify={handleVerifyCode}
+        onClose={() => {
+          setActivationTier(null);
+          setActivationCodeInput('');
+          setActivationError(false);
+        }}
+      />
 
       {/* FOOTER */}
       <Footer />

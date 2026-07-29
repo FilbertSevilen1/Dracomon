@@ -11,6 +11,7 @@ import { GameScreen } from '../components/GameScreen';
 import { FullScreenShowcaseCanvas } from '../components/FullScreenShowcaseCanvas';
 import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
+import { ActivationModal } from '../components/ActivationModal';
 import { soundService } from '../services/sound';
 import { STAGES } from '../game/LevelManager';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -36,6 +37,8 @@ import {
   Send,
   ChevronDown,
   ChevronUp,
+  ChevronLeft,
+  ChevronRight,
   Globe,
   Award,
   Layers,
@@ -71,6 +74,13 @@ export default function Home() {
     importSave,
     switchTier,
     markStageCleared,
+    activationTier,
+    setActivationTier,
+    activationCodeInput,
+    setActivationCodeInput,
+    activationError,
+    setActivationError,
+    handleVerifyCode,
   } = useGameState();
 
   const [showSelection, setShowSelection] = useState(false);
@@ -129,21 +139,7 @@ export default function Home() {
     if (name === 'Shieldmon') soundService.playBlock();
   };
 
-  const handleHeroSelectDraco = (name: string, cost: number) => {
-    const isUnlocked = saveData.dracos[name]?.unlocked ?? (name === 'Jumpmon');
-    if (isUnlocked) {
-      soundService.playClick();
-      selectDraco(name);
-      triggerCompanionJump(name);
-    } else if (coins >= cost) {
-      unlockDraco(name, cost);
-      selectDraco(name);
-      triggerCompanionJump(name);
-    } else {
-      soundService.playHit();
-      setShowSelection(true);
-    }
-  };
+
 
   const handleContactSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -510,7 +506,7 @@ export default function Home() {
     },
   ];
 
-  const activeShowcaseEntry = companionShowcase.find(c => c.name === activeDracoName) || companionShowcase[0];
+
 
   const faqs = [
     {
@@ -589,208 +585,52 @@ export default function Home() {
                 <FullScreenShowcaseCanvas />
 
                 {/* HERO CONTENT OVERLAY */}
-                <div className="relative z-10 w-full max-w-6xl mx-auto px-6 md:px-12 pt-6">
-                  <div className="grid md:grid-cols-12 gap-8 items-center">
-                    {/* LEFT COLUMN: HERO TEXT & ACTIONS */}
-                    <div className="md:col-span-7 space-y-6 text-left">
-                      <h1 className="text-4xl md:text-6xl font-black tracking-tight text-white leading-tight font-display drop-shadow-md">
-                        Evolve Your Companion. <br />
-                        <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">
-                          Conquer Floating Realms
-                        </span>
-                      </h1>
+                <div className="relative z-10 w-full max-w-4xl mx-auto px-6 md:px-12 pt-28 pb-16 text-center">
+                  <div className="space-y-10">
+                    <h1 className="text-4xl md:text-7xl font-extrabold tracking-tight text-white leading-tight font-display drop-shadow-md">
+                      Evolve Your Guardian. <br />
+                      <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent font-extrabold">
+                        Conquer the Sky Realms
+                      </span>
+                    </h1>
 
-                      <p className="text-stone-200 text-sm md:text-base leading-relaxed max-w-xl drop-shadow-sm font-medium">
-                        Leap across floating platform islands, master real-time weapon swing arcs, collect sacred upgrade stones, and synthesize the ultimate dragon warrior.
-                      </p>
+                    <p className="text-stone-200 text-base md:text-lg leading-relaxed max-w-2xl mx-auto drop-shadow-sm font-medium">
+                      Leap across floating sky islands, master the physics of real-time blade combat, and collect sacred upgrade stones to forge the ultimate dragon companion.
+                    </p>
 
-                      {/* QUICK COMPANION SELECTOR */}
-                      <div className="pt-2">
-                        <div className="flex flex-wrap gap-2">
-                          {companionShowcase.map((item) => {
-                            const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
-                            const isSelected = activeDracoName === item.name;
-                            return (
-                              <button
-                                key={item.name}
-                                onClick={() => handleHeroSelectDraco(item.name, item.cost)}
-                                className={`px-3.5 py-1.5 rounded-xl text-xs font-extrabold transition-all flex items-center gap-1.5 ${
-                                  isSelected
-                                    ? 'bg-amber-500 text-stone-950 shadow-md ring-2 ring-amber-500/40 border border-amber-400 active:scale-95'
-                                    : isUnlocked
-                                    ? 'bg-stone-900/80 hover:bg-stone-800/80 text-stone-200 border border-stone-800 shadow-sm active:scale-95'
-                                    : 'bg-stone-900/45 text-stone-500 border border-stone-950/50 hover:border-amber-500/30'
-                                }`}
-                              >
-                                <span>{item.name}</span>
-                                {isSelected ? (
-                                  <Sparkles className="w-3.5 h-3.5 text-stone-950 fill-stone-950" />
-                                ) : isUnlocked ? (
-                                  <Check className="w-3.5 h-3.5 text-emerald-400" />
-                                ) : (
-                                  <Lock className="w-3.5 h-3.5 text-stone-600" />
-                                )}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
+                    {/* CALL TO ACTIONS */}
+                    <div className="flex flex-wrap items-center justify-center gap-5 pt-4">
+                      <Link
+                        href="/maps"
+                        onClick={() => soundService.playClick()}
+                        className="px-7 py-4 min-w-[200px] justify-center bg-amber-500 text-stone-950 hover:bg-amber-400 rounded-2xl font-extrabold text-sm shadow-xl shadow-amber-500/10 hover:shadow-amber-500/25 transition-all active:scale-95 flex items-center gap-2.5"
+                      >
+                        <Play className="w-5 h-5 text-stone-950 fill-stone-950" />
+                        Play Campaign Stage
+                      </Link>
 
-                      {/* CALL TO ACTIONS */}
-                      <div className="flex flex-wrap items-center gap-4 pt-2">
-                        <Link
-                          href="/maps"
-                          onClick={() => soundService.playClick()}
-                          className="px-8 py-4 bg-amber-500 text-stone-950 hover:bg-amber-400 rounded-2xl font-extrabold text-sm shadow-xl shadow-amber-500/10 hover:shadow-amber-500/25 transition-all active:scale-95 flex items-center gap-2.5"
-                        >
-                          <Play className="w-5 h-5 text-stone-950 fill-stone-950" />
-                          Play Campaign Stage
-                        </Link>
+                      <button
+                        onClick={() => scrollToSection('characters')}
+                        className="px-7 py-4 min-w-[200px] justify-center bg-white/10 border border-white/10 text-white rounded-2xl font-bold text-sm shadow-sm hover:bg-white/20 hover:border-white/20 transition-all active:scale-95 flex items-center gap-2"
+                      >
+                        <BookOpen className="w-4 h-4 text-amber-400" />
+                        Character Story
+                      </button>
 
-                        <button
-                          onClick={() => scrollToSection('characters')}
-                          className="px-6 py-4 bg-white/10 border border-white/10 text-white rounded-2xl font-bold text-sm shadow-sm hover:bg-white/20 hover:border-white/20 transition-all active:scale-95 flex items-center gap-2"
-                        >
-                          <BookOpen className="w-4 h-4 text-amber-400" />
-                          Character Story
-                        </button>
-
-                        <button
-                          onClick={() => { soundService.playClick(); setShowControlsModal(true); }}
-                          className="px-5 py-4 bg-stone-900/60 hover:bg-stone-800/60 text-stone-200 rounded-2xl font-semibold text-sm border border-stone-800 transition-all active:scale-95 flex items-center gap-1.5"
-                        >
-                          <HelpCircle className="w-4 h-4" />
-                          Controls
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* RIGHT COLUMN: ACTIVE COMPANION STATS & ROSTER PANEL */}
-                    <div className="md:col-span-5 w-full bg-stone-950/75 backdrop-blur-md p-5 rounded-3xl border border-stone-800 shadow-2xl space-y-4 select-none text-stone-200">
-                      
-                      {/* SELECTED PROFILE PREVIEW */}
-                      <div className="space-y-3 border-b border-stone-800 pb-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-14 h-14 shrink-0 rounded-2xl bg-stone-900 border border-stone-800 flex items-center justify-center p-1.5 shadow-inner">
-                            {activeShowcaseEntry.svg}
-                          </div>
-                          <div className="overflow-hidden">
-                            <h3 className="text-xl font-black text-white leading-tight font-display">{activeShowcaseEntry.name}</h3>
-                            <p className="text-xs text-amber-400 font-medium font-mono truncate">{activeShowcaseEntry.title}</p>
-                          </div>
-                        </div>
-
-                        <p className="text-[11px] text-stone-400 leading-relaxed bg-stone-900/40 p-2.5 rounded-xl border border-stone-900">
-                          {activeShowcaseEntry.lore}
-                        </p>
-
-                        {/* STATS BARS */}
-                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-[10px] pt-1">
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-stone-400 font-mono">
-                              <span>HP</span>
-                              <span className="text-white font-bold">{activeShowcaseEntry.hp}</span>
-                            </div>
-                            <div className="h-1.5 bg-stone-900 rounded-full overflow-hidden">
-                              <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${Math.min(100, (activeShowcaseEntry.hp / 30) * 100)}%` }} />
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-stone-400 font-mono">
-                              <span>ATTACK</span>
-                              <span className="text-white font-bold">{activeShowcaseEntry.atk}</span>
-                            </div>
-                            <div className="h-1.5 bg-stone-900 rounded-full overflow-hidden">
-                              <div className="h-full bg-rose-500 rounded-full" style={{ width: `${Math.min(100, (activeShowcaseEntry.atk / 15) * 100)}%` }} />
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-stone-400 font-mono">
-                              <span>DEFENSE</span>
-                              <span className="text-white font-bold">{activeShowcaseEntry.def}</span>
-                            </div>
-                            <div className="h-1.5 bg-stone-900 rounded-full overflow-hidden">
-                              <div className="h-full bg-sky-500 rounded-full" style={{ width: `${Math.min(100, (activeShowcaseEntry.def / 15) * 100)}%` }} />
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <div className="flex justify-between text-stone-400 font-mono">
-                              <span>SPEED</span>
-                              <span className="text-white font-bold">{activeShowcaseEntry.spd}</span>
-                            </div>
-                            <div className="h-1.5 bg-stone-900 rounded-full overflow-hidden">
-                              <div className="h-full bg-amber-500 rounded-full" style={{ width: `${Math.min(100, (activeShowcaseEntry.spd / 12) * 100)}%` }} />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center justify-between pb-1">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1 bg-amber-500 text-stone-950 rounded-lg shadow-sm">
-                            <Sparkles className="w-3.5 h-3.5" />
-                          </div>
-                          <div>
-                            <h3 className="text-xs font-extrabold text-white font-display">Manage Companion Roster</h3>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 max-h-[220px] overflow-y-auto p-1 bg-stone-900/40 border border-stone-900 rounded-2xl">
-                        {companionShowcase.map((item) => {
-                          const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
-                          const isEquipped = activeDracoName === item.name;
-
-                          return (
-                            <motion.div
-                              key={item.name}
-                              whileHover={{ scale: 1.05, y: -2 }}
-                              onClick={() => handleHeroSelectDraco(item.name, item.cost)}
-                              className={`p-2 rounded-xl border transition-all cursor-pointer flex flex-col items-center justify-between text-center relative group ${
-                                isEquipped
-                                  ? 'bg-amber-500/10 border-amber-500/70 ring-2 ring-amber-500/30 shadow-md'
-                                  : isUnlocked
-                                  ? 'bg-stone-950 hover:bg-stone-900 border-stone-800 hover:border-stone-700 shadow-sm'
-                                  : 'bg-stone-950/40 border-stone-900/60 opacity-60 hover:opacity-90'
-                              }`}
-                            >
-                              <div className="w-10 h-10 flex items-center justify-center">
-                                {item.svg}
-                              </div>
-
-                              <div className="w-full mt-1 space-y-0.5">
-                                <span className={`text-[10px] font-bold font-display block truncate ${isEquipped ? 'text-amber-400 font-black' : 'text-stone-300'}`}>
-                                  {item.name}
-                                </span>
-
-                                {isEquipped ? (
-                                  <span className="text-[7px] font-mono font-black text-amber-950 bg-amber-400 px-1 py-0.2 rounded border border-amber-300 shadow-sm block truncate animate-pulse">
-                                    ⚡ EQUIPPED
-                                  </span>
-                                ) : isUnlocked ? (
-                                  <span className="text-[7px] font-mono font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-900 px-1 py-0.2 rounded block truncate">
-                                    ✓ EQUIP
-                                  </span>
-                                ) : (
-                                  <span className="text-[7px] font-mono font-bold text-amber-400 bg-amber-950/60 border border-amber-900/70 px-1.5 py-0.2 rounded block truncate">
-                                    🔒 {item.cost}C
-                                  </span>
-                                )}
-                              </div>
-                            </motion.div>
-                          );
-                        })}
-                      </div>
+                      <button
+                        onClick={() => { soundService.playClick(); setShowControlsModal(true); }}
+                        className="px-7 py-4 min-w-[200px] justify-center bg-stone-900/60 hover:bg-stone-800/60 text-stone-200 rounded-2xl font-semibold text-sm border border-stone-800 transition-all active:scale-95 flex items-center gap-1.5"
+                      >
+                        <HelpCircle className="w-4 h-4" />
+                        Controls
+                      </button>
                     </div>
                   </div>
                 </div>
               </section>
 
               {}
-              <section id="about" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
+              <section id="about" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">About The Dracony Realm</h2>
                   <p className="text-stone-600 text-sm leading-relaxed">
@@ -799,7 +639,7 @@ export default function Home() {
                 </div>
 
                 {}
-                <div className="grid md:grid-cols-4 gap-6 mt-12">
+                <div className="grid md:grid-cols-4 gap-6 my-16">
                   <div className="p-6 bg-white border border-stone-200 rounded-3xl shadow-sm space-y-3 hover:shadow-md transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
                       <Sword className="w-6 h-6" />
@@ -843,7 +683,7 @@ export default function Home() {
               </section>
 
               {}
-              <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-16 border-t border-stone-200/60">
+              <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
                   <p className="text-stone-600 text-sm leading-relaxed">
@@ -868,8 +708,8 @@ export default function Home() {
                       <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
                       <div className="text-3xl font-black text-stone-900 font-mono">0 <span className="text-sm text-stone-500 font-sans">Coins</span></div>
                       <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon unlocked</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock characters via campaign coins</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon, Archermon & Shieldmon</li>
+                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock remaining roster via campaign coins</li>
                         <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
                         <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Full offline local save persistence</li>
                       </ul>
@@ -957,23 +797,12 @@ export default function Home() {
               </section>
 
               {}
-              <section id="characters" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-                  <div>
-                    <h2 className="text-3xl md:text-5xl font-black text-stone-900">Meet The Dragon Guardians</h2>
-                    <p className="text-xs md:text-sm text-stone-500 mt-1 max-w-xl">
-                      Each dragon companion possesses deep lore, distinct weapon swing styles, and active battle abilities.
-                    </p>
-                  </div>
-
-                  <Link
-                    href="/heroes"
-                    onClick={() => soundService.playClick()}
-                    className="px-5 py-2.5 bg-stone-900 text-white rounded-2xl text-xs font-extrabold hover:bg-stone-800 transition-all flex items-center gap-1.5 self-start md:self-auto shadow-md active:scale-95"
-                  >
-                    <span>Manage Full Roster</span>
-                    <ArrowRight className="w-4 h-4 text-amber-400" />
-                  </Link>
+              <section id="characters" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+                <div className="text-center max-w-3xl mx-auto space-y-3">
+                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">Meet The Dragon Guardians</h2>
+                  <p className="text-xs md:text-sm text-stone-500 max-w-xl mx-auto">
+                    Each dragon companion possesses deep lore, distinct weapon swing styles, and active battle abilities.
+                  </p>
                 </div>
 
                 {}
@@ -1193,45 +1022,30 @@ export default function Home() {
               </section>
 
               {}
-              <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
-                <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
-                  <div>
-                    <h2 className="text-3xl md:text-5xl font-black text-stone-900 mt-2 font-display">Explore Platform Realms</h2>
-                    <p className="text-stone-600 text-xs md:text-sm leading-relaxed mt-1">
-                      Conquer custom hand-crafted platform stages. Basic & Premium members get all maps unlocked instantly!
-                    </p>
-                  </div>
-
-                  {}
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    <button
-                      onClick={() => {
-                        soundService.playClick();
-                        setRealmPage(p => Math.max(0, p - 1));
-                      }}
-                      disabled={realmPage === 0}
-                      className="px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold font-mono transition-all shadow-sm"
-                    >
-                      ◀ Prev
-                    </button>
-                    <span className="px-3 py-1.5 bg-stone-100 text-stone-700 text-xs font-mono font-bold rounded-xl border border-stone-200">
-                      Page {realmPage + 1} of {Math.ceil(STAGE_CARDS.length / 3)}
-                    </span>
-                    <button
-                      onClick={() => {
-                        soundService.playClick();
-                        setRealmPage(p => Math.min(Math.ceil(STAGE_CARDS.length / 3) - 1, p + 1));
-                      }}
-                      disabled={realmPage >= Math.ceil(STAGE_CARDS.length / 3) - 1}
-                      className="px-3 py-1.5 rounded-xl border border-stone-200 bg-white hover:bg-stone-100 text-stone-700 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-bold font-mono transition-all shadow-sm"
-                    >
-                      Next ▶
-                    </button>
-                  </div>
+              <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+                <div className="text-center max-w-3xl mx-auto space-y-3 mb-10">
+                  <h2 className="text-3xl md:text-5xl font-black text-stone-900 font-display">Explore Platform Realms</h2>
+                  <p className="text-stone-600 text-xs md:text-sm leading-relaxed max-w-xl mx-auto">
+                    Conquer custom hand-crafted platform stages. Basic & Premium members get all maps unlocked instantly!
+                  </p>
                 </div>
 
                 {}
-                <div className="grid md:grid-cols-3 gap-6">
+                <div className="relative group/carousel my-8">
+                  {/* Left caret button */}
+                  <button
+                    onClick={() => {
+                      soundService.playClick();
+                      setRealmPage(p => Math.max(0, p - 1));
+                    }}
+                    disabled={realmPage === 0}
+                    className="absolute -left-4 md:-left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-0 disabled:pointer-events-none transition-all flex items-center justify-center shadow-lg hover:scale-105 active:scale-95"
+                    title="Previous Page"
+                  >
+                    <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-stone-800" />
+                  </button>
+
+                  <div className="grid md:grid-cols-3 gap-6">
                   {STAGE_CARDS.slice(realmPage * 3, (realmPage + 1) * 3).map((stage) => {
                     const unlocked = isStageUnlocked(stage.num);
 
@@ -1308,29 +1122,57 @@ export default function Home() {
                   })}
                 </div>
 
+                {/* Right caret button */}
+                <button
+                  onClick={() => {
+                    soundService.playClick();
+                    setRealmPage(p => Math.min(Math.ceil(STAGE_CARDS.length / 3) - 1, p + 1));
+                  }}
+                  disabled={realmPage >= Math.ceil(STAGE_CARDS.length / 3) - 1}
+                  className="absolute -right-4 md:-right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-0 disabled:pointer-events-none transition-all flex items-center justify-center shadow-lg hover:scale-105 active:scale-95"
+                  title="Next Page"
+                >
+                  <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-stone-800" />
+                </button>
+              </div>
+
                 {}
-                <div className="mt-8 flex items-center justify-center gap-2">
-                  {Array.from({ length: Math.ceil(STAGE_CARDS.length / 3) }).map((_, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => {
-                        soundService.playClick();
-                        setRealmPage(idx);
-                      }}
-                      className={`w-3 h-3 rounded-full transition-all ${
-                        realmPage === idx
-                          ? 'bg-amber-500 ring-2 ring-amber-400/40 w-8'
-                          : 'bg-stone-300 hover:bg-stone-400'
-                      }`}
-                      title={`Go to Page ${idx + 1}`}
-                    />
-                  ))}
+                <div className="mt-10 flex flex-col items-center justify-center gap-8">
+                  {/* Enhanced bullet points */}
+                  <div className="flex items-center gap-2.5">
+                    {Array.from({ length: Math.ceil(STAGE_CARDS.length / 3) }).map((_, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          soundService.playClick();
+                          setRealmPage(idx);
+                        }}
+                        className={`h-2.5 rounded-full transition-all duration-300 ${
+                          realmPage === idx
+                            ? 'bg-gradient-to-r from-amber-400 to-orange-500 ring-4 ring-amber-400/25 w-8'
+                            : 'bg-stone-200 hover:bg-stone-300 hover:scale-110 w-2.5'
+                        }`}
+                        title={`Go to Page ${idx + 1}`}
+                      />
+                    ))}
+                  </div>
+
+                  {/* View Maps button */}
+                  <Link
+                    href="/maps"
+                    onClick={() => soundService.playClick()}
+                    className="px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-md active:scale-95 border border-stone-800/80"
+                  >
+                    <span>View All Campaign Maps</span>
+                    <ArrowRight className="w-4 h-4 text-amber-400" />
+                  </Link>
                 </div>
               </section>
 
               {}
-              <section id="faq" className="w-full max-w-4xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
-                <div className="text-center space-y-2 mb-8">
+              <section id="faq" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+                <div className="max-w-4xl mx-auto">
+                  <div className="text-center space-y-2 mb-8">
                   <h2 className="text-3xl md:text-4xl font-black text-stone-900">Frequently Asked Questions</h2>
                   <p className="text-xs text-stone-500">Quick answers regarding game mechanics, controls, and save files.</p>
                 </div>
@@ -1372,11 +1214,12 @@ export default function Home() {
                     );
                   })}
                 </div>
+                </div>
               </section>
 
               {}
-              <section id="support" className="w-full max-w-4xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60 select-none">
-                <div className="bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-purple-500/10 border border-purple-200/60 rounded-3xl p-8 md:p-10 shadow-md flex flex-col md:flex-row items-center justify-between gap-8">
+              <section id="support" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60 select-none">
+                <div className="max-w-4xl mx-auto bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-purple-500/10 border border-purple-200/60 rounded-3xl p-8 md:p-10 shadow-md flex flex-col md:flex-row items-center justify-between gap-8">
                   <div className="space-y-3 text-left md:max-w-md">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 text-[10px] font-extrabold uppercase tracking-widest rounded-full font-mono border border-purple-200/40 animate-pulse">
                       💖 Support Guild
@@ -1392,8 +1235,8 @@ export default function Home() {
               </section>
 
               {}
-              <section id="contact" className="w-full max-w-4xl mx-auto px-6 md:px-12 pt-12 border-t border-stone-200/60">
-                <div className="grid md:grid-cols-12 gap-8 items-center bg-white border border-stone-200 rounded-3xl p-8 md:p-10 shadow-lg">
+              <section id="contact" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+                <div className="max-w-4xl mx-auto grid md:grid-cols-12 gap-8 items-center bg-white border border-stone-200 rounded-3xl p-8 md:p-10 shadow-lg">
                   {}
                   <div className="md:col-span-5 space-y-4 text-left">
                     <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
@@ -1726,6 +1569,19 @@ export default function Home() {
           />
         )}
       </AnimatePresence>
+
+      <ActivationModal
+        activationTier={activationTier}
+        activationCodeInput={activationCodeInput}
+        activationError={activationError}
+        onCodeChange={setActivationCodeInput}
+        onVerify={handleVerifyCode}
+        onClose={() => {
+          setActivationTier(null);
+          setActivationCodeInput('');
+          setActivationError(false);
+        }}
+      />
 
       {/* FOOTER */}
       <Footer />

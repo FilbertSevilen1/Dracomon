@@ -1,4 +1,4 @@
-﻿import { PlayerStats, InventoryItem } from '../types/game';
+import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
@@ -178,7 +178,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess';
   hp: number;
   maxHp: number;
   attack: number;
@@ -203,6 +203,12 @@ interface Enemy {
   chargeCooldownTimer?: number;
   chargeTimer?: number;
   isCharging?: boolean;
+  beamTimer?: number;
+  beamTargetX?: number;
+  beamTargetY?: number;
+  beamEndX?: number;
+  beamEndY?: number;
+  beamBarrageActive?: boolean;
   damageAcc?: number;
   burnTimer?: number;
   burnLingerTimer?: number;
@@ -361,6 +367,14 @@ export class GameEngine {
   private playerStunnedTimer = 0;
   private playerStunCooldown = 0;
 
+  // Lunar beam gimmick state
+  private lunarBeamTimer = 0;
+  private lunarBeamStartX = 0;
+  private lunarBeamStartY = 0;
+  private lunarBeamEndX = 0;
+  private lunarBeamEndY = 0;
+  private lunarBeamAngle = 0;
+
   private gravity = 0.5;
   private friction = 0.82;
   private levelWidth = 800;
@@ -454,6 +468,9 @@ export class GameEngine {
     this.isDemoMode = isDemoMode;
     this.stageNum = stageNum;
     this.level = getLevel(stageNum);
+    if (this.stageNum === 13) {
+      this.gravity = 0.22;
+    }
     this.selectedDraco = selectedDraco;
     this.stats = stats;
     this.callbacks = callbacks;
@@ -708,10 +725,10 @@ export class GameEngine {
               width: 80,
               height: 50,
               type: 'killer_whale',
-              hp: 120,
-              maxHp: 120,
-              attack: 8,
-              defense: 4,
+              hp: 950,
+              maxHp: 950,
+              attack: 22,
+              defense: 12,
               facing: -1,
               shootCooldown: 60,
               state: 'patrol',
@@ -827,10 +844,10 @@ export class GameEngine {
             width: 60,
             height: 48,
             type: 'king_slime',
-            hp: 120,
-            maxHp: 120,
-            attack: 5,
-            defense: 2,
+            hp: 250,
+            maxHp: 250,
+            attack: 10,
+            defense: 5,
             facing: -1,
             shootCooldown: 90,
             state: 'patrol',
@@ -848,8 +865,8 @@ export class GameEngine {
             width: 56,
             height: 64,
             type: 'miniboss',
-            hp: isStage2 ? 250 : 400,
-            maxHp: isStage2 ? 250 : 400,
+            hp: isStage2 ? 350 : 500,
+            maxHp: isStage2 ? 350 : 500,
             attack: isStage2 ? 8 : 17,
             defense: isStage2 ? 6 : 9,
             facing: -1,
@@ -868,9 +885,9 @@ export class GameEngine {
             width: 68,
             height: 60,
             type: 'frost_wyvern',
-            hp: 600,
-            maxHp: 600,
-            attack: 10,
+            hp: 800,
+            maxHp: 800,
+            attack: 16,
             defense: 6,
             facing: -1,
             shootCooldown: 80,
@@ -888,9 +905,9 @@ export class GameEngine {
             width: 72,
             height: 68,
             type: 'shadow_overlord',
-            hp: 750,
-            maxHp: 750,
-            attack: 24,
+            hp: 1200,
+            maxHp: 1200,
+            attack: 28,
             defense: 16,
             facing: -1,
             shootCooldown: 70,
@@ -908,8 +925,8 @@ export class GameEngine {
             width: 88,
             height: 80,
             type: 'dragon_king',
-            hp: 1000,
-            maxHp: 1000,
+            hp: 1400,
+            maxHp: 1400,
             attack: 30,
             defense: 22,
             facing: -1,
@@ -951,10 +968,10 @@ export class GameEngine {
             width: 86,
             height: 86,
             type: 'king_kong',
-            hp: 1650,
-            maxHp: 1650,
-            attack: 38,
-            defense: 28,
+            hp: 2000,
+            maxHp: 2000,
+            attack: 42,
+            defense: 30,
             facing: -1,
             shootCooldown: 120,
             state: 'patrol',
@@ -994,10 +1011,10 @@ export class GameEngine {
             width: 90,
             height: 90,
             type: 'giant_wisp' as any,
-            hp: 1800,
-            maxHp: 1800,
-            attack: 28,
-            defense: 18,
+            hp: 2200,
+            maxHp: 2200,
+            attack: 38,
+            defense: 22,
             facing: -1,
             shootCooldown: 90,
             state: 'patrol',
@@ -1006,6 +1023,32 @@ export class GameEngine {
             wispOrbitAngle: 0,
             wispDetonating: false,
             wispDetonationTimer: 0,
+          });
+        } else if (char === 'L') {
+          this.enemies.push({
+            id: this.enemyIdCounter++,
+            x: ex + 2,
+            y: ey + ts - 80,
+            vx: -0.5,
+            vy: 0,
+            width: 72,
+            height: 80,
+            type: 'lunar_goddess',
+            hp: 2600,
+            maxHp: 2600,
+            attack: 50,
+            defense: 25,
+            facing: -1,
+            shootCooldown: 80,
+            state: 'patrol',
+            animFrame: 0,
+            name: 'LUNAR GODDESS',
+            beamTimer: 0,
+            beamTargetX: 0,
+            beamTargetY: 0,
+            beamEndX: 0,
+            beamEndY: 0,
+            beamBarrageActive: false
           });
         }
       }
@@ -3011,7 +3054,15 @@ export class GameEngine {
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp'].includes(type);
+    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp', 'lunar_goddess'].includes(type);
+  }
+
+  private distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
+    const l2 = Math.pow(x2 - x1, 2) + Math.pow(y2 - y1, 2);
+    if (l2 === 0) return Math.hypot(px - x1, py - y1);
+    let t = ((px - x1) * (x2 - x1) + (py - y1) * (y2 - y1)) / l2;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (x1 + t * (x2 - x1)), py - (y1 + t * (y2 - y1)));
   }
 
   private updatePhysics() {
@@ -3049,10 +3100,10 @@ export class GameEngine {
             width: 72,
             height: 72,
             type: 'immortal_gladiator',
-            hp: 600,
-            maxHp: 600,
-            attack: 15,
-            defense: 8,
+            hp: 1600,
+            maxHp: 1600,
+            attack: 32,
+            defense: 18,
             facing: 1,
             shootCooldown: 50,
             state: 'patrol',
@@ -4392,6 +4443,49 @@ export class GameEngine {
       }
     }
 
+    // Stage 13 Lunar Palace - Lunar Beam Gimmick
+    if (this.stageNum === 13 && !this.isPaused && this.pHP > 0) {
+      this.lunarBeamTimer--;
+      if (this.lunarBeamTimer <= 0) {
+        this.lunarBeamTimer = 90; // 1.5 second total cycle (more beams!)
+        
+        // Pick random start X near player and downward angle
+        this.lunarBeamStartX = this.px + (Math.random() - 0.5) * 800;
+        this.lunarBeamStartY = 0;
+        this.lunarBeamAngle = Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 3);
+        
+        // Raycast down to find end point (blocked by platforms/ground)
+        let curX = this.lunarBeamStartX;
+        let curY = this.lunarBeamStartY;
+        const step = 8;
+        const maxSteps = 200;
+        for (let s = 0; s < maxSteps; s++) {
+          curX += Math.cos(this.lunarBeamAngle) * step;
+          curY += Math.sin(this.lunarBeamAngle) * step;
+          if (curY >= this.levelHeight || this.isSolid(curX, curY) || this.checkPlatformOneWay(curX, curY)) {
+            break;
+          }
+        }
+        this.lunarBeamEndX = curX;
+        this.lunarBeamEndY = curY;
+      }
+      
+      // Impact phase: last 30 frames (0.5s) of the 150-frame cycle
+      if (this.lunarBeamTimer > 0 && this.lunarBeamTimer <= 30) {
+        const pCenterX = this.px + this.pWidth / 2;
+        const pCenterY = this.py + this.pHeight / 2;
+        const dist = this.distToSegment(
+          pCenterX, pCenterY,
+          this.lunarBeamStartX, this.lunarBeamStartY,
+          this.lunarBeamEndX, this.lunarBeamEndY
+        );
+        
+        if (dist < 22 && this.pInvulnerableFrames <= 0) {
+          this.handlePlayerHit(18, this.lunarBeamStartX); // Deal 18 damage
+        }
+      }
+    }
+
     stageGimmickManager.update(
       this.level.theme.type,
       this.px,
@@ -4476,7 +4570,8 @@ export class GameEngine {
           this.pvx += fx;
           this.pvy += fy;
         }
-      }
+      },
+      this.stageNum
     );
 
     let speedMultiplier = 1.0;
@@ -4600,6 +4695,8 @@ export class GameEngine {
         this.pvx = 0;
       }
     }
+    // Hard-clamp X to grid bounds — prevents overshooting past edge portals
+    this.px = Math.max(0, Math.min(this.levelWidth - this.pWidth, this.px));
 
     let newPy = this.py + this.pvy;
     if (newPy < 0) {
@@ -4686,6 +4783,10 @@ export class GameEngine {
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_GROUND_SHOCKWAVE.text, FT_GROUND_SHOCKWAVE.color);
       }
     }
+
+    // Hard-clamp player within level boundaries (X and Y)
+    this.px = Math.max(0, Math.min(this.levelWidth - this.pWidth, this.px));
+    this.py = Math.max(0, Math.min(this.levelHeight - this.pHeight, this.py));
 
     if (this.selectedDraco === 'Jumpmon' && this.isPlunging && !this.pGrounded && this.pvy > 0) {
       if (Math.random() < 0.7) {
@@ -5514,7 +5615,8 @@ export class GameEngine {
         enemy.type === 'frost_wyvern' ||
         enemy.type === 'shadow_overlord' ||
         enemy.type === 'dragon_king' ||
-        enemy.type === 'bomb_thrower'
+        enemy.type === 'bomb_thrower' ||
+        enemy.type === 'lunar_goddess'
       ) {
         enemy.x += enemy.vx;
 
@@ -5823,6 +5925,78 @@ export class GameEngine {
               color: '#e2e8f0',
               type: 'arrow'
             });
+          }
+        }
+      } else if (enemy.type === 'lunar_goddess') {
+        const dx = this.px - enemy.x;
+        const dy = this.py - enemy.y;
+        enemy.facing = dx > 0 ? 1 : -1;
+
+        if (Math.abs(dx) < 650 && Math.abs(dy) < 350) {
+          if (!enemy.beamBarrageActive) {
+            enemy.shootCooldown--;
+            if (enemy.shootCooldown <= 0) {
+              if (Math.random() < 0.6) {
+                soundService.playShoot();
+                const baseAngle = Math.atan2(dy, dx);
+                const angles = [baseAngle - 0.2, baseAngle, baseAngle + 0.2];
+                angles.forEach(ang => {
+                  this.projectiles.push({
+                    x: enemy.x + enemy.width / 2,
+                    y: enemy.y + enemy.height / 2,
+                    vx: Math.cos(ang) * 5.0,
+                    vy: Math.sin(ang) * 5.0,
+                    width: 12,
+                    height: 12,
+                    isEnemy: true,
+                    damage: Math.floor(enemy.attack * 0.4),
+                    color: '#c7d2fe',
+                    type: 'sonar'
+                  });
+                });
+                enemy.shootCooldown = 80;
+              } else {
+                enemy.beamBarrageActive = true;
+                enemy.beamTimer = 180;
+                enemy.beamTargetX = this.px + this.pWidth / 2;
+                enemy.beamTargetY = this.py + this.pHeight / 2;
+                enemy.vx = 0;
+              }
+            }
+          } else {
+            enemy.beamTimer!--;
+            if (enemy.beamTimer! <= 0) {
+              enemy.beamBarrageActive = false;
+              enemy.shootCooldown = 120;
+            } else if (enemy.beamTimer! < 120) {
+              const startX = enemy.x + enemy.width / 2;
+              const startY = enemy.y + enemy.height / 2;
+              const angle = Math.atan2(enemy.beamTargetY! - startY, enemy.beamTargetX! - startX);
+
+              let curX = startX;
+              let curY = startY;
+              const step = 8;
+              for (let s = 0; s < 180; s++) {
+                curX += Math.cos(angle) * step;
+                curY += Math.sin(angle) * step;
+                if (curY >= this.levelHeight || this.isSolid(curX, curY) || this.checkPlatformOneWay(curX, curY)) {
+                  break;
+                }
+              }
+
+              enemy.beamEndX = curX;
+              enemy.beamEndY = curY;
+
+              const pCenterX = this.px + this.pWidth / 2;
+              const pCenterY = this.py + this.pHeight / 2;
+              const dist = this.distToSegment(pCenterX, pCenterY, startX, startY, curX, curY);
+              if (dist < 22 && this.pInvulnerableFrames <= 0) {
+                this.handlePlayerHit(22, startX);
+              }
+            } else {
+              enemy.beamTargetX = this.px + this.pWidth / 2;
+              enemy.beamTargetY = this.py + this.pHeight / 2;
+            }
           }
         }
       } else if (enemy.type === 'immortal_gladiator') {
@@ -6788,6 +6962,10 @@ export class GameEngine {
       bgGrad.addColorStop(0, '#032b45');
       bgGrad.addColorStop(0.5, '#075985');
       bgGrad.addColorStop(1, '#0284c7');
+    } else if (themeType === 'space') {
+      bgGrad.addColorStop(0, '#02040a');
+      bgGrad.addColorStop(0.5, '#090514');
+      bgGrad.addColorStop(1, '#1e1b4b');
     } else {
       bgGrad.addColorStop(0, '#180202');
       bgGrad.addColorStop(0.5, '#450a0a');
@@ -6796,6 +6974,253 @@ export class GameEngine {
 
     this.ctx.fillStyle = bgGrad;
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+    // DRAW THEMED PARALLAX BACKGROUNDS
+    this.ctx.save();
+    const scrollX = this.cameraX;
+    const scrollY = this.cameraY;
+    
+    // Positive-safe modulo: always returns [0, m)
+    const pmod = (n: number, m: number) => ((n % m) + m) % m;
+
+    if (themeType === 'forest') {
+      // Far layer — distant silhouette hills
+      this.ctx.fillStyle = 'rgba(2, 26, 24, 0.55)';
+      const pX1 = pmod(-(scrollX * 0.1), 350);
+      for (let x = pX1 - 350; x < viewW + 350; x += 350) {
+        this.ctx.beginPath();
+        this.ctx.ellipse(x + 175, viewH + 60, 210, 340, 0, Math.PI, 0);
+        this.ctx.fill();
+      }
+      // Mid layer — pine tree silhouettes
+      this.ctx.fillStyle = 'rgba(3, 40, 36, 0.65)';
+      const pX2 = pmod(-(scrollX * 0.22), 170);
+      for (let x = pX2 - 170; x < viewW + 170; x += 170) {
+        // Tall pine triangle
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 85, viewH - viewH * 0.9);
+        this.ctx.lineTo(x + 170, viewH + 10);
+        this.ctx.lineTo(x, viewH + 10);
+        this.ctx.fill();
+        // Overlap second tier
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 85, viewH - viewH * 0.65);
+        this.ctx.lineTo(x + 155, viewH + 10);
+        this.ctx.lineTo(x + 15, viewH + 10);
+        this.ctx.fill();
+      }
+      // Near layer — darker foreground
+      this.ctx.fillStyle = 'rgba(1, 15, 13, 0.5)';
+      const pX3 = pmod(-(scrollX * 0.4), 130);
+      for (let x = pX3 - 130; x < viewW + 130; x += 130) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 65, viewH - viewH * 0.55);
+        this.ctx.lineTo(x + 130, viewH + 10);
+        this.ctx.lineTo(x, viewH + 10);
+        this.ctx.fill();
+      }
+    } else if (themeType === 'ruins') {
+      // Distant arched skyline
+      this.ctx.fillStyle = 'rgba(15, 23, 42, 0.5)';
+      const pX = pmod(-(scrollX * 0.15), 320);
+      for (let x = pX - 320; x < viewW + 320; x += 320) {
+        // Tall pillar left
+        this.ctx.fillRect(x + 30, viewH - viewH * 0.85, 36, viewH * 0.85 + 10);
+        this.ctx.fillRect(x + 16, viewH - viewH * 0.9, 68, 18);
+        // Arch in center
+        this.ctx.beginPath();
+        this.ctx.arc(x + 180, viewH - viewH * 0.5, 80, Math.PI, 0);
+        this.ctx.lineWidth = 18;
+        this.ctx.strokeStyle = 'rgba(15, 23, 42, 0.5)';
+        this.ctx.stroke();
+        // Tall pillar right
+        this.ctx.fillRect(x + 260, viewH - viewH * 0.7, 36, viewH * 0.7 + 10);
+        this.ctx.fillRect(x + 248, viewH - viewH * 0.75, 58, 16);
+      }
+      // Ground line rubble
+      this.ctx.fillStyle = 'rgba(30, 41, 59, 0.3)';
+      const pX2 = pmod(-(scrollX * 0.3), 120);
+      for (let x = pX2 - 120; x < viewW + 120; x += 120) {
+        this.ctx.fillRect(x, viewH - 14, 80, 14);
+        this.ctx.fillRect(x + 25, viewH - 28, 40, 14);
+      }
+    } else if (themeType === 'volcano' || themeType === 'core') {
+      // Distant volcano peaks
+      this.ctx.fillStyle = 'rgba(60, 8, 8, 0.55)';
+      const pX = pmod(-(scrollX * 0.12), 400);
+      for (let x = pX - 400; x < viewW + 400; x += 400) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, viewH + 10);
+        this.ctx.lineTo(x + 200, viewH - viewH * 0.85);
+        this.ctx.lineTo(x + 400, viewH + 10);
+        this.ctx.fill();
+      }
+      // Mid lava glow ridges
+      this.ctx.fillStyle = 'rgba(127, 29, 29, 0.45)';
+      const pX2 = pmod(-(scrollX * 0.25), 240);
+      for (let x = pX2 - 240; x < viewW + 240; x += 240) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, viewH + 10);
+        this.ctx.lineTo(x + 120, viewH - viewH * 0.55);
+        this.ctx.lineTo(x + 240, viewH + 10);
+        this.ctx.fill();
+      }
+      // Animated ember sparks
+      this.ctx.fillStyle = 'rgba(249, 115, 22, 0.2)';
+      for (let i = 0; i < 20; i++) {
+        const ex2 = (i * 113 + this.frameCount * 0.5) % (viewW + 100);
+        const ey2 = viewH - ((i * 67 + this.frameCount * 1.1) % viewH);
+        this.ctx.beginPath();
+        this.ctx.arc(ex2, ey2, 2.5 + (i % 3), 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    } else if (themeType === 'ice') {
+      // Distant ice spire mountains
+      this.ctx.fillStyle = 'rgba(3, 69, 110, 0.55)';
+      const pX = pmod(-(scrollX * 0.12), 380);
+      for (let x = pX - 380; x < viewW + 380; x += 380) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, viewH + 10);
+        this.ctx.lineTo(x + 190, viewH - viewH * 0.9);
+        this.ctx.lineTo(x + 380, viewH + 10);
+        this.ctx.fill();
+      }
+      // Mid jagged ice spires
+      this.ctx.fillStyle = 'rgba(7, 89, 133, 0.45)';
+      const pX2 = pmod(-(scrollX * 0.25), 180);
+      for (let x = pX2 - 180; x < viewW + 180; x += 180) {
+        this.ctx.beginPath();
+        this.ctx.moveTo(x, viewH + 10);
+        this.ctx.lineTo(x + 30, viewH - viewH * 0.45);
+        this.ctx.lineTo(x + 60, viewH - viewH * 0.25);
+        this.ctx.lineTo(x + 90, viewH - viewH * 0.6);
+        this.ctx.lineTo(x + 120, viewH - viewH * 0.35);
+        this.ctx.lineTo(x + 150, viewH - viewH * 0.5);
+        this.ctx.lineTo(x + 180, viewH + 10);
+        this.ctx.fill();
+      }
+    } else if (themeType === 'shadow') {
+      // Dark tendrils and spirals
+      this.ctx.strokeStyle = 'rgba(88, 28, 135, 0.22)';
+      this.ctx.lineWidth = 5;
+      const pX = pmod(-(scrollX * 0.15), 280);
+      for (let x = pX - 280; x < viewW + 280; x += 280) {
+        // Tall vertical void column
+        this.ctx.beginPath();
+        this.ctx.moveTo(x + 140, viewH + 10);
+        this.ctx.bezierCurveTo(x + 180, viewH * 0.6, x + 80, viewH * 0.3, x + 140, 0);
+        this.ctx.stroke();
+        // Orbit rings
+        this.ctx.beginPath();
+        this.ctx.ellipse(x + 140, viewH * 0.45, 90, 200, Math.PI / 4, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+      // Faint spirit silhouettes
+      this.ctx.fillStyle = 'rgba(76, 29, 149, 0.12)';
+      for (let i = 0; i < 6; i++) {
+        const sx = pmod(i * 180 - scrollX * 0.08, viewW + 200);
+        const sy = (i * 110) % viewH;
+        this.ctx.beginPath();
+        this.ctx.arc(sx, sy, 28, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    } else if (themeType === 'temple') {
+      // Temple columns background
+      this.ctx.fillStyle = 'rgba(80, 30, 5, 0.35)';
+      const pX = pmod(-(scrollX * 0.13), 280);
+      for (let x = pX - 280; x < viewW + 280; x += 280) {
+        // Column
+        this.ctx.fillRect(x + 60, 0, 38, viewH + 10);
+        this.ctx.fillRect(x + 50, 0, 56, 24);
+        this.ctx.fillRect(x + 50, viewH - 24, 56, 24);
+        // Far column
+        this.ctx.fillRect(x + 200, 0, 30, viewH + 10);
+        this.ctx.fillRect(x + 192, 0, 44, 18);
+      }
+      // Drifting sacred flame particles
+      this.ctx.fillStyle = 'rgba(251, 191, 36, 0.14)';
+      for (let i = 0; i < 12; i++) {
+        const fx = (i * 140 + this.frameCount * 0.3) % (viewW + 80);
+        const fy = viewH - ((i * 77 + this.frameCount * 0.7) % viewH);
+        this.ctx.beginPath();
+        this.ctx.arc(fx, fy, 4 + (i % 3), 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    } else if (themeType === 'heavens') {
+      // Towering cloud pillars
+      this.ctx.fillStyle = 'rgba(255, 255, 255, 0.07)';
+      const pX = pmod(-(scrollX * 0.18) - this.frameCount * 0.08, 320);
+      for (let x = pX - 320; x < viewW + 320; x += 320) {
+        // Large cloud mass
+        this.ctx.beginPath();
+        this.ctx.arc(x + 60, viewH * 0.25, 55, 0, Math.PI * 2);
+        this.ctx.arc(x + 110, viewH * 0.2, 75, 0, Math.PI * 2);
+        this.ctx.arc(x + 160, viewH * 0.25, 55, 0, Math.PI * 2);
+        this.ctx.fill();
+        // Lower cloud
+        this.ctx.beginPath();
+        this.ctx.arc(x + 200, viewH * 0.6, 45, 0, Math.PI * 2);
+        this.ctx.arc(x + 240, viewH * 0.56, 60, 0, Math.PI * 2);
+        this.ctx.arc(x + 280, viewH * 0.6, 45, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+      // Ray of light shafts
+      this.ctx.fillStyle = 'rgba(186, 230, 253, 0.05)';
+      for (let i = 0; i < 5; i++) {
+        const rx = pmod(i * 220 - scrollX * 0.06, viewW + 300);
+        this.ctx.beginPath();
+        this.ctx.moveTo(rx, 0);
+        this.ctx.lineTo(rx + 60, 0);
+        this.ctx.lineTo(rx + 110, viewH);
+        this.ctx.lineTo(rx - 50, viewH);
+        this.ctx.fill();
+      }
+    } else if (themeType === 'space') {
+      // Static pinpoint starfield
+      this.ctx.fillStyle = '#ffffff';
+      for (let i = 0; i < 60; i++) {
+        const starX = (i * 77 + 23) % viewW;
+        const starY = (i * 37 + 11) % viewH;
+        this.ctx.globalAlpha = 0.08 + (i % 5) * 0.1;
+        this.ctx.fillRect(starX, starY, 1.5, 1.5);
+      }
+      this.ctx.globalAlpha = 1.0;
+      // Parallax moving stars
+      this.ctx.fillStyle = '#e0f2fe';
+      for (let i = 0; i < 40; i++) {
+        const baseSX = (i * 113 + 47) % (viewW + 200) - 100;
+        const baseSY = (i * 61 + 31) % (viewH + 100) - 50;
+        const sx = pmod(baseSX - scrollX * 0.1, viewW + 200) - 100;
+        const sy = pmod(baseSY - scrollY * 0.1, viewH + 100) - 50;
+        this.ctx.globalAlpha = 0.3 + (i % 4) * 0.15;
+        this.ctx.fillRect(sx, sy, 2.5, 2.5);
+      }
+      this.ctx.globalAlpha = 1.0;
+      // Nebula cloud wisps
+      this.ctx.fillStyle = 'rgba(79, 70, 229, 0.08)';
+      for (let i = 0; i < 4; i++) {
+        const nx = pmod(i * 280 - scrollX * 0.05, viewW + 400);
+        const ny = (i * 150) % viewH;
+        this.ctx.beginPath();
+        this.ctx.ellipse(nx, ny, 180, 90, i * 0.5, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+      // Gas planet / moon
+      const moonX = viewW * 0.78 - (scrollX * 0.06);
+      const moonY = viewH * 0.18 - (scrollY * 0.06);
+      const moonRad = 55;
+      const moonGrad = this.ctx.createRadialGradient(moonX, moonY, 2, moonX, moonY, moonRad);
+      moonGrad.addColorStop(0, 'rgba(255,255,255,0.9)');
+      moonGrad.addColorStop(0.3, 'rgba(199, 210, 254, 0.7)');
+      moonGrad.addColorStop(0.6, 'rgba(79, 70, 229, 0.5)');
+      moonGrad.addColorStop(1, 'rgba(3, 7, 18, 0)');
+      this.ctx.fillStyle = moonGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(moonX, moonY, moonRad, 0, Math.PI * 2);
+      this.ctx.fill();
+    }
+    
+    this.ctx.restore();
 
     this.ctx.save();
     this.ctx.globalAlpha = 0.04;
@@ -7685,6 +8110,57 @@ export class GameEngine {
       }
     });
 
+    // RENDER LUNAR BEAM HAZARD GIMMICK
+    if (this.stageNum === 13 && this.lunarBeamTimer > 0) {
+      if (this.lunarBeamTimer > 30) {
+        this.ctx.save();
+        this.ctx.strokeStyle = '#ef4444';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.setLineDash([4, 4]);
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.lunarBeamStartX, this.lunarBeamStartY);
+        this.ctx.lineTo(this.lunarBeamEndX, this.lunarBeamEndY);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = '#f59e0b';
+        this.ctx.lineWidth = 2;
+        this.ctx.setLineDash([]);
+        this.ctx.beginPath();
+        this.ctx.arc(this.lunarBeamEndX, this.lunarBeamEndY, 25, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.restore();
+      } else {
+        this.ctx.save();
+        this.ctx.strokeStyle = 'rgba(129, 140, 248, 0.4)';
+        this.ctx.lineWidth = 28;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.lunarBeamStartX, this.lunarBeamStartY);
+        this.ctx.lineTo(this.lunarBeamEndX, this.lunarBeamEndY);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.lunarBeamStartX, this.lunarBeamStartY);
+        this.ctx.lineTo(this.lunarBeamEndX, this.lunarBeamEndY);
+        this.ctx.stroke();
+
+        for (let p = 0; p < 2; p++) {
+          this.particles.push({
+            x: this.lunarBeamEndX + (Math.random() - 0.5) * 15,
+            y: this.lunarBeamEndY - 2,
+            vx: (Math.random() - 0.5) * 6,
+            vy: -Math.random() * 4 - 1,
+            size: Math.random() * 5 + 2,
+            color: p % 2 === 0 ? '#c7d2fe' : '#ffffff',
+            life: 12,
+            maxLife: 12
+          });
+        }
+        this.ctx.restore();
+      }
+    }
+
     this.enemies.forEach(enemy => {
       this.ctx.save();
 
@@ -7747,15 +8223,22 @@ export class GameEngine {
         this.ctx.fillRect(enemy.x + 8, enemy.y + 12, 4, 18);
         this.ctx.fillRect(enemy.x + 22, enemy.y + 15, 6, 4);
 
-        this.ctx.fillStyle = '#ffffff';
-        this.ctx.fillRect(enemy.x + (enemy.facing === 1 ? 24 : 4), enemy.y + 8, 8, 4);
-      } else if (enemy.type === 'miniboss') {
+          } else if (enemy.type === 'miniboss') {
+        this.ctx.save();
         this.ctx.fillStyle = '#1e1b4b';
         this.ctx.strokeStyle = '#e11d48';
         this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowColor = '#e11d48';
+        
+        // Body (Circle)
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
 
-        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-
+        // original wings and horn points
         this.ctx.fillStyle = '#f43f5e';
         this.ctx.beginPath();
         this.ctx.moveTo(enemy.x, enemy.y + 10);
@@ -7781,6 +8264,12 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
 
+        // visor eye
+        this.ctx.fillStyle = '#ef4444';
+        const eyeX = enemy.facing === 1 ? enemy.x + enemy.width * 0.55 : enemy.x + enemy.width * 0.25;
+        this.ctx.fillRect(eyeX, enemy.y + enemy.height * 0.35, enemy.width * 0.2, enemy.height * 0.15);
+        this.ctx.restore();
+
         const hbW = enemy.width + 16;
         const hbX = enemy.x - 8;
         const hbY = enemy.y - 20;
@@ -7792,11 +8281,28 @@ export class GameEngine {
         this.ctx.lineWidth = 1;
         this.ctx.strokeRect(hbX, hbY, hbW, 6);
       } else if (enemy.type === 'king_slime') {
+        this.ctx.save();
         const squish = Math.sin(this.frameCount * 0.12 + enemy.id) * 4;
-        this.ctx.fillStyle = '#059669';
-        this.ctx.strokeStyle = '#047857';
-        this.ctx.lineWidth = 2.5;
-
+        
+        // Translucent gradient jelly body
+        const slimeGrad = this.ctx.createRadialGradient(
+          enemy.x + enemy.width / 2 - 8,
+          enemy.y + enemy.height / 2 - 8,
+          5,
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height / 2,
+          enemy.width / 2
+        );
+        slimeGrad.addColorStop(0, '#34d399');
+        slimeGrad.addColorStop(0.7, '#059669');
+        slimeGrad.addColorStop(1, '#064e3b');
+        
+        this.ctx.fillStyle = slimeGrad;
+        this.ctx.strokeStyle = '#34d399';
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowColor = '#10b981';
+        
         this.ctx.beginPath();
         this.ctx.ellipse(
           enemy.x + enemy.width / 2,
@@ -7807,8 +8313,21 @@ export class GameEngine {
         );
         this.ctx.fill();
         this.ctx.stroke();
-
+        
+        // Glowing yellow core
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.arc(
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height / 2 + squish / 2,
+          10, 0, Math.PI * 2
+        );
+        this.ctx.fill();
+        
+        // Crown
         this.ctx.fillStyle = '#eab308';
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = '#eab308';
         this.ctx.beginPath();
         this.ctx.moveTo(enemy.x + 16, enemy.y - 4);
         this.ctx.lineTo(enemy.x + 22, enemy.y - 18);
@@ -7817,6 +8336,7 @@ export class GameEngine {
         this.ctx.lineTo(enemy.x + 44, enemy.y - 4);
         this.ctx.closePath();
         this.ctx.fill();
+        this.ctx.restore();
 
         const hbW = enemy.width + 24;
         const hbX = enemy.x - 12;
@@ -7829,12 +8349,46 @@ export class GameEngine {
         this.ctx.lineWidth = 1;
         this.ctx.strokeRect(hbX, hbY, hbW, 7);
       } else if (enemy.type === 'frost_wyvern') {
+        this.ctx.save();
         this.ctx.fillStyle = '#0284c7';
         this.ctx.strokeStyle = '#38bdf8';
-        this.ctx.lineWidth = 2.5;
-
-        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
-
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowColor = '#0ea5e9';
+        
+        // Ice crystal diamond shape
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
+        this.ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height / 2);
+        this.ctx.lineTo(enemy.x + enemy.width / 2, enemy.y + enemy.height);
+        this.ctx.lineTo(enemy.x, enemy.y + enemy.height / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        // Veins
+        this.ctx.strokeStyle = '#7dd3fc';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
+        this.ctx.lineTo(enemy.x + enemy.width / 2, enemy.y + enemy.height);
+        this.ctx.moveTo(enemy.x, enemy.y + enemy.height / 2);
+        this.ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height / 2);
+        this.ctx.stroke();
+        
+        // Core
+        const coreGrad = this.ctx.createRadialGradient(
+          enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 2,
+          enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12
+        );
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        this.ctx.fillStyle = coreGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Wings
         this.ctx.fillStyle = '#7dd3fc';
         this.ctx.beginPath();
         this.ctx.moveTo(enemy.x, enemy.y + 10);
@@ -7849,6 +8403,7 @@ export class GameEngine {
         this.ctx.lineTo(enemy.x + enemy.width - 14, enemy.y + 24);
         this.ctx.closePath();
         this.ctx.fill();
+        this.ctx.restore();
 
         const hbW = enemy.width + 24;
         const hbX = enemy.x - 12;
@@ -7861,11 +8416,44 @@ export class GameEngine {
         this.ctx.lineWidth = 1;
         this.ctx.strokeRect(hbX, hbY, hbW, 7);
       } else if (enemy.type === 'shadow_overlord') {
-        this.ctx.fillStyle = '#3b0764';
+        this.ctx.save();
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = '#c084fc';
+        
+        const cx = enemy.x + enemy.width / 2;
+        const cy = enemy.y + enemy.height / 2;
+        const rot = (this.frameCount * 0.05) % (Math.PI * 2);
+        
+        // Outer body
+        this.ctx.fillStyle = '#1e1b4b';
+        this.ctx.strokeStyle = '#a855f7';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, enemy.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        // Vortex core
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(rot);
+        
+        const coreGrad = this.ctx.createRadialGradient(0, 0, 2, 0, 0, enemy.width * 0.4);
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.4, '#a855f7');
+        coreGrad.addColorStop(1, '#3b0764');
+        this.ctx.fillStyle = coreGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, enemy.width * 0.4, 0, Math.PI * 2);
+        this.ctx.fill();
+        
         this.ctx.strokeStyle = '#c084fc';
-        this.ctx.lineWidth = 3;
-
-        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        this.ctx.lineWidth = 2.5;
+        for (let i = 0; i < 4; i++) {
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, enemy.width * 0.35, i * Math.PI / 2, i * Math.PI / 2 + Math.PI / 3);
+          this.ctx.stroke();
+        }
+        this.ctx.restore();
 
         this.ctx.fillStyle = 'rgba(168, 85, 247, 0.3)';
         this.ctx.beginPath();
@@ -7883,11 +8471,27 @@ export class GameEngine {
         this.ctx.lineWidth = 1;
         this.ctx.strokeRect(hbX, hbY, hbW, 7);
       } else if (enemy.type === 'dragon_king') {
-        this.ctx.fillStyle = '#b45309';
+        this.ctx.save();
+        this.ctx.fillStyle = '#9a3412';
         this.ctx.strokeStyle = '#f59e0b';
         this.ctx.lineWidth = 3.5;
-
-        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        this.ctx.shadowBlur = 15;
+        this.ctx.shadowColor = '#ea580c';
+        
+        // Curved armor torso
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
+        this.ctx.bezierCurveTo(enemy.x + enemy.width, enemy.y + 10, enemy.x + enemy.width - 5, enemy.y + enemy.height - 15, enemy.x + enemy.width / 2, enemy.y + enemy.height);
+        this.ctx.bezierCurveTo(enemy.x + 5, enemy.y + enemy.height - 15, enemy.x, enemy.y + 10, enemy.x + enemy.width / 2, enemy.y);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        // Gold plate
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, 0, Math.PI * 2);
+        this.ctx.fill();
 
         this.ctx.fillStyle = '#fbbf24';
         this.ctx.beginPath();
@@ -7908,6 +8512,7 @@ export class GameEngine {
         this.ctx.fillRect(enemy.x + 18, enemy.y - 16, 12, 16);
         this.ctx.fillRect(enemy.x + 38, enemy.y - 22, 12, 22);
         this.ctx.fillRect(enemy.x + 58, enemy.y - 16, 12, 16);
+        this.ctx.restore();
 
         const hbW = enemy.width + 30;
         const hbX = enemy.x - 15;
@@ -8101,12 +8706,45 @@ export class GameEngine {
           this.ctx.fill();
         }
       } else if (enemy.type === 'killer_whale') {
+        this.ctx.save();
         this.ctx.fillStyle = '#0f172a';
-        this.ctx.strokeStyle = '#0284c7';
+        this.ctx.strokeStyle = '#38bdf8';
         this.ctx.lineWidth = 3;
-        this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+        this.ctx.shadowBlur = 10;
+        this.ctx.shadowColor = '#0ea5e9';
+        
+        // Draw a rounded dolphin/orca shape body!
+        this.ctx.beginPath();
+        this.ctx.ellipse(
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height / 2,
+          enemy.width / 2,
+          enemy.height / 2.2,
+          0, 0, Math.PI * 2
+        );
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        // White belly patch
         this.ctx.fillStyle = '#f8fafc';
-        this.ctx.fillRect(enemy.x + 8, enemy.y + enemy.height - 14, enemy.width - 16, 12);
+        this.ctx.beginPath();
+        this.ctx.ellipse(
+          enemy.x + enemy.width / 2,
+          enemy.y + enemy.height * 0.7,
+          enemy.width * 0.35,
+          enemy.height * 0.15,
+          0, 0, Math.PI * 2
+        );
+        this.ctx.fill();
+        
+        // Eye (red glowing)
+        this.ctx.fillStyle = '#ef4444';
+        const eyeX = enemy.facing === 1 ? enemy.x + enemy.width * 0.75 : enemy.x + enemy.width * 0.25;
+        this.ctx.beginPath();
+        this.ctx.arc(eyeX, enemy.y + enemy.height * 0.35, 4, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Fin
         this.ctx.fillStyle = '#0f172a';
         this.ctx.beginPath();
         this.ctx.moveTo(enemy.x + enemy.width / 2 - 8, enemy.y);
@@ -8114,6 +8752,7 @@ export class GameEngine {
         this.ctx.lineTo(enemy.x + enemy.width / 2 + 12, enemy.y);
         this.ctx.closePath();
         this.ctx.fill();
+        this.ctx.restore();
 
         if (enemy.suckTimer && enemy.suckTimer > 0) {
           const cx = enemy.x + enemy.width / 2;
@@ -8307,10 +8946,19 @@ export class GameEngine {
         const bw = enemy.width;
         const bh = enemy.height;
 
+        this.ctx.save();
         this.ctx.fillStyle = '#1e293b';
         this.ctx.strokeStyle = '#0f172a';
-        this.ctx.lineWidth = 3;
-        this.ctx.fillRect(bx, by, bw, bh);
+        this.ctx.lineWidth = 3.5;
+        this.ctx.shadowBlur = 12;
+        this.ctx.shadowColor = '#0f172a';
+        
+        // Large rounded chest/shoulders shape!
+        this.ctx.beginPath();
+        this.ctx.roundRect(bx, by, bw, bh, [30, 30, 15, 15]);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.restore();
 
         this.ctx.fillStyle = '#94a3b8';
         this.ctx.fillRect(bx + 12, by + 10, bw - 24, bh - 30);
@@ -8356,11 +9004,33 @@ export class GameEngine {
         const bw = enemy.width;
         const bh = enemy.height;
 
+        this.ctx.save();
         this.ctx.fillStyle = '#881337';
         this.ctx.strokeStyle = '#f43f5e';
-        this.ctx.lineWidth = 3;
-        this.ctx.fillRect(bx, by, bw, bh);
-        this.ctx.strokeRect(bx, by, bw, bh);
+        this.ctx.lineWidth = 3.5;
+        this.ctx.shadowBlur = 14;
+        this.ctx.shadowColor = '#e11d48';
+        
+        // Curved armor torso
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx + bw / 2, by);
+        this.ctx.lineTo(bx + bw, by + 12);
+        this.ctx.lineTo(bx + bw - 6, by + bh);
+        this.ctx.lineTo(bx + 6, by + bh);
+        this.ctx.lineTo(bx, by + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        // Steel plating lines
+        this.ctx.strokeStyle = '#fda4af';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx + bw / 2, by);
+        this.ctx.lineTo(bx + bw / 2, by + bh);
+        this.ctx.stroke();
+        
+        this.ctx.restore();
 
         if (enemy.isCharging) {
           this.ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
@@ -8425,6 +9095,143 @@ export class GameEngine {
           bx + bw / 2,
           hbY - 6
         );
+      } else if (enemy.type === 'lunar_goddess') {
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+        const cx = bx + bw / 2;
+        const cy = by + bh / 2;
+        
+        this.ctx.save();
+        
+        // Halo effect: glowing silver crescent moon behind her head
+        this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+        this.ctx.strokeStyle = '#c7d2fe';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.shadowBlur = 20;
+        this.ctx.shadowColor = '#e0f2fe';
+        
+        this.ctx.beginPath();
+        this.ctx.arc(cx, by + 16, 24, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        
+        // Goddess robe / gown silhouette
+        const robeGrad = this.ctx.createLinearGradient(cx, by, cx, by + bh);
+        robeGrad.addColorStop(0, '#e0f2fe');
+        robeGrad.addColorStop(0.5, '#818cf8');
+        robeGrad.addColorStop(1, '#312e81');
+        
+        this.ctx.fillStyle = robeGrad;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, by + 12); // head base
+        this.ctx.bezierCurveTo(bx + bw, by + 25, bx + bw, by + bh - 10, bx + bw - 6, by + bh);
+        this.ctx.lineTo(bx + 6, by + bh);
+        this.ctx.bezierCurveTo(bx, by + bh - 10, bx, by + 25, cx, by + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        
+        // Head / Face
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, by + 10, 10, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Glowing moon crown
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, by - 2, 4, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Glowing staff/weapon in hand
+        const handX = enemy.facing === 1 ? bx + bw + 6 : bx - 6;
+        this.ctx.strokeStyle = '#c7d2fe';
+        this.ctx.lineWidth = 3.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(handX, by + 10);
+        this.ctx.lineTo(handX, by + bh - 10);
+        this.ctx.stroke();
+        
+        // Staff glowing top
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(handX, by + 10, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        // Staff glow shadow
+        this.ctx.fillStyle = 'rgba(199, 210, 254, 0.4)';
+        this.ctx.beginPath();
+        this.ctx.arc(handX, by + 10, 16, 0, Math.PI * 2);
+        this.ctx.fill();
+        
+        this.ctx.restore();
+        
+        // Render Lunar Goddess Beam Barrage
+        if (enemy.beamBarrageActive && enemy.beamTimer) {
+          if (enemy.beamTimer >= 120) {
+            // Warning phase: red line pointing to target
+            this.ctx.save();
+            this.ctx.strokeStyle = '#f43f5e';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.setLineDash([6, 3]);
+            this.ctx.beginPath();
+            this.ctx.moveTo(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+            this.ctx.lineTo(enemy.beamTargetX!, enemy.beamTargetY!);
+            this.ctx.stroke();
+            this.ctx.restore();
+          } else {
+            // Firing phase: thick purple/cyan beam!
+            this.ctx.save();
+            const startX = enemy.x + enemy.width / 2;
+            const startY = enemy.y + enemy.height / 2;
+            const endX = enemy.beamEndX || startX;
+            const endY = enemy.beamEndY || startY;
+            
+            // Outer glow
+            this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+            this.ctx.lineWidth = 36;
+            this.ctx.beginPath();
+            this.ctx.moveTo(startX, startY);
+            this.ctx.lineTo(endX, endY);
+            this.ctx.stroke();
+            
+            // Core
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 10;
+            this.ctx.beginPath();
+            this.ctx.moveTo(startX, startY);
+            this.ctx.lineTo(endX, endY);
+            this.ctx.stroke();
+            
+            // Star sparks at end point
+            for (let p = 0; p < 2; p++) {
+              this.particles.push({
+                x: endX + (Math.random() - 0.5) * 20,
+                y: endY + (Math.random() - 0.5) * 20,
+                vx: (Math.random() - 0.5) * 8,
+                vy: (Math.random() - 0.5) * 8,
+                size: Math.random() * 6 + 2,
+                color: '#e0f2fe',
+                life: 14,
+                maxLife: 14
+              });
+            }
+            this.ctx.restore();
+          }
+        }
+
+        // Health Bar UI
+        const hbW = bw + 32;
+        const hbX = bx - 16;
+        const hbY = by - 28;
+        this.ctx.fillStyle = 'rgba(0,0,0,0.8)';
+        this.ctx.fillRect(hbX, hbY, hbW, 9);
+        this.ctx.fillStyle = '#818cf8';
+        this.ctx.fillRect(hbX, hbY, hbW * (enemy.hp / enemy.maxHp), 9);
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(hbX, hbY, hbW, 9);
       }
 
       if (
@@ -8434,7 +9241,11 @@ export class GameEngine {
         enemy.type !== 'frost_wyvern' &&
         enemy.type !== 'shadow_overlord' &&
         enemy.type !== 'dragon_king' &&
-        enemy.type !== 'king_kong'
+        enemy.type !== 'king_kong' &&
+        enemy.type !== 'giant_wisp' &&
+        enemy.type !== 'immortal_gladiator' &&
+        enemy.type !== 'killer_whale' &&
+        enemy.type !== 'lunar_goddess'
       ) {
         const hpPercent = enemy.hp / enemy.maxHp;
         this.ctx.fillStyle = '#ef4444';
@@ -11405,7 +12216,8 @@ export class GameEngine {
       this.cameraX,
       this.cameraY,
       this.getActiveGrid(),
-      this.level.tileSize
+      this.level.tileSize,
+      this.stageNum
     );
 
     this.ctx.restore();

@@ -474,8 +474,26 @@ export function useGameState() {
     return false;
   }, []);
 
-  const switchTier = useCallback((newTier: TierType) => {
-    soundService.playClick();
+  const [activationTier, setActivationTier] = useState<TierType | null>(null);
+  const [activationCodeInput, setActivationCodeInput] = useState('');
+  const [activationError, setActivationError] = useState(false);
+
+  const handleVerifyCode = useCallback(() => {
+    if (!activationTier) return;
+
+    const expectedCode = activationTier === 'Basic' ? 'dracoman_basic_tier' : 'dracoman_pro_max_tier';
+    if (activationCodeInput !== expectedCode) {
+      soundService.playHit();
+      setActivationError(true);
+      return;
+    }
+
+    soundService.playLevelUp();
+    try {
+      confetti({ particleCount: activationTier === 'Premium' ? 120 : 80, spread: activationTier === 'Premium' ? 80 : 60, origin: { y: 0.7 } });
+    } catch (e) {}
+
+    const newTier = activationTier;
     updateSaveState(prev => {
       const updatedDracos = { ...prev.dracos };
       const allNames = Object.keys(updatedDracos);
@@ -522,6 +540,26 @@ export function useGameState() {
         dracos: updatedDracos,
       };
     });
+
+    setActivationTier(null);
+    setActivationCodeInput('');
+    setActivationError(false);
+  }, [activationTier, activationCodeInput, updateSaveState]);
+
+  const switchTier = useCallback((newTier: TierType) => {
+    soundService.playClick();
+
+    if (newTier === 'Free') {
+      updateSaveState(prev => ({
+        ...prev,
+        tier: 'Free'
+      }));
+      return;
+    }
+
+    setActivationTier(newTier);
+    setActivationCodeInput('');
+    setActivationError(false);
   }, [updateSaveState]);
 
   const markStageCleared = useCallback((stageNum: number) => {
@@ -564,5 +602,12 @@ export function useGameState() {
     importSave,
     switchTier,
     markStageCleared,
+    activationTier,
+    setActivationTier,
+    activationCodeInput,
+    setActivationCodeInput,
+    activationError,
+    setActivationError,
+    handleVerifyCode,
   };
 }

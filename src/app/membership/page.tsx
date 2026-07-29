@@ -18,9 +18,20 @@ import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
 import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
+import { ActivationModal } from '../../components/ActivationModal';
 
 export default function MembershipPage() {
-  const { saveData, switchTier } = useGameState();
+  const {
+    saveData,
+    switchTier,
+    activationTier,
+    setActivationTier,
+    activationCodeInput,
+    setActivationCodeInput,
+    activationError,
+    setActivationError,
+    handleVerifyCode,
+  } = useGameState();
 
   const currentTier = saveData.tier || 'Free';
 
@@ -63,8 +74,8 @@ export default function MembershipPage() {
               <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
               <div className="text-3xl font-black text-stone-800 font-mono">Standard Progression</div>
               <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon unlocked</li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock heroes with earned coins</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon, Archermon & Shieldmon</li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock remaining roster with earned coins</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Complete campaign stages sequentially</li>
               </ul>
@@ -159,6 +170,19 @@ export default function MembershipPage() {
           </div>
         </div>
       </main>
+
+      <ActivationModal
+        activationTier={activationTier}
+        activationCodeInput={activationCodeInput}
+        activationError={activationError}
+        onCodeChange={setActivationCodeInput}
+        onVerify={handleVerifyCode}
+        onClose={() => {
+          setActivationTier(null);
+          setActivationCodeInput('');
+          setActivationError(false);
+        }}
+      />
 
       {/* FOOTER */}
       <Footer />

@@ -460,89 +460,175 @@ class SoundService {
     this.initCtx();
     if (!this.ctx || this.musicInterval || !this.isMusicEnabled || this.isMuted) return;
 
-    let progressions = [
-      [261.63, 329.63, 392.00, 523.25],
-      [174.61, 220.00, 261.63, 349.23],
-      [196.00, 246.94, 293.66, 392.00],
-      [261.63, 329.63, 392.00, 523.25],
-    ];
-    let tempo = 120;
-    let leadWaveform: OscillatorType = 'sine';
-    let bassWaveform: OscillatorType = 'sine';
+    // ── Per-stage music profiles ──────────────────────────────────────────────
+    type MusicProfile = {
+      progressions: number[][];
+      tempo: number;
+      leadWave: OscillatorType;
+      bassWave: OscillatorType;
+      melodyOctaveShift: number; // multiplier on lead freq for melody arpeggio
+      hasDrum: boolean;
+      drumRate: number; // every N steps a kick fires
+      hihatRate: number;
+    };
 
-    if (this.currentStageNum === 2) {
-      progressions = [
-        [220.00, 261.63, 329.63, 440.00],
-        [174.61, 220.00, 261.63, 349.23],
-        [293.66, 349.23, 440.00, 587.33],
-        [246.94, 293.66, 392.00, 493.88],
-      ];
-      tempo = 135;
-      leadWaveform = 'triangle';
-      bassWaveform = 'sine';
-    } else if (this.currentStageNum === 3) {
-      progressions = [
-        [164.81, 196.00, 246.94, 329.63],
-        [174.61, 220.00, 261.63, 349.23],
-        [196.00, 233.08, 293.66, 392.00],
-        [164.81, 196.00, 246.94, 329.63],
-      ];
-      tempo = 160;
-      leadWaveform = 'sawtooth';
-      bassWaveform = 'triangle';
-    } else if (this.currentStageNum === 4) {
-      progressions = [
-        [293.66, 349.23, 440.00, 587.33],
-        [392.00, 493.88, 587.33, 783.99],
-        [440.00, 523.25, 659.25, 880.00],
-        [293.66, 349.23, 440.00, 587.33],
-      ];
-      tempo = 105;
-      leadWaveform = 'sine';
-      bassWaveform = 'sine';
-    } else if (this.currentStageNum === 5) {
-      progressions = [
-        [138.59, 164.81, 207.65, 277.18],
-        [220.00, 277.18, 329.63, 440.00],
-        [207.65, 246.94, 311.13, 415.30],
-        [138.59, 164.81, 207.65, 277.18],
-      ];
-      tempo = 142;
-      leadWaveform = 'square';
-      bassWaveform = 'square';
-    } else if (this.currentStageNum === 6) {
-      progressions = [
-        [369.99, 466.16, 554.37, 739.99],
-        [311.13, 369.99, 466.16, 622.25],
-        [277.18, 329.63, 415.30, 554.37],
-        [246.94, 293.66, 392.00, 493.88],
-      ];
-      tempo = 165;
-      leadWaveform = 'sawtooth';
-      bassWaveform = 'triangle';
-    } else if (this.currentStageNum === 7) {
-      progressions = [
-        [293.66, 349.23, 440.00, 587.33],
-        [329.63, 392.00, 493.88, 659.25],
-        [349.23, 440.00, 523.25, 698.46],
-        [392.00, 493.88, 587.33, 783.99],
-      ];
-      tempo = 150;
-      leadWaveform = 'triangle';
-      bassWaveform = 'sine';
-    } else if (this.currentStageNum === 8) {
-      progressions = [
-        [164.81, 196.00, 246.94, 329.63],
-        [155.56, 196.00, 233.08, 311.13],
-        [146.83, 174.61, 220.00, 293.66],
-        [164.81, 196.00, 246.94, 329.63],
-      ];
-      tempo = 175;
-      leadWaveform = 'sawtooth';
-      bassWaveform = 'square';
-    }
+    const profiles: Record<number, MusicProfile> = {
+      1: {
+        progressions: [
+          [261.63, 329.63, 392.00, 523.25],
+          [174.61, 220.00, 261.63, 349.23],
+          [196.00, 246.94, 293.66, 392.00],
+          [261.63, 329.63, 392.00, 523.25],
+        ],
+        tempo: 120, leadWave: 'sine', bassWave: 'sine', melodyOctaveShift: 2.0, hasDrum: false, drumRate: 4, hihatRate: 2,
+      },
+      2: {
+        progressions: [
+          [220.00, 261.63, 329.63, 440.00],
+          [174.61, 220.00, 261.63, 349.23],
+          [293.66, 349.23, 440.00, 587.33],
+          [246.94, 293.66, 392.00, 493.88],
+        ],
+        tempo: 135, leadWave: 'triangle', bassWave: 'sine', melodyOctaveShift: 2.0, hasDrum: true, drumRate: 4, hihatRate: 2,
+      },
+      3: {
+        // Volcano — aggressive sawtooth
+        progressions: [
+          [164.81, 196.00, 246.94, 329.63],
+          [174.61, 220.00, 261.63, 349.23],
+          [196.00, 233.08, 293.66, 392.00],
+          [164.81, 196.00, 246.94, 329.63],
+        ],
+        tempo: 168, leadWave: 'sawtooth', bassWave: 'square', melodyOctaveShift: 1.5, hasDrum: true, drumRate: 4, hihatRate: 1,
+      },
+      4: {
+        // Frozen — cool, slow, crystalline
+        progressions: [
+          [293.66, 349.23, 440.00, 587.33],
+          [392.00, 493.88, 587.33, 783.99],
+          [440.00, 523.25, 659.25, 880.00],
+          [293.66, 349.23, 440.00, 587.33],
+        ],
+        tempo: 100, leadWave: 'sine', bassWave: 'sine', melodyOctaveShift: 2.5, hasDrum: false, drumRate: 8, hihatRate: 4,
+      },
+      5: {
+        // Shadow Abyss — square, eerie
+        progressions: [
+          [138.59, 164.81, 207.65, 277.18],
+          [220.00, 277.18, 329.63, 440.00],
+          [207.65, 246.94, 311.13, 415.30],
+          [138.59, 164.81, 207.65, 277.18],
+        ],
+        tempo: 138, leadWave: 'square', bassWave: 'sawtooth', melodyOctaveShift: 2.0, hasDrum: true, drumRate: 4, hihatRate: 2,
+      },
+      6: {
+        // Dragon Temple — epic ascending
+        progressions: [
+          [369.99, 466.16, 554.37, 739.99],
+          [311.13, 369.99, 466.16, 622.25],
+          [277.18, 329.63, 415.30, 554.37],
+          [246.94, 293.66, 392.00, 493.88],
+        ],
+        tempo: 165, leadWave: 'sawtooth', bassWave: 'triangle', melodyOctaveShift: 2.0, hasDrum: true, drumRate: 4, hihatRate: 2,
+      },
+      7: {
+        // Sky Heavens — soaring triangle melody
+        progressions: [
+          [293.66, 349.23, 440.00, 587.33],
+          [329.63, 392.00, 493.88, 659.25],
+          [349.23, 440.00, 523.25, 698.46],
+          [392.00, 493.88, 587.33, 783.99],
+        ],
+        tempo: 150, leadWave: 'triangle', bassWave: 'sine', melodyOctaveShift: 2.0, hasDrum: false, drumRate: 8, hihatRate: 4,
+      },
+      8: {
+        // Primordial Core — heavy, industrial
+        progressions: [
+          [164.81, 196.00, 246.94, 329.63],
+          [155.56, 196.00, 233.08, 311.13],
+          [146.83, 174.61, 220.00, 293.66],
+          [164.81, 196.00, 246.94, 329.63],
+        ],
+        tempo: 178, leadWave: 'sawtooth', bassWave: 'square', melodyOctaveShift: 1.5, hasDrum: true, drumRate: 2, hihatRate: 1,
+      },
+      9: {
+        // Underwater Abyss — undulating sine waves, slow and dreamy
+        progressions: [
+          [233.08, 293.66, 349.23, 466.16],
+          [207.65, 261.63, 311.13, 415.30],
+          [246.94, 311.13, 369.99, 493.88],
+          [220.00, 277.18, 329.63, 440.00],
+        ],
+        tempo: 88, leadWave: 'sine', bassWave: 'sine', melodyOctaveShift: 2.0, hasDrum: false, drumRate: 8, hihatRate: 4,
+      },
+      10: {
+        // Jungle Sanctuary — tribal, rhythmic, mid-tempo
+        progressions: [
+          [196.00, 246.94, 293.66, 392.00],
+          [174.61, 220.00, 261.63, 349.23],
+          [220.00, 277.18, 329.63, 440.00],
+          [196.00, 246.94, 293.66, 392.00],
+        ],
+        tempo: 145, leadWave: 'triangle', bassWave: 'triangle', melodyOctaveShift: 2.0, hasDrum: true, drumRate: 3, hihatRate: 1,
+      },
+      11: {
+        // Gladiator Arena — bold, march-like, epic fanfare
+        progressions: [
+          [329.63, 415.30, 493.88, 659.25],
+          [369.99, 466.16, 554.37, 739.99],
+          [311.13, 392.00, 466.16, 622.25],
+          [349.23, 440.00, 523.25, 698.46],
+        ],
+        tempo: 155, leadWave: 'sawtooth', bassWave: 'square', melodyOctaveShift: 1.5, hasDrum: true, drumRate: 2, hihatRate: 1,
+      },
+      12: {
+        // Outerspace Sphere — cosmic, ethereal, floating
+        progressions: [
+          [184.00, 220.00, 277.18, 369.99],
+          [207.65, 246.94, 311.13, 415.30],
+          [164.81, 207.65, 261.63, 349.23],
+          [184.00, 233.08, 293.66, 369.99],
+        ],
+        tempo: 95, leadWave: 'sine', bassWave: 'sine', melodyOctaveShift: 3.0, hasDrum: false, drumRate: 8, hihatRate: 4,
+      },
+      13: {
+        // Lunar Palace — moonlit, mysterious, high and glassy
+        progressions: [
+          [277.18, 349.23, 415.30, 554.37],
+          [311.13, 392.00, 466.16, 622.25],
+          [261.63, 329.63, 392.00, 523.25],
+          [293.66, 369.99, 440.00, 587.33],
+        ],
+        tempo: 112, leadWave: 'sine', bassWave: 'triangle', melodyOctaveShift: 2.5, hasDrum: false, drumRate: 8, hihatRate: 2,
+      },
+    };
 
+    const profile = profiles[this.currentStageNum] ?? profiles[1];
+    const { progressions, tempo, leadWave, bassWave, melodyOctaveShift, hasDrum, drumRate, hihatRate } = profile;
     const stepDuration = 60 / tempo;
+
+    // Helper: fire a one-shot noise burst (kick drum / hi-hat)
+    const fireNoiseBurst = (freqCenter: number, q: number, durSec: number, volMult: number) => {
+      if (!this.ctx) return;
+      const bufSize = Math.floor(this.ctx.sampleRate * durSec);
+      const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      const flt = this.ctx.createBiquadFilter();
+      flt.type = 'bandpass';
+      flt.frequency.setValueAtTime(freqCenter, this.ctx.currentTime);
+      flt.Q.setValueAtTime(q, this.ctx.currentTime);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(this.musicVolume * volMult, this.ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + durSec);
+      src.connect(flt);
+      flt.connect(g);
+      g.connect(this.ctx.destination);
+      src.start();
+      src.stop(this.ctx.currentTime + durSec);
+    };
 
     this.musicInterval = setInterval(() => {
       this.initCtx();
@@ -550,49 +636,84 @@ class SoundService {
 
       const chordIndex = Math.floor(this.currentStep / 8) % progressions.length;
       const noteIndex = this.currentStep % 4;
-
       const baseChord = progressions[chordIndex];
       const freq = baseChord[noteIndex];
 
+      // ── Lead melody ──
       const osc = this.ctx.createOscillator();
       const gain = this.ctx.createGain();
-
-      osc.type = leadWaveform;
+      osc.type = leadWave;
       osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
-
-      const leadVolumeMult = leadWaveform === 'sawtooth' || leadWaveform === 'square' ? 0.08 : 0.15;
-      gain.gain.setValueAtTime(this.musicVolume * leadVolumeMult, this.ctx.currentTime);
+      const leadVol = leadWave === 'sawtooth' || leadWave === 'square' ? 0.07 : 0.13;
+      gain.gain.setValueAtTime(this.musicVolume * leadVol, this.ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + stepDuration - 0.02);
-
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-
       osc.start();
       osc.stop(this.ctx.currentTime + stepDuration);
-
       this.musicNodes.push({ osc, gain });
-      if (this.musicNodes.length > 10) {
-        this.musicNodes.shift();
+
+      // ── High melody arpeggio (every 2nd step) ──
+      if (this.currentStep % 2 === 0) {
+        const arpFreq = baseChord[(noteIndex + 2) % 4] * melodyOctaveShift;
+        const arpOsc = this.ctx.createOscillator();
+        const arpGain = this.ctx.createGain();
+        arpOsc.type = leadWave === 'sawtooth' ? 'triangle' : 'sine';
+        arpOsc.frequency.setValueAtTime(arpFreq, this.ctx.currentTime);
+        arpGain.gain.setValueAtTime(this.musicVolume * 0.06, this.ctx.currentTime);
+        arpGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + stepDuration * 0.7);
+        arpOsc.connect(arpGain);
+        arpGain.connect(this.ctx.destination);
+        arpOsc.start();
+        arpOsc.stop(this.ctx.currentTime + stepDuration * 0.7);
+        this.musicNodes.push({ osc: arpOsc, gain: arpGain });
       }
 
+      // ── Bass (every 4 steps = one beat) ──
       if (this.currentStep % 4 === 0) {
         const bassOsc = this.ctx.createOscillator();
         const bassGain = this.ctx.createGain();
-
-        bassOsc.type = bassWaveform;
+        bassOsc.type = bassWave;
         bassOsc.frequency.setValueAtTime(baseChord[0] / 2, this.ctx.currentTime);
-
-        const bassVolumeMult = bassWaveform === 'square' || (bassWaveform as string) === 'sawtooth' ? 0.12 : 0.22;
-        bassGain.gain.setValueAtTime(this.musicVolume * bassVolumeMult, this.ctx.currentTime);
+        const bassVol = bassWave === 'square' || bassWave === 'sawtooth' ? 0.11 : 0.20;
+        bassGain.gain.setValueAtTime(this.musicVolume * bassVol, this.ctx.currentTime);
         bassGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + stepDuration * 1.8);
-
         bassOsc.connect(bassGain);
         bassGain.connect(this.ctx.destination);
-
         bassOsc.start();
         bassOsc.stop(this.ctx.currentTime + stepDuration * 2);
-
         this.musicNodes.push({ osc: bassOsc, gain: bassGain });
+      }
+
+      // ── Percussion ──
+      if (hasDrum) {
+        // Kick drum: noise burst + pitched tone
+        if (this.currentStep % drumRate === 0) {
+          fireNoiseBurst(80, 1.2, 0.12, 0.28);
+          if (this.ctx) {
+            const kick = this.ctx.createOscillator();
+            const kickG = this.ctx.createGain();
+            kick.type = 'sine';
+            kick.frequency.setValueAtTime(180, this.ctx.currentTime);
+            kick.frequency.exponentialRampToValueAtTime(45, this.ctx.currentTime + 0.1);
+            kickG.gain.setValueAtTime(this.musicVolume * 0.35, this.ctx.currentTime);
+            kickG.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + 0.12);
+            kick.connect(kickG);
+            kickG.connect(this.ctx.destination);
+            kick.start();
+            kick.stop(this.ctx.currentTime + 0.12);
+            this.musicNodes.push({ osc: kick, gain: kickG });
+          }
+        }
+        // Hi-hat: thin filtered noise
+        if (this.currentStep % hihatRate === 0 && this.currentStep % drumRate !== 0) {
+          fireNoiseBurst(7000, 8.0, 0.04, 0.12);
+        }
+      }
+
+      this.musicNodes.push({ osc, gain });
+      if (this.musicNodes.length > 24) {
+        this.musicNodes.shift();
       }
 
       this.currentStep++;
