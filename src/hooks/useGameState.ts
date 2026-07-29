@@ -259,7 +259,7 @@ export function useGameState() {
   }[]>([]);
 
   const handleEnemyDefeated = useCallback((expGain: number, coinsGain: number) => {
-    pendingLevelUpRef.current = [];
+    let levelUpItemsToTrigger: any[] = [];
 
     updateSaveState(prev => {
       const activeName = prev.selectedDraco;
@@ -317,8 +317,7 @@ export function useGameState() {
 
       if (newPendingItems.length > 0) {
         soundService.playLevelUp();
-        // Store in ref so we can open the modal outside the state updater
-        pendingLevelUpRef.current = newPendingItems;
+        levelUpItemsToTrigger = newPendingItems;
       }
 
       updatedDracos[activeName] = {
@@ -339,14 +338,9 @@ export function useGameState() {
       };
     });
 
-    // Open modal outside the state updater so React doesn't swallow the setState calls
-    if (pendingLevelUpRef.current.length > 0) {
-      const items = pendingLevelUpRef.current;
-      setPendingLevelUps(prevList => {
-        const combined = [...prevList, ...items];
-        return combined;
-      });
-      setLevelUpInfo(items[0]);
+    if (levelUpItemsToTrigger.length > 0) {
+      setPendingLevelUps(prevList => [...prevList, ...levelUpItemsToTrigger]);
+      setLevelUpInfo(levelUpItemsToTrigger[0]);
       setShowLevelUp(true);
     }
   }, [updateSaveState]);
