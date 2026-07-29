@@ -65,7 +65,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md">
       <motion.div
         initial={{ scale: 0.9, rotate: -1, y: 30 }}
         animate={{ scale: 1, rotate: 0, y: 0 }}
