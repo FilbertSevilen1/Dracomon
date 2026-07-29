@@ -52,7 +52,7 @@ export default function MapsPage() {
       <Navbar onOpenInventory={() => setShowInventory(true)} />
 
       {}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-10 space-y-8 z-10">
         {}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-8">
           <div>

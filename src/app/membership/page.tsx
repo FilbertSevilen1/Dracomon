@@ -45,7 +45,7 @@ export default function MembershipPage() {
       <Navbar />
 
       {}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-10 space-y-8 z-10">
         {}
         <div className="text-center md:text-left border-b border-stone-200 pb-8 space-y-2">
           <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">

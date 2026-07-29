@@ -135,11 +135,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
 
   return (
     <>
-      <header className={`w-full z-50 px-3 md:px-8 py-3 flex items-center justify-between select-none transition-all duration-300 ${
-        isLandingPage
-          ? 'fixed top-0 left-0'
-          : 'sticky top-0'
-      } ${
+      <header className={`w-full z-50 px-3 md:px-8 py-3 flex items-center justify-between select-none transition-all duration-300 fixed top-0 left-0 ${
         isTransparent
           ? 'bg-transparent border-b border-transparent shadow-none'
           : 'border-b border-stone-200/80 bg-white/90 backdrop-blur-md shadow-sm'

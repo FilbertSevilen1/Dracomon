@@ -1085,7 +1085,10 @@ export class GameEngine {
 
     if (e.key === 'Escape') {
       e.preventDefault();
-      this.callbacks.onPauseToggle?.();
+      const isDead = this.pHP <= 0;
+      if (!isDead) {
+        this.callbacks.onPauseToggle?.();
+      }
     } else if (e.key === ' ') {
       this.triggerUltimate();
     } else if (key === 'w' || e.key === 'ArrowUp') {
