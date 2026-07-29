@@ -274,7 +274,7 @@ export function useGameState() {
       let requiredExp = currentLevel * 30;
 
       const baseIncrease: Partial<PlayerStats> = {
-        hp: 2,
+        hp: 4,
         attack: 1,
         defense: 1,
         speed: 1,
@@ -401,7 +401,7 @@ export function useGameState() {
         const d = updatedDracos[name];
         if (d) {
           d.level = currentLvl + 1;
-          d.hp = (d.hp || 10) + 2;
+          d.hp = (d.hp || 10) + 4;
           d.attack = (d.attack || 1) + 1;
           d.defense = (d.defense || 1) + 1;
           d.speed = Math.min(20, (d.speed || 1) + 1);
@@ -417,7 +417,7 @@ export function useGameState() {
             dracoName: name,
             oldLevel: currentLvl,
             newLevel: currentLvl + 1,
-            baseIncrease: { hp: 2, attack: 1, defense: 1, speed: 1 },
+            baseIncrease: { hp: 4, attack: 1, defense: 1, speed: 1 },
             bonusRoll
           };
           setPendingLevelUps(prevList => {

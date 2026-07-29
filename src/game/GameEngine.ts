@@ -5287,7 +5287,8 @@ export class GameEngine {
         else if (proj.type === 'dark_energy') {
           proj.x += proj.vx;
           (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
-          if (proj.x < -100 || proj.x > this.levelWidth + 100 || (proj as any).traveledDist >= ((proj as any).rangeCap || 800)) {
+          const hitSolid = this.isSolid(proj.x, proj.y) || this.checkPlatformOneWay(proj.x, proj.y);
+          if (hitSolid || proj.x < -100 || proj.x > this.levelWidth + 100 || (proj as any).traveledDist >= ((proj as any).rangeCap || 800)) {
             this.projectiles.splice(index, 1);
             return;
           }

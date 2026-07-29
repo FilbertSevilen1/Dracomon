@@ -69,15 +69,15 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
       <motion.div
         initial={{ scale: 0.9, rotate: -1, y: 30 }}
         animate={{ scale: 1, rotate: 0, y: 0 }}
-        className="w-full max-w-lg border border-yellow-200 bg-white/95 rounded-3xl p-8 shadow-2xl relative overflow-hidden text-center"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto border border-yellow-200 bg-white/95 rounded-3xl p-6 md:p-8 shadow-2xl relative text-center scrollbar-thin scrollbar-thumb-stone-200"
       >
-        {}
+        {/* Glow Effects */}
         <div className="absolute -top-12 -left-12 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl" />
         <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl" />
 
-        {}
-        <div className="mx-auto w-16 h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-4 border border-amber-200 shadow-sm animate-bounce">
-          <Award className="w-8 h-8 text-amber-600" />
+        {/* Icon & Title */}
+        <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 shadow-sm animate-bounce">
+          <Award className="w-6 h-6 md:w-8 md:h-8 text-amber-600" />
         </div>
 
         {pendingCount && pendingCount > 1 && (
@@ -86,65 +86,65 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           </div>
         )}
 
-        <h2 className="text-3xl font-extrabold tracking-tight text-stone-900 font-display">LEVEL UP!</h2>
-        <p className="text-sm font-semibold text-stone-400 mt-1 uppercase tracking-wider">
+        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 font-display">LEVEL UP!</h2>
+        <p className="text-xs md:text-sm font-semibold text-stone-400 mt-1 uppercase tracking-wider">
           {dracoName} reached Level {newLevel}!
         </p>
 
-        {}
-        <div className="mt-2 flex items-center justify-center gap-3 text-stone-400 font-bold text-sm">
+        {/* Level Progression badges */}
+        <div className="mt-1 md:mt-2 flex items-center justify-center gap-3 text-stone-400 font-bold text-sm">
           <span>Lv.{oldLevel}</span>
           <span>→</span>
           <span className="text-amber-500 font-extrabold text-lg">Lv.{newLevel}</span>
         </div>
 
-        {}
-        <div className="mt-6 p-4 rounded-2xl border border-stone-100 bg-stone-50/50 max-w-sm mx-auto text-left space-y-2">
-          <h4 className="text-xs font-bold uppercase tracking-wider text-stone-400 mb-2">Base Stat Upgrades:</h4>
+        {/* Base stats panel */}
+        <div className="mt-4 p-3 md:p-4 rounded-2xl border border-stone-100 bg-stone-50/50 max-w-sm mx-auto text-left space-y-1">
+          <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400 mb-1">Base Stat Upgrades:</h4>
           <div className="grid grid-cols-2 gap-2 text-xs font-mono font-bold text-stone-700">
-            <div className="flex justify-between p-2 bg-white rounded-lg border border-stone-100">
+            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
               <span>HP</span>
               <span className="text-emerald-600">+{baseIncrease.hp}</span>
             </div>
-            <div className="flex justify-between p-2 bg-white rounded-lg border border-stone-100">
+            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
               <span>Attack</span>
               <span className="text-emerald-600">+{baseIncrease.attack}</span>
             </div>
-            <div className="flex justify-between p-2 bg-white rounded-lg border border-stone-100">
+            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
               <span>Defense</span>
               <span className="text-emerald-600">+{baseIncrease.defense}</span>
             </div>
-            <div className="flex justify-between p-2 bg-white rounded-lg border border-stone-100">
+            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
               <span>Speed</span>
               <span className="text-emerald-600">+{baseIncrease.speed}</span>
             </div>
           </div>
         </div>
 
-        {}
-        <div className="mt-8 mb-6 flex flex-col items-center justify-center p-4 border border-dashed border-amber-200 rounded-2xl bg-amber-50/30 max-w-xs mx-auto">
-          <div className="flex items-center gap-2 mb-2 text-amber-800 text-xs font-bold">
-            <Dices className="w-4 h-4 animate-spin" />
+        {/* Dice roll animation */}
+        <div className="mt-4 md:mt-6 mb-4 flex flex-col items-center justify-center p-3 md:p-4 border border-dashed border-amber-200 rounded-2xl bg-amber-50/30 max-w-xs mx-auto">
+          <div className="flex items-center gap-2 mb-1.5 text-amber-800 text-[10px] md:text-xs font-bold">
+            <Dices className="w-3.5 h-3.5 animate-spin" />
             <span>ROLLING RANDOM BONUS...</span>
           </div>
 
           <motion.div
             animate={diceRolling ? { rotate: 360 } : { scale: [1, 1.15, 1] }}
             transition={diceRolling ? { repeat: Infinity, duration: 0.5, ease: 'linear' } : { duration: 0.3 }}
-            className="w-14 h-14 bg-white border-2 border-amber-500 rounded-2xl shadow-md flex items-center justify-center font-mono font-black text-2xl text-amber-600"
+            className="w-12 h-12 md:w-14 md:h-14 bg-white border-2 border-amber-500 rounded-2xl shadow-md flex items-center justify-center font-mono font-black text-xl md:text-2xl text-amber-600"
           >
             +{currentDiceVal}
           </motion.div>
 
           {!diceRolling && (
-            <p className="text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-2">
+            <p className="text-[9px] md:text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-1.5">
               Select one stat to apply this +{bonusRoll} bonus!
             </p>
           )}
         </div>
 
-        {}
-        <div className="grid grid-cols-2 gap-3 max-w-md mx-auto">
+        {/* Bonus Stat selection buttons */}
+        <div className="grid grid-cols-2 gap-2 md:gap-3 max-w-md mx-auto">
           {statDetails.map(({ key, name }) => {
             const val = currentStats ? (currentStats as any)[key] || 0 : 0;
             const isCapped = (key === 'speed' && val >= 20) || (key === 'jump' && val >= 14);
@@ -155,7 +155,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                 key={key}
                 disabled={isDisabled}
                 onClick={() => handleSelectStat(key)}
-                className={`py-3 px-4 rounded-xl border text-xs font-bold transition-all text-left flex justify-between items-center bg-white ${
+                className={`py-2 px-3 md:py-3 md:px-4 rounded-xl border text-[11px] md:text-xs font-bold transition-all text-left flex justify-between items-center bg-white ${
                   isDisabled
                     ? 'opacity-50 cursor-not-allowed border-stone-200 text-stone-400 bg-stone-100'
                     : 'border-stone-200 text-stone-700 hover:border-amber-500 hover:bg-amber-50/20 active:scale-95'
@@ -163,7 +163,7 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
               >
                 <span>{name}</span>
                 {isCapped ? (
-                  <span className="font-mono text-stone-400 text-[9px] font-extrabold uppercase">CAPPED</span>
+                  <span className="font-mono text-stone-400 text-[8px] md:text-[9px] font-extrabold uppercase">CAPPED</span>
                 ) : !diceRolling ? (
                   <span className="font-mono text-emerald-600">+{bonusRoll}</span>
                 ) : null}
