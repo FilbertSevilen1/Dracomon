@@ -1,3 +1,5 @@
+import { getLevel } from '../game/LevelManager';
+
 class SoundService {
   private ctx: AudioContext | null = null;
   private musicInterval: any = null;
@@ -348,6 +350,207 @@ class SoundService {
     playCrystalChime(783.99, 0.18, 0.35);
   }
 
+  public playAzuremonCharge(isDemo = false) {
+    if (isDemo) return;
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    const duration = 0.5;
+
+    // Rising energy pitch
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(100, now);
+    osc.frequency.exponentialRampToValueAtTime(600, now + duration);
+
+    // Filter to sweep up and sound like charging
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(200, now);
+    filter.frequency.exponentialRampToValueAtTime(2000, now + duration);
+    filter.Q.setValueAtTime(5.0, now);
+
+    gain.gain.setValueAtTime(0.01, now);
+    gain.gain.linearRampToValueAtTime(this.sfxVolume * 0.7, now + duration);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + duration);
+
+    // Add a secondary sine oscillator for sub-bass build up
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(50, now);
+    subOsc.frequency.linearRampToValueAtTime(120, now + duration);
+
+    subGain.gain.setValueAtTime(0.01, now);
+    subGain.gain.linearRampToValueAtTime(this.sfxVolume * 0.8, now + duration);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.ctx.destination);
+
+    subOsc.start(now);
+    subOsc.stop(now + duration);
+  }
+
+  public playAzuremonBeam(isDemo = false) {
+    if (isDemo) return;
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    
+    // 1. Dragon Roar / Growl (two detuned sawtooth oscillators)
+    const osc1 = this.ctx.createOscillator();
+    const osc2 = this.ctx.createOscillator();
+    const growlGain = this.ctx.createGain();
+    
+    osc1.type = 'sawtooth';
+    osc1.frequency.setValueAtTime(85, now);
+    osc1.frequency.linearRampToValueAtTime(55, now + 3.0);
+    
+    osc2.type = 'sawtooth';
+    osc2.frequency.setValueAtTime(88, now);
+    osc2.frequency.linearRampToValueAtTime(57, now + 3.0);
+
+    const lowpass = this.ctx.createBiquadFilter();
+    lowpass.type = 'lowpass';
+    lowpass.frequency.setValueAtTime(350, now);
+    lowpass.frequency.exponentialRampToValueAtTime(120, now + 3.5);
+
+    growlGain.gain.setValueAtTime(this.sfxVolume * 0.7, now);
+    growlGain.gain.linearRampToValueAtTime(this.sfxVolume * 0.5, now + 1.0);
+    growlGain.gain.exponentialRampToValueAtTime(0.001, now + 4.0);
+
+    osc1.connect(lowpass);
+    osc2.connect(lowpass);
+    lowpass.connect(growlGain);
+    growlGain.connect(this.ctx.destination);
+    
+    osc1.start(now);
+    osc2.start(now);
+    osc1.stop(now + 4.0);
+    osc2.stop(now + 4.0);
+
+    // 2. Rushing Breath Wind (White noise + bandpass sweep)
+    const bufSize = this.ctx.sampleRate * 3.5;
+    const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < bufSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buf;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'bandpass';
+    noiseFilter.frequency.setValueAtTime(800, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(300, now + 3.0);
+    noiseFilter.Q.setValueAtTime(1.5, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(this.sfxVolume * 0.65, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 3.5);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    
+    noise.start(now);
+    noise.stop(now + 3.5);
+
+    // 3. Flame Crackle (Modulated bandpass filter noise sweep)
+    const crackleSource = this.ctx.createBufferSource();
+    crackleSource.buffer = buf;
+
+    const crackleFilter = this.ctx.createBiquadFilter();
+    crackleFilter.type = 'peaking';
+    crackleFilter.frequency.setValueAtTime(2500, now);
+    crackleFilter.frequency.exponentialRampToValueAtTime(1200, now + 3.0);
+    crackleFilter.Q.setValueAtTime(8.0, now);
+
+    const crackleGain = this.ctx.createGain();
+    crackleGain.gain.setValueAtTime(this.sfxVolume * 0.25, now);
+    crackleGain.gain.exponentialRampToValueAtTime(0.001, now + 3.0);
+
+    // Dynamic random/vibrato modulation to simulate flames crackling
+    const modOsc = this.ctx.createOscillator();
+    modOsc.type = 'sine';
+    modOsc.frequency.setValueAtTime(35, now);
+    
+    const modGain = this.ctx.createGain();
+    modGain.gain.setValueAtTime(this.sfxVolume * 0.1, now);
+
+    modOsc.connect(modGain);
+    modGain.connect(crackleGain.gain);
+
+    crackleSource.connect(crackleFilter);
+    crackleFilter.connect(crackleGain);
+    crackleGain.connect(this.ctx.destination);
+
+    crackleSource.start(now);
+    modOsc.start(now);
+    crackleSource.stop(now + 3.0);
+    modOsc.stop(now + 3.0);
+  }
+
+  public playAzuremonImpact(isDemo = false) {
+    if (isDemo) return;
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    const duration = 0.15;
+
+    // Short debris crash noise
+    const bufferSize = this.ctx.sampleRate * duration;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(300, now);
+    filter.frequency.exponentialRampToValueAtTime(80, now + duration);
+    filter.Q.setValueAtTime(1.0, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.sfxVolume * 0.45, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    noise.start(now);
+    noise.stop(now + duration);
+
+    // Deep impact thump
+    const thump = this.ctx.createOscillator();
+    const thumpGain = this.ctx.createGain();
+    thump.type = 'triangle';
+    thump.frequency.setValueAtTime(130, now);
+    thump.frequency.exponentialRampToValueAtTime(45, now + 0.12);
+
+    thumpGain.gain.setValueAtTime(this.sfxVolume * 0.6, now);
+    thumpGain.gain.exponentialRampToValueAtTime(0.01, now + 0.12);
+
+    thump.connect(thumpGain);
+    thumpGain.connect(this.ctx.destination);
+    thump.start(now);
+    thump.stop(now + 0.12);
+  }
+
   public playBlackHoleActivation(isDemo = false) {
     if (isDemo) return;
     this.initCtx();
@@ -603,7 +806,9 @@ class SoundService {
       },
     };
 
-    const profile = profiles[this.currentStageNum] ?? profiles[1];
+    const level = getLevel(this.currentStageNum);
+    const worldId = level ? level.worldId : 1;
+    const profile = profiles[worldId] ?? profiles[1];
     const { progressions, tempo, leadWave, bassWave, melodyOctaveShift, hasDrum, drumRate, hihatRate } = profile;
     const stepDuration = 60 / tempo;
 

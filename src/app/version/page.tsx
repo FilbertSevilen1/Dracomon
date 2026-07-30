@@ -42,7 +42,7 @@ const VERSION_LOGS: VersionLog[] = [
       'Progressive Reward Scaling: Exponential drop multipliers from 1.0x (Forest) up to 5.0x (Space) for EXP, coins, upgrade stones, and potion drops in late-game worlds.',
       'New Hero - Azuremon: Bluish white celestial dragon hero firing mini beams that siphon +1 HP per enemy hit.',
       'Azuremon Skill - Light Energy Ball: Fires a light sphere blocked by terrain that explodes on impact, slowing enemies by 50% for 3s and restoring +5 HP when an enemy is defeated.',
-      'Azuremon Ultimate - Burst Stream of Catastrophe: 2-second channel (-10% max HP), releasing a 50px radius, 1200px range front beam rotatable via W/S keys for 5s. Blasting ground/platform for 0.5s destroys tiles in a 1-block radius (excluding boss protection zones).',
+      'Azuremon Ultimate - Burst Stream of Catastrophe: 2-second channel (-10% max HP), releasing a 50px radius, 1200px range front beam rotatable via W/S keys for 4s. Blasting ground/platform for 0.5s destroys tiles in a 1-block radius (excluding boss protection zones).',
     ],
   },
   {

@@ -38,7 +38,6 @@ const PRIMARY_NAV = [
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
   const pathname = usePathname();
-  if (pathname === '/play') return null;
   const { saveData, usePotion, useUpgradeStone, buyItem } = useGameState();
   const [liveSaveData, setLiveSaveData] = useState<SaveData>(saveData);
   const [showSettings, setShowSettings] = useState(false);
@@ -135,6 +134,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
       : isTransparent
       ? 'bg-white/10 text-stone-200 border-white/20'
       : 'bg-stone-100 text-stone-700 border-stone-300';
+
+  if (pathname === '/play') return null;
 
   return (
     <>

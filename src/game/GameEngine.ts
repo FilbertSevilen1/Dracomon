@@ -329,6 +329,10 @@ export class GameEngine {
   private avatarDuration = 0;
   private laserBeamActive = false;
   private laserBeamDuration = 0;
+  private flymonTornadoActive = false;
+  private flymonTornadoX = 0;
+  private flymonTornadoY = 0;
+  private flymonTornadoTimer = 0;
 
   private cameraZoom = 1.0;
   private cameraZoomTargetX = 0;
@@ -1108,6 +1112,11 @@ export class GameEngine {
           });
         }
       }
+    }
+
+    const isFinalStage = this.level.stageInWorld === this.level.totalStagesInWorld;
+    if (!isFinalStage) {
+      this.enemies = this.enemies.filter(e => !this.isBossType(e.type));
     }
 
     // Enable exit portal immediately if there is no boss or miniboss on the map
@@ -2279,6 +2288,7 @@ export class GameEngine {
       case 'Thundermon': return 160;
       case 'Enigmon': return 160;
       case 'Lunarmon': return 200;
+      case 'Azuremon': return 160;
       default: return 100;
     }
   }
@@ -2293,7 +2303,7 @@ export class GameEngine {
       case 'Archermon': return 'Arrow Shower';
       case 'Shieldmon': return 'Aegis Shield Dome';
       case 'Assassinmon': return 'Single Slash of Death';
-      case 'Flymon': return 'Laser Beam';
+      case 'Flymon': return 'Tornado Tempest';
       case 'Whitemon': return 'Primal Roar';
       case 'Magemon': return 'Trio Orb Blast';
       case 'Shadowmon': return 'Soul Blast';
@@ -2301,6 +2311,7 @@ export class GameEngine {
       case 'Thundermon': return 'Raigeki';
       case 'Enigmon': return 'Black Hole';
       case 'Lunarmon': return 'Lunar Eclipse';
+      case 'Azuremon': return 'Burst Stream of Catastrophe';
       default: return 'Ultimate';
     }
   }
@@ -2311,7 +2322,7 @@ export class GameEngine {
       case 'Archermon': return 'Nature will purge your corruption!';
       case 'Shieldmon': return 'Aegis Dome! Shatter the earth!';
       case 'Assassinmon': return 'Fall before the shadow Katana!';
-      case 'Flymon': return 'Hyper charged crimson laser beam firing!';
+      case 'Flymon': return 'Unleash the storm... TORNADO TEMPEST!';
       case 'Whitemon': return 'Hear the primal roar of the wild!';
       case 'Magemon': return 'Behold the elemental devastation of the stars!';
       case 'Shadowmon': return 'Gather, dark souls... SOUL BLAST!';
@@ -2319,6 +2330,7 @@ export class GameEngine {
       case 'Thundermon': return 'Feel the wrath of the heavens... RAIGEKI!';
       case 'Enigmon': return 'Singularity unleash... BLACK HOLE!';
       case 'Lunarmon': return 'Shine bright in darkness... LUNAR ECLIPSE!';
+      case 'Azuremon': return 'Celestial Cataclysm... BURST STREAM OF CATASTROPHE!';
       default: return 'Unleash full power!';
     }
   }
@@ -2460,25 +2472,50 @@ export class GameEngine {
     else if (this.selectedDraco === 'Flymon') {
       soundService.playLevelUp();
       this.pvy = 0;
-      this.flymonLaserTargetEnemy = null;
-      this.laserBeamActive = true;
-      this.laserBeamDuration = 90;
-      this.screenShake = 18;
+
+      // Find nearest active enemy
+      let nearestEnemy: Enemy | null = null;
+      let minDist = Infinity;
+      const playerCenterX = this.px + this.pWidth / 2;
+      const playerCenterY = this.py + this.pHeight / 2;
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp > 0) {
+          const dist = Math.hypot(enemy.x + enemy.width / 2 - playerCenterX, enemy.y + enemy.height / 2 - playerCenterY);
+          if (dist < minDist) {
+            minDist = dist;
+            nearestEnemy = enemy;
+          }
+        }
+      });
+
+      let targetX = this.px + this.pFacing * 200;
+      let targetY = this.py;
+      if (nearestEnemy) {
+        targetX = (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2;
+        targetY = (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2;
+      }
+
+      this.flymonTornadoActive = true;
+      this.flymonTornadoX = targetX;
+      this.flymonTornadoY = targetY;
+      this.flymonTornadoTimer = 240; // 4 seconds
+      this.screenShake = 22;
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_HYPER_CHARGED_LASER.text, FT_HYPER_CHARGED_LASER.color);
 
-      // Charging burst — crimson ring explosion
-      for (let p = 0; p < 30; p++) {
-        const ang = (p / 30) * Math.PI * 2;
-        const spd = 5 + Math.random() * 7;
+      // Particle ring burst
+      for (let p = 0; p < 35; p++) {
+        const ang = (p / 35) * Math.PI * 2;
+        const spd = 6 + Math.random() * 8;
         this.particles.push({
-          x: this.px + this.pWidth / 2,
-          y: this.py + this.pHeight / 2,
+          x: targetX,
+          y: targetY,
           vx: Math.cos(ang) * spd,
-          vy: Math.sin(ang) * spd * 0.6,
+          vy: Math.sin(ang) * spd,
           size: Math.random() * 8 + 3,
-          color: p % 3 === 0 ? '#f43f5e' : p % 3 === 1 ? '#ffffff' : '#fb7185',
-          life: 20,
-          maxLife: 20
+          color: p % 2 === 0 ? '#06b6d4' : '#e0f2fe',
+          life: 25,
+          maxLife: 25
         });
       }
     }
@@ -2762,17 +2799,17 @@ export class GameEngine {
       this.screenShake = 40;
     }
     else if (this.selectedDraco === 'Azuremon') {
-      soundService.playLevelUp(this.isDemoMode);
+      soundService.playAzuremonCharge(false);
       this.azuremonUltActive = true;
       this.azuremonUltPhase = 'channeling';
       this.azuremonUltChannelTimer = 30; // 0.5 seconds channel (30 frames)
-      this.azuremonUltTimer = 300; // 5 seconds beam duration (300 frames)
+      this.azuremonUltTimer = 240; // 4 seconds beam duration (240 frames)
       this.azuremonUltStartX = this.px;
       this.azuremonUltStartY = this.py;
       this.azuremonUltBeamAngle = this.pFacing === 1 ? 0 : Math.PI; // Shoots horizontally to the front!
       this.azuremonBlastCounters.clear();
 
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '🌌 BURST STREAM OF SINGULARITY!', '#38bdf8');
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '🌌 BURST STREAM OF CATASTROPHE!', '#38bdf8');
       this.screenShake = 35;
     }
 
@@ -2794,8 +2831,11 @@ export class GameEngine {
       }
     }
 
-    const finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 1 : damage;
-    const damageDealt = Math.max(1, finalDamage - Math.floor(enemy.defense / 2));
+    let finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 1 : damage;
+    if (this.selectedDraco === 'Flymon' && (enemy as any).isGrounded === false) {
+      finalDamage *= 2.0;
+    }
+    const damageDealt = Math.max(1, Math.floor(finalDamage) - Math.floor(enemy.defense / 2));
 
     if (enemy.isImmortal) {
       enemy.hp = Math.max(1, enemy.hp - damageDealt);
@@ -5430,9 +5470,29 @@ export class GameEngine {
           }
         }
         else {
+          if ((proj as any).type === 'arrow' && !proj.isEnemy && this.selectedDraco === 'Flymon' && this.flymonTornadoActive) {
+            let nearestEnemy: Enemy | null = null;
+            let minDistance = 1000;
+            this.enemies.forEach(enemy => {
+              if (enemy.hp <= 0) return;
+              const dist = Math.hypot(enemy.x + enemy.width / 2 - (proj.x + proj.width / 2), enemy.y + enemy.height / 2 - (proj.y + proj.height / 2));
+              if (dist < minDistance) {
+                minDistance = dist;
+                nearestEnemy = enemy;
+              }
+            });
+
+            if (nearestEnemy) {
+              const angle = Math.atan2((nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2 - proj.y, (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 - proj.x);
+              const spd = Math.hypot(proj.vx, proj.vy) || 13.0;
+              proj.vx = Math.cos(angle) * spd;
+              proj.vy = Math.sin(angle) * spd;
+            }
+          }
+
           proj.x += proj.vx;
           proj.y += proj.vy;
-          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.hypot(proj.vx, proj.vy);
 
           if ((proj as any).type === 'azure_vortex_ball' || (proj as any).type === 'azure_light_ball') {
             const vxX = proj.x + proj.width / 2;
@@ -5855,6 +5915,7 @@ export class GameEngine {
           enemy.vy = 0;
           grounded = true;
         }
+        (enemy as any).isGrounded = grounded;
       }
 
       if (
@@ -6582,8 +6643,8 @@ export class GameEngine {
 
         const centerPointX = this.carpetBombingStartX + this.pWidth / 2;
 
-        // Decrement per-enemy carpet bomb cooldowns every fire-stream tick (every 3 frames)
-        if (this.carpetBombingFireStreamTimer % 3 === 0) {
+        // Decrement per-enemy carpet bomb cooldowns every fire-stream tick (every 6 frames)
+        if (this.carpetBombingFireStreamTimer % 6 === 0) {
           this.enemies.forEach(enemy => {
             if ((enemy as any).carpetBombDamageCooldown > 0) {
               (enemy as any).carpetBombDamageCooldown--;
@@ -6591,7 +6652,7 @@ export class GameEngine {
           });
         }
 
-        if (this.carpetBombingFireStreamTimer % 3 === 0) {
+        if (this.carpetBombingFireStreamTimer % 6 === 0) {
           soundService.playShoot();
 
           const currentRad = this.carpetBombingSpreadRadius;
@@ -6627,12 +6688,12 @@ export class GameEngine {
             this.enemies.forEach(enemy => {
               if (enemy.hp <= 0) return;
               if (Math.abs(enemy.x + enemy.width / 2 - dropX) < 65) {
-                // Cap impact damage to once every 15 fire-stream ticks = 0.25s at 60fps
+                // Cap impact damage to once every fire-stream tick = 0.1s at 60fps
                 if (((enemy as any).carpetBombDamageCooldown || 0) <= 0) {
                   this.damageEnemy(enemy, Math.floor(this.stats.attack * 1.8));
                   enemy.burnTimer = 30;
                   enemy.burnLingerTimer = 120;
-                  (enemy as any).carpetBombDamageCooldown = 5; // 5 ticks × 3 frames = 15 frames = 0.25s
+                  (enemy as any).carpetBombDamageCooldown = 1; // 1 tick × 6 frames = 6 frames = 0.1s
                 }
               }
             });
@@ -6962,7 +7023,7 @@ export class GameEngine {
         if (this.azuremonUltChannelTimer <= 0) {
           this.azuremonUltPhase = 'beam';
           this.screenShake = 30;
-          soundService.playLevelUp(this.isDemoMode);
+          soundService.playAzuremonBeam(false);
         }
       } else if (this.azuremonUltPhase === 'beam') {
         this.px = this.azuremonUltStartX;
@@ -7008,6 +7069,9 @@ export class GameEngine {
         }
 
         if (hitGridR >= 0 && hitGridC >= 0) {
+          if (this.azuremonUltTimer % 12 === 0) {
+            soundService.playAzuremonImpact(false);
+          }
           const key = `${hitGridR}_${hitGridC}`;
           const currentCount = (this.azuremonBlastCounters.get(key) || 0) + 1;
           this.azuremonBlastCounters.set(key, currentCount);
@@ -7098,6 +7162,13 @@ export class GameEngine {
       }
     }
 
+    this.enemies.forEach(enemy => {
+      if (enemy.hp > 0) {
+        (enemy as any).touchingElectricZone = false;
+        (enemy as any).touchingFireZone = false;
+      }
+    });
+
     this.groundBurnZones.forEach(zone => {
       zone.timer--;
 
@@ -7125,24 +7196,37 @@ export class GameEngine {
           enemy.y <= zone.y + zone.height + 24
         ) {
           if (isElectric) {
-            enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
-            if (enemy.burnTickTimer % 15 === 0) {
-              this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.6)));
-              enemy.stunnedTimer = 12;
-              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_ELECTROCUTED.text, FT_ELECTROCUTED.color);
-            }
+            (enemy as any).touchingElectricZone = true;
           } else {
-            enemy.burnTimer = 30;
-            enemy.burnLingerTimer = 120;
-
-            enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
-            if (enemy.burnTickTimer % 15 === 0) {
-              this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.25)));
-              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_BURN.text, FT_BURN.color);
-            }
+            (enemy as any).touchingFireZone = true;
           }
         }
       });
+    });
+
+    // Process burn/electrocution tick exactly once per frame per enemy to prevent overlapping acceleration
+    this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+
+      if ((enemy as any).touchingElectricZone) {
+        enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
+        // Electrocuted tick (0.25s / 15 frames)
+        if (enemy.burnTickTimer % 15 === 0) {
+          this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.6)));
+          enemy.stunnedTimer = 12;
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_ELECTROCUTED.text, FT_ELECTROCUTED.color);
+        }
+      } else if ((enemy as any).touchingFireZone) {
+        enemy.burnTimer = 30;
+        enemy.burnLingerTimer = 120;
+
+        enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
+        // Fire burn tick: 0.1s (6 frames)
+        if (enemy.burnTickTimer % 6 === 0) {
+          this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.25)));
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_BURN.text, FT_BURN.color);
+        }
+      }
     });
 
     this.groundBurnZones = this.groundBurnZones.filter(z => z.timer > 0);
@@ -8655,6 +8739,15 @@ export class GameEngine {
 
     this.enemies.forEach(enemy => {
       this.ctx.save();
+
+      // Tornado Lifted Spin Animation
+      if (this.selectedDraco === 'Flymon' && this.flymonTornadoActive && (enemy as any).isLiftedByTornado) {
+        const cx = enemy.x + enemy.width / 2;
+        const cy = enemy.y + enemy.height / 2;
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(this.frameCount * 0.15 + enemy.id);
+        this.ctx.translate(-cx, -cy);
+      }
 
       if (enemy.type === 'slime') {
         const squish = Math.sin(this.frameCount * 0.12 + enemy.id) * 3;
@@ -11463,7 +11556,7 @@ export class GameEngine {
 
       if (this.azuremonUltPhase === 'channeling') {
         // CHARGING PHASE: Celestial Black Hole Singularity Charging at Azuremon Maw
-        const progress = 1 - (this.azuremonUltChannelTimer / 120);
+        const progress = Math.max(0, Math.min(1, 1 - (this.azuremonUltChannelTimer / 30)));
         const orbRadius = 20 + progress * 35 + Math.sin(this.frameCount * 0.4) * 4;
 
         // 1. Gravitational Outer Distortion Field
@@ -11542,15 +11635,34 @@ export class GameEngine {
           this.ctx.arc(inX, inY, 3.5, 0, Math.PI * 2);
           this.ctx.fill();
         }
+
+        // 7. Core Maw Bloom Flare (Mouth grows brighter and brighter)
+        const bloomRadius = 10 + progress * 60;
+        const bloomGrad = this.ctx.createRadialGradient(startX, startY, 2, startX, startY, bloomRadius);
+        bloomGrad.addColorStop(0, `rgba(255, 255, 255, ${progress})`);
+        bloomGrad.addColorStop(0.2, `rgba(186, 230, 253, ${progress * 0.95})`);
+        bloomGrad.addColorStop(0.5, `rgba(56, 189, 248, ${progress * 0.7})`);
+        bloomGrad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+        this.ctx.fillStyle = bloomGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(startX, startY, bloomRadius, 0, Math.PI * 2);
+        this.ctx.fill();
       } else if (this.azuremonUltPhase === 'beam') {
         // SLEEK LUNARMON-STYLE AZURE SINGULARITY BEAM (BALANCED VISIBILITY & CRISP EFFECTS)
         const beamLength = 1200;
         const endX = startX + Math.cos(this.azuremonUltBeamAngle) * beamLength;
         const endY = startY + Math.sin(this.azuremonUltBeamAngle) * beamLength;
 
+        // Calculate fade and narrow effect for when the ultimate is ending
+        let fadeAlpha = 1.0;
+        if (this.azuremonUltTimer < 60) {
+          fadeAlpha = this.azuremonUltTimer / 60;
+        }
+        this.ctx.globalAlpha = fadeAlpha;
+
         // LAYER 1: Soft Ambient Void Sheath (70px width, low opacity)
         this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.25)';
-        this.ctx.lineWidth = 70 + Math.sin(this.frameCount * 0.3) * 6;
+        this.ctx.lineWidth = (70 + Math.sin(this.frameCount * 0.3) * 6) * fadeAlpha;
         this.ctx.lineCap = 'round';
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
@@ -11559,7 +11671,7 @@ export class GameEngine {
 
         // LAYER 2: Celestial Azure Outer Aura (44px width, translucent cyan)
         this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-        this.ctx.lineWidth = 44 + Math.cos(this.frameCount * 0.25) * 4;
+        this.ctx.lineWidth = (44 + Math.cos(this.frameCount * 0.25) * 4) * fadeAlpha;
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
         this.ctx.lineTo(endX, endY);
@@ -11567,7 +11679,7 @@ export class GameEngine {
 
         // LAYER 3: Sky-Blue Plasma Body (22px width)
         this.ctx.strokeStyle = 'rgba(186, 230, 253, 0.65)';
-        this.ctx.lineWidth = 22;
+        this.ctx.lineWidth = 22 * fadeAlpha;
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
         this.ctx.lineTo(endX, endY);
@@ -11575,9 +11687,9 @@ export class GameEngine {
 
         // LAYER 4: Pure White Crisp Laser Core (10px width with subtle cyan glow)
         this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 10;
+        this.ctx.lineWidth = 10 * fadeAlpha;
         this.ctx.shadowColor = '#38bdf8';
-        this.ctx.shadowBlur = 8;
+        this.ctx.shadowBlur = 8 * fadeAlpha;
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
         this.ctx.lineTo(endX, endY);
@@ -11586,7 +11698,7 @@ export class GameEngine {
 
         // LAYER 5: Dark Singularity Center Accent (4px width)
         this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.7)';
-        this.ctx.lineWidth = 4;
+        this.ctx.lineWidth = 4 * fadeAlpha;
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
         this.ctx.lineTo(endX, endY);
@@ -11594,7 +11706,7 @@ export class GameEngine {
 
         // LAYER 6: Precision White Center Line (2px width)
         this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 2;
+        this.ctx.lineWidth = 2 * fadeAlpha;
         this.ctx.beginPath();
         this.ctx.moveTo(startX, startY);
         this.ctx.lineTo(endX, endY);
@@ -11605,7 +11717,7 @@ export class GameEngine {
           const ringDist = ((this.frameCount * 14 + r * 160) % beamLength);
           const rx = startX + Math.cos(this.azuremonUltBeamAngle) * ringDist;
           const ry = startY + Math.sin(this.azuremonUltBeamAngle) * ringDist;
-          const ringRadius = 24 + Math.sin(this.frameCount * 0.25 + r) * 4;
+          const ringRadius = (24 + Math.sin(this.frameCount * 0.25 + r) * 4) * fadeAlpha;
 
           this.ctx.save();
           this.ctx.translate(rx, ry);
@@ -11613,7 +11725,7 @@ export class GameEngine {
           this.ctx.scale(0.35, 1.0); // Elliptical 3D perspective
 
           this.ctx.strokeStyle = r % 2 === 0 ? '#38bdf8' : '#ffffff';
-          this.ctx.lineWidth = 2.5;
+          this.ctx.lineWidth = 2.5 * fadeAlpha;
           this.ctx.beginPath();
           this.ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
           this.ctx.stroke();
@@ -11626,11 +11738,11 @@ export class GameEngine {
         for (let h = 0; h < 2; h++) {
           const phaseShift = h * Math.PI;
           this.ctx.strokeStyle = h === 0 ? '#38bdf8' : '#e0f2fe';
-          this.ctx.lineWidth = 2;
+          this.ctx.lineWidth = 2 * fadeAlpha;
           this.ctx.beginPath();
           for (let i = 0; i <= helixSteps; i++) {
             const d = (i / helixSteps) * beamLength;
-            const hWave = Math.sin(this.frameCount * 0.35 + i * 0.4 + phaseShift) * 18;
+            const hWave = Math.sin(this.frameCount * 0.35 + i * 0.4 + phaseShift) * 18 * fadeAlpha;
             const hx = startX + Math.cos(this.azuremonUltBeamAngle) * d + Math.cos(perpAng) * hWave;
             const hy = startY + Math.sin(this.azuremonUltBeamAngle) * d + Math.sin(perpAng) * hWave;
             if (i === 0) this.ctx.moveTo(hx, hy);
@@ -11640,23 +11752,23 @@ export class GameEngine {
         }
 
         // LAYER 9: Caster Mouth Bloom Flare (45px radius)
-        const mouthGrad = this.ctx.createRadialGradient(startX, startY, 4, startX, startY, 45);
+        const mouthGrad = this.ctx.createRadialGradient(startX, startY, 4 * fadeAlpha, startX, startY, 45 * fadeAlpha);
         mouthGrad.addColorStop(0, '#ffffff');
         mouthGrad.addColorStop(0.4, 'rgba(186, 230, 253, 0.7)');
         mouthGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
         this.ctx.fillStyle = mouthGrad;
         this.ctx.beginPath();
-        this.ctx.arc(startX, startY, 45, 0, Math.PI * 2);
+        this.ctx.arc(startX, startY, 45 * fadeAlpha, 0, Math.PI * 2);
         this.ctx.fill();
 
         // LAYER 10: Singularity Impact Explosion Flare (55px radius)
-        const impactGrad = this.ctx.createRadialGradient(endX, endY, 6, endX, endY, 55);
+        const impactGrad = this.ctx.createRadialGradient(endX, endY, 6 * fadeAlpha, endX, endY, 55 * fadeAlpha);
         impactGrad.addColorStop(0, '#ffffff');
         impactGrad.addColorStop(0.4, 'rgba(56, 189, 248, 0.7)');
         impactGrad.addColorStop(1, 'rgba(2, 132, 199, 0)');
         this.ctx.fillStyle = impactGrad;
         this.ctx.beginPath();
-        this.ctx.arc(endX, endY, 55 + Math.sin(this.frameCount * 0.4) * 8, 0, Math.PI * 2);
+        this.ctx.arc(endX, endY, (55 + Math.sin(this.frameCount * 0.4) * 8) * fadeAlpha, 0, Math.PI * 2);
         this.ctx.fill();
       }
 
@@ -12424,117 +12536,98 @@ export class GameEngine {
       this.ctx.fillRect(px, py - 8, pw * energyPct, 3);
     }
 
-    if (this.laserBeamActive && this.flymonLaserEndPos) {
+    if (this.flymonTornadoActive) {
       this.ctx.save();
-      const startX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
-      const startY = this.py + this.pHeight / 2;
-      const endX = this.flymonLaserEndPos.x;
-      const endY = this.flymonLaserEndPos.y;
-      const laserAlpha = Math.min(1, this.laserBeamDuration / 12);
-      const pulse = Math.sin(this.frameCount * 0.22) * 0.15 + 0.85;
+      const tx = this.flymonTornadoX;
+      const ty = this.flymonTornadoY;
 
-      // ── 1. Muzzle Charge Singularity Core at Flymon's chest ───────────────
-      const muzzleGrad = this.ctx.createRadialGradient(startX, startY, 4, startX, startY, 48 * pulse);
-      muzzleGrad.addColorStop(0, `rgba(255, 255, 255, ${laserAlpha})`);
-      muzzleGrad.addColorStop(0.25, `rgba(244, 63, 94, ${laserAlpha * 0.95})`);
-      muzzleGrad.addColorStop(0.65, `rgba(159, 18, 57, ${laserAlpha * 0.5})`);
-      muzzleGrad.addColorStop(1, 'rgba(159, 18, 57, 0)');
-      this.ctx.fillStyle = muzzleGrad;
+      // Draw suction radius indicator on the ground (soft glowing cyan circle)
+      const groundGrad = this.ctx.createRadialGradient(tx, ty, 10, tx, ty, 300);
+      groundGrad.addColorStop(0, 'rgba(6, 182, 212, 0.15)');
+      groundGrad.addColorStop(0.5, 'rgba(6, 182, 212, 0.05)');
+      groundGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = groundGrad;
       this.ctx.beginPath();
-      this.ctx.arc(startX, startY, 48 * pulse, 0, Math.PI * 2);
+      this.ctx.arc(tx, ty, 300, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Muzzle rotating orbital rings (blackhole style)
-      for (let r = 0; r < 3; r++) {
-        const ringR = (22 + r * 10) * pulse;
-        const ringAng = this.frameCount * 0.15 * (r % 2 === 0 ? 1 : -1) + r;
-        this.ctx.save();
-        this.ctx.translate(startX, startY);
-        this.ctx.rotate(ringAng);
-        this.ctx.scale(1.0, 0.4);
-        this.ctx.strokeStyle = `rgba(251, 113, 133, ${laserAlpha * 0.8})`;
-        this.ctx.lineWidth = 2.5;
+      // Draw active core indicator
+      const coreGrad = this.ctx.createRadialGradient(tx, ty, 5, tx, ty, 150);
+      coreGrad.addColorStop(0, 'rgba(165, 243, 252, 0.25)');
+      coreGrad.addColorStop(0.6, 'rgba(6, 182, 212, 0.1)');
+      coreGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = coreGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(tx, ty, 150, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Draw 6 inward flowing suction wind lines
+      for (let s = 0; s < 6; s++) {
+        const angle = (s / 6) * Math.PI * 2 + this.frameCount * 0.03;
+        const startDist = 300 - ((this.frameCount * 4 + s * 50) % 250);
+        const nextDist = Math.max(10, startDist - 30);
+        const wX1 = tx + Math.cos(angle) * startDist;
+        const wY1 = ty + Math.sin(angle) * startDist * 0.25;
+        const wX2 = tx + Math.cos(angle) * nextDist;
+        const wY2 = ty + Math.sin(angle) * nextDist * 0.25;
+
+        this.ctx.strokeStyle = `rgba(165, 243, 252, ${0.45 * (startDist / 300)})`;
+        this.ctx.lineWidth = 1.5;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, ringR, 0, Math.PI * 2);
+        this.ctx.moveTo(wX1, wY1);
+        this.ctx.lineTo(wX2, wY2);
+        this.ctx.stroke();
+      }
+
+      // Draw the vertical funnel loops (3D cylindrical lines stacking up)
+      const tornadoHeight = 250;
+      const bottomY = ty + 30;
+
+      // Draw 18 swirling layers to form the funnel
+      const layers = 18;
+      for (let i = 0; i < layers; i++) {
+        const t = i / layers; // 0 at bottom, 1 at top
+        const currY = bottomY - t * tornadoHeight;
+
+        // Funnel shape: narrower at bottom, wider at top
+        const baseRadius = 25 + t * 95;
+
+        // Add swaying motion using sine wave
+        const swayX = Math.sin(this.frameCount * 0.1 + t * Math.PI) * 12;
+
+        // Ring translation and scale for 3D perspective
+        this.ctx.save();
+        this.ctx.translate(tx + swayX, currY);
+
+        // Spin the rings
+        const ringRotation = this.frameCount * 0.12 + t * Math.PI;
+        this.ctx.rotate(ringRotation);
+        this.ctx.scale(1.0, 0.25); // flat ellipse
+
+        // Ring color and glow
+        this.ctx.strokeStyle = i % 2 === 0 ? 'rgba(34, 211, 238, 0.45)' : 'rgba(255, 255, 255, 0.6)';
+        this.ctx.lineWidth = 2.0 + t * 4.0;
+
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, baseRadius, 0, Math.PI * 2);
         this.ctx.stroke();
         this.ctx.restore();
       }
 
-      // ── 2. Outer Heatwave & Chromatic Beam Atmosphere ─────────────────────
-      this.ctx.strokeStyle = `rgba(244, 63, 94, ${laserAlpha * 0.28 * pulse})`;
-      this.ctx.lineWidth = 64;
-      this.ctx.lineCap = 'round';
+      // Draw core lightning/wind arcs
+      this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+      this.ctx.lineWidth = 2.5;
       this.ctx.beginPath();
-      this.ctx.moveTo(startX, startY);
-      this.ctx.lineTo(endX, endY);
-      this.ctx.stroke();
-
-      // ── 3. Mid Crimson Plasma Glow Beam ───────────────────────────────────
-      this.ctx.strokeStyle = `rgba(225, 29, 72, ${laserAlpha * 0.75})`;
-      this.ctx.lineWidth = 32;
-      this.ctx.beginPath();
-      this.ctx.moveTo(startX, startY);
-      this.ctx.lineTo(endX, endY);
-      this.ctx.stroke();
-
-      // ── 4. Double Rotating Plasma Helix Laser Coils (Blackhole standard) ─
-      const beamDx = endX - startX;
-      const beamDy = endY - startY;
-      const beamDist = Math.hypot(beamDx, beamDy) || 1;
-      const normX = beamDx / beamDist;
-      const normY = beamDy / beamDist;
-      const perpX = -normY;
-      const perpY = normX;
-
-      for (let helix = 0; helix < 2; helix++) {
-        const sign = helix === 0 ? 1 : -1;
-        this.ctx.strokeStyle = helix === 0 ? `rgba(255, 255, 255, ${laserAlpha * 0.85})` : `rgba(254, 205, 211, ${laserAlpha * 0.75})`;
-        this.ctx.lineWidth = 3;
-        this.ctx.beginPath();
-
-        const steps = 32;
-        for (let i = 0; i <= steps; i++) {
-          const t = i / steps;
-          const currX = startX + beamDx * t;
-          const currY = startY + beamDy * t;
-          const offset = Math.sin(t * Math.PI * 8 + this.frameCount * 0.25 * sign) * 16 * sign;
-          const px = currX + perpX * offset;
-          const py = currY + perpY * offset;
-          if (i === 0) this.ctx.moveTo(px, py);
-          else this.ctx.lineTo(px, py);
-        }
-        this.ctx.stroke();
+      for (let i = 0; i <= 20; i++) {
+        const t = i / 20;
+        const currY = bottomY - t * tornadoHeight;
+        const radius = 25 + t * 95;
+        const angle = this.frameCount * 0.22 + t * Math.PI * 4;
+        const px = tx + Math.cos(angle) * radius + Math.sin(this.frameCount * 0.1 + t * Math.PI) * 12;
+        if (i === 0) this.ctx.moveTo(px, currY);
+        else this.ctx.lineTo(px, currY);
       }
-
-      // ── 5. Hot Blinding White Core ────────────────────────────────────────
-      this.ctx.strokeStyle = `rgba(255, 255, 255, ${laserAlpha * 0.98})`;
-      this.ctx.lineWidth = 10;
-      this.ctx.beginPath();
-      this.ctx.moveTo(startX, startY);
-      this.ctx.lineTo(endX, endY);
       this.ctx.stroke();
-
-      // ── 6. Terminal Endpoint Impact Singularity Flare ──────────────────────
-      const flareGrad = this.ctx.createRadialGradient(endX, endY, 4, endX, endY, 60);
-      flareGrad.addColorStop(0, `rgba(255, 255, 255, ${laserAlpha})`);
-      flareGrad.addColorStop(0.3, `rgba(244, 63, 94, ${laserAlpha * 0.85})`);
-      flareGrad.addColorStop(0.65, `rgba(159, 18, 57, ${laserAlpha * 0.4})`);
-      flareGrad.addColorStop(1, 'rgba(159, 18, 57, 0)');
-      this.ctx.fillStyle = flareGrad;
-      this.ctx.beginPath();
-      this.ctx.arc(endX, endY, 60, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      // Impact expanding shockwave rings
-      for (let s = 0; s < 3; s++) {
-        const sRadius = ((this.frameCount * 3 + s * 20) % 50) + 10;
-        const sAlpha = (1 - sRadius / 60) * laserAlpha;
-        this.ctx.strokeStyle = `rgba(255, 255, 255, ${sAlpha})`;
-        this.ctx.lineWidth = 2.5;
-        this.ctx.beginPath();
-        this.ctx.arc(endX, endY, sRadius, 0, Math.PI * 2);
-        this.ctx.stroke();
-      }
 
       this.ctx.restore();
     }
@@ -13150,90 +13243,76 @@ export class GameEngine {
       }
     }
 
-    if (this.laserBeamActive) {
-      this.laserBeamDuration--;
-      if (this.laserBeamDuration <= 0) {
-        this.laserBeamActive = false;
-        this.flymonLaserTargetEnemy = null;
-        this.flymonLaserEndPos = null;
+    if (this.flymonTornadoActive) {
+      this.flymonTornadoTimer--;
+      if (this.flymonTornadoTimer <= 0) {
+        this.flymonTornadoActive = false;
       } else {
-        this.pvy = 0;
+        this.pvy = 0; // Hover player
+        const tx = this.flymonTornadoX;
+        const ty = this.flymonTornadoY;
+        const suckRadius = 300;
+        const coreRadius = 150;
 
-        const startX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
-        const startY = this.py + this.pHeight / 2;
-
-        const endX = startX + this.pFacing * 1000;
-        const endY = startY;
-
-        this.flymonLaserEndPos = { x: endX, y: endY };
-
-        const minX = Math.min(startX, endX);
-        const maxX = Math.max(startX, endX);
-
-        this.enemies.forEach(enemy => {
-          if (enemy.hp > 0) {
-            const ex = enemy.x + enemy.width / 2;
-            const ey = enemy.y + enemy.height / 2;
-
-            if (ex >= minX - enemy.width / 2 && ex <= maxX + enemy.width / 2 && Math.abs(ey - startY) < (30 + enemy.height / 2)) {
-              // Damage tick every 15 frames = 0.25s at 60fps
-              if (this.frameCount % 15 === 0) {
-                this.damageEnemy(enemy, Math.floor(this.stats.attack * 4.0));
-                enemy.vx = this.pFacing * 3.0;
-                this.screenShake = 10;
-                // Big damage tick burst
-                for (let bp = 0; bp < 14; bp++) {
-                  const bang = Math.random() * Math.PI * 2;
-                  const bspd = Math.random() * 8 + 3;
-                  this.particles.push({
-                    x: ex,
-                    y: ey,
-                    vx: Math.cos(bang) * bspd,
-                    vy: Math.sin(bang) * bspd,
-                    size: Math.random() * 7 + 3,
-                    color: bp % 3 === 0 ? '#f43f5e' : bp % 3 === 1 ? '#ffffff' : '#fbbf24',
-                    life: 22,
-                    maxLife: 22
-                  });
-                }
-              }
-              // Continuous laser singe particles
-              if (this.frameCount % 3 === 0) {
-                this.spawnDustParticles(ex, ey, 5, '#f43f5e');
-              }
-            }
-          }
-        });
-
-        // Laser beam plasma trail particles
+        // Visual tornado swirling particles
         if (this.frameCount % 2 === 0) {
-          const randomDist = Math.random() * 1000;
-          const px = startX + this.pFacing * randomDist;
-          // Primary plasma particle
-          this.particles.push({
-            x: px,
-            y: startY + (Math.random() * 20 - 10),
-            vx: this.pFacing * (Math.random() * 4 + 2),
-            vy: (Math.random() - 0.5) * 4,
-            size: Math.random() * 6 + 2,
-            color: Math.random() > 0.5 ? '#f43f5e' : '#ffffff',
-            life: 15,
-            maxLife: 15
-          });
-          // Secondary scatter sparks
-          if (Math.random() < 0.4) {
+          for (let i = 0; i < 4; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * coreRadius;
+            const px = tx + Math.cos(angle) * dist;
+            const py = ty + (Math.random() - 0.5) * 80;
             this.particles.push({
-              x: px + (Math.random() - 0.5) * 10,
-              y: startY + (Math.random() * 30 - 15),
-              vx: (Math.random() - 0.5) * 5,
-              vy: (Math.random() - 0.5) * 5,
-              size: Math.random() * 4 + 1,
-              color: '#fb7185',
-              life: 10,
-              maxLife: 10
+              x: px,
+              y: py,
+              vx: -Math.sin(angle) * (3.0 + Math.random() * 2),
+              vy: -Math.random() * 4.0 - 1.5,
+              size: Math.random() * 5 + 2,
+              color: i % 2 === 0 ? '#06b6d4' : '#a5f3fc',
+              life: 20,
+              maxLife: 20
             });
           }
         }
+
+        // Pull and lift enemies
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dist = Math.hypot(ex - tx, ey - ty);
+
+          if (dist <= suckRadius) {
+            const dx = tx - ex;
+            const dy = ty - ey;
+            const len = Math.hypot(dx, dy) || 1;
+            const pullForce = (1 - dist / suckRadius) * 6.5;
+
+            // Horizontal pull to center
+            enemy.x += (dx / len) * pullForce;
+
+            // Lift them up vertically when they get close to the core (dist <= 100)
+            if (dist <= 100) {
+              enemy.y -= 4.5;
+              enemy.vy = -2.0;
+              (enemy as any).isGrounded = false;
+              (enemy as any).isLiftedByTornado = true;
+              // Swirl effect
+              enemy.x += Math.sin(this.frameCount * 0.2 + enemy.id) * 3.5;
+            } else {
+              (enemy as any).isLiftedByTornado = false;
+            }
+
+            // Periodic damage inside the tornado core (dist <= coreRadius)
+            if (dist <= coreRadius) {
+              if (this.frameCount % 15 === 0) {
+                this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.8));
+                this.screenShake = 6;
+              }
+            }
+          } else {
+            (enemy as any).isLiftedByTornado = false;
+          }
+        });
       }
     }
 

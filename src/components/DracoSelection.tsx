@@ -83,8 +83,8 @@ const DRACO_META: {
     role: 'Aerial / Flight',
     abilityName: 'Sonic Wind Slice',
     abilityDesc: 'Poison needles. Special launches sonic blades & extreme hover.',
-    ultimateName: 'Sonic Typhoon',
-    ultimateDesc: 'Giant wind hurricane projectile + 4s infinite flight hover.',
+    ultimateName: 'Tornado Tempest',
+    ultimateDesc: 'Summons a giant tornado for 4s at the nearest enemy that sucks and lifts targets. Flymon gains homing basic attacks and double damage to lifted targets!',
     cost: 400,
     colorClass: 'text-rose-600 border-rose-200 bg-rose-50',
     bgGradient: 'from-rose-400 to-pink-600',
@@ -164,7 +164,7 @@ const DRACO_META: {
     abilityName: 'Azure Singularity Vortex',
     abilityDesc: 'Fires a celestial black hole vortex ball that continuously pulls nearby enemies inward and implodes on hit, siphoning HP on damage.',
     ultimateName: 'Burst Stream of Singularity',
-    ultimateDesc: 'Channels 2s to form a black hole singularity, then unleashes a gravitational cataclysm beam for 5s (W/S to aim) that pulls enemies, destroys terrain, and disintegrates all foes!',
+    ultimateDesc: 'Channels 2s to form a black hole singularity, then unleashes a gravitational cataclysm beam for 4s (W/S to aim) that pulls enemies, destroys terrain, and disintegrates all foes!',
     cost: 500,
     colorClass: 'text-sky-300 border-sky-400 bg-sky-950',
     bgGradient: 'from-sky-500 via-cyan-400 to-slate-900',
@@ -655,15 +655,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               <div className="flex items-center justify-between border-b border-stone-200/70 pb-2">
                 <div>
                   <h4 className="text-sm font-extrabold text-stone-900 font-display">
-                    {selectedName} Live Combat Preview
+                    {selectedName} Combat Preview
                   </h4>
-                  <p className="text-[10px] text-stone-500 font-mono">
-                    Test Basic Attack, Skill, & Ultimate vs Slime
-                  </p>
                 </div>
-                <span className="text-[10px] font-mono font-bold text-amber-700 bg-amber-100 border border-amber-300 px-2 py-0.5 rounded-full">
-                  60 FPS Engine
-                </span>
               </div>
               <HeroDemoCanvas selectedDraco={selectedName} />
             </div>
