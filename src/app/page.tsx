@@ -9,7 +9,6 @@ import { LevelUpModal } from '../components/LevelUpModal';
 import { SettingsModal } from '../components/SettingsModal';
 import { GameScreen } from '../components/GameScreen';
 import { FullScreenShowcaseCanvas } from '../components/FullScreenShowcaseCanvas';
-import { Navbar } from '../components/Navbar';
 import { Footer } from '../components/Footer';
 import { ActivationModal } from '../components/ActivationModal';
 import { soundService } from '../services/sound';
@@ -563,7 +562,6 @@ export default function Home() {
   return (
     <div className={`min-h-screen ${isPlaying ? 'bg-stone-950 overflow-hidden' : 'bg-stone-50 bg-grid'} text-stone-900 flex flex-col justify-between font-display relative overflow-hidden scroll-smooth`}>
 
-      {}
       {!isPlaying && (
         <>
           <div className="absolute top-0 right-0 w-[55rem] h-[55rem] bg-amber-200/25 rounded-full blur-3xl -z-10 animate-blob-drift-1" />
@@ -573,12 +571,9 @@ export default function Home() {
         </>
       )}
 
-      {}
-      <Navbar onOpenInventory={() => setShowInventory(true)} />
+      
 
-      {}
       <main className="flex-1 w-full z-30">
-        {}
         <div className="w-full">
               <section id="hero" className="relative w-full min-h-screen md:h-screen flex items-center justify-center overflow-hidden py-12 md:py-0 bg-stone-950">
                 {/* FULL SCREEN BACKGROUND SHOWCASE OF ALL DRACOS */}
@@ -629,7 +624,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {}
               <section id="about" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">About The Dracony Realm</h2>
@@ -638,7 +632,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {}
                 <div className="grid md:grid-cols-4 gap-6 my-16">
                   <div className="p-6 bg-white border border-stone-200 rounded-3xl shadow-sm space-y-3 hover:shadow-md transition-all">
                     <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
@@ -682,7 +675,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {}
               <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
@@ -692,7 +684,6 @@ export default function Home() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8 mt-12">
-                  {}
                   <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
                     saveData.tier === 'Free' || !saveData.tier
                       ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
@@ -726,7 +717,6 @@ export default function Home() {
                     </button>
                   </div>
 
-                  {}
                   <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
                     saveData.tier === 'Basic'
                       ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
@@ -760,7 +750,6 @@ export default function Home() {
                     </button>
                   </div>
 
-                  {}
                   <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
                     saveData.tier === 'Premium'
                       ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
@@ -796,7 +785,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {}
               <section id="characters" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900">Meet The Dragon Guardians</h2>
@@ -805,7 +793,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {}
                 <div className="grid md:grid-cols-3 gap-8 mt-10">
                   {companionShowcase.slice(0, 3).map((item) => {
                     const isUnlocked = saveData.dracos[item.name]?.unlocked ?? (item.name === 'Jumpmon');
@@ -825,7 +812,6 @@ export default function Home() {
                         } shadow-md hover:shadow-xl transition-all flex flex-col justify-between relative overflow-hidden`}
                       >
                         <div>
-                          {}
                           <div className="flex items-center justify-between gap-2 mb-3">
                             <span className={`inline-block px-2.5 py-0.5 text-[9px] font-extrabold uppercase tracking-wider rounded-md border ${item.tagColor}`}>
                               {item.title}
@@ -848,7 +834,6 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {}
                           <div className="flex items-center gap-3.5">
                             <div className={`w-16 h-16 shrink-0 rounded-2xl ${isUnlocked ? 'bg-stone-100 border-stone-200' : 'bg-stone-200/60 border-stone-300'} border flex items-center justify-center p-2 shadow-inner relative`}>
                               {item.svg}
@@ -864,12 +849,10 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {}
                           <div className="mt-4 p-3.5 bg-stone-50/80 border border-stone-100 rounded-2xl text-xs leading-relaxed text-stone-600">
                             <p>{item.lore}</p>
                           </div>
 
-                          {}
                           <div className="mt-3 space-y-1.5 text-xs">
                             <div className="flex justify-between text-stone-600">
                               <span className="font-semibold">Attack Style:</span>
@@ -888,7 +871,6 @@ export default function Home() {
                             </div>
                           </div>
 
-                          {}
                           <div className="grid grid-cols-5 gap-1.5 mt-4 pt-3 border-t border-stone-100 text-center font-mono">
                             <div className="p-1.5 bg-stone-50 rounded-xl">
                               <span className="text-[8px] text-stone-400 block font-sans">HP</span>
@@ -913,7 +895,6 @@ export default function Home() {
                           </div>
                         </div>
 
-                        {}
                         {isSelected ? (
                           <div className="space-y-2 mt-5">
                             <button
@@ -1008,7 +989,6 @@ export default function Home() {
                   })}
                 </div>
 
-                {}
                 <div className="mt-8 text-center">
                   <Link
                     href="/heroes"
@@ -1021,7 +1001,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {}
               <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="text-center max-w-3xl mx-auto space-y-3 mb-10">
                   <h2 className="text-3xl md:text-5xl font-black text-stone-900 font-display">Explore Platform Realms</h2>
@@ -1030,7 +1009,6 @@ export default function Home() {
                   </p>
                 </div>
 
-                {}
                 <div className="relative group/carousel my-8">
                   {/* Left caret button */}
                   <button
@@ -1060,7 +1038,6 @@ export default function Home() {
                             : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
                         } ${!unlocked ? 'opacity-90' : ''}`}
                       >
-                        {}
                         {!unlocked && (
                           <div className="absolute inset-0 z-20 bg-stone-900/65 backdrop-blur-[2px] p-6 flex flex-col items-center justify-center text-center text-white space-y-2 rounded-3xl">
                             <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-lg shadow-inner">
@@ -1136,7 +1113,6 @@ export default function Home() {
                 </button>
               </div>
 
-                {}
                 <div className="mt-10 flex flex-col items-center justify-center gap-8">
                   {/* Enhanced bullet points */}
                   <div className="flex items-center gap-2.5">
@@ -1169,7 +1145,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {}
               <section id="faq" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="max-w-4xl mx-auto">
                   <div className="text-center space-y-2 mb-8">
@@ -1217,7 +1192,6 @@ export default function Home() {
                 </div>
               </section>
 
-              {}
               <section id="support" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60 select-none">
                 <div className="max-w-4xl mx-auto bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-purple-500/10 border border-purple-200/60 rounded-3xl p-8 md:p-10 shadow-md flex flex-col md:flex-row items-center justify-between gap-8">
                   <div className="space-y-3 text-left md:max-w-md">
@@ -1230,14 +1204,11 @@ export default function Home() {
                     </p>
                   </div>
 
-                  {}
                 </div>
               </section>
 
-              {}
               <section id="contact" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
                 <div className="max-w-4xl mx-auto grid md:grid-cols-12 gap-8 items-center bg-white border border-stone-200 rounded-3xl p-8 md:p-10 shadow-lg">
-                  {}
                   <div className="md:col-span-5 space-y-4 text-left">
                     <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
                       <MessageSquare className="w-6 h-6" />
@@ -1258,7 +1229,6 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {}
                   <div className="md:col-span-7">
                     {contactSubmitted ? (
                       <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
@@ -1322,7 +1292,6 @@ export default function Home() {
             </div>
       </main>
 
-      {}
       <AnimatePresence>
         {showStageSelector && (
           <motion.div
@@ -1380,7 +1349,6 @@ export default function Home() {
                 })}
               </div>
 
-              {}
               <div className="mt-8 flex items-center justify-between border-t border-stone-100 pt-5">
                 <div className="flex items-center gap-2">
                   {Array.from({ length: pageCount }).map((_, idx) => (
@@ -1415,7 +1383,6 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {}
       <AnimatePresence>
         {showControlsModal && (
           <motion.div
@@ -1511,9 +1478,7 @@ export default function Home() {
         )}
       </AnimatePresence>
 
-      {}
       <AnimatePresence>
-        {}
         {showSelection && (
           <DracoSelection
             saveData={saveData}
@@ -1532,7 +1497,6 @@ export default function Home() {
           />
         )}
 
-        {}
         {showInventory && (
           <InventoryModal
             saveData={saveData}
@@ -1543,7 +1507,6 @@ export default function Home() {
           />
         )}
 
-        {}
         {showLevelUp && levelUpInfo && (
           <LevelUpModal
             key={`${levelUpInfo.dracoName}-${levelUpInfo.oldLevel}-${levelUpInfo.newLevel}-${pendingLevelUps.length}`}
@@ -1557,7 +1520,6 @@ export default function Home() {
           />
         )}
 
-        {}
         {showSettings && (
           <SettingsModal
             saveData={saveData}

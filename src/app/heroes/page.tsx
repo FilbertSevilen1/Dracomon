@@ -2,7 +2,6 @@
 
 import React from 'react';
 import Link from 'next/link';
-import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { DracoSelection } from '../../components/DracoSelection';
 import { useGameState } from '../../hooks/useGameState';
@@ -34,9 +33,6 @@ export default function HeroesPage() {
       {/* BACKGROUND DECORATIONS */}
       <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-amber-100/40 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-purple-100/40 rounded-full blur-3xl -z-10" />
-
-      {/* NAVBAR */}
-      <Navbar />
 
       {/* MAIN HERO ROSTER */}
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-10 space-y-8 z-10">

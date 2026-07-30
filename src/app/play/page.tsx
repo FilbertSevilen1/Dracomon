@@ -75,7 +75,6 @@ function PlayContent() {
         />
       </div>
 
-      {}
       {showInventory && (
         <InventoryModal
           saveData={saveData}
@@ -86,7 +85,6 @@ function PlayContent() {
         />
       )}
 
-      {}
       {showSettings && (
         <SettingsModal
           saveData={saveData}

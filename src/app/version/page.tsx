@@ -17,7 +17,6 @@ import {
   Zap,
 } from 'lucide-react';
 import { soundService } from '../../services/sound';
-import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 
 interface VersionLog {
@@ -90,7 +89,6 @@ const VERSION_LOGS: VersionLog[] = [
     version: '0.2.0',
     date: 'July 25, 2026',
     tag: 'Enigmon & Outerspace Sphere Expansion',
-
     badgeColor: 'bg-purple-600 text-white font-black shadow-sm',
     summary: 'Introduces new Cosmic hero Enigmon with Schwarzschild Pulse & Black Hole singularity ultimate, Stage 12 Outerspace Sphere with black hole hazard zones and bullet-hell comet streams, Alien laser snipers, and the Giant Wisp Supernova boss. Massive animation overhaul pass across Enigmon abilities, Shadowmon, Archermon, Whitemon, and Flymon ultimates.',
     highlights: [
@@ -337,17 +335,11 @@ export default function VersionPage() {
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-display flex flex-col justify-between relative overflow-hidden select-none">
 
-      {}
       <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-rose-100/50 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-indigo-100/50 rounded-full blur-3xl -z-10" />
 
-      {}
-      <Navbar />
+      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-10 space-y-8 z-10">
 
-      {}
-      <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 py-10 space-y-8 z-10">
-
-        {}
         <div className="space-y-3 text-center md:text-left border-b border-stone-200 pb-8">
           <h1 className="text-3xl md:text-5xl font-black tracking-tight text-stone-900 font-display">
             Patch Notes <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 bg-clip-text text-transparent">& Updates</span>
@@ -358,7 +350,6 @@ export default function VersionPage() {
           </p>
         </div>
 
-        {}
         <div className="space-y-4">
           {VERSION_LOGS.map((log) => {
             const isOpen = openVersion === log.version;
@@ -372,7 +363,6 @@ export default function VersionPage() {
                     : 'bg-white/90 border-stone-200/90 hover:border-stone-300 hover:shadow-md'
                 }`}
               >
-                {}
                 <button
                   onClick={() => toggleVersion(log.version)}
                   className={`w-full px-6 py-5 flex items-center justify-between gap-4 text-left transition-colors ${
@@ -403,7 +393,6 @@ export default function VersionPage() {
                   </div>
                 </button>
 
-                {}
                 <AnimatePresence>
                   {isOpen && (
                     <motion.div
@@ -413,12 +402,10 @@ export default function VersionPage() {
                       transition={{ duration: 0.25, ease: 'easeInOut' }}
                       className="border-t border-stone-100 bg-stone-50/70 px-6 py-6"
                     >
-                      {}
                       <div className="mb-5 p-3.5 rounded-2xl bg-white border border-stone-200/80 text-xs text-stone-600 italic font-mono shadow-sm">
                         "{log.summary}"
                       </div>
 
-                      {}
                       <ul className="space-y-3">
                         {log.highlights.map((item, idx) => (
                           <li key={idx} className="flex items-start gap-3 text-xs text-stone-700 leading-relaxed font-semibold">

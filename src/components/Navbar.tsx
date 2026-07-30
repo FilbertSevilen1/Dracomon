@@ -22,6 +22,7 @@ import { storageService } from '../services/storage';
 import { soundService } from '../services/sound';
 import { SaveData } from '../types/game';
 import { SettingsModal } from './SettingsModal';
+import { InventoryModal } from './InventoryModal';
 import { AnimatePresence, motion } from 'framer-motion';
 
 interface NavbarProps {
@@ -37,9 +38,11 @@ const PRIMARY_NAV = [
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
   const pathname = usePathname();
-  const { saveData } = useGameState();
+  if (pathname === '/play') return null;
+  const { saveData, usePotion, useUpgradeStone, buyItem } = useGameState();
   const [liveSaveData, setLiveSaveData] = useState<SaveData>(saveData);
   const [showSettings, setShowSettings] = useState(false);
+  const [showInventory, setShowInventory] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -284,7 +287,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                     }`}
                   >
                     <div className={`p-1.5 rounded-full border shrink-0 ${tierColor}`}>
-                      <Crown className="w-3 h-3" />
+                      <Crown className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-white' : 'text-stone-800'}`}>{currentTier.toUpperCase()} TIER</p>
@@ -310,7 +313,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                         ? 'bg-stone-900 border-stone-800 text-stone-300'
                         : 'bg-stone-100 border-stone-200 text-stone-600'
                     }`}>
-                      <ScrollText className="w-3 h-3" />
+                      <ScrollText className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Patch Notes</p>
@@ -320,29 +323,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                   </Link>
 
                   {/* Inventory (if available) */}
-                  {onOpenInventory && (
-                    <button
-                      onClick={() => { soundService.playClick(); onOpenInventory(); setShowDropdown(false); }}
-                      className={`w-full flex items-center gap-3 px-4 py-3 transition-colors border-b group text-left ${
-                        isTransparent
-                          ? 'hover:bg-white/5 border-stone-900'
-                          : 'hover:bg-stone-50 border-stone-100'
-                      }`}
-                    >
-                      <div className={`p-1.5 rounded-full border shrink-0 ${
-                        isTransparent
-                          ? 'bg-stone-900 border-stone-800 text-amber-400'
-                          : 'bg-amber-50 border-amber-200 text-amber-600'
-                      }`}>
-                        <Briefcase className="w-3 h-3" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Inventory</p>
-                        <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>Bag &amp; Items</p>
-                      </div>
-                      <ChevronRight className={`w-3.5 h-3.5 transition-colors shrink-0 ${isTransparent ? 'text-stone-600 group-hover:text-amber-400' : 'text-stone-400 group-hover:text-amber-500'}`} />
-                    </button>
-                  )}
+                  <button
+                    onClick={() => { soundService.playClick(); setShowInventory(true); setShowDropdown(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 transition-colors border-b group text-left ${
+                      isTransparent
+                        ? 'hover:bg-white/5 border-stone-900'
+                        : 'hover:bg-stone-50 border-stone-100'
+                    }`}
+                  >
+                    <div className={`p-1.5 rounded-full border shrink-0 ${
+                      isTransparent
+                        ? 'bg-stone-900 border-stone-800 text-amber-400'
+                        : 'bg-amber-50 border-amber-200 text-amber-600'
+                    }`}>
+                      <Briefcase className="w-3.5 h-3.5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Inventory</p>
+                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>Bag &amp; Items</p>
+                    </div>
+                    <ChevronRight className={`w-3.5 h-3.5 transition-colors shrink-0 ${isTransparent ? 'text-stone-600 group-hover:text-amber-400' : 'text-stone-400 group-hover:text-amber-500'}`} />
+                  </button>
 
                   {/* Settings */}
                   <button
@@ -356,7 +357,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                         ? 'bg-stone-900 border-stone-800 text-stone-300'
                         : 'bg-stone-100 border-stone-200 text-stone-600'
                     }`}>
-                      <Settings className="w-3 h-3 group-hover:rotate-45 transition-transform duration-300" />
+                      <Settings className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Settings</p>
@@ -408,19 +409,17 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           </div>
 
           {/* Inventory */}
-          {onOpenInventory && (
-            <button
-              onClick={() => { soundService.playClick(); onOpenInventory(); }}
-              className={`p-1.5 border rounded-xl shadow-sm transition-all active:scale-95 ${
-                isTransparent
-                  ? 'bg-white/10 border-white/10 hover:bg-white/20 text-white'
-                  : 'bg-white border-stone-200 hover:bg-stone-50 text-stone-700'
-              }`}
-              title="Open Inventory"
-            >
-              <Briefcase className={`w-4 h-4 ${isTransparent ? 'text-amber-400' : 'text-amber-600'}`} />
-            </button>
-          )}
+          <button
+            onClick={() => { soundService.playClick(); setShowInventory(true); }}
+            className={`p-1.5 border rounded-xl shadow-sm transition-all active:scale-95 ${
+              isTransparent
+                ? 'bg-white/10 border-white/10 hover:bg-white/20 text-white'
+                : 'bg-white border-stone-200 hover:bg-stone-50 text-stone-700'
+            }`}
+            title="Open Inventory"
+          >
+            <Briefcase className={`w-4 h-4 ${isTransparent ? 'text-amber-400' : 'text-amber-600'}`} />
+          </button>
 
           {/* Settings */}
           <button
@@ -449,6 +448,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           />
         )}
       </AnimatePresence>
+
+      {showInventory && (
+        <InventoryModal
+          saveData={liveSaveData}
+          onUsePotion={usePotion}
+          onUseUpgradeStone={useUpgradeStone}
+          onBuyItem={buyItem}
+          onClose={() => setShowInventory(false)}
+        />
+      )}
     </>
   );
 };

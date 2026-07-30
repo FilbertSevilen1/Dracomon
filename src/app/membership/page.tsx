@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
-import { Navbar } from '../../components/Navbar';
 import { Footer } from '../../components/Footer';
 import { ActivationModal } from '../../components/ActivationModal';
 
@@ -37,16 +36,10 @@ export default function MembershipPage() {
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-display flex flex-col justify-between relative overflow-hidden select-none">
-      {}
       <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-purple-100/50 rounded-full blur-3xl -z-10" />
       <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-amber-100/50 rounded-full blur-3xl -z-10" />
 
-      {}
-      <Navbar />
-
-      {}
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-10 space-y-8 z-10">
-        {}
         <div className="text-center md:text-left border-b border-stone-200 pb-8 space-y-2">
           <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight">
             Membership <span className="text-purple-600">& Power Perks</span>
@@ -56,9 +49,7 @@ export default function MembershipPage() {
           </p>
         </div>
 
-        {}
         <div className="grid md:grid-cols-3 gap-8">
-          {}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
             currentTier === 'Free'
               ? 'bg-white border-stone-300 ring-2 ring-stone-400/30 shadow-lg'
@@ -95,7 +86,6 @@ export default function MembershipPage() {
             </button>
           </div>
 
-          {}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
             currentTier === 'Basic'
               ? 'bg-emerald-50/40 border-emerald-300 ring-2 ring-emerald-400/30 shadow-lg'
@@ -132,7 +122,6 @@ export default function MembershipPage() {
             </button>
           </div>
 
-          {}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
             currentTier === 'Premium'
               ? 'bg-purple-50/40 border-purple-300 ring-2 ring-purple-400/30 shadow-lg'
