@@ -2,6 +2,46 @@ import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
+
+const HERO_PREVIEW_LEVEL: LevelData = {
+  name: "Hero Preview Arena",
+  tileSize: 40,
+  theme: {
+    type: "space",
+    skyColor: "#030712",
+    solidColor: "#3b0764",
+    platformColor: "#7e22ce",
+    borderColor: "#581c87",
+    bgGradient: "linear-gradient(to bottom, #02040a, #090514, #1e1b4b)",
+    particleColor: "#c084fc"
+  },
+  grid: [
+    "........................................",
+    "........................................",
+    "........................................",
+    "........................................",
+    "........................................",
+    "........................................",
+    "........................................",
+    "........................................",
+    "....@.......1.....1.....1...............",
+    "########################################",
+    "########################################"
+  ],
+  description: "Dedicated Hero Preview Map",
+  difficulty: "PREVIEW",
+  diffClass: "",
+  boss: "None",
+  icon: "✨",
+  borderHover: "",
+  color: "purple",
+  worldId: 0,
+  worldName: "Preview",
+  stageInWorld: 1,
+  totalStagesInWorld: 1,
+  rewardMultiplier: 1.0,
+  globalStageNum: 0
+};
 import {
   FT_CHANNEL_INTERRUPTED,
   FT_PORTAL_ENTERED,
@@ -440,6 +480,17 @@ export class GameEngine {
   private lunarmonSkillX: number = 0;
   private lunarmonSkillY: number = 0;
 
+  private azuremonUltActive: boolean = false;
+  private azuremonUltPhase: 'channeling' | 'beam' = 'channeling';
+  private azuremonUltTimer: number = 0;
+  private azuremonUltChannelTimer: number = 0;
+  private azuremonUltStartX: number = 0;
+  private azuremonUltStartY: number = 0;
+  private azuremonUltBeamAngle: number = 0;
+  private azuremonBlastCounters: Map<string, number> = new Map();
+  private azuremonSkillActive: boolean = false;
+  private azuremonSkillTimer: number = 0;
+
   private stageNum: number;
   private isDemoMode: boolean = false;
 
@@ -562,8 +613,13 @@ export class GameEngine {
     this.levelHeight = grid.length * this.level.tileSize;
 
     if (this.isDemoMode) {
-      this.px = 120;
-      this.py = 680;
+      this.level = HERO_PREVIEW_LEVEL;
+      const grid = HERO_PREVIEW_LEVEL.grid!;
+      this.levelWidth = grid[0].length * this.level.tileSize;
+      this.levelHeight = grid.length * this.level.tileSize;
+
+      this.px = 80;
+      this.py = 320; // Standing perfectly on solid ground row (y = 360)
       this.pHP = 9999;
       this.pMaxHP = 9999;
       this.pEnergy = this.getMaxEnergy();
@@ -573,11 +629,11 @@ export class GameEngine {
         this.shadowmonStacks = 5;
       }
 
-      const positions = [260, 320, 380];
+      const positions = [220, 290, 360];
       this.enemies = positions.map((posX, idx) => ({
         id: 99991 + idx,
         x: posX,
-        y: 688,
+        y: 328, // Standing perfectly on solid ground
         vx: 0,
         vy: 0,
         width: 38,
@@ -1053,6 +1109,12 @@ export class GameEngine {
         }
       }
     }
+
+    // Enable exit portal immediately if there is no boss or miniboss on the map
+    const hasBossOrMiniboss = this.enemies.some(e => this.isBossType(e.type));
+    if (!hasBossOrMiniboss && !this.isSurvivalMode) {
+      this.exitPortalActive = true;
+    }
   }
 
   private setupInputListeners() {
@@ -1483,6 +1545,36 @@ export class GameEngine {
           vy: (Math.random() - 0.5) * 3,
           size: Math.random() * 4 + 2,
           color: p % 2 === 0 ? '#93c5fd' : '#c7d2fe',
+          life: 14,
+          maxLife: 14
+        });
+      }
+    } else if (this.selectedDraco === 'Azuremon') {
+      soundService.playShoot();
+      const beamVx = this.pFacing * (this.stats.speed + 9);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 26,
+        y: this.py + this.pHeight / 2 - 5,
+        vx: beamVx,
+        vy: 0,
+        width: 26,
+        height: 10,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 1.1),
+        color: '#38bdf8',
+        type: 'azure_mini_beam' as any,
+        rangeCap: 800,
+        startX: this.px
+      } as any);
+
+      for (let p = 0; p < 8; p++) {
+        this.particles.push({
+          x: slashX,
+          y: slashY + (Math.random() - 0.5) * 10,
+          vx: this.pFacing * (Math.random() * 4 + 2),
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 4 + 2,
+          color: p % 2 === 0 ? '#38bdf8' : '#e0f2fe',
           life: 14,
           maxLife: 14
         });
@@ -2005,6 +2097,27 @@ export class GameEngine {
           maxLife: 22
         });
       }
+    } else if (this.selectedDraco === 'Azuremon') {
+      soundService.playShoot();
+      this.specialCooldown = 240;
+
+      const ballVx = this.pFacing * (this.stats.speed + 5);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 32,
+        y: this.py + this.pHeight / 2 - 16,
+        vx: ballVx,
+        vy: 0,
+        width: 32,
+        height: 32,
+        isEnemy: false,
+        damage: Math.floor(this.stats.attack * 2.2),
+        color: '#38bdf8',
+        type: 'azure_vortex_ball' as any,
+        rangeCap: 1000,
+        startX: this.px
+      } as any);
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, '🌀 AZURE SINGULARITY VORTEX!', '#38bdf8');
     }
   }
 
@@ -2648,6 +2761,20 @@ export class GameEngine {
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_LUNAR_ECLIPSE.text, FT_LUNAR_ECLIPSE.color);
       this.screenShake = 40;
     }
+    else if (this.selectedDraco === 'Azuremon') {
+      soundService.playLevelUp(this.isDemoMode);
+      this.azuremonUltActive = true;
+      this.azuremonUltPhase = 'channeling';
+      this.azuremonUltChannelTimer = 30; // 0.5 seconds channel (30 frames)
+      this.azuremonUltTimer = 300; // 5 seconds beam duration (300 frames)
+      this.azuremonUltStartX = this.px;
+      this.azuremonUltStartY = this.py;
+      this.azuremonUltBeamAngle = this.pFacing === 1 ? 0 : Math.PI; // Shoots horizontally to the front!
+      this.azuremonBlastCounters.clear();
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '🌌 BURST STREAM OF SINGULARITY!', '#38bdf8');
+      this.screenShake = 35;
+    }
 
     this.birdX = this.px;
     this.birdY = this.py - 50;
@@ -2751,6 +2878,11 @@ export class GameEngine {
         soundService.playCoin();
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, `+1 DARK SOUL STACK (${this.shadowmonStacks}/5) 🔴`, '#ef4444');
       }
+    }
+
+    if ((enemy as any).slowedByAzuremon || (enemy as any).azuremonSkillHit) {
+      this.healPlayer(5);
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, '+5 HP (Light Siphon ✨)', '#38bdf8');
     }
 
     let expReward = 6;
@@ -2874,8 +3006,9 @@ export class GameEngine {
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_GIANT_WISP_SLAIN.text, FT_GIANT_WISP_SLAIN.color);
     }
 
-    expReward = Math.floor(expReward * 0.2);
-    coinReward = Math.floor(coinReward * 0.2);
+    const rewardMult = (this.level as any)?.rewardMultiplier || 1.0;
+    expReward = Math.floor(expReward * 0.2 * rewardMult);
+    coinReward = Math.floor(coinReward * 0.2 * rewardMult);
 
     this.callbacks.onEnemyDefeat(expReward, coinReward);
     const _ftExp = FT_EXP_REWARD(expReward); this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, _ftExp.text, _ftExp.color);
@@ -5300,7 +5433,77 @@ export class GameEngine {
           proj.x += proj.vx;
           proj.y += proj.vy;
           (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
-          if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth || (proj as any).traveledDist >= ((proj as any).rangeCap || 800)) {
+
+          if ((proj as any).type === 'azure_vortex_ball' || (proj as any).type === 'azure_light_ball') {
+            const vxX = proj.x + proj.width / 2;
+            const vxY = proj.y + proj.height / 2;
+
+            // Continuous gravitational suction on nearby enemies
+            this.enemies.forEach(enemy => {
+              if (enemy.hp <= 0) return;
+              const ex = enemy.x + enemy.width / 2;
+              const ey = enemy.y + enemy.height / 2;
+              const dist = Math.hypot(ex - vxX, ey - vxY);
+              if (dist < 240 && dist > 1) {
+                const pullForce = (1 - dist / 240) * 3.5;
+                enemy.x += ((vxX - ex) / dist) * pullForce;
+                enemy.y += ((vxY - ey) / dist) * pullForce;
+                enemy.stunnedTimer = Math.max(enemy.stunnedTimer || 0, 4);
+              }
+            });
+
+            // Inward swirling spatial particles
+            if (this.frameCount % 2 === 0) {
+              const pAng = Math.random() * Math.PI * 2;
+              const pRad = Math.random() * 45 + 15;
+              this.particles.push({
+                x: vxX + Math.cos(pAng) * pRad,
+                y: vxY + Math.sin(pAng) * pRad,
+                vx: -Math.cos(pAng) * 3.5,
+                vy: -Math.sin(pAng) * 3.5,
+                size: Math.random() * 4 + 2,
+                color: Math.random() > 0.5 ? '#38bdf8' : '#c084fc',
+                life: 12,
+                maxLife: 12
+              });
+            }
+          }
+
+          const isSolidHit = this.isSolid(proj.x, proj.y);
+          if (isSolidHit || proj.x < 0 || proj.x > this.levelWidth || (proj as any).traveledDist >= ((proj as any).rangeCap || 800)) {
+            if ((proj as any).type === 'azure_vortex_ball' || (proj as any).type === 'azure_light_ball') {
+              const cx = proj.x + proj.width / 2;
+              const cy = proj.y + proj.height / 2;
+              soundService.playHit();
+              this.addFloatingText(cx, cy - 20, '🌀 AZURE SINGULARITY IMPLOSION!', '#38bdf8');
+              this.spawnDustParticles(cx, cy, 30, '#38bdf8');
+              this.screenShake = 24;
+
+              // Singularity Explosion Burst Animation
+              for (let p = 0; p < 30; p++) {
+                const ang = (p / 30) * Math.PI * 2;
+                const spd = Math.random() * 8 + 3;
+                this.particles.push({
+                  x: cx,
+                  y: cy,
+                  vx: Math.cos(ang) * spd,
+                  vy: Math.sin(ang) * spd,
+                  size: Math.random() * 7 + 3,
+                  color: p % 3 === 0 ? '#38bdf8' : p % 3 === 1 ? '#c084fc' : '#ffffff',
+                  life: 20,
+                  maxLife: 20
+                });
+              }
+
+              this.enemies.forEach(e => {
+                if (e.hp <= 0) return;
+                const dist = Math.hypot(e.x + e.width / 2 - cx, e.y + e.height / 2 - cy);
+                if (dist <= 180) {
+                  this.damageEnemy(e, Math.floor(proj.damage * 0.6));
+                  e.stunnedTimer = 30;
+                }
+              });
+            }
             this.projectiles.splice(index, 1);
             return;
           }
@@ -5355,6 +5558,52 @@ export class GameEngine {
                 soundService.playHit();
                 this.addFloatingText(enemy.x, enemy.y - 15, FT_LIFTED_TORNADO.text, FT_LIFTED_TORNADO.color);
               }
+            } else if ((proj as any).type === 'azure_vortex_ball' || (proj as any).type === 'azure_light_ball') {
+              const cx = proj.x + proj.width / 2;
+              const cy = proj.y + proj.height / 2;
+              this.damageEnemy(enemy, proj.damage);
+              soundService.playHit();
+              this.healPlayer(Math.max(2, Math.floor(this.pMaxHP * 0.05)));
+              this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, '+HP Singularity Siphon', '#38bdf8');
+              this.addFloatingText(cx, cy - 20, '🌀 AZURE SINGULARITY IMPLOSION!', '#38bdf8');
+              this.spawnDustParticles(cx, cy, 30, '#38bdf8');
+              this.screenShake = 24;
+
+              // Singularity Explosion Burst Animation
+              for (let p = 0; p < 30; p++) {
+                const ang = (p / 30) * Math.PI * 2;
+                const spd = Math.random() * 8 + 3;
+                this.particles.push({
+                  x: cx,
+                  y: cy,
+                  vx: Math.cos(ang) * spd,
+                  vy: Math.sin(ang) * spd,
+                  size: Math.random() * 7 + 3,
+                  color: p % 3 === 0 ? '#38bdf8' : p % 3 === 1 ? '#c084fc' : '#ffffff',
+                  life: 20,
+                  maxLife: 20
+                });
+              }
+
+              this.enemies.forEach(e => {
+                if (e.hp <= 0) return;
+                const dist = Math.hypot(e.x + e.width / 2 - cx, e.y + e.height / 2 - cy);
+                if (dist <= 180) {
+                  this.damageEnemy(e, Math.floor(proj.damage * 0.5));
+                  e.stunnedTimer = 30;
+                }
+              });
+
+              this.projectiles.splice(index, 1);
+              projSpliced = true;
+            } else if ((proj as any).type === 'azure_mini_beam') {
+              this.damageEnemy(enemy, proj.damage);
+              soundService.playHit();
+              this.healPlayer(1);
+              this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, '+1 HP Siphon', '#38bdf8');
+              this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#38bdf8');
+              this.projectiles.splice(index, 1);
+              projSpliced = true;
             } else if (proj.type === 'dark_energy') {
               if ((proj as any).isBasic) {
                 this.damageEnemy(enemy, proj.damage);
@@ -6672,6 +6921,179 @@ export class GameEngine {
           this.pvx = 0;
           this.pvy = 0;
           this.cameraZoom = 1.0;
+        }
+      }
+    }
+
+    if (this.azuremonUltActive) {
+      this.pInvulnerableFrames = 180;
+      this.pvx = 0;
+      this.pvy = 0;
+
+      if (this.azuremonUltPhase === 'channeling') {
+        this.px = this.azuremonUltStartX;
+        this.py = this.azuremonUltStartY;
+        this.azuremonUltChannelTimer--;
+
+        if (this.azuremonUltChannelTimer % 12 === 0) {
+          const drainAmount = Math.max(1, Math.floor(this.pMaxHP * 0.01));
+          if (this.pHP > 1) {
+            this.pHP = Math.max(1, this.pHP - drainAmount);
+            this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, `-${drainAmount} HP`, '#ef4444');
+          }
+        }
+
+        for (let p = 0; p < 4; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const rad = Math.random() * 35 + 10;
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + Math.cos(ang) * rad,
+            y: this.py + this.pHeight / 2 + Math.sin(ang) * rad,
+            vx: -Math.cos(ang) * 3,
+            vy: -Math.sin(ang) * 3,
+            size: Math.random() * 4 + 2,
+            color: p % 2 === 0 ? '#38bdf8' : '#e0f2fe',
+            life: 15,
+            maxLife: 15
+          });
+        }
+
+        if (this.azuremonUltChannelTimer <= 0) {
+          this.azuremonUltPhase = 'beam';
+          this.screenShake = 30;
+          soundService.playLevelUp(this.isDemoMode);
+        }
+      } else if (this.azuremonUltPhase === 'beam') {
+        this.px = this.azuremonUltStartX;
+        this.py = this.azuremonUltStartY;
+        this.azuremonUltTimer--;
+
+        if (this.keys['w'] || this.keys['W'] || this.keys['ArrowUp']) {
+          this.azuremonUltBeamAngle -= 0.02;
+        }
+        if (this.keys['s'] || this.keys['S'] || this.keys['ArrowDown']) {
+          this.azuremonUltBeamAngle += 0.02;
+        }
+
+        const baseAngle = this.pFacing === 1 ? 0 : Math.PI;
+        const minAngle = baseAngle - Math.PI * 0.35;
+        const maxAngle = baseAngle + Math.PI * 0.35;
+        this.azuremonUltBeamAngle = Math.max(minAngle, Math.min(maxAngle, this.azuremonUltBeamAngle));
+
+        const startX = this.px + this.pWidth / 2;
+        const startY = this.py + this.pHeight / 2;
+        const maxDist = 1200;
+        const beamRadius = 50;
+
+        let endX = startX + Math.cos(this.azuremonUltBeamAngle) * maxDist;
+        let endY = startY + Math.sin(this.azuremonUltBeamAngle) * maxDist;
+        let hitGridR = -1;
+        let hitGridC = -1;
+
+        const stepSize = 10;
+        for (let dist = 30; dist <= maxDist; dist += stepSize) {
+          const cx = startX + Math.cos(this.azuremonUltBeamAngle) * dist;
+          const cy = startY + Math.sin(this.azuremonUltBeamAngle) * dist;
+          const c = Math.floor(cx / this.level.tileSize);
+          const r = Math.floor(cy / this.level.tileSize);
+
+          if (this.isSolid(cx, cy)) {
+            endX = cx;
+            endY = cy;
+            hitGridR = r;
+            hitGridC = c;
+            break;
+          }
+        }
+
+        if (hitGridR >= 0 && hitGridC >= 0) {
+          const key = `${hitGridR}_${hitGridC}`;
+          const currentCount = (this.azuremonBlastCounters.get(key) || 0) + 1;
+          this.azuremonBlastCounters.set(key, currentCount);
+
+          if (currentCount >= 30) {
+            const grid = this.getActiveGrid();
+            for (let dr = -1; dr <= 1; dr++) {
+              for (let dc = -1; dc <= 1; dc++) {
+                const tr = hitGridR + dr;
+                const tc = hitGridC + dc;
+
+                const tilePx = tc * this.level.tileSize + this.level.tileSize / 2;
+                const tilePy = tr * this.level.tileSize + this.level.tileSize / 2;
+                const nearBoss = this.enemies.some(e => this.isBossType(e.type) && Math.hypot(e.x + e.width / 2 - tilePx, e.y + e.height / 2 - tilePy) < 300);
+
+                if (!nearBoss && grid[tr] && tc >= 0 && tc < grid[tr].length) {
+                  const ch = grid[tr][tc];
+                  if (ch === '#' || ch === '=') {
+                    grid[tr] = grid[tr].substring(0, tc) + '.' + grid[tr].substring(tc + 1);
+                    this.spawnDustParticles(tilePx, tilePy, 8, '#38bdf8');
+                  }
+                }
+              }
+            }
+            this.azuremonBlastCounters.delete(key);
+            this.addFloatingText(endX, endY, '💥 TERRAIN BLASTED!', '#38bdf8');
+          }
+        }
+
+        const actualDist = Math.hypot(endX - startX, endY - startY);
+        const beamVx = Math.cos(this.azuremonUltBeamAngle);
+        const beamVy = Math.sin(this.azuremonUltBeamAngle);
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dx = ex - startX;
+          const dy = ey - startY;
+          const proj = dx * beamVx + dy * beamVy;
+
+          if (proj >= 0 && proj <= actualDist) {
+            const perpDist = Math.abs(dx * (-beamVy) + dy * beamVx);
+            const pullRadius = beamRadius + 140;
+            if (perpDist <= pullRadius) {
+              // Gravitational suction toward center line of beam
+              const centerLineX = startX + beamVx * proj;
+              const centerLineY = startY + beamVy * proj;
+              const pullX = centerLineX - ex;
+              const pullY = centerLineY - ey;
+              const pullLen = Math.hypot(pullX, pullY) || 1;
+              const pullForce = (1 - perpDist / pullRadius) * 4.5;
+
+              enemy.x += (pullX / pullLen) * pullForce;
+              enemy.y += (pullY / pullLen) * pullForce;
+
+              if (perpDist <= beamRadius + Math.max(enemy.width, enemy.height) / 2) {
+                if (this.azuremonUltTimer % 15 === 0) {
+                  this.damageEnemy(enemy, Math.floor(this.stats.attack * 2.5));
+                  enemy.stunnedTimer = 15;
+                  this.spawnDustParticles(ex, ey, 8, '#38bdf8');
+                  this.addFloatingText(ex, ey - 15, '💥 2.5X SINGULARITY BLAST', '#38bdf8');
+                }
+              }
+            }
+          }
+        });
+
+        for (let p = 0; p < 6; p++) {
+          const t = Math.random();
+          const px = startX + (endX - startX) * t + (Math.random() - 0.5) * beamRadius;
+          const py = startY + (endY - startY) * t + (Math.random() - 0.5) * beamRadius;
+          this.particles.push({
+            x: px,
+            y: py,
+            vx: (Math.random() - 0.5) * 4,
+            vy: (Math.random() - 0.5) * 4,
+            size: Math.random() * 6 + 2,
+            color: p % 2 === 0 ? '#38bdf8' : '#ffffff',
+            life: 10,
+            maxLife: 10
+          });
+        }
+
+        if (this.azuremonUltTimer <= 0) {
+          this.azuremonUltActive = false;
         }
       }
     }
@@ -8106,6 +8528,75 @@ export class GameEngine {
         this.ctx.fill();
 
         this.ctx.restore();
+      } else if ((proj as any).type === 'azure_vortex_ball' || (proj as any).type === 'azure_light_ball') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const radius = proj.width / 2;
+        const pulse = Math.sin(this.frameCount * 0.3) * 2;
+
+        // Layer 1: Gravitational Distortion Outer Haze
+        const hazeGrad = this.ctx.createRadialGradient(cx, cy, radius * 0.3, cx, cy, radius * 2.2 + pulse);
+        hazeGrad.addColorStop(0, 'rgba(56, 189, 248, 0.55)');
+        hazeGrad.addColorStop(0.5, 'rgba(2, 132, 199, 0.3)');
+        hazeGrad.addColorStop(0.85, 'rgba(12, 74, 110, 0.15)');
+        hazeGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+        this.ctx.fillStyle = hazeGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, radius * 2.2 + pulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Layer 2: Rotating Accretion Rings (Elliptical perspective)
+        const rot0 = this.frameCount * 0.12;
+        const rings = [
+          { r: radius * 1.5, rot: rot0, color: '#38bdf8', w: 2.5, scaleY: 0.4 },
+          { r: radius * 1.2, rot: -rot0 * 1.3, color: '#c084fc', w: 2.0, scaleY: 0.5 },
+          { r: radius * 0.9, rot: rot0 * 1.8, color: '#ffffff', w: 1.5, scaleY: 0.3 }
+        ];
+
+        rings.forEach(ring => {
+          this.ctx.save();
+          this.ctx.translate(cx, cy);
+          this.ctx.rotate(ring.rot);
+          this.ctx.scale(1.0, ring.scaleY);
+          this.ctx.strokeStyle = ring.color;
+          this.ctx.lineWidth = ring.w;
+          this.ctx.shadowColor = ring.color;
+          this.ctx.shadowBlur = 6;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, ring.r, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.restore();
+        });
+        this.ctx.shadowBlur = 0;
+
+        // Layer 3: Event Horizon Rim Glow
+        const rimGrad = this.ctx.createRadialGradient(cx, cy, radius * 0.5, cx, cy, radius * 1.05);
+        rimGrad.addColorStop(0, 'rgba(2, 6, 23, 0.95)');
+        rimGrad.addColorStop(0.7, '#0284c7');
+        rimGrad.addColorStop(1, '#ffffff');
+        this.ctx.fillStyle = rimGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, radius * 1.05, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Layer 4: Deep Black Void Singularity Core
+        const voidGrad = this.ctx.createRadialGradient(cx, cy, 1, cx, cy, radius * 0.65);
+        voidGrad.addColorStop(0, '#020617');
+        voidGrad.addColorStop(0.7, '#090d16');
+        voidGrad.addColorStop(1, '#0c4a6e');
+        this.ctx.fillStyle = voidGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, radius * 0.65, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Inner glowing singularity point
+        this.ctx.fillStyle = '#e0f2fe';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
       } else {
         this.ctx.fillRect(proj.x, proj.y, proj.width, proj.height);
       }
@@ -9469,6 +9960,11 @@ export class GameEngine {
         accentColor = '#312e81';
         bellyColor = '#c7d2fe';
         detailColor = '#93c5fd';
+      } else if (this.selectedDraco === 'Azuremon') {
+        mainColor = '#0284c7';
+        accentColor = '#0c4a6e';
+        bellyColor = '#bae6fd';
+        detailColor = '#38bdf8';
       }
 
       const px = this.px;
@@ -9497,6 +9993,34 @@ export class GameEngine {
           this.ctx.beginPath();
           this.ctx.arc(dx, dy, 3, 0, Math.PI * 2);
           this.ctx.fill();
+        }
+        this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Azuremon') {
+        this.ctx.save();
+        const auraPulse = Math.sin(this.frameCount * 0.12) * 3;
+        const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse);
+        grad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+        grad.addColorStop(0.6, 'rgba(186, 230, 253, 0.2)');
+        grad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        for (let d = 0; d < 3; d++) {
+          const dang = this.frameCount * 0.09 + d * ((Math.PI * 2) / 3);
+          const dx = px + pw / 2 + Math.cos(dang) * (pw / 2 + 14);
+          const dy = py + ph / 2 + Math.sin(dang) * 12;
+          this.ctx.fillStyle = '#e0f2fe';
+          this.ctx.beginPath();
+          this.ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.strokeStyle = '#38bdf8';
+          this.ctx.lineWidth = 1;
+          this.ctx.stroke();
         }
         this.ctx.restore();
       }
@@ -10926,6 +11450,213 @@ export class GameEngine {
         this.ctx.fillStyle = tipFlareGrad;
         this.ctx.beginPath();
         this.ctx.arc(endX, endY, 65, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      this.ctx.restore();
+    }
+
+    if (this.azuremonUltActive) {
+      this.ctx.save();
+      const startX = this.px + (this.pFacing === 1 ? this.pWidth - 4 : 4);
+      const startY = this.py + 14;
+
+      if (this.azuremonUltPhase === 'channeling') {
+        // CHARGING PHASE: Celestial Black Hole Singularity Charging at Azuremon Maw
+        const progress = 1 - (this.azuremonUltChannelTimer / 120);
+        const orbRadius = 20 + progress * 35 + Math.sin(this.frameCount * 0.4) * 4;
+
+        // 1. Gravitational Outer Distortion Field
+        const hazeGrad = this.ctx.createRadialGradient(startX, startY, 4, startX, startY, orbRadius * 2.2);
+        hazeGrad.addColorStop(0, 'rgba(56, 189, 248, 0.6)');
+        hazeGrad.addColorStop(0.5, 'rgba(2, 132, 199, 0.35)');
+        hazeGrad.addColorStop(0.85, 'rgba(12, 74, 110, 0.15)');
+        hazeGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+        this.ctx.fillStyle = hazeGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(startX, startY, orbRadius * 2.2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 2. Swirling Accretion Orbit Rings
+        const rot0 = this.frameCount * 0.15;
+        const rings = [
+          { r: orbRadius * 1.6, rot: rot0, color: '#38bdf8', w: 3.5, scaleY: 0.35 },
+          { r: orbRadius * 1.3, rot: -rot0 * 1.4, color: '#c084fc', w: 3.0, scaleY: 0.45 },
+          { r: orbRadius * 1.0, rot: rot0 * 1.9, color: '#ffffff', w: 2.5, scaleY: 0.3 }
+        ];
+        rings.forEach(ring => {
+          this.ctx.save();
+          this.ctx.translate(startX, startY);
+          this.ctx.rotate(ring.rot);
+          this.ctx.scale(1.0, ring.scaleY);
+          this.ctx.strokeStyle = ring.color;
+          this.ctx.lineWidth = ring.w;
+          this.ctx.shadowColor = ring.color;
+          this.ctx.shadowBlur = 10;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, ring.r, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.restore();
+        });
+        this.ctx.shadowBlur = 0;
+
+        // 3. Glowing Event Horizon Rim
+        const rimGrad = this.ctx.createRadialGradient(startX, startY, orbRadius * 0.6, startX, startY, orbRadius * 1.05);
+        rimGrad.addColorStop(0, 'rgba(2, 6, 23, 0.95)');
+        rimGrad.addColorStop(0.7, '#0284c7');
+        rimGrad.addColorStop(1, '#ffffff');
+        this.ctx.fillStyle = rimGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(startX, startY, orbRadius * 1.05, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 4. Dark Singularity Void Core
+        const voidGrad = this.ctx.createRadialGradient(startX, startY, 1, startX, startY, orbRadius * 0.65);
+        voidGrad.addColorStop(0, '#020617');
+        voidGrad.addColorStop(0.7, '#090d16');
+        voidGrad.addColorStop(1, '#0c4a6e');
+        this.ctx.fillStyle = voidGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(startX, startY, orbRadius * 0.65, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 5. Expanding energy shockwave rings
+        for (let r = 0; r < 3; r++) {
+          const ringR = ((this.frameCount * 5 + r * 25) % 75);
+          const ringAlpha = Math.max(0, 1 - ringR / 75);
+          this.ctx.strokeStyle = `rgba(186, 230, 253, ${ringAlpha})`;
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.arc(startX, startY, ringR, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
+
+        // 6. Swirling Inflow Energy Particles
+        for (let p = 0; p < 10; p++) {
+          const inAng = this.frameCount * 0.15 + p * (Math.PI / 5);
+          const inRad = 75 * (1 - ((this.frameCount * 2.5 + p * 8) % 35) / 35);
+          const inX = startX + Math.cos(inAng) * inRad;
+          const inY = startY + Math.sin(inAng) * inRad;
+          this.ctx.fillStyle = p % 2 === 0 ? '#ffffff' : '#38bdf8';
+          this.ctx.beginPath();
+          this.ctx.arc(inX, inY, 3.5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+      } else if (this.azuremonUltPhase === 'beam') {
+        // SLEEK LUNARMON-STYLE AZURE SINGULARITY BEAM (BALANCED VISIBILITY & CRISP EFFECTS)
+        const beamLength = 1200;
+        const endX = startX + Math.cos(this.azuremonUltBeamAngle) * beamLength;
+        const endY = startY + Math.sin(this.azuremonUltBeamAngle) * beamLength;
+
+        // LAYER 1: Soft Ambient Void Sheath (70px width, low opacity)
+        this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.25)';
+        this.ctx.lineWidth = 70 + Math.sin(this.frameCount * 0.3) * 6;
+        this.ctx.lineCap = 'round';
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 2: Celestial Azure Outer Aura (44px width, translucent cyan)
+        this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        this.ctx.lineWidth = 44 + Math.cos(this.frameCount * 0.25) * 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 3: Sky-Blue Plasma Body (22px width)
+        this.ctx.strokeStyle = 'rgba(186, 230, 253, 0.65)';
+        this.ctx.lineWidth = 22;
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 4: Pure White Crisp Laser Core (10px width with subtle cyan glow)
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 10;
+        this.ctx.shadowColor = '#38bdf8';
+        this.ctx.shadowBlur = 8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+
+        // LAYER 5: Dark Singularity Center Accent (4px width)
+        this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.7)';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 6: Precision White Center Line (2px width)
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(startX, startY);
+        this.ctx.lineTo(endX, endY);
+        this.ctx.stroke();
+
+        // LAYER 7: LUNARMON-STYLE SLIDING 3D ENERGY RINGS (6 sleek 24px perspective rings)
+        for (let r = 0; r < 6; r++) {
+          const ringDist = ((this.frameCount * 14 + r * 160) % beamLength);
+          const rx = startX + Math.cos(this.azuremonUltBeamAngle) * ringDist;
+          const ry = startY + Math.sin(this.azuremonUltBeamAngle) * ringDist;
+          const ringRadius = 24 + Math.sin(this.frameCount * 0.25 + r) * 4;
+
+          this.ctx.save();
+          this.ctx.translate(rx, ry);
+          this.ctx.rotate(this.azuremonUltBeamAngle);
+          this.ctx.scale(0.35, 1.0); // Elliptical 3D perspective
+
+          this.ctx.strokeStyle = r % 2 === 0 ? '#38bdf8' : '#ffffff';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, ringRadius, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+
+        // LAYER 8: Double Helix Accretion Lightning Arcs (Sleek 18px wave)
+        const perpAng = this.azuremonUltBeamAngle + Math.PI / 2;
+        const helixSteps = Math.floor(beamLength / 20);
+        for (let h = 0; h < 2; h++) {
+          const phaseShift = h * Math.PI;
+          this.ctx.strokeStyle = h === 0 ? '#38bdf8' : '#e0f2fe';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          for (let i = 0; i <= helixSteps; i++) {
+            const d = (i / helixSteps) * beamLength;
+            const hWave = Math.sin(this.frameCount * 0.35 + i * 0.4 + phaseShift) * 18;
+            const hx = startX + Math.cos(this.azuremonUltBeamAngle) * d + Math.cos(perpAng) * hWave;
+            const hy = startY + Math.sin(this.azuremonUltBeamAngle) * d + Math.sin(perpAng) * hWave;
+            if (i === 0) this.ctx.moveTo(hx, hy);
+            else this.ctx.lineTo(hx, hy);
+          }
+          this.ctx.stroke();
+        }
+
+        // LAYER 9: Caster Mouth Bloom Flare (45px radius)
+        const mouthGrad = this.ctx.createRadialGradient(startX, startY, 4, startX, startY, 45);
+        mouthGrad.addColorStop(0, '#ffffff');
+        mouthGrad.addColorStop(0.4, 'rgba(186, 230, 253, 0.7)');
+        mouthGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        this.ctx.fillStyle = mouthGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(startX, startY, 45, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // LAYER 10: Singularity Impact Explosion Flare (55px radius)
+        const impactGrad = this.ctx.createRadialGradient(endX, endY, 6, endX, endY, 55);
+        impactGrad.addColorStop(0, '#ffffff');
+        impactGrad.addColorStop(0.4, 'rgba(56, 189, 248, 0.7)');
+        impactGrad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+        this.ctx.fillStyle = impactGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(endX, endY, 55 + Math.sin(this.frameCount * 0.4) * 8, 0, Math.PI * 2);
         this.ctx.fill();
       }
 
@@ -12560,7 +13291,7 @@ export class GameEngine {
         // Lock all 3 slimes firmly on ground level so knockback explosions never make them fly
         this.enemies.forEach((slime, idx) => {
           slime.x = positions[idx] || (260 + idx * 60);
-          slime.y = 688;
+          slime.y = 328;
           slime.vx = 0;
           slime.vy = 0;
           slime.facing = -1;
@@ -12576,7 +13307,7 @@ export class GameEngine {
 
     if (this.isDemoMode) {
       this.cameraX = 0;
-      this.cameraY = 510;
+      this.cameraY = Math.max(0, this.levelHeight - (this.canvas.height || 240));
     } else {
       const targetCamX = this.px - this.canvas.width / 2 + this.pWidth / 2;
       this.cameraX += (targetCamX - this.cameraX) * 0.1;

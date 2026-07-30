@@ -773,7 +773,7 @@ export class StageGimmickManager {
         });
       });
 
-      if (stageNum !== 13) {
+      if (stageNum !== 13 && !(callbacks as any).isDemoMode) {
         if (this.timerCount % 45 === 0 && grid.length > 0) {
           const mapWidth = (grid[0]?.length || 60) * tileSize;
           const groupCount = 1 + Math.floor(Math.random() * 3);

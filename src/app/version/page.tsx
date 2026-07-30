@@ -30,6 +30,22 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.2.5',
+    date: 'July 30, 2026',
+    tag: '11 Worlds & New Hero Azuremon',
+    badgeColor: 'bg-sky-600 text-white font-black shadow-sm',
+    summary: 'Overhauls the stage system into 11 distinct campaign worlds (Forest, Ruins, Ice, Shadow, Temple, Underwater, Volcano, Core, Gladiator Arena, Heavens, Space) with 4-7 stages each. Bosses now spawn exclusively on the final stage of each world. Introduces new hero Azuremon with HP mini-beam siphon, exploding Light Energy Ball, and Burst Stream of Catastrophe terrain-blasting ultimate.',
+    highlights: [
+      '11 World Campaign Structure: Organized the campaign into 11 thematic worlds (Forest, Ruins, Ice, Shadow, Temple, Underwater, Volcano, Core, Gladiator Arena, Heavens, Space).',
+      'Final Stage World Bosses: Main World Bosses (King Slime, Fire Golem, Frost Wyvern, Shadow Overlord, Dragon King, Killer Whale, Magma Guard, Core Guardian, Immortal Gladiator, Demonic Grenadier, Giant Wisp/Lunar Goddess) appear exclusively on the final stage of each world.',
+      'Gladiator Arena World: Dedicated 1-stage survival defense world featuring a 180-second survival timer.',
+      'Progressive Reward Scaling: Exponential drop multipliers from 1.0x (Forest) up to 5.0x (Space) for EXP, coins, upgrade stones, and potion drops in late-game worlds.',
+      'New Hero - Azuremon: Bluish white celestial dragon hero firing mini beams that siphon +1 HP per enemy hit.',
+      'Azuremon Skill - Light Energy Ball: Fires a light sphere blocked by terrain that explodes on impact, slowing enemies by 50% for 3s and restoring +5 HP when an enemy is defeated.',
+      'Azuremon Ultimate - Burst Stream of Catastrophe: 2-second channel (-10% max HP), releasing a 50px radius, 1200px range front beam rotatable via W/S keys for 5s. Blasting ground/platform for 0.5s destroys tiles in a 1-block radius (excluding boss protection zones).',
+    ],
+  },
+  {
     version: '0.2.4',
     date: 'July 29, 2026',
     tag: 'Lunar Palace & Goddess',

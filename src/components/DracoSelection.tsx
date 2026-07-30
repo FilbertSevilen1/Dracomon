@@ -159,6 +159,16 @@ const DRACO_META: {
     colorClass: 'text-indigo-300 border-indigo-700 bg-indigo-950',
     bgGradient: 'from-indigo-900 via-blue-950 to-slate-900',
   },
+  Azuremon: {
+    role: 'Celestial Dragon / Singularity',
+    abilityName: 'Azure Singularity Vortex',
+    abilityDesc: 'Fires a celestial black hole vortex ball that continuously pulls nearby enemies inward and implodes on hit, siphoning HP on damage.',
+    ultimateName: 'Burst Stream of Singularity',
+    ultimateDesc: 'Channels 2s to form a black hole singularity, then unleashes a gravitational cataclysm beam for 5s (W/S to aim) that pulls enemies, destroys terrain, and disintegrates all foes!',
+    cost: 500,
+    colorClass: 'text-sky-300 border-sky-400 bg-sky-950',
+    bgGradient: 'from-sky-500 via-cyan-400 to-slate-900',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
@@ -211,6 +221,46 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
         {/* Crescent moon chest emblem */}
         <circle cx="50" cy="62" r="8" fill="#312e81" stroke="#818cf8" strokeWidth="1.5" />
         <path d="M 50 55 A 7 7 0 1 1 50 69 A 4 4 0 1 0 50 55 Z" fill="#c7d2fe" />
+      </svg>
+    );
+  }
+
+  if (name === 'Azuremon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.25)" />
+        {/* Dual Cosmic Orbital Rings */}
+        <ellipse cx="50" cy="50" rx="44" ry="14" fill="none" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.85" />
+        <ellipse cx="50" cy="50" rx="36" ry="10" fill="none" stroke="#bae6fd" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+        {/* Orbiting Celestial Orbs */}
+        <circle cx="10" cy="50" r="3.5" fill="#e0f2fe" stroke="#38bdf8" strokeWidth="1" />
+        <circle cx="90" cy="50" r="3.5" fill="#e0f2fe" stroke="#38bdf8" strokeWidth="1" />
+        <circle cx="50" cy="36" r="2.5" fill="#38bdf8" />
+        {/* Dragon Wings */}
+        <path d="M 28 42 Q 2 8 32 24 Z" fill="#0369a1" stroke="#38bdf8" strokeWidth="1.8" />
+        <path d="M 72 42 Q 98 8 68 24 Z" fill="#0369a1" stroke="#38bdf8" strokeWidth="1.8" />
+        <path d="M 30 40 Q 12 16 34 26 Z" fill="#0284c7" opacity="0.7" />
+        <path d="M 70 40 Q 88 16 66 26 Z" fill="#0284c7" opacity="0.7" />
+        {/* Crest Horns */}
+        <path d="M 36 32 L 22 10 L 40 22 Z" fill="#0284c7" stroke="#bae6fd" strokeWidth="1.2" />
+        <path d="M 64 32 L 78 10 L 60 22 Z" fill="#0284c7" stroke="#bae6fd" strokeWidth="1.2" />
+        <path d="M 22 10 L 25 14" stroke="#e0f2fe" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M 78 10 L 75 14" stroke="#e0f2fe" strokeWidth="1.5" strokeLinecap="round" />
+        {/* Main Body */}
+        <rect x="34" y="32" width="32" height="44" rx="12" fill="#0284c7" stroke="#0c4a6e" strokeWidth="2.5" />
+        {/* Chest Armor Plate */}
+        <path d="M 38 48 Q 50 54 62 48 L 58 70 Q 50 74 42 70 Z" fill="#e0f2fe" opacity="0.5" />
+        {/* Celestial Eyes */}
+        <circle cx="44" cy="44" r="3.5" fill="#0284c7" />
+        <circle cx="56" cy="44" r="3.5" fill="#0284c7" />
+        <circle cx="44" cy="44" r="1.5" fill="#e0f2fe" />
+        <circle cx="56" cy="44" r="1.5" fill="#e0f2fe" />
+        <circle cx="45" cy="43" r="0.8" fill="#ffffff" />
+        <circle cx="57" cy="43" r="0.8" fill="#ffffff" />
+        {/* Chest Light Core & Starburst Halo */}
+        <circle cx="50" cy="60" r="11" fill="rgba(56, 189, 248, 0.25)" />
+        <circle cx="50" cy="60" r="7" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
+        <circle cx="50" cy="60" r="3" fill="#ffffff" />
       </svg>
     );
   }

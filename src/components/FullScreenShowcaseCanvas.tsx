@@ -114,6 +114,7 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
       { name: 'Thundermon', main: '#facc15', accent: '#ca8a04', belly: '#fef08a', detail: '#06b6d4' },
       { name: 'Enigmon', main: '#333388', accent: '#581c87', belly: '#c084fc', detail: '#e879f9' },
       { name: 'Lunarmon', main: '#1e1b4b', accent: '#312e81', belly: '#c7d2fe', detail: '#93c5fd' },
+      { name: 'Azuremon', main: '#0284c7', accent: '#0369a1', belly: '#e0f2fe', detail: '#38bdf8' },
     ];
 
     const resizeCanvas = () => {
@@ -320,6 +321,18 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
             type: 'crescent',
             life: 120,
           });
+        } else if (draco.name === 'Azuremon') {
+          projectiles.push({
+            x: frontX,
+            y: centerY,
+            vx: dir * 7,
+            vy: 0,
+            width: 14,
+            height: 8,
+            color: '#38bdf8',
+            type: 'azure_beam',
+            life: 120,
+          });
         } else {
           // Melee swing particle effect
           addParticles(frontX, centerY, 8, draco.mainColor, 1.5);
@@ -374,6 +387,20 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
           draco.pulseTimer = 50;
           draco.pulseX = draco.x + dir * 140;
           draco.pulseY = draco.y + draco.height;
+        } else if (draco.name === 'Azuremon') {
+          // Light Energy Ball
+          projectiles.push({
+            x: frontX,
+            y: centerY,
+            vx: dir * 5,
+            vy: 0,
+            width: 22,
+            height: 22,
+            color: '#bae6fd',
+            type: 'azure_light_ball',
+            life: 120,
+          });
+          addParticles(frontX, centerY, 15, '#38bdf8', 2);
         } else {
           // Default particle blast
           addParticles(frontX, centerY, 15, draco.mainColor, 2);
@@ -411,6 +438,12 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
           draco.ultTimer = 90;
           draco.ultPhase = 'laser';
           draco.beamAngle = Math.PI / 2; // facing down-ish
+        } else if (draco.name === 'Azuremon') {
+          // Burst Stream of Catastrophe front beam
+          draco.ultTimer = 120;
+          draco.ultPhase = 'laser';
+          draco.beamAngle = dir === 1 ? 0 : Math.PI;
+          addParticles(draco.x + draco.width / 2, draco.y + draco.height / 2, 35, '#38bdf8', 3);
         } else if (draco.name === 'Bombamon') {
           // Carpet bombing fire streams
           draco.ultTimer = 120;
@@ -750,6 +783,32 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
         ctx.beginPath();
         ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 12 + auraPulse, 0, Math.PI * 2);
         ctx.fill();
+      }
+
+      // Azuremon background celestial aura & orbiting spheres
+      if (draco.name === 'Azuremon') {
+        const auraPulse = Math.sin(frameCount * 0.12) * 3;
+        const grad = ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse);
+        grad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+        grad.addColorStop(0.6, 'rgba(186, 230, 253, 0.18)');
+        grad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        for (let d = 0; d < 3; d++) {
+          const dang = frameCount * 0.09 + d * ((Math.PI * 2) / 3);
+          const dx = px + pw / 2 + Math.cos(dang) * (pw / 2 + 14);
+          const dy = py + ph / 2 + Math.sin(dang) * 12;
+          ctx.fillStyle = '#e0f2fe';
+          ctx.beginPath();
+          ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
       }
 
       // Legs/feet
