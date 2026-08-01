@@ -184,6 +184,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Pixelmon: {
+      level: 1,
+      exp: 0,
+      hp: 20,
+      attack: 8,
+      defense: 3,
+      speed: 7.0,
+      jump: 11,
+      range: 8,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -193,6 +205,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     sfxVolume: 85,
     fullscreen: false,
   },
+  lastWorldId: 1,
 };
 
 export const storageService = {
@@ -211,6 +224,7 @@ export const storageService = {
         if (!parsed.inventory) parsed.inventory = [];
         if (!parsed.settings.sfxVolume) parsed.settings.sfxVolume = 80;
         if (!parsed.tier) parsed.tier = 'Free';
+        if (!parsed.lastWorldId) parsed.lastWorldId = 1;
 
         if (!parsed.unlockedDraco) parsed.unlockedDraco = ['Jumpmon', 'Archermon', 'Shieldmon'];
         if (!parsed.unlockedDraco.includes('Jumpmon')) parsed.unlockedDraco.push('Jumpmon');
@@ -370,6 +384,20 @@ export const storageService = {
             speed: 7.5,
             jump: 11,
             range: 10,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Pixelmon) {
+          parsed.dracos.Pixelmon = {
+            level: 1,
+            exp: 0,
+            hp: 20,
+            attack: 8,
+            defense: 3,
+            speed: 7.0,
+            jump: 11,
+            range: 8,
             unlocked: false,
             energyRegen: 1.0,
           };

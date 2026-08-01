@@ -117,58 +117,6 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     setGameState('playing');
   }, [stageNum]);
 
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      const key = e.key.toLowerCase();
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        if (gameState === 'victory' || gameState === 'gameover') {
-          soundService.playClick();
-          onQuit();
-        } else {
-          handlePauseToggle();
-        }
-      } else if (e.key === 'Enter') {
-        if (gameState === 'victory') {
-          e.preventDefault();
-          soundService.playClick();
-          onNextLevel();
-        } else if (gameState === 'gameover') {
-          e.preventDefault();
-          handleRestart();
-        } else if (gameState === 'paused') {
-          e.preventDefault();
-          handlePauseToggle();
-        }
-      } else if (key === 'r' && (gameState === 'paused' || gameState === 'gameover')) {
-        e.preventDefault();
-        handleRestart();
-      } else if (key === 'q' && (gameState === 'paused' || gameState === 'gameover' || gameState === 'victory')) {
-        e.preventDefault();
-        soundService.playClick();
-        onQuit();
-      } else if (key === 's' && gameState === 'paused') {
-        e.preventDefault();
-        soundService.playClick();
-        openSettings();
-      } else if (key === 'h' && gameState === 'playing') {
-        e.preventDefault();
-        handleQuickHeal();
-      } else if ((key === 'b' || key === 'i') && gameState === 'playing') {
-        e.preventDefault();
-        soundService.playClick();
-        openInventory();
-      } else if (key === 'p' && (gameState === 'playing' || gameState === 'paused')) {
-        e.preventDefault();
-        handlePauseToggle();
-      } else if (key === 'f' && gameState === 'playing') {
-        e.preventDefault();
-        handleToggleFullscreen();
-      }
-    };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [gameState, activePotionCount, selectedDraco]);
 
   useEffect(() => {
     if (engineRef.current && dracoStats) {
@@ -303,6 +251,89 @@ export const GameScreen: React.FC<GameScreenProps> = ({
     }
   };
 
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      const key = e.key.toLowerCase();
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        if (gameState === 'victory' || gameState === 'gameover') {
+          soundService.playClick();
+          onQuit();
+        } else {
+          handlePauseToggle();
+        }
+      } else if (e.key === 'Enter') {
+        if (gameState === 'victory' || gameState === 'gameover' || gameState === 'paused') {
+          e.preventDefault();
+          e.stopPropagation();
+          e.stopImmediatePropagation();
+          soundService.playClick();
+          if (gameState === 'victory') {
+            onNextLevel();
+          } else if (gameState === 'gameover') {
+            handleRestart();
+          } else if (gameState === 'paused') {
+            handlePauseToggle();
+          }
+        }
+      } else if (key === 'r' && (gameState === 'paused' || gameState === 'gameover')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handleRestart();
+      } else if (key === 'q' && (gameState === 'paused' || gameState === 'gameover' || gameState === 'victory')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        soundService.playClick();
+        onQuit();
+      } else if (key === 's' && gameState === 'paused') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        soundService.playClick();
+        openSettings();
+      } else if (key === 'h' && gameState === 'playing') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handleQuickHeal();
+      } else if ((key === 'b' || key === 'i') && gameState === 'playing') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        soundService.playClick();
+        openInventory();
+      } else if (key === 'p' && (gameState === 'playing' || gameState === 'paused')) {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handlePauseToggle();
+      } else if (key === 'f' && gameState === 'playing') {
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        handleToggleFullscreen();
+      }
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown, true);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown, true);
+  }, [
+    gameState,
+    activePotionCount,
+    selectedDraco,
+    onQuit,
+    onNextLevel,
+    handlePauseToggle,
+    handleRestart,
+    openSettings,
+    handleQuickHeal,
+    openInventory,
+    handleToggleFullscreen
+  ]);
+
   const triggerMobileAction = (action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'ultimate' | 'down') => {
     engineRef.current?.triggerAction(action);
   };
@@ -331,7 +362,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
           <div className="relative shrink-0">
             <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-stone-800/90 flex items-center justify-center border border-stone-700 font-display text-xs sm:text-base">
-              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : selectedDraco === 'Flymon' ? '🐝' : selectedDraco === 'Whitemon' ? '🦅' : selectedDraco === 'Magemon' ? '🧙' : selectedDraco === 'Bombamon' ? '💣' : selectedDraco === 'Thundermon' ? '⚡' : selectedDraco === 'Enigmon' ? '🌌' : selectedDraco === 'Lunarmon' ? '🌙' : '🐲'}
+              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : selectedDraco === 'Flymon' ? '🐝' : selectedDraco === 'Whitemon' ? '🦅' : selectedDraco === 'Magemon' ? '🧙' : selectedDraco === 'Bombamon' ? '💣' : selectedDraco === 'Thundermon' ? '⚡' : selectedDraco === 'Enigmon' ? '🌌' : selectedDraco === 'Lunarmon' ? '🌙' : selectedDraco === 'Pixelmon' ? '👾' : '🐲'}
             </div>
             <div className="absolute -bottom-1 -right-1 bg-amber-500 border border-stone-900 text-stone-950 text-[7px] sm:text-[9px] font-extrabold font-mono px-0.5 sm:px-1 py-0.2 rounded">
               Lv.{level}

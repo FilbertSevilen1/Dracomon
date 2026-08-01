@@ -55,6 +55,7 @@ export interface SaveData {
   settings: GameSettings;
   tier?: TierType;
   completedStages?: number[];
+  lastWorldId?: number;
 }
 
 export interface PlaySessionState {

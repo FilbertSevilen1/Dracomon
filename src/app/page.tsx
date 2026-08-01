@@ -503,6 +503,38 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Pixelmon',
+      title: '8-Bit Retro Digital Guardian',
+      cost: 500,
+      role: '8-Bit Retro / Tetris & Pacman',
+      lore: 'Born from the digital core of the Pixel Kingdom. Pixelmon throws random Tetris blocks and commands a Pacman that charges 800px forward. Channeling 120 Energy transforms it into Mega Pixelmon (300% size boost) for 8 seconds, spamming Tetris barrages and slashing an 800px giant pixelated sword!',
+      signatureSkill: 'Pacman Charge Strike (800px Range • Terrain Collision Stop)',
+      ultimateSkill: 'Mega Pixelmon (120 Energy • 300% Size Boost • 8s Multidirectional Tetris & 800px Pixel Sword • End Blast)',
+      color: 'fuchsia',
+      tagColor: 'bg-fuchsia-950 text-fuchsia-300 border-fuchsia-700 font-mono',
+      attackType: 'Random 8-Bit Tetris Block Shot',
+      hp: saveData.dracos['Pixelmon']?.hp || 20,
+      atk: saveData.dracos['Pixelmon']?.attack || 8,
+      def: saveData.dracos['Pixelmon']?.defense || 3,
+      spd: saveData.dracos['Pixelmon']?.speed || 7,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
+          <rect x="30" y="30" width="40" height="44" fill="#a855f7" stroke="#3b0764" strokeWidth="3" />
+          <rect x="34" y="34" width="32" height="36" fill="#c084fc" />
+          <rect x="38" y="42" width="6" height="6" fill="#000000" />
+          <rect x="56" y="42" width="6" height="6" fill="#000000" />
+          <rect x="40" y="44" width="2" height="2" fill="#ffffff" />
+          <rect x="58" y="44" width="2" height="2" fill="#ffffff" />
+          <rect x="30" y="22" width="6" height="8" fill="#f43f5e" />
+          <rect x="64" y="22" width="6" height="8" fill="#f43f5e" />
+          <rect x="44" y="54" width="12" height="4" fill="#eab308" />
+          <rect x="48" y="58" width="4" height="8" fill="#eab308" />
+        </svg>
+      ),
+    },
   ];
 
 

@@ -7,7 +7,7 @@ const HERO_PREVIEW_LEVEL: LevelData = {
   name: "Hero Preview Arena",
   tileSize: 40,
   theme: {
-    type: "space",
+    type: "forest",
     skyColor: "#030712",
     solidColor: "#3b0764",
     platformColor: "#7e22ce",
@@ -218,7 +218,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess';
   hp: number;
   maxHp: number;
   attack: number;
@@ -299,6 +299,9 @@ export class GameEngine {
   private jumpCount = 0;
   private maxJumps = 2;
   private isPlunging = false;
+  public isMegaPixelmon: boolean = false;
+  public megaPixelmonTimer: number = 0;
+  public megaPixelmonScale: number = 1.0;
   private attackCooldown = 0;
   private specialCooldown = 0;
   private trampolineCooldown = 0;
@@ -573,6 +576,68 @@ export class GameEngine {
     const grid = this.getActiveGrid();
     if (r >= 0 && r < grid.length && c >= 0 && c < grid[r].length) {
       grid[r] = grid[r].substring(0, c) + char + grid[r].substring(c + 1);
+    }
+  }
+
+  private destroyPlatformsAbovePixelmon() {
+    const grid = this.getActiveGrid();
+    if (!grid || grid.length === 0) return;
+
+    const ts = this.level.tileSize || 40;
+    const scale = this.megaPixelmonScale || 3.0;
+
+    // Horizontal span of giant Pixelmon feet/body
+    const giantWidth = this.pWidth * scale;
+    const centerX = this.px + this.pWidth / 2;
+    const minX = centerX - giantWidth / 2 - 10;
+    const maxX = centerX + giantWidth / 2 + 10;
+
+    const startCol = Math.max(0, Math.floor(minX / ts));
+    const endCol = Math.min((grid[0]?.length || 0) - 1, Math.floor(maxX / ts));
+
+    // Vertical span from player head up to top of giant height
+    const feetY = this.py + this.pHeight;
+    const topY = feetY - (this.pHeight * scale) - 30; // 30px extra clearance above giant head
+
+    const startRow = Math.max(0, Math.floor(topY / ts));
+    const endRow = Math.min(grid.length - 1, Math.floor((this.py - 5) / ts));
+
+    let destroyedCount = 0;
+
+    for (let r = startRow; r <= endRow; r++) {
+      for (let c = startCol; c <= endCol; c++) {
+        if (r >= 0 && r < grid.length && c >= 0 && c < grid[r].length) {
+          const tile = grid[r][c];
+          if (tile !== '.' && tile !== ' ') {
+            this.setGridTile(r, c, '.');
+            destroyedCount++;
+
+            const tileCenterX = c * ts + ts / 2;
+            const tileCenterY = r * ts + ts / 2;
+
+            for (let p = 0; p < 5; p++) {
+              const ang = Math.random() * Math.PI * 2;
+              const spd = Math.random() * 7 + 2;
+              this.particles.push({
+                x: tileCenterX,
+                y: tileCenterY,
+                vx: Math.cos(ang) * spd,
+                vy: Math.sin(ang) * spd - 2,
+                size: Math.random() * 7 + 3,
+                color: p % 3 === 0 ? '#ec4899' : p % 3 === 1 ? '#a855f7' : '#e2e8f0',
+                life: 25,
+                maxLife: 25
+              });
+            }
+          }
+        }
+      }
+    }
+
+    if (destroyedCount > 0) {
+      soundService.playHit();
+      this.screenShake = Math.max(this.screenShake, 25);
+      this.addFloatingText(this.px + this.pWidth / 2, Math.max(20, topY + 10), '💥 PLATFORM CRUSHED!', '#f43f5e');
     }
   }
 
@@ -1315,6 +1380,61 @@ export class GameEngine {
         startX: this.px
       } as any);
       this.spawnDustParticles(slashX, slashY, 5, '#34d399');
+    } else if (this.selectedDraco === 'Pixelmon') {
+      soundService.playShoot();
+      const shapes = ['I', 'L', 'T', 'O', 'Z'];
+      const colors = ['#ec4899', '#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#06b6d4'];
+
+      if (this.isMegaPixelmon) {
+        // Mega Basic Attack: throw MANY tetris blocks in random directions including front!
+        this.attackCooldown = 12;
+        const numBlocks = 9;
+        for (let b = 0; b < numBlocks; b++) {
+          const spread = (Math.random() - 0.5) * 1.6;
+          const baseAngle = this.pFacing === 1 ? 0 : Math.PI;
+          const angle = baseAngle + spread;
+          const spd = this.stats.speed + 8 + Math.random() * 6;
+          const chosenShape = shapes[Math.floor(Math.random() * shapes.length)];
+          const chosenColor = colors[Math.floor(Math.random() * colors.length)];
+          this.projectiles.push({
+            x: this.px + this.pWidth / 2,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            width: 26,
+            height: 26,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 1.8),
+            color: chosenColor,
+            type: 'tetris_block' as any,
+            rangeCap: 800,
+            startX: this.px,
+            shape: chosenShape
+          } as any);
+        }
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, 'TETRIS BARRAGE!', '#ec4899');
+      } else {
+        // Normal Basic Attack: throw a random Tetris block forward!
+        this.attackCooldown = 18;
+        const chosenShape = shapes[Math.floor(Math.random() * shapes.length)];
+        const chosenColor = colors[Math.floor(Math.random() * colors.length)];
+        const tetrisVx = this.pFacing * (this.stats.speed + 8);
+        this.projectiles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 20,
+          y: this.py + this.pHeight / 2 - 8,
+          vx: tetrisVx,
+          vy: 0,
+          width: 20,
+          height: 20,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 1.25),
+          color: chosenColor,
+          type: 'tetris_block' as any,
+          rangeCap: 600,
+          startX: this.px,
+          shape: chosenShape
+        } as any);
+      }
     } else if (this.selectedDraco === 'Shieldmon') {
       soundService.playHit();
 
@@ -1557,6 +1677,52 @@ export class GameEngine {
           life: 14,
           maxLife: 14
         });
+      }
+    } else if (this.selectedDraco === 'Pixelmon') {
+      soundService.playShoot();
+      const shapes = ['I', 'L', 'T', 'O', 'Z'];
+      const colors = ['#ec4899', '#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#06b6d4'];
+      const chosenShape = shapes[Math.floor(Math.random() * shapes.length)];
+      const chosenColor = colors[Math.floor(Math.random() * colors.length)];
+
+      if (this.isMegaPixelmon) {
+        for (let s = 0; s < 3; s++) {
+          const angle = (this.pFacing === 1 ? 0 : Math.PI) + (Math.random() - 0.5) * 1.2;
+          const pVx = Math.cos(angle) * (this.stats.speed + 10);
+          const pVy = Math.sin(angle) * (this.stats.speed + 10);
+          this.projectiles.push({
+            x: this.px + this.pWidth / 2,
+            y: this.py + this.pHeight / 2,
+            vx: pVx,
+            vy: pVy,
+            width: 24,
+            height: 24,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 1.6),
+            color: chosenColor,
+            type: 'tetris_block' as any,
+            rangeCap: 800,
+            startX: this.px,
+            shape: chosenShape
+          } as any);
+        }
+      } else {
+        const tetrisVx = this.pFacing * (this.stats.speed + 8);
+        this.projectiles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 20,
+          y: this.py + this.pHeight / 2 - 8,
+          vx: tetrisVx,
+          vy: 0,
+          width: 20,
+          height: 20,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 1.25),
+          color: chosenColor,
+          type: 'tetris_block' as any,
+          rangeCap: 600,
+          startX: this.px,
+          shape: chosenShape
+        } as any);
       }
     } else if (this.selectedDraco === 'Azuremon') {
       soundService.playShoot();
@@ -2127,6 +2293,54 @@ export class GameEngine {
       } as any);
 
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, '🌀 AZURE SINGULARITY VORTEX!', '#38bdf8');
+    } else if (this.selectedDraco === 'Pixelmon') {
+      soundService.playShoot();
+      if (this.isMegaPixelmon) {
+        // Mega Special Skill: summon 8-bit giant sword to slash enemy 200px left to right!
+        this.specialCooldown = 35;
+        const swordVx = this.pFacing * 12;
+        const swordX = this.pFacing === 1 ? this.px + this.pWidth : this.px - 200;
+        this.projectiles.push({
+          x: swordX,
+          y: this.py + this.pHeight / 2 - 25,
+          vx: swordVx,
+          vy: 0,
+          width: 200,
+          height: 50,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 4.2),
+          color: '#f43f5e',
+          type: 'pixel_sword' as any,
+          rangeCap: 400,
+          startX: this.px
+        } as any);
+
+        const hitX = this.pFacing === 1 ? this.px : this.px - 200;
+        this.checkMeleeHit(hitX, this.py - 40, 200, 140, Math.floor(this.stats.attack * 4.2));
+        this.screenShake = 30;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '⚔️ 200PX PIXEL SWORD SLASH!', '#f43f5e');
+      } else {
+        // Normal Special Skill: summon big pacman that strikes enemies in the front!
+        this.specialCooldown = 90;
+        const pacmanVx = this.pFacing * (this.stats.speed + 9);
+        const pacmanW = 54;
+        const pacmanH = 54;
+        this.projectiles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - pacmanW,
+          y: this.py + this.pHeight / 2 - pacmanH / 2,
+          vx: pacmanVx,
+          vy: 0,
+          width: pacmanW,
+          height: pacmanH,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 2.8),
+          color: '#eab308',
+          type: 'pacman' as any,
+          rangeCap: 800,
+          startX: this.px
+        } as any);
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, '🟡 BIG PACMAN CHARGE!', '#eab308');
+      }
     }
   }
 
@@ -2289,6 +2503,7 @@ export class GameEngine {
       case 'Enigmon': return 160;
       case 'Lunarmon': return 200;
       case 'Azuremon': return 160;
+      case 'Pixelmon': return 120;
       default: return 100;
     }
   }
@@ -2312,6 +2527,7 @@ export class GameEngine {
       case 'Enigmon': return 'Black Hole';
       case 'Lunarmon': return 'Lunar Eclipse';
       case 'Azuremon': return 'Burst Stream of Catastrophe';
+      case 'Pixelmon': return 'Mega Pixelmon';
       default: return 'Ultimate';
     }
   }
@@ -2331,6 +2547,7 @@ export class GameEngine {
       case 'Enigmon': return 'Singularity unleash... BLACK HOLE!';
       case 'Lunarmon': return 'Shine bright in darkness... LUNAR ECLIPSE!';
       case 'Azuremon': return 'Celestial Cataclysm... BURST STREAM OF CATASTROPHE!';
+      case 'Pixelmon': return '8-Bit Power... MEGA PIXELMON!';
       default: return 'Unleash full power!';
     }
   }
@@ -2812,6 +3029,29 @@ export class GameEngine {
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '🌌 BURST STREAM OF CATASTROPHE!', '#38bdf8');
       this.screenShake = 35;
     }
+    else if (this.selectedDraco === 'Pixelmon') {
+      soundService.playLevelUp();
+      this.isMegaPixelmon = true;
+      this.megaPixelmonTimer = 300; // 5 seconds giant form
+      this.megaPixelmonScale = 3.0; // 300% giant size
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '👾 MEGA PIXELMON (5S GIANT FORM)!', '#f43f5e');
+      this.screenShake = 35;
+      for (let p = 0; p < 45; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 10 + 3;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 8 + 4,
+          color: p % 3 === 0 ? '#ec4899' : p % 3 === 1 ? '#a855f7' : '#3b82f6',
+          life: 35,
+          maxLife: 35
+        });
+      }
+      this.destroyPlatformsAbovePixelmon();
+    }
 
     this.birdX = this.px;
     this.birdY = this.py - 50;
@@ -2946,6 +3186,201 @@ export class GameEngine {
         amount: 1,
         collected: false
       });
+    } else if ((enemy.type as string) === 'blockman') {
+      (enemy as any).formTimer = ((enemy as any).formTimer || 0) + 1;
+      if ((enemy as any).formTimer >= 300) {
+        (enemy as any).formTimer = 0;
+        (enemy as any).form = (((enemy as any).form || 0) + 1) % 3;
+        const formNames = ['BRAWLER FORM ⚔️', 'SHOOTER FORM 💣', 'CRUSHER SHIELD FORM 🛡️'];
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, formNames[(enemy as any).form], '#ec4899');
+        soundService.playLevelUp();
+      }
+
+      const currentForm = (enemy as any).form || 0;
+      if (currentForm === 0) { // Brawler
+        enemy.shootCooldown = 90;
+        if (Math.random() < 0.05 && (enemy as any).grounded) {
+          enemy.vy = -7;
+          enemy.vx = enemy.facing * 5;
+        }
+      } else if (currentForm === 1) { // Shooter
+        enemy.shootCooldown = 60;
+        const angles = [0, Math.PI / 4, Math.PI / 2, 3 * Math.PI / 4, Math.PI, 5 * Math.PI / 4, 3 * Math.PI / 2, 7 * Math.PI / 4];
+        angles.forEach(ang => {
+          this.projectiles.push({
+            x: enemy.x + enemy.width / 2,
+            y: enemy.y + enemy.height / 2,
+            vx: Math.cos(ang) * 4.5,
+            vy: Math.sin(ang) * 4.5,
+            width: 14,
+            height: 14,
+            isEnemy: true,
+            damage: enemy.attack,
+            color: '#ec4899',
+            type: 'fireball'
+          });
+        });
+      } else if (currentForm === 2) { // Crusher
+        enemy.shootCooldown = 120;
+        if ((enemy as any).grounded) {
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, 'GROUND SHOCKWAVE!', '#3b82f6');
+          [-1, 1].forEach(dir => {
+            this.projectiles.push({
+              x: enemy.x + enemy.width / 2,
+              y: enemy.y + enemy.height - 10,
+              vx: dir * 6,
+              vy: 0,
+              width: 24,
+              height: 12,
+              isEnemy: true,
+              damage: Math.floor(enemy.attack * 1.4),
+              color: '#3b82f6',
+              type: 'fireball'
+            });
+          });
+        }
+      }
+    } else if ((enemy.type as string) === 'pixel_piranha') {
+      enemy.shootCooldown = 90;
+      this.projectiles.push({
+        x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 12,
+        y: enemy.y + enemy.height / 2,
+        vx: enemy.facing * 5,
+        vy: 0,
+        width: 14,
+        height: 14,
+        isEnemy: true,
+        damage: enemy.attack,
+        color: '#ef4444',
+        type: 'fireball'
+      });
+    } else if ((enemy.type as string) === 'pixel_dragon') {
+      enemy.shootCooldown = 110;
+      [-0.2, 0, 0.2].forEach(ang => {
+        this.projectiles.push({
+          x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 14,
+          y: enemy.y + enemy.height / 2,
+          vx: enemy.facing * 5 * Math.cos(ang),
+          vy: 5 * Math.sin(ang),
+          width: 14,
+          height: 14,
+          isEnemy: true,
+          damage: enemy.attack,
+          color: '#a855f7',
+          type: 'fireball'
+        });
+      });
+    } else if ((enemy.type as string) === 'pixel_ghost') {
+      // Floating ghost logic
+      const isPlayerFacingGhost = (this.pFacing === 1 && this.px < enemy.x) || (this.pFacing === -1 && this.px > enemy.x);
+      if (isPlayerFacingGhost) {
+        (enemy as any).isFrozen = true;
+        enemy.vx = 0;
+        enemy.vy = 0;
+      } else {
+        (enemy as any).isFrozen = false;
+        const dx = (this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2);
+        const dy = (this.py + this.pHeight / 2) - (enemy.y + enemy.height / 2);
+        const dist = Math.hypot(dx, dy);
+        if (dist > 5) {
+          enemy.vx = (dx / dist) * 2.5;
+          enemy.vy = (dy / dist) * 2.5;
+        }
+      }
+    } else if (enemy.type === 'blockman') {
+      this.ctx.save();
+      const currentForm = (enemy as any).form || 0;
+      const formColors = ['#ef4444', '#a855f7', '#3b82f6'];
+      const bodyColor = formColors[currentForm];
+
+      // 8-Bit Blockman Body
+      this.ctx.fillStyle = bodyColor;
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 3;
+      this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+      this.ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+      // Pixel Eyes
+      this.ctx.fillStyle = '#000000';
+      this.ctx.fillRect(enemy.x + 12, enemy.y + 16, 12, 12);
+      this.ctx.fillRect(enemy.x + 36, enemy.y + 16, 12, 12);
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(enemy.x + 14, enemy.y + 18, 4, 4);
+      this.ctx.fillRect(enemy.x + 38, enemy.y + 18, 4, 4);
+
+      // Form Emblem on chest
+      this.ctx.fillStyle = '#fef08a';
+      if (currentForm === 0) { // Brawler Sword Emblem
+        this.ctx.fillRect(enemy.x + 26, enemy.y + 36, 12, 18);
+      } else if (currentForm === 1) { // Shooter Cannon Emblem
+        this.ctx.fillRect(enemy.x + 20, enemy.y + 38, 24, 12);
+      } else { // Crusher Shield Emblem
+        this.ctx.fillRect(enemy.x + 22, enemy.y + 34, 20, 20);
+      }
+      this.ctx.restore();
+
+      const hbW = enemy.width + 16;
+      const hbX = enemy.x - 8;
+      const hbY = enemy.y - 20;
+      this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      this.ctx.fillRect(hbX, hbY, hbW, 6);
+      this.ctx.fillStyle = bodyColor;
+      this.ctx.fillRect(hbX, hbY, hbW * (enemy.hp / enemy.maxHp), 6);
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(hbX, hbY, hbW, 6);
+    } else if (enemy.type === 'pixel_piranha') {
+      this.ctx.save();
+      // Green Pipe
+      this.ctx.fillStyle = '#16a34a';
+      this.ctx.strokeStyle = '#14532d';
+      this.ctx.lineWidth = 2;
+      this.ctx.fillRect(enemy.x + 4, enemy.y + 20, enemy.width - 8, enemy.height - 20);
+      this.ctx.strokeRect(enemy.x + 4, enemy.y + 20, enemy.width - 8, enemy.height - 20);
+
+      // Red Piranha Head
+      this.ctx.fillStyle = '#dc2626';
+      this.ctx.fillRect(enemy.x + 2, enemy.y, enemy.width - 4, 22);
+      this.ctx.strokeRect(enemy.x + 2, enemy.y, enemy.width - 4, 22);
+
+      // Sharp Teeth
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(enemy.x + 6, enemy.y + 16, 6, 6);
+      this.ctx.fillRect(enemy.x + 18, enemy.y + 16, 6, 6);
+      this.ctx.fillRect(enemy.x + 28, enemy.y + 16, 6, 6);
+      this.ctx.restore();
+    } else if (enemy.type === 'pixel_ghost') {
+      this.ctx.save();
+      const isFrozen = (enemy as any).isFrozen;
+      this.ctx.globalAlpha = isFrozen ? 0.45 : 0.95;
+      this.ctx.fillStyle = isFrozen ? '#94a3b8' : '#e0e7ff';
+      this.ctx.strokeStyle = '#6366f1';
+      this.ctx.lineWidth = 2;
+      this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+      this.ctx.strokeRect(enemy.x, enemy.y, enemy.width, enemy.height);
+
+      // Ghost Eyes
+      this.ctx.fillStyle = '#000000';
+      this.ctx.fillRect(enemy.x + 8, enemy.y + 10, 6, 8);
+      this.ctx.fillRect(enemy.x + 22, enemy.y + 10, 6, 8);
+      this.ctx.restore();
+    } else if (enemy.type === 'pixel_dragon') {
+      this.ctx.save();
+      this.ctx.fillStyle = '#a855f7';
+      this.ctx.strokeStyle = '#581c87';
+      this.ctx.lineWidth = 2;
+      this.ctx.fillRect(enemy.x, enemy.y + 8, enemy.width, enemy.height - 16);
+
+      // Wings
+      const wingY = Math.sin(this.frameCount * 0.2) * 6;
+      this.ctx.fillStyle = '#ec4899';
+      this.ctx.fillRect(enemy.x + 10, enemy.y - 8 + wingY, 16, 12);
+      this.ctx.fillRect(enemy.x + 26, enemy.y - 8 + wingY, 16, 12);
+
+      // Eyes
+      this.ctx.fillStyle = '#fef08a';
+      this.ctx.fillRect(enemy.facing === 1 ? enemy.x + 36 : enemy.x + 8, enemy.y + 12, 8, 8);
+      this.ctx.restore();
     } else if (enemy.type === 'miniboss') {
       expReward = 80;
       coinReward = 120;
@@ -4334,6 +4769,70 @@ export class GameEngine {
       });
     }
 
+    if (this.isMegaPixelmon) {
+      this.pEnergy = 0;
+      this.megaPixelmonTimer--;
+      if (this.megaPixelmonTimer > 240) {
+        this.megaPixelmonScale = 1.0 + ((300 - this.megaPixelmonTimer) / 60) * 2.0;
+      } else {
+        this.megaPixelmonScale = 3.0;
+      }
+
+      this.destroyPlatformsAbovePixelmon();
+
+      // Spams rapid multidirectional Tetris barrages while Mega Pixelmon is active!
+      if (this.megaPixelmonTimer % 15 === 0 && this.megaPixelmonTimer > 20) {
+        soundService.playShoot();
+        const shapes = ['I', 'L', 'T', 'O', 'Z'];
+        const colors = ['#ec4899', '#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#06b6d4'];
+        const burstCount = 6;
+        for (let b = 0; b < burstCount; b++) {
+          const ang = (b / burstCount) * Math.PI * 2 + (this.megaPixelmonTimer * 0.1);
+          const spd = this.stats.speed + 8;
+          const chosenShape = shapes[Math.floor(Math.random() * shapes.length)];
+          const chosenColor = colors[Math.floor(Math.random() * colors.length)];
+          this.projectiles.push({
+            x: this.px + this.pWidth / 2,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            width: 24,
+            height: 24,
+            isEnemy: false,
+            damage: Math.floor(this.stats.attack * 1.8),
+            color: chosenColor,
+            type: 'tetris_block' as any,
+            rangeCap: 800,
+            startX: this.px,
+            shape: chosenShape
+          } as any);
+        }
+      }
+
+      if (this.megaPixelmonTimer <= 0) {
+        this.isMegaPixelmon = false;
+        this.megaPixelmonScale = 1.0;
+        soundService.playLevelUp();
+        this.screenShake = 35;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 40, '360° MEGA PIXEL EXPLOSION!', '#f43f5e');
+        this.checkMeleeHit(this.px - 300, this.py - 300, 600, 600, Math.floor(this.stats.attack * 5.0));
+        for (let p = 0; p < 50; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 14 + 4;
+          this.particles.push({
+            x: this.px + this.pWidth / 2,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: Math.random() * 10 + 4,
+            color: p % 3 === 0 ? '#ec4899' : p % 3 === 1 ? '#eab308' : '#3b82f6',
+            life: 30,
+            maxLife: 30
+          });
+        }
+      }
+    }
+
     if (this.frozenDeathTimer > 0) {
       this.pvx = 0;
       this.pvy = 0;
@@ -4624,12 +5123,12 @@ export class GameEngine {
       this.lunarBeamTimer--;
       if (this.lunarBeamTimer <= 0) {
         this.lunarBeamTimer = 90; // 1.5 second total cycle (more beams!)
-        
+
         // Pick random start X near player and downward angle
         this.lunarBeamStartX = this.px + (Math.random() - 0.5) * 800;
         this.lunarBeamStartY = 0;
         this.lunarBeamAngle = Math.PI / 2 + (Math.random() - 0.5) * (Math.PI / 3);
-        
+
         // Raycast down to find end point (blocked by platforms/ground)
         let curX = this.lunarBeamStartX;
         let curY = this.lunarBeamStartY;
@@ -4645,7 +5144,7 @@ export class GameEngine {
         this.lunarBeamEndX = curX;
         this.lunarBeamEndY = curY;
       }
-      
+
       // Impact phase: last 30 frames (0.5s) of the 150-frame cycle
       if (this.lunarBeamTimer > 0 && this.lunarBeamTimer <= 30) {
         const pCenterX = this.px + this.pWidth / 2;
@@ -4655,7 +5154,7 @@ export class GameEngine {
           this.lunarBeamStartX, this.lunarBeamStartY,
           this.lunarBeamEndX, this.lunarBeamEndY
         );
-        
+
         if (dist < 22 && this.pInvulnerableFrames <= 0) {
           this.handlePlayerHit(18, this.lunarBeamStartX); // Deal 18 damage
         }
@@ -4797,7 +5296,7 @@ export class GameEngine {
       let pullVx = 0;
       let pullVy = 0;
       const maxPullRadius = 5 * ts;
-      const maxPullForce = 3.5;
+      const maxPullForce = 0.7; // Reduced by 80% (originally 3.5)
 
       for (let r = 0; r < grid.length; r++) {
         for (let c = 0; c < grid[r].length; c++) {
@@ -5617,6 +6116,14 @@ export class GameEngine {
                 this.damageEnemy(enemy, proj.damage);
                 soundService.playHit();
                 this.addFloatingText(enemy.x, enemy.y - 15, FT_LIFTED_TORNADO.text, FT_LIFTED_TORNADO.color);
+              }
+            } else if ((proj as any).type === 'pacman' || (proj as any).type === 'pixel_sword') {
+              const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
+              if (!hitSet.includes(enemy.id)) {
+                hitSet.push(enemy.id);
+                this.damageEnemy(enemy, proj.damage);
+                soundService.playHit();
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 14, '#eab308');
               }
             } else if ((proj as any).type === 'azure_vortex_ball' || (proj as any).type === 'azure_light_ball') {
               const cx = proj.x + proj.width / 2;
@@ -7486,7 +7993,7 @@ export class GameEngine {
     this.ctx.save();
     const scrollX = this.cameraX;
     const scrollY = this.cameraY;
-    
+
     // Positive-safe modulo: always returns [0, m)
     const pmod = (n: number, m: number) => ((n % m) + m) % m;
 
@@ -7726,7 +8233,7 @@ export class GameEngine {
       this.ctx.arc(moonX, moonY, moonRad, 0, Math.PI * 2);
       this.ctx.fill();
     }
-    
+
     this.ctx.restore();
 
     this.ctx.save();
@@ -7766,10 +8273,26 @@ export class GameEngine {
     }
 
     const activeGrid = this.getActiveGrid();
-    for (let r = 0; r < activeGrid.length; r++) {
-      const row = activeGrid[r];
-      for (let c = 0; c < row.length; c++) {
-        const char = row[c];
+    const originalRows = activeGrid.length;
+    // Render extra rows below the level to fill the screen when zooming/casting ultimate
+    const renderRows = originalRows > 0 ? originalRows + 15 : 0;
+
+    for (let r = 0; r < renderRows; r++) {
+      const row = r < originalRows ? activeGrid[r] : null;
+      const numCols = row ? row.length : (activeGrid[0]?.length || 0);
+
+      for (let c = 0; c < numCols; c++) {
+        let char = '.';
+        if (r < originalRows) {
+          char = row ? row[c] : '.';
+        } else {
+          // Virtual row below the level: extend the bottom-most solid ground block '#' downwards
+          const bottomChar = activeGrid[originalRows - 1]?.[c];
+          if (bottomChar === '#') {
+            char = '#';
+          }
+        }
+
         const ex = c * ts;
         const ey = r * ts;
 
@@ -8681,6 +9204,192 @@ export class GameEngine {
         this.ctx.fill();
 
         this.ctx.restore();
+      } else if ((proj as any).type === 'pacman') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const radius = proj.width / 2;
+        const mouthAngle = (Math.sin(this.frameCount * 0.3) * 0.2 + 0.25) * Math.PI;
+        const isRight = proj.vx >= 0;
+        const baseAngle = isRight ? 0 : Math.PI;
+
+        // Pacman Body
+        this.ctx.fillStyle = '#eab308';
+        this.ctx.strokeStyle = '#ca8a04';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, radius, baseAngle + mouthAngle, baseAngle + Math.PI * 2 - mouthAngle);
+        this.ctx.lineTo(cx, cy);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Pacman Pixel Eye
+        this.ctx.fillStyle = '#000000';
+        const eyeX = isRight ? cx + 4 : cx - 12;
+        this.ctx.fillRect(eyeX, cy - radius * 0.5, 6, 6);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(eyeX + 2, cy - radius * 0.5 + 1, 2, 2);
+
+        this.ctx.restore();
+      } else if ((proj as any).type === 'tetris_block') {
+        this.ctx.save();
+        const shape = (proj as any).shape || 'O';
+        const ts = proj.width / 2;
+        const x = proj.x;
+        const y = proj.y;
+
+        this.ctx.fillStyle = proj.color || '#ec4899';
+        this.ctx.strokeStyle = '#000000';
+        this.ctx.lineWidth = 2;
+
+        const drawSquare = (sx: number, sy: number) => {
+          this.ctx.fillRect(sx, sy, ts, ts);
+          this.ctx.strokeRect(sx, sy, ts, ts);
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.fillRect(sx + 2, sy + 2, ts * 0.3, ts * 0.3);
+          this.ctx.fillStyle = proj.color || '#ec4899';
+        };
+
+        if (shape === 'I') {
+          drawSquare(x, y); drawSquare(x + ts, y);
+        } else if (shape === 'L') {
+          drawSquare(x, y); drawSquare(x, y + ts); drawSquare(x + ts, y + ts);
+        } else if (shape === 'T') {
+          drawSquare(x + ts / 2, y); drawSquare(x, y + ts); drawSquare(x + ts, y + ts);
+        } else if (shape === 'Z') {
+          drawSquare(x, y); drawSquare(x + ts, y); drawSquare(x + ts, y + ts);
+        } else {
+          drawSquare(x, y); drawSquare(x + ts, y); drawSquare(x, y + ts); drawSquare(x + ts, y + ts);
+        }
+
+        this.ctx.restore();
+      } else if ((proj as any).type === 'pixel_sword') {
+        this.ctx.save();
+        const birthFrame = (proj as any).birthFrame || ((proj as any).birthFrame = this.frameCount);
+        const lifeSpan = (proj as any).lifeSpan || 22;
+        const age = Math.min(lifeSpan, this.frameCount - birthFrame);
+        const progress = age / lifeSpan; // 0.0 to 1.0
+
+        const isRight = proj.vx >= 0;
+        const swordLength = proj.width; // 400px wide giant sword!
+        const pivotX = isRight ? proj.x : proj.x + proj.width;
+        const pivotY = proj.y + proj.height / 2;
+
+        // Dynamic 180° swing rotation arc!
+        const startAngle = isRight ? -Math.PI * 0.55 : Math.PI * 0.55;
+        const endAngle = isRight ? Math.PI * 0.55 : -Math.PI * 0.55;
+        const currentAngle = startAngle + (endAngle - startAngle) * progress;
+
+        // 1. Draw 8-Bit Pixel Slash Arc Trail
+        const arcRadius = swordLength * 0.85;
+        const trailStart = startAngle;
+        const trailEnd = currentAngle;
+
+        // Outer Neon Crimson Slash Glow
+        this.ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
+        this.ctx.lineWidth = 42;
+        this.ctx.beginPath();
+        this.ctx.arc(pivotX, pivotY, arcRadius, trailStart, trailEnd, !isRight);
+        this.ctx.stroke();
+
+        // Middle Rose Energy Arc
+        this.ctx.strokeStyle = '#fb7185';
+        this.ctx.lineWidth = 18;
+        this.ctx.beginPath();
+        this.ctx.arc(pivotX, pivotY, arcRadius, trailStart, trailEnd, !isRight);
+        this.ctx.stroke();
+
+        // Inner Diamond White Razor Edge Arc
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 6;
+        this.ctx.beginPath();
+        this.ctx.arc(pivotX, pivotY, arcRadius, trailStart, trailEnd, !isRight);
+        this.ctx.stroke();
+
+        // Stepped 8-Bit Pixel Grid Overlay on Arc Trail
+        this.ctx.fillStyle = '#f43f5e';
+        const numPixelSteps = 8;
+        for (let p = 0; p < numPixelSteps; p++) {
+          const stepAng = trailStart + (trailEnd - trailStart) * (p / numPixelSteps);
+          const pxX = pivotX + Math.cos(stepAng) * arcRadius;
+          const pxY = pivotY + Math.sin(stepAng) * arcRadius;
+          this.ctx.fillRect(pxX - 6, pxY - 6, 12, 12);
+        }
+
+        // 2. Draw Detailed 8-Bit Pixelated Master Sword
+        this.ctx.translate(pivotX, pivotY);
+        this.ctx.rotate(currentAngle);
+
+        const bl = swordLength; // Blade length (400px)
+        const bw = 24;          // Blade width
+
+        // --- 8-Bit Crossguard ---
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.strokeStyle = '#78350f';
+        this.ctx.lineWidth = 2.5;
+        // Stepped pixel crossguard wings
+        this.ctx.fillRect(-8, -35, 24, 70);
+        this.ctx.strokeRect(-8, -35, 24, 70);
+        this.ctx.fillRect(-12, -45, 12, 90);
+        this.ctx.strokeRect(-12, -45, 12, 90);
+
+        // Gem Core in Hilt
+        this.ctx.fillStyle = '#38bdf8';
+        this.ctx.fillRect(-2, -8, 12, 16);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, -4, 4, 4);
+
+        // --- 8-Bit Handle & Pommel ---
+        this.ctx.fillStyle = '#581c87';
+        this.ctx.fillRect(-32, -6, 24, 12);
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.fillRect(-42, -10, 10, 20);
+
+        // --- 8-Bit Pixel Blade Body ---
+        this.ctx.fillStyle = '#f43f5e';
+        this.ctx.strokeStyle = '#9f1239';
+        this.ctx.lineWidth = 3;
+        this.ctx.fillRect(16, -bw / 2, bl - 40, bw);
+        this.ctx.strokeRect(16, -bw / 2, bl - 40, bw);
+
+        // Fuller Groove (Darker Center Line)
+        this.ctx.fillStyle = '#be123c';
+        this.ctx.fillRect(24, -3, bl - 70, 6);
+
+        // Razor-Sharp Pixel Edge (Top White Highlight)
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(16, -bw / 2 - 2, bl - 25, 4);
+
+        // 8-Bit Stepped Diamond Blade Tip
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.moveTo(bl - 24, -bw / 2);
+        this.ctx.lineTo(bl, 0);
+        this.ctx.lineTo(bl - 24, bw / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#f43f5e';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
+
+        this.ctx.restore();
+
+        // 3. Spawn 8-Bit Energy Debris Particles every frame
+        if (this.frameCount % 2 === 0) {
+          const sparkAng = currentAngle + (Math.random() - 0.5) * 0.4;
+          const sparkDist = Math.random() * arcRadius;
+          this.particles.push({
+            x: pivotX + Math.cos(sparkAng) * sparkDist,
+            y: pivotY + Math.sin(sparkAng) * sparkDist,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            size: Math.random() * 8 + 3,
+            color: Math.random() > 0.5 ? '#f43f5e' : Math.random() > 0.5 ? '#f59e0b' : '#ffffff',
+            life: 14,
+            maxLife: 14
+          });
+        }
       } else {
         this.ctx.fillRect(proj.x, proj.y, proj.width, proj.height);
       }
@@ -8808,14 +9517,14 @@ export class GameEngine {
         this.ctx.fillRect(enemy.x + 8, enemy.y + 12, 4, 18);
         this.ctx.fillRect(enemy.x + 22, enemy.y + 15, 6, 4);
 
-          } else if (enemy.type === 'miniboss') {
+      } else if (enemy.type === 'miniboss') {
         this.ctx.save();
         this.ctx.fillStyle = '#1e1b4b';
         this.ctx.strokeStyle = '#e11d48';
         this.ctx.lineWidth = 3;
         this.ctx.shadowBlur = 12;
         this.ctx.shadowColor = '#e11d48';
-        
+
         // Body (Circle)
         this.ctx.beginPath();
         this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width / 2, 0, Math.PI * 2);
@@ -8868,7 +9577,7 @@ export class GameEngine {
       } else if (enemy.type === 'king_slime') {
         this.ctx.save();
         const squish = Math.sin(this.frameCount * 0.12 + enemy.id) * 4;
-        
+
         // Translucent gradient jelly body
         const slimeGrad = this.ctx.createRadialGradient(
           enemy.x + enemy.width / 2 - 8,
@@ -8881,13 +9590,13 @@ export class GameEngine {
         slimeGrad.addColorStop(0, '#34d399');
         slimeGrad.addColorStop(0.7, '#059669');
         slimeGrad.addColorStop(1, '#064e3b');
-        
+
         this.ctx.fillStyle = slimeGrad;
         this.ctx.strokeStyle = '#34d399';
         this.ctx.lineWidth = 3;
         this.ctx.shadowBlur = 10;
         this.ctx.shadowColor = '#10b981';
-        
+
         this.ctx.beginPath();
         this.ctx.ellipse(
           enemy.x + enemy.width / 2,
@@ -8898,7 +9607,7 @@ export class GameEngine {
         );
         this.ctx.fill();
         this.ctx.stroke();
-        
+
         // Glowing yellow core
         this.ctx.fillStyle = '#fef08a';
         this.ctx.beginPath();
@@ -8908,7 +9617,7 @@ export class GameEngine {
           10, 0, Math.PI * 2
         );
         this.ctx.fill();
-        
+
         // Crown
         this.ctx.fillStyle = '#eab308';
         this.ctx.shadowBlur = 15;
@@ -8940,7 +9649,7 @@ export class GameEngine {
         this.ctx.lineWidth = 3;
         this.ctx.shadowBlur = 12;
         this.ctx.shadowColor = '#0ea5e9';
-        
+
         // Ice crystal diamond shape
         this.ctx.beginPath();
         this.ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
@@ -8950,7 +9659,7 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
-        
+
         // Veins
         this.ctx.strokeStyle = '#7dd3fc';
         this.ctx.lineWidth = 1.5;
@@ -8960,7 +9669,7 @@ export class GameEngine {
         this.ctx.moveTo(enemy.x, enemy.y + enemy.height / 2);
         this.ctx.lineTo(enemy.x + enemy.width, enemy.y + enemy.height / 2);
         this.ctx.stroke();
-        
+
         // Core
         const coreGrad = this.ctx.createRadialGradient(
           enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 2,
@@ -8972,7 +9681,7 @@ export class GameEngine {
         this.ctx.beginPath();
         this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, 0, Math.PI * 2);
         this.ctx.fill();
-        
+
         // Wings
         this.ctx.fillStyle = '#7dd3fc';
         this.ctx.beginPath();
@@ -9004,11 +9713,11 @@ export class GameEngine {
         this.ctx.save();
         this.ctx.shadowBlur = 20;
         this.ctx.shadowColor = '#c084fc';
-        
+
         const cx = enemy.x + enemy.width / 2;
         const cy = enemy.y + enemy.height / 2;
         const rot = (this.frameCount * 0.05) % (Math.PI * 2);
-        
+
         // Outer body
         this.ctx.fillStyle = '#1e1b4b';
         this.ctx.strokeStyle = '#a855f7';
@@ -9017,11 +9726,11 @@ export class GameEngine {
         this.ctx.arc(cx, cy, enemy.width / 2, 0, Math.PI * 2);
         this.ctx.fill();
         this.ctx.stroke();
-        
+
         // Vortex core
         this.ctx.translate(cx, cy);
         this.ctx.rotate(rot);
-        
+
         const coreGrad = this.ctx.createRadialGradient(0, 0, 2, 0, 0, enemy.width * 0.4);
         coreGrad.addColorStop(0, '#ffffff');
         coreGrad.addColorStop(0.4, '#a855f7');
@@ -9030,7 +9739,7 @@ export class GameEngine {
         this.ctx.beginPath();
         this.ctx.arc(0, 0, enemy.width * 0.4, 0, Math.PI * 2);
         this.ctx.fill();
-        
+
         this.ctx.strokeStyle = '#c084fc';
         this.ctx.lineWidth = 2.5;
         for (let i = 0; i < 4; i++) {
@@ -9062,7 +9771,7 @@ export class GameEngine {
         this.ctx.lineWidth = 3.5;
         this.ctx.shadowBlur = 15;
         this.ctx.shadowColor = '#ea580c';
-        
+
         // Curved armor torso
         this.ctx.beginPath();
         this.ctx.moveTo(enemy.x + enemy.width / 2, enemy.y);
@@ -9071,7 +9780,7 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
-        
+
         // Gold plate
         this.ctx.fillStyle = '#fbbf24';
         this.ctx.beginPath();
@@ -9297,7 +10006,7 @@ export class GameEngine {
         this.ctx.lineWidth = 3;
         this.ctx.shadowBlur = 10;
         this.ctx.shadowColor = '#0ea5e9';
-        
+
         // Draw a rounded dolphin/orca shape body!
         this.ctx.beginPath();
         this.ctx.ellipse(
@@ -9309,7 +10018,7 @@ export class GameEngine {
         );
         this.ctx.fill();
         this.ctx.stroke();
-        
+
         // White belly patch
         this.ctx.fillStyle = '#f8fafc';
         this.ctx.beginPath();
@@ -9321,14 +10030,14 @@ export class GameEngine {
           0, 0, Math.PI * 2
         );
         this.ctx.fill();
-        
+
         // Eye (red glowing)
         this.ctx.fillStyle = '#ef4444';
         const eyeX = enemy.facing === 1 ? enemy.x + enemy.width * 0.75 : enemy.x + enemy.width * 0.25;
         this.ctx.beginPath();
         this.ctx.arc(eyeX, enemy.y + enemy.height * 0.35, 4, 0, Math.PI * 2);
         this.ctx.fill();
-        
+
         // Fin
         this.ctx.fillStyle = '#0f172a';
         this.ctx.beginPath();
@@ -9537,7 +10246,7 @@ export class GameEngine {
         this.ctx.lineWidth = 3.5;
         this.ctx.shadowBlur = 12;
         this.ctx.shadowColor = '#0f172a';
-        
+
         // Large rounded chest/shoulders shape!
         this.ctx.beginPath();
         this.ctx.roundRect(bx, by, bw, bh, [30, 30, 15, 15]);
@@ -9595,7 +10304,7 @@ export class GameEngine {
         this.ctx.lineWidth = 3.5;
         this.ctx.shadowBlur = 14;
         this.ctx.shadowColor = '#e11d48';
-        
+
         // Curved armor torso
         this.ctx.beginPath();
         this.ctx.moveTo(bx + bw / 2, by);
@@ -9606,7 +10315,7 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
-        
+
         // Steel plating lines
         this.ctx.strokeStyle = '#fda4af';
         this.ctx.lineWidth = 1.5;
@@ -9614,7 +10323,7 @@ export class GameEngine {
         this.ctx.moveTo(bx + bw / 2, by);
         this.ctx.lineTo(bx + bw / 2, by + bh);
         this.ctx.stroke();
-        
+
         this.ctx.restore();
 
         if (enemy.isCharging) {
@@ -9687,27 +10396,27 @@ export class GameEngine {
         const bh = enemy.height;
         const cx = bx + bw / 2;
         const cy = by + bh / 2;
-        
+
         this.ctx.save();
-        
+
         // Halo effect: glowing silver crescent moon behind her head
         this.ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
         this.ctx.strokeStyle = '#c7d2fe';
         this.ctx.lineWidth = 2.5;
         this.ctx.shadowBlur = 20;
         this.ctx.shadowColor = '#e0f2fe';
-        
+
         this.ctx.beginPath();
         this.ctx.arc(cx, by + 16, 24, 0, Math.PI * 2);
         this.ctx.fill();
         this.ctx.stroke();
-        
+
         // Goddess robe / gown silhouette
         const robeGrad = this.ctx.createLinearGradient(cx, by, cx, by + bh);
         robeGrad.addColorStop(0, '#e0f2fe');
         robeGrad.addColorStop(0.5, '#818cf8');
         robeGrad.addColorStop(1, '#312e81');
-        
+
         this.ctx.fillStyle = robeGrad;
         this.ctx.beginPath();
         this.ctx.moveTo(cx, by + 12); // head base
@@ -9716,19 +10425,19 @@ export class GameEngine {
         this.ctx.bezierCurveTo(bx, by + bh - 10, bx, by + 25, cx, by + 12);
         this.ctx.closePath();
         this.ctx.fill();
-        
+
         // Head / Face
         this.ctx.fillStyle = '#fef08a';
         this.ctx.beginPath();
         this.ctx.arc(cx, by + 10, 10, 0, Math.PI * 2);
         this.ctx.fill();
-        
+
         // Glowing moon crown
         this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
         this.ctx.arc(cx, by - 2, 4, 0, Math.PI * 2);
         this.ctx.fill();
-        
+
         // Glowing staff/weapon in hand
         const handX = enemy.facing === 1 ? bx + bw + 6 : bx - 6;
         this.ctx.strokeStyle = '#c7d2fe';
@@ -9737,21 +10446,21 @@ export class GameEngine {
         this.ctx.moveTo(handX, by + 10);
         this.ctx.lineTo(handX, by + bh - 10);
         this.ctx.stroke();
-        
+
         // Staff glowing top
         this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
         this.ctx.arc(handX, by + 10, 8, 0, Math.PI * 2);
         this.ctx.fill();
-        
+
         // Staff glow shadow
         this.ctx.fillStyle = 'rgba(199, 210, 254, 0.4)';
         this.ctx.beginPath();
         this.ctx.arc(handX, by + 10, 16, 0, Math.PI * 2);
         this.ctx.fill();
-        
+
         this.ctx.restore();
-        
+
         // Render Lunar Goddess Beam Barrage
         if (enemy.beamBarrageActive && enemy.beamTimer) {
           if (enemy.beamTimer >= 120) {
@@ -9772,7 +10481,7 @@ export class GameEngine {
             const startY = enemy.y + enemy.height / 2;
             const endX = enemy.beamEndX || startX;
             const endY = enemy.beamEndY || startY;
-            
+
             // Outer glow
             this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
             this.ctx.lineWidth = 36;
@@ -9780,7 +10489,7 @@ export class GameEngine {
             this.ctx.moveTo(startX, startY);
             this.ctx.lineTo(endX, endY);
             this.ctx.stroke();
-            
+
             // Core
             this.ctx.strokeStyle = '#ffffff';
             this.ctx.lineWidth = 10;
@@ -9788,7 +10497,7 @@ export class GameEngine {
             this.ctx.moveTo(startX, startY);
             this.ctx.lineTo(endX, endY);
             this.ctx.stroke();
-            
+
             // Star sparks at end point
             for (let p = 0; p < 2; p++) {
               this.particles.push({
@@ -10267,102 +10976,160 @@ export class GameEngine {
       }
 
       const bodyY = py + idleBob;
-      this.ctx.fillStyle = mainColor;
-      this.ctx.strokeStyle = accentColor;
-      this.ctx.lineWidth = 2.5;
-
-      this.ctx.beginPath();
-      this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
-      this.ctx.lineTo(px + pw, bodyY + ph - 6);
-      this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
-      this.ctx.lineTo(px + 6, bodyY + ph - 2);
-      this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      this.ctx.fillStyle = bellyColor;
-      const bellyX = this.pFacing === 1 ? px + 8 : px + 6;
-      this.ctx.beginPath();
-      this.ctx.ellipse(bellyX + 8, bodyY + ph / 2 + 4, 7, 10, 0, 0, Math.PI * 2);
-      this.ctx.fill();
-
-      if (this.selectedDraco === 'Shadowmon') {
+      if (this.selectedDraco === 'Pixelmon') {
         this.ctx.save();
-        const stackX = px + pw / 2;
-        const stackY = bodyY + 22;
+        if (this.isMegaPixelmon && this.megaPixelmonScale > 1.0) {
+          this.ctx.translate(px + pw / 2, py + ph);
+          this.ctx.scale(this.megaPixelmonScale, this.megaPixelmonScale);
+          this.ctx.translate(-(px + pw / 2), -(py + ph));
+        }
 
-        this.ctx.fillStyle = 'rgba(24, 24, 27, 0.95)';
-        this.ctx.strokeStyle = '#ef4444';
-        this.ctx.lineWidth = 1.8;
+        // 8-bit Pixel Legs
+        this.ctx.fillStyle = accentColor;
+        if (this.pGrounded) {
+          this.ctx.fillRect(px + 4 + legStride, py + ph - 8 + idleBob, 8, 8);
+          this.ctx.fillRect(px + pw - 12 - legStride, py + ph - 8 + idleBob, 8, 8);
+        } else {
+          this.ctx.fillRect(px + 6, py + ph - 10, 6, 8);
+          this.ctx.fillRect(px + pw - 12, py + ph - 10, 6, 8);
+        }
+
+        // 8-bit Pixel Body
+        this.ctx.fillStyle = mainColor;
+        this.ctx.strokeStyle = accentColor;
+        this.ctx.lineWidth = 3;
+        this.ctx.fillRect(px, bodyY + 4, pw, ph - 10);
+        this.ctx.strokeRect(px, bodyY + 4, pw, ph - 10);
+
+        // Inner Pixel Highlight Block
+        this.ctx.fillStyle = bellyColor;
+        this.ctx.fillRect(px + 4, bodyY + 8, pw - 8, ph - 18);
+
+        // 8-bit Pixel Horns
+        this.ctx.fillStyle = detailColor;
+        if (this.pFacing === 1) {
+          this.ctx.fillRect(px + 4, bodyY - 6, 6, 10);
+          this.ctx.fillRect(px + pw - 12, bodyY - 8, 6, 12);
+        } else {
+          this.ctx.fillRect(px + 6, bodyY - 8, 6, 12);
+          this.ctx.fillRect(px + pw - 10, bodyY - 6, 6, 10);
+        }
+
+        // Square 8-Bit Pixel Eyes
+        const eyeX1 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = this.pFacing === 1 ? px + 8 : px + pw - 12;
+        this.ctx.fillStyle = '#000000';
+        this.ctx.fillRect(eyeX1, bodyY + 10, 6, 6);
+        this.ctx.fillRect(eyeX2, bodyY + 10, 6, 6);
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(this.pFacing === 1 ? eyeX1 + 3 : eyeX1 + 1, bodyY + 11, 2, 2);
+        this.ctx.fillRect(this.pFacing === 1 ? eyeX2 + 3 : eyeX2 + 1, bodyY + 11, 2, 2);
+
+        // 8-bit Tetris Chest Core
+        this.ctx.fillStyle = '#eab308';
+        const coreX = px + pw / 2 - 4;
+        this.ctx.fillRect(coreX - 2, bodyY + 20, 12, 4);
+        this.ctx.fillRect(coreX + 2, bodyY + 24, 4, 6);
+
+        this.ctx.restore();
+      } else {
+        this.ctx.fillStyle = mainColor;
+        this.ctx.strokeStyle = accentColor;
+        this.ctx.lineWidth = 2.5;
+
         this.ctx.beginPath();
-        this.ctx.arc(stackX, stackY, 11, 0, Math.PI * 2);
+        this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
 
-        this.ctx.font = '900 12px monospace';
-        this.ctx.textAlign = 'center';
-        this.ctx.textBaseline = 'middle';
-        this.ctx.fillStyle = this.shadowmonStacks >= 5 ? '#fef08a' : '#ffffff';
-        this.ctx.fillText(`${this.shadowmonStacks}`, stackX, stackY + 1);
+        this.ctx.fillStyle = bellyColor;
+        const bellyX = this.pFacing === 1 ? px + 8 : px + 6;
+        this.ctx.beginPath();
+        this.ctx.ellipse(bellyX + 8, bodyY + ph / 2 + 4, 7, 10, 0, 0, Math.PI * 2);
+        this.ctx.fill();
 
-        for (let s = 0; s < this.shadowmonStacks; s++) {
-          const sang = (this.frameCount * 0.12) + (s * Math.PI * 2) / 5;
-          const sx = stackX + Math.cos(sang) * 16;
-          const sy = stackY + Math.sin(sang) * 16;
-          this.ctx.fillStyle = '#ef4444';
+        if (this.selectedDraco === 'Shadowmon') {
+          this.ctx.save();
+          const stackX = px + pw / 2;
+          const stackY = bodyY + 22;
+
+          this.ctx.fillStyle = 'rgba(24, 24, 27, 0.95)';
+          this.ctx.strokeStyle = '#ef4444';
+          this.ctx.lineWidth = 1.8;
           this.ctx.beginPath();
-          this.ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+          this.ctx.arc(stackX, stackY, 11, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          this.ctx.font = '900 12px monospace';
+          this.ctx.textAlign = 'center';
+          this.ctx.textBaseline = 'middle';
+          this.ctx.fillStyle = this.shadowmonStacks >= 5 ? '#fef08a' : '#ffffff';
+          this.ctx.fillText(`${this.shadowmonStacks}`, stackX, stackY + 1);
+
+          for (let s = 0; s < this.shadowmonStacks; s++) {
+            const sang = (this.frameCount * 0.12) + (s * Math.PI * 2) / 5;
+            const sx = stackX + Math.cos(sang) * 16;
+            const sy = stackY + Math.sin(sang) * 16;
+            this.ctx.fillStyle = '#ef4444';
+            this.ctx.beginPath();
+            this.ctx.arc(sx, sy, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+
+          this.ctx.restore();
+        }
+
+        this.ctx.fillStyle = accentColor;
+        this.ctx.beginPath();
+        if (this.pFacing === 1) {
+          this.ctx.moveTo(px + 6, bodyY);
+          this.ctx.lineTo(px + 2, bodyY - 10);
+          this.ctx.lineTo(px + 14, bodyY + 2);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 14, bodyY + 2);
+          this.ctx.lineTo(px + pw - 2, bodyY - 14);
+          this.ctx.lineTo(px + pw - 6, bodyY);
+          this.ctx.closePath();
+          this.ctx.fill();
+        } else {
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 14, bodyY + 2);
+          this.ctx.lineTo(px + 2, bodyY - 14);
+          this.ctx.lineTo(px + 6, bodyY);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 6, bodyY);
+          this.ctx.lineTo(px + pw - 2, bodyY - 10);
+          this.ctx.lineTo(px + pw - 14, bodyY + 2);
+          this.ctx.closePath();
           this.ctx.fill();
         }
 
-        this.ctx.restore();
+        this.ctx.fillStyle = '#ffffff';
+        const eyeX = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        this.ctx.fillRect(eyeX, bodyY + 8, 8, 9);
+        this.ctx.fillStyle = '#000000';
+        const pupilX = this.pFacing === 1 ? eyeX + 4 : eyeX;
+        this.ctx.fillRect(pupilX, bodyY + 10, 4, 5);
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(pupilX + 1, bodyY + 10, 1.5, 1.5);
+
+        this.ctx.fillStyle = detailColor;
+        const cheekX = this.pFacing === 1 ? px + pw - 8 : px + 2;
+        this.ctx.fillRect(cheekX, bodyY + 20, 4, 4);
       }
-
-      this.ctx.fillStyle = accentColor;
-      this.ctx.beginPath();
-      if (this.pFacing === 1) {
-        this.ctx.moveTo(px + 6, bodyY);
-        this.ctx.lineTo(px + 2, bodyY - 10);
-        this.ctx.lineTo(px + 14, bodyY + 2);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(px + pw - 14, bodyY + 2);
-        this.ctx.lineTo(px + pw - 2, bodyY - 14);
-        this.ctx.lineTo(px + pw - 6, bodyY);
-        this.ctx.closePath();
-        this.ctx.fill();
-      } else {
-        this.ctx.beginPath();
-        this.ctx.moveTo(px + 14, bodyY + 2);
-        this.ctx.lineTo(px + 2, bodyY - 14);
-        this.ctx.lineTo(px + 6, bodyY);
-        this.ctx.closePath();
-        this.ctx.fill();
-
-        this.ctx.beginPath();
-        this.ctx.moveTo(px + pw - 6, bodyY);
-        this.ctx.lineTo(px + pw - 2, bodyY - 10);
-        this.ctx.lineTo(px + pw - 14, bodyY + 2);
-        this.ctx.closePath();
-        this.ctx.fill();
-      }
-
-      this.ctx.fillStyle = '#ffffff';
-      const eyeX = this.pFacing === 1 ? px + pw - 14 : px + 6;
-      this.ctx.fillRect(eyeX, bodyY + 8, 8, 9);
-      this.ctx.fillStyle = '#000000';
-      const pupilX = this.pFacing === 1 ? eyeX + 4 : eyeX;
-      this.ctx.fillRect(pupilX, bodyY + 10, 4, 5);
-
-      this.ctx.fillStyle = '#ffffff';
-      this.ctx.fillRect(pupilX + 1, bodyY + 10, 1.5, 1.5);
-
-      this.ctx.fillStyle = detailColor;
-      const cheekX = this.pFacing === 1 ? px + pw - 8 : px + 2;
-      this.ctx.fillRect(cheekX, bodyY + 20, 4, 4);
 
       if (this.selectedDraco === 'Shieldmon' && this.shieldActive) {
         this.ctx.save();
@@ -13407,6 +14174,9 @@ export class GameEngine {
   public resume() {
     if (!this.isPaused) return;
     this.isPaused = false;
+    this.isMegaPixelmon = false;
+    this.megaPixelmonTimer = 0;
+    this.megaPixelmonScale = 1.0;
     if (this.animationFrameId !== null) {
       cancelAnimationFrame(this.animationFrameId);
       this.animationFrameId = null;

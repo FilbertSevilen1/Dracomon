@@ -115,6 +115,7 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
       { name: 'Enigmon', main: '#333388', accent: '#581c87', belly: '#c084fc', detail: '#e879f9' },
       { name: 'Lunarmon', main: '#1e1b4b', accent: '#312e81', belly: '#c7d2fe', detail: '#93c5fd' },
       { name: 'Azuremon', main: '#0284c7', accent: '#0369a1', belly: '#e0f2fe', detail: '#38bdf8' },
+      { name: 'Pixelmon', main: '#a855f7', accent: '#3b0764', belly: '#c084fc', detail: '#f43f5e' },
     ];
 
     const resizeCanvas = () => {
@@ -811,6 +812,22 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
         }
       }
 
+      // Pixelmon background digital aura & orbiting Tetris blocks
+      if (draco.name === 'Pixelmon') {
+        const blockColors = ['#ec4899', '#3b82f6', '#f59e0b', '#10b981', '#a855f7'];
+        for (let b = 0; b < 4; b++) {
+          const bAng = frameCount * 0.08 + b * (Math.PI / 2);
+          const bDist = pw / 2 + 12 + Math.sin(frameCount * 0.1 + b) * 4;
+          const bx = px + pw / 2 + Math.cos(bAng) * bDist;
+          const by = py + ph / 2 + Math.sin(bAng) * (bDist * 0.6);
+          ctx.fillStyle = blockColors[b % blockColors.length];
+          ctx.strokeStyle = '#000000';
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(bx - 4, by - 4, 8, 8);
+          ctx.strokeRect(bx - 4, by - 4, 8, 8);
+        }
+      }
+
       // Legs/feet
       ctx.fillStyle = draco.accentColor;
       if (draco.grounded) {
@@ -838,87 +855,126 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
 
       // Draco main body blob
       const bodyY = py + bob;
-      ctx.fillStyle = draco.mainColor;
-      ctx.strokeStyle = draco.accentColor;
-      ctx.lineWidth = 2.5;
+      if (draco.name === 'Pixelmon') {
+        // 8-bit Pixel Body
+        ctx.fillStyle = draco.mainColor;
+        ctx.strokeStyle = draco.accentColor;
+        ctx.lineWidth = 3;
+        ctx.fillRect(px, bodyY + 4, pw, ph - 10);
+        ctx.strokeRect(px, bodyY + 4, pw, ph - 10);
 
-      ctx.beginPath();
-      ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
-      ctx.lineTo(px + pw, bodyY + ph - 6);
-      ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
-      ctx.lineTo(px + 6, bodyY + ph - 2);
-      ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
-      ctx.closePath();
-      ctx.fill();
-      ctx.stroke();
+        // Inner Pixel Highlight Block
+        ctx.fillStyle = draco.bellyColor;
+        ctx.fillRect(px + 4, bodyY + 8, pw - 8, ph - 18);
 
-      // Belly ellipse
-      ctx.fillStyle = draco.bellyColor;
-      const bellyX = face === 1 ? px + 8 : px + 6;
-      ctx.beginPath();
-      ctx.ellipse(bellyX + 8, bodyY + ph / 2 + 4, 7, 10, 0, 0, Math.PI * 2);
-      ctx.fill();
+        // 8-bit Pixel Horns
+        ctx.fillStyle = draco.detailColor;
+        if (face === 1) {
+          ctx.fillRect(px + 4, bodyY - 6, 6, 10);
+          ctx.fillRect(px + pw - 12, bodyY - 8, 6, 12);
+        } else {
+          ctx.fillRect(px + 6, bodyY - 8, 6, 12);
+          ctx.fillRect(px + pw - 10, bodyY - 6, 6, 10);
+        }
 
-      // Horns
-      ctx.fillStyle = draco.accentColor;
-      ctx.beginPath();
-      if (face === 1) {
-        ctx.moveTo(px + 6, bodyY);
-        ctx.lineTo(px + 2, bodyY - 10);
-        ctx.lineTo(px + 14, bodyY + 2);
-        ctx.closePath();
-        ctx.fill();
+        // Square 8-Bit Pixel Eyes
+        const eyeX1 = face === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = face === 1 ? px + 8 : px + pw - 12;
+        ctx.fillStyle = '#000000';
+        ctx.fillRect(eyeX1, bodyY + 10, 6, 6);
+        ctx.fillRect(eyeX2, bodyY + 10, 6, 6);
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(face === 1 ? eyeX1 + 3 : eyeX1 + 1, bodyY + 11, 2, 2);
+        ctx.fillRect(face === 1 ? eyeX2 + 3 : eyeX2 + 1, bodyY + 11, 2, 2);
 
-        ctx.beginPath();
-        ctx.moveTo(px + pw - 14, bodyY + 2);
-        ctx.lineTo(px + pw - 2, bodyY - 14);
-        ctx.lineTo(px + pw - 6, bodyY);
-        ctx.closePath();
-        ctx.fill();
+        // 8-bit Tetris Chest Core
+        ctx.fillStyle = '#eab308';
+        const coreX = px + pw / 2 - 4;
+        ctx.fillRect(coreX - 2, bodyY + 20, 12, 4);
+        ctx.fillRect(coreX + 2, bodyY + 24, 4, 6);
       } else {
-        ctx.moveTo(px + 14, bodyY + 2);
-        ctx.lineTo(px + 2, bodyY - 14);
-        ctx.lineTo(px + 6, bodyY);
-        ctx.closePath();
-        ctx.fill();
+        ctx.fillStyle = draco.mainColor;
+        ctx.strokeStyle = draco.accentColor;
+        ctx.lineWidth = 2.5;
 
         ctx.beginPath();
-        ctx.moveTo(px + pw - 6, bodyY);
-        ctx.lineTo(px + pw - 2, bodyY - 10);
-        ctx.lineTo(px + pw - 14, bodyY + 2);
+        ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        ctx.lineTo(px + pw, bodyY + ph - 6);
+        ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        ctx.lineTo(px + 6, bodyY + ph - 2);
+        ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
         ctx.closePath();
         ctx.fill();
+        ctx.stroke();
+
+        // Belly ellipse
+        ctx.fillStyle = draco.bellyColor;
+        const bellyX = face === 1 ? px + 8 : px + 6;
+        ctx.beginPath();
+        ctx.ellipse(bellyX + 8, bodyY + ph / 2 + 4, 7, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Horns
+        ctx.fillStyle = draco.accentColor;
+        ctx.beginPath();
+        if (face === 1) {
+          ctx.moveTo(px + 6, bodyY);
+          ctx.lineTo(px + 2, bodyY - 10);
+          ctx.lineTo(px + 14, bodyY + 2);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(px + pw - 14, bodyY + 2);
+          ctx.lineTo(px + pw - 2, bodyY - 14);
+          ctx.lineTo(px + pw - 6, bodyY);
+          ctx.closePath();
+          ctx.fill();
+        } else {
+          ctx.moveTo(px + 14, bodyY + 2);
+          ctx.lineTo(px + 2, bodyY - 14);
+          ctx.lineTo(px + 6, bodyY);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.beginPath();
+          ctx.moveTo(px + pw - 6, bodyY);
+          ctx.lineTo(px + pw - 2, bodyY - 10);
+          ctx.lineTo(px + pw - 14, bodyY + 2);
+          ctx.closePath();
+          ctx.fill();
+        }
+
+        // Tail
+        ctx.fillStyle = draco.accentColor;
+        ctx.beginPath();
+        const tailBaseX = face === 1 ? px + 2 : px + pw - 2;
+        const tailBaseY = py + ph - 14 + bob;
+        const tailTipX = face === 1 ? px - 12 + Math.cos(frameCount * 0.1) * 3 : px + pw + 12 - Math.cos(frameCount * 0.1) * 3;
+        const tailTipY = py + ph - 20 + Math.sin(frameCount * 0.1) * 4;
+
+        ctx.moveTo(tailBaseX, tailBaseY);
+        ctx.quadraticCurveTo(tailBaseX - face * 8, tailBaseY - 10, tailTipX, tailTipY);
+        ctx.quadraticCurveTo(tailBaseX - face * 4, tailBaseY + 6, tailBaseX, tailBaseY + 4);
+        ctx.closePath();
+        ctx.fill();
+
+        // Eyes & Pupil
+        ctx.fillStyle = '#ffffff';
+        const eyeX = face === 1 ? px + pw - 14 : px + 6;
+        ctx.fillRect(eyeX, bodyY + 8, 8, 9);
+        ctx.fillStyle = '#000000';
+        const pupilX = face === 1 ? eyeX + 4 : eyeX;
+        ctx.fillRect(pupilX, bodyY + 10, 4, 5);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(pupilX + 1, bodyY + 10, 1.5, 1.5);
+
+        // Cheek glow detail
+        ctx.fillStyle = draco.detailColor;
+        const cheekX = face === 1 ? px + pw - 8 : px + 2;
+        ctx.fillRect(cheekX, bodyY + 20, 4, 4);
       }
-
-      // Tail
-      ctx.fillStyle = draco.accentColor;
-      ctx.beginPath();
-      const tailBaseX = face === 1 ? px + 2 : px + pw - 2;
-      const tailBaseY = py + ph - 14 + bob;
-      const tailTipX = face === 1 ? px - 12 + Math.cos(frameCount * 0.1) * 3 : px + pw + 12 - Math.cos(frameCount * 0.1) * 3;
-      const tailTipY = py + ph - 20 + Math.sin(frameCount * 0.1) * 4;
-
-      ctx.moveTo(tailBaseX, tailBaseY);
-      ctx.quadraticCurveTo(tailBaseX - face * 8, tailBaseY - 10, tailTipX, tailTipY);
-      ctx.quadraticCurveTo(tailBaseX - face * 4, tailBaseY + 6, tailBaseX, tailBaseY + 4);
-      ctx.closePath();
-      ctx.fill();
-
-      // Eyes & Pupil
-      ctx.fillStyle = '#ffffff';
-      const eyeX = face === 1 ? px + pw - 14 : px + 6;
-      ctx.fillRect(eyeX, bodyY + 8, 8, 9);
-      ctx.fillStyle = '#000000';
-      const pupilX = face === 1 ? eyeX + 4 : eyeX;
-      ctx.fillRect(pupilX, bodyY + 10, 4, 5);
-
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(pupilX + 1, bodyY + 10, 1.5, 1.5);
-
-      // Cheek glow detail
-      ctx.fillStyle = draco.detailColor;
-      const cheekX = face === 1 ? px + pw - 8 : px + 2;
-      ctx.fillRect(cheekX, bodyY + 20, 4, 4);
 
       // Shieldmon visual shields
       if (draco.name === 'Shieldmon' && draco.shieldActive) {

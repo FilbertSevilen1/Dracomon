@@ -169,6 +169,16 @@ const DRACO_META: {
     colorClass: 'text-sky-300 border-sky-400 bg-sky-950',
     bgGradient: 'from-sky-500 via-cyan-400 to-slate-900',
   },
+  Pixelmon: {
+    role: '8-Bit Retro / Tetris & Pacman',
+    abilityName: 'Pacman Charge Strike',
+    abilityDesc: 'Throws random Tetris blocks. Skill summons Pacman that charges 800px forward damaging foes until hitting terrain.',
+    ultimateName: 'Mega Pixelmon (120 Energy)',
+    ultimateDesc: 'Grows 300% larger for 8s. Spams multidirectional Tetris blocks, slashes a 800px giant Pixelated Sword, and detonates in a massive pixel blast when ending!',
+    cost: 500,
+    colorClass: 'text-fuchsia-400 border-fuchsia-500 bg-fuchsia-950',
+    bgGradient: 'from-fuchsia-600 via-purple-700 to-indigo-900',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
@@ -261,6 +271,28 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
         <circle cx="50" cy="60" r="11" fill="rgba(56, 189, 248, 0.25)" />
         <circle cx="50" cy="60" r="7" fill="#38bdf8" stroke="#ffffff" strokeWidth="2" />
         <circle cx="50" cy="60" r="3" fill="#ffffff" />
+      </svg>
+    );
+  }
+
+  if (name === 'Pixelmon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.25)" />
+        {/* Pixel Grid 8-Bit Body */}
+        <rect x="30" y="30" width="40" height="44" fill="#a855f7" stroke="#3b0764" strokeWidth="3" />
+        <rect x="34" y="34" width="32" height="36" fill="#c084fc" />
+        {/* Pixel Eyes */}
+        <rect x="38" y="42" width="6" height="6" fill="#000000" />
+        <rect x="56" y="42" width="6" height="6" fill="#000000" />
+        <rect x="40" y="44" width="2" height="2" fill="#ffffff" />
+        <rect x="58" y="44" width="2" height="2" fill="#ffffff" />
+        {/* Pixel Horns */}
+        <rect x="30" y="22" width="6" height="8" fill="#f43f5e" />
+        <rect x="64" y="22" width="6" height="8" fill="#f43f5e" />
+        {/* Pixel Tetris Chest Core */}
+        <rect x="44" y="54" width="12" height="4" fill="#eab308" />
+        <rect x="48" y="58" width="4" height="8" fill="#eab308" />
       </svg>
     );
   }

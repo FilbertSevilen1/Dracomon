@@ -33,6 +33,7 @@ function PlayContent() {
     levelUpInfo,
     pendingLevelUps,
     applyLevelUpBonus,
+    setLastWorldId,
   } = useGameState();
 
   const activePotionCount = saveData.inventory.find(i => i.id === 'potion')?.quantity || 0;
@@ -46,9 +47,13 @@ function PlayContent() {
       const parsed = parseInt(stageParam, 10);
       if (!isNaN(parsed) && parsed >= 1 && parsed <= STAGES.length) {
         setCurrentStage(parsed);
+        const stageInfo = STAGES[parsed - 1];
+        if (stageInfo) {
+          setLastWorldId(stageInfo.worldId);
+        }
       }
     }
-  }, [searchParams, setCurrentStage]);
+  }, [searchParams, setCurrentStage, setLastWorldId]);
 
   return (
     <div className="w-screen h-screen bg-stone-950 flex flex-col justify-center items-center overflow-hidden select-none relative">
@@ -62,7 +67,12 @@ function PlayContent() {
           onStageClear={() => markStageCleared(currentStage)}
           onNextLevel={() => {
             markStageCleared(currentStage);
-            setCurrentStage(Math.min(currentStage + 1, STAGES.length));
+            const nextStage = Math.min(currentStage + 1, STAGES.length);
+            setCurrentStage(nextStage);
+            const stageInfo = STAGES[nextStage - 1];
+            if (stageInfo) {
+              setLastWorldId(stageInfo.worldId);
+            }
           }}
           onQuit={() => {
             soundService.playClick();

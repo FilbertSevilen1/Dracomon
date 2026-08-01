@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -23,10 +23,17 @@ export default function MapsPage() {
   const {
     saveData,
     setCurrentStage,
+    setLastWorldId,
   } = useGameState();
 
   const currentTier = saveData.tier || 'Free';
   const [activeWorldId, setActiveWorldId] = useState<number>(1);
+
+  useEffect(() => {
+    if (saveData && saveData.lastWorldId) {
+      setActiveWorldId(saveData.lastWorldId);
+    }
+  }, [saveData.lastWorldId]);
 
   const activeWorld = WORLDS.find(w => w.id === activeWorldId) || WORLDS[0];
 
@@ -61,6 +68,7 @@ export default function MapsPage() {
                 onClick={() => {
                   soundService.playClick();
                   setActiveWorldId(world.id);
+                  setLastWorldId(world.id);
                 }}
                 className={`px-4 py-2.5 rounded-2xl border text-xs font-black transition-all flex items-center gap-2 whitespace-nowrap ${
                   isActive
@@ -189,6 +197,7 @@ export default function MapsPage() {
                       onClick={() => {
                         soundService.playClick();
                         setCurrentStage(stageNum);
+                        setLastWorldId(stg.worldId);
                         router.push(`/play?stage=${stageNum}`);
                       }}
                       className={`w-full py-3 text-white rounded-2xl font-extrabold text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 ${

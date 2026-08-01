@@ -30,6 +30,23 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.2.6',
+    date: 'August 1, 2026',
+    tag: 'Pixel Realm, Pixelmon & Form-Shifting Blockman',
+    badgeColor: 'bg-fuchsia-600 text-white font-black shadow-sm',
+    summary: 'Introduces retro 8-bit hero Pixelmon, the Pixel Realm campaign world with falling Tetris block rain layer-stacking gimmicks (25% max HP crush penalty), 3 new pixel monsters (Piranha Plant, Pixel Ghost, Pixel Dragon), and form-shifting Blockman miniboss.',
+    highlights: [
+      'New Hero - Pixelmon: 8-bit retro Draco companion throwing random small Tetris blocks (I, L, T, O, Z shapes) as basic attack.',
+      'Pixelmon Skill - Pacman Charge Strike: Summons Pacman that charges up to 800px forward damaging enemies until colliding with ground/terrain.',
+      'Pixelmon Ultimate - Mega Pixelmon (120 Energy): Transforms Pixelmon into 300% size for 8s (energy regen paused). Spams rapid multidirectional Tetris barrages, slashes an 800px giant Pixel Sword, and detonates in a 360° pixel explosion when ending!',
+      'Pixel Realm Campaign World: Introduces World 12 featuring 5 retro stages with falling Tetris block rain layer-stacking gimmicks.',
+      'Crushing Damage & Push-Up: Falling blocks that crush player deal 25% max HP damage and push character upwards above the block.',
+      'Portal Safety Column: Exit portal column is excluded from block rain so portal remains accessible.',
+      '3 New Pixel Enemies: Pixel Piranha Plant (pipe fireball shooter), Pixel Ghost (wall-phasing enemy that freezes when faced and chases when turned away), and Pixel Dragon (3-way spread flyer).',
+      'Miniboss - Blockman: Form-shifting miniboss changing forms every 5 seconds (Brawler melee leap, Shooter 8-way block barrage, Crusher shield armor & ground slam).',
+    ],
+  },
+  {
     version: '0.2.5',
     date: 'July 30, 2026',
     tag: '11 Worlds & New Hero Azuremon',

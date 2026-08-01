@@ -6,7 +6,7 @@ export interface SubMapData {
   grid: string[];
 }
 
-export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core' | 'space';
+export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core' | 'space' | 'pixel';
 
 export interface LevelTheme {
   type: ThemeType;

@@ -142,6 +142,16 @@ export interface StageBlackHole {
   radius: number;
 }
 
+export interface FallingPixelBlock {
+  id: number;
+  col: number;
+  x: number;
+  y: number;
+  vy: number;
+  color: string;
+  shape: 'I' | 'L' | 'T' | 'O' | 'Z';
+}
+
 export class StageGimmickManager {
   public lavaFireballs: LavaFireball[] = [];
   public fallingSnowflakes: FallingSnowflake[] = [];
@@ -154,6 +164,7 @@ export class StageGimmickManager {
   public dragonBreathZones: DragonBreathZone[] = [];
   public spaceComets: SpaceComet[] = [];
   public stageBlackHoles: StageBlackHole[] = [];
+  public fallingPixelBlocks: FallingPixelBlock[] = [];
 
   public playerLavaBurnTimer: number = 0;
   public playerSlowTimer: number = 0;
@@ -174,6 +185,7 @@ export class StageGimmickManager {
     this.dragonBreathZones = [];
     this.spaceComets = [];
     this.stageBlackHoles = [];
+    this.fallingPixelBlocks = [];
     this.playerLavaBurnTimer = 0;
     this.playerSlowTimer = 0;
     this.playerPoisonBlindTimer = 0;
@@ -229,6 +241,80 @@ export class StageGimmickManager {
 
     if (this.playerPoisonBlindTimer > 0) {
       this.playerPoisonBlindTimer--;
+    }
+
+    if (themeType === 'pixel') {
+      if (this.timerCount % 110 === 0 && grid.length > 0) {
+        const maxCols = grid[0].length;
+        let portalCol = -1;
+        for (let r = 0; r < grid.length; r++) {
+          const pIdx = grid[r].indexOf('P');
+          if (pIdx >= 0) {
+            portalCol = pIdx;
+            break;
+          }
+        }
+
+        const validCols: number[] = [];
+        for (let c = 0; c < maxCols; c++) {
+          if (portalCol >= 0 && Math.abs(c - portalCol) <= 1) continue;
+          validCols.push(c);
+        }
+
+        if (validCols.length > 0) {
+          const chosenCol = validCols[Math.floor(Math.random() * validCols.length)];
+          const colors = ['#ec4899', '#3b82f6', '#f59e0b', '#10b981', '#a855f7', '#06b6d4'];
+          const shapes: ('I' | 'L' | 'T' | 'O' | 'Z')[] = ['I', 'L', 'T', 'O', 'Z'];
+          this.fallingPixelBlocks.push({
+            id: this.nextEntityId++,
+            col: chosenCol,
+            x: chosenCol * tileSize,
+            y: -40,
+            vy: 4.0,
+            color: colors[Math.floor(Math.random() * colors.length)],
+            shape: shapes[Math.floor(Math.random() * shapes.length)],
+          });
+        }
+      }
+
+      for (let i = this.fallingPixelBlocks.length - 1; i >= 0; i--) {
+        const block = this.fallingPixelBlocks[i];
+        block.y += block.vy;
+
+        // Player crush collision check
+        if (
+          px + pWidth > block.x + 4 &&
+          px < block.x + tileSize - 4 &&
+          py + pHeight > block.y + 4 &&
+          py < block.y + tileSize - 4
+        ) {
+          const crushDmg = Math.max(1, Math.floor(pMaxHP * 0.25));
+          callbacks.onDamagePlayer(crushDmg, 'Crushed by Tetris Block');
+          callbacks.addFloatingText(pxMid, py - 25, `CRUSHED! -${crushDmg} HP`, '#ec4899');
+          soundService.playHit();
+
+          if (callbacks.onPullPlayer) {
+            callbacks.onPullPlayer(0, -12);
+          }
+        }
+
+        // Check landing on solid ground '#' or bottom
+        const targetRow = Math.floor((block.y + tileSize) / tileSize);
+        if (targetRow >= 0 && targetRow < grid.length) {
+          const isSolidBelow = grid[targetRow][block.col] === '#' || targetRow === grid.length - 1;
+          if (isSolidBelow) {
+            const landingRow = Math.max(0, targetRow - 1);
+            if (grid[landingRow] && grid[landingRow][block.col] !== '#') {
+              callbacks.setGridTile(landingRow, block.col, '#');
+              callbacks.spawnParticles(block.x + tileSize / 2, landingRow * tileSize, block.color, 10);
+              soundService.playBlock();
+            }
+            this.fallingPixelBlocks.splice(i, 1);
+          }
+        } else if (block.y > grid.length * tileSize) {
+          this.fallingPixelBlocks.splice(i, 1);
+        }
+      }
     }
 
     if (themeType === 'volcano') {
@@ -1341,6 +1427,26 @@ export class StageGimmickManager {
           ctx.arc(m.x, m.y, 12, 0, Math.PI * 2);
           ctx.fill();
         }
+        ctx.restore();
+      });
+    }
+
+    if (themeType === 'pixel') {
+      this.fallingPixelBlocks.forEach((block) => {
+        ctx.save();
+        ctx.fillStyle = block.color;
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+
+        // Draw 8-bit Tetris Block shape
+        const ts = tileSize || 40;
+        ctx.fillRect(block.x + 2, block.y + 2, ts - 4, ts - 4);
+        const ts2 = tileSize || 40;
+        ctx.strokeRect(block.x + 2, block.y + 2, ts2 - 4, ts2 - 4);
+
+        // Inner 8-bit bevel accent
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+        ctx.fillRect(block.x + 6, block.y + 6, 8, 8);
         ctx.restore();
       });
     }

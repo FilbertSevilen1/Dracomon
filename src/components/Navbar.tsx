@@ -318,7 +318,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Patch Notes</p>
-                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>v0.2.1 — Latest</p>
+                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>v0.2.6 — Latest</p>
                     </div>
                     <ChevronRight className={`w-3.5 h-3.5 transition-colors shrink-0 ${isTransparent ? 'text-stone-600 group-hover:text-amber-400' : 'text-stone-400 group-hover:text-amber-500'}`} />
                   </Link>

@@ -567,6 +567,13 @@ export function useGameState() {
     });
   }, [updateSaveState]);
 
+  const setLastWorldId = useCallback((worldId: number) => {
+    updateSaveState(prev => ({
+      ...prev,
+      lastWorldId: worldId
+    }));
+  }, [updateSaveState]);
+
   return {
     saveData,
     isPlaying,
@@ -596,6 +603,7 @@ export function useGameState() {
     importSave,
     switchTier,
     markStageCleared,
+    setLastWorldId,
     activationTier,
     setActivationTier,
     activationCodeInput,
