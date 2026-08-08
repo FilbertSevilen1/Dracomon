@@ -61,5 +61,43 @@ export const levelStorageService = {
     } catch (e) {
       console.error('Failed to reset custom levels:', e);
     }
+  },
+
+  async deployLevelsToRepo(worlds?: any[]): Promise<{ success: boolean; message?: string; error?: string }> {
+    const worldsToSave = worlds || this.getWorldsRaw();
+    try {
+      const res = await fetch('/api/admin/deploy-levels', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worlds: worldsToSave })
+      });
+      const data = await res.json();
+      if (data.success) {
+        this.saveWorldsRaw(worldsToSave);
+      }
+      return data;
+    } catch (e: any) {
+      console.error('API call failed to deploy levels:', e);
+      return { success: false, error: e.message || 'Network error while calling deploy API.' };
+    }
+  },
+
+  downloadLevelsJson(worlds?: any[]) {
+    if (typeof window === 'undefined') return;
+    const worldsToSave = worlds || this.getWorldsRaw();
+    const fullData = {
+      themes: levelsData.themes,
+      worlds: worldsToSave
+    };
+    const jsonStr = JSON.stringify(fullData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'levels.json';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 };

@@ -23,7 +23,9 @@ import {
   Paintbrush,
   Search,
   AlertTriangle,
-  Maximize2
+  Maximize2,
+  Upload,
+  Download
 } from 'lucide-react';
 import { levelStorageService } from '../../services/levelStorage';
 import levelsData from '../../game/levels.json';
@@ -141,6 +143,28 @@ export default function AdminPage() {
   const [showResetConfirmModal, setShowResetConfirmModal] = useState(false);
   const [deleteStageConfirmData, setDeleteStageConfirmData] = useState<{ worldId: number; stageIdx: number; title: string } | null>(null);
   const [deleteWorldConfirmData, setDeleteWorldConfirmData] = useState<{ worldId: number; name: string } | null>(null);
+  const [isDeploying, setIsDeploying] = useState(false);
+
+  // Deploy levels to repository file (src/game/levels.json)
+  const handleDeployToRepository = async () => {
+    setIsDeploying(true);
+    const result = await levelStorageService.deployLevelsToRepo(worldsRaw);
+    setIsDeploying(false);
+    if (result.success) {
+      setSavedSuccessMsg('🚀 Successfully deployed levels directly to src/game/levels.json!');
+    } else {
+      setSavedSuccessMsg(`⚠️ Deploy failed: ${result.error || 'Exporting file instead...'}`);
+      levelStorageService.downloadLevelsJson(worldsRaw);
+    }
+    setTimeout(() => setSavedSuccessMsg(''), 4000);
+  };
+
+  // Download levels.json manually
+  const handleDownloadLevels = () => {
+    levelStorageService.downloadLevelsJson(worldsRaw);
+    setSavedSuccessMsg('📥 Downloaded levels.json payload file!');
+    setTimeout(() => setSavedSuccessMsg(''), 3000);
+  };
 
   // Check auth session
   useEffect(() => {
@@ -274,6 +298,7 @@ export default function AdminPage() {
   const handleSaveWorlds = (updatedWorlds: any[]) => {
     setWorldsRaw(updatedWorlds);
     levelStorageService.saveWorldsRaw(updatedWorlds);
+    levelStorageService.deployLevelsToRepo(updatedWorlds);
   };
 
   const handleAddWorld = (newWorld: any) => {
@@ -453,7 +478,7 @@ export default function AdminPage() {
       return w;
     });
     handleSaveWorlds(updated);
-    setSavedSuccessMsg('Stage map grid saved successfully!');
+    setSavedSuccessMsg('🚀 Stage map saved & deployed directly to src/game/levels.json!');
     setTimeout(() => setSavedSuccessMsg(''), 3000);
   };
 
@@ -562,6 +587,24 @@ export default function AdminPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <button
+            onClick={handleDeployToRepository}
+            disabled={isDeploying}
+            className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-black text-xs flex items-center gap-1.5 shadow-sm transition-all disabled:opacity-50"
+            title="Save and deploy current levels directly into src/game/levels.json"
+          >
+            <Upload className="w-3.5 h-3.5" />
+            <span>{isDeploying ? 'Deploying...' : '🚀 Deploy to Repo'}</span>
+          </button>
+
+          <button
+            onClick={handleDownloadLevels}
+            className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 text-xs font-bold flex items-center gap-1 transition-all"
+            title="Download levels.json file payload"
+          >
+            <Download className="w-3.5 h-3.5 text-stone-600" /> Export JSON
+          </button>
+
           <button
             onClick={() => router.push('/')}
             className="px-3 py-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-200 text-xs font-semibold flex items-center gap-1 transition-all"
