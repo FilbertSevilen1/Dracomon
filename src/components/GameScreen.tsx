@@ -362,7 +362,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
         <div className="flex items-center gap-1.5 sm:gap-3 pointer-events-auto bg-stone-950/80 backdrop-blur-md px-1.5 py-1 sm:px-3 sm:py-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
           <div className="relative shrink-0">
             <div className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-xl bg-stone-800/90 flex items-center justify-center border border-stone-700 font-display text-xs sm:text-base">
-              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : selectedDraco === 'Flymon' ? '🐝' : selectedDraco === 'Whitemon' ? '🦅' : selectedDraco === 'Magemon' ? '🧙' : selectedDraco === 'Bombamon' ? '💣' : selectedDraco === 'Thundermon' ? '⚡' : selectedDraco === 'Enigmon' ? '🌌' : selectedDraco === 'Lunarmon' ? '🌙' : selectedDraco === 'Pixelmon' ? '👾' : '🐲'}
+              {selectedDraco === 'Jumpmon' ? '🦎' : selectedDraco === 'Archermon' ? '🦖' : selectedDraco === 'Shieldmon' ? '🐢' : selectedDraco === 'Assassinmon' ? '🥷' : selectedDraco === 'Flymon' ? '🐝' : selectedDraco === 'Whitemon' ? '🦅' : selectedDraco === 'Magemon' ? '🧙' : selectedDraco === 'Bombamon' ? '💣' : selectedDraco === 'Thundermon' ? '⚡' : selectedDraco === 'Enigmon' ? '🌌' : selectedDraco === 'Lunarmon' ? '🌙' : selectedDraco === 'Pixelmon' ? '👾' : selectedDraco === 'Krakenmon' ? '🐙' : '🐲'}
             </div>
             <div className="absolute -bottom-1 -right-1 bg-amber-500 border border-stone-900 text-stone-950 text-[7px] sm:text-[9px] font-extrabold font-mono px-0.5 sm:px-1 py-0.2 rounded">
               Lv.{level}

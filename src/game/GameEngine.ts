@@ -195,7 +195,7 @@ interface Pickup {
   y: number;
   width: number;
   height: number;
-  type: 'coin' | 'potion' | 'upgrade_stone';
+  type: 'coin' | 'potion' | 'upgrade_stone' | 'heart';
   amount: number;
   collected: boolean;
 }
@@ -258,6 +258,7 @@ interface Enemy {
   wispOrbitAngle?: number;
   wispDetonating?: boolean;
   wispDetonationTimer?: number;
+  slowTimer?: number;
 }
 
 export class GameEngine {
@@ -302,6 +303,7 @@ export class GameEngine {
   public isMegaPixelmon: boolean = false;
   public megaPixelmonTimer: number = 0;
   public megaPixelmonScale: number = 1.0;
+  public damageReductionBuffTimer: number = 0;
   private attackCooldown = 0;
   private specialCooldown = 0;
   private trampolineCooldown = 0;
@@ -757,11 +759,13 @@ export class GameEngine {
         if (char === '@' && !preservePlayerPos) {
           this.px = ex;
           this.py = ey + ts - this.pHeight;
-        } else if (char === 'c') {
+        } else if (char === 'c' || (char === 'C' && !this.level.isUnderwater)) {
           this.pickups.push({ x: ex + 12, y: ey + 12, width: 16, height: 16, type: 'coin', amount: 5, collected: false });
         } else if (char === 'p') {
           this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'potion', amount: 1, collected: false });
-        } else if (char === 'u') {
+        } else if (char === 'h' || char === 'H') {
+          this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'heart', amount: 1, collected: false });
+        } else if (char === 'u' || char === 'U') {
           this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'upgrade_stone', amount: 1, collected: false });
         } else if (char === 'F') {
           this.enemies.push({
@@ -820,7 +824,7 @@ export class GameEngine {
             state: 'patrol',
             animFrame: 0,
           });
-        } else if (char === 'C') {
+        } else if (char === 'C' && this.level.isUnderwater) {
           this.enemies.push({
             id: this.enemyIdCounter++,
             x: ex + 2,
@@ -1754,6 +1758,40 @@ export class GameEngine {
           maxLife: 14
         });
       }
+    } else if (this.selectedDraco === 'Krakenmon') {
+      soundService.playHit();
+      const slashX = this.px + (this.pFacing === 1 ? this.pWidth + 10 : -10);
+      const slashY = this.py + this.pHeight / 2;
+      this.attackDuration = 10;
+      this.attackCooldown = 20;
+      const anchorDmg = Math.ceil(this.stats.attack * 1.25);
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+        const dist = Math.hypot(ex - slashX, ey - slashY);
+        const inFront = (this.pFacing === 1 && ex >= this.px - 30) || (this.pFacing === -1 && ex <= this.px + this.pWidth + 30);
+        if (dist <= 140 && inFront) {
+          this.damageEnemy(enemy, anchorDmg);
+          this.spawnDustParticles(ex, ey, 10, '#06b6d4');
+          this.spawnDustParticles(ex, ey, 8, '#0284c7');
+        }
+      });
+      for (let i = 0; i < 14; i++) {
+        const ang = (Math.random() - 0.5) * Math.PI * 0.8 + (this.pFacing === 1 ? 0 : Math.PI);
+        const spd = Math.random() * 8 + 3;
+        this.particles.push({
+          x: slashX,
+          y: slashY,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 1,
+          size: Math.random() * 6 + 3,
+          color: i % 2 === 0 ? '#06b6d4' : '#0284c7',
+          life: 20,
+          maxLife: 20
+        });
+      }
+      this.addFloatingText(slashX, slashY - 15, '⚓ ANCHOR SMASH', '#06b6d4');
     } else {
       soundService.playHit();
       // Default / Jumpmon melee reach doubled: extra width +48 (from +24)
@@ -2341,6 +2379,41 @@ export class GameEngine {
         } as any);
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, '🟡 BIG PACMAN CHARGE!', '#eab308');
       }
+    } else if (this.selectedDraco === 'Krakenmon') {
+      soundService.playShoot();
+      this.specialCooldown = 180;
+      const waveVx = this.pFacing * (this.stats.speed + 6);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 30,
+        y: this.py + this.pHeight / 2 - 16,
+        vx: waveVx,
+        vy: 0,
+        width: 32,
+        height: 32,
+        isEnemy: false,
+        damage: Math.ceil(this.stats.attack * 1.5),
+        color: '#06b6d4',
+        type: 'tidal_wave' as any,
+        rangeCap: 800,
+        startX: this.px,
+        hitEnemyIds: []
+      } as any);
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, '🌊 TIDAL WAVE (800px)', '#06b6d4');
+
+      for (let i = 0; i < 16; i++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 5 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 6 + 2,
+          color: i % 2 === 0 ? '#06b6d4' : '#38bdf8',
+          life: 20,
+          maxLife: 20
+        });
+      }
     }
   }
 
@@ -2504,6 +2577,7 @@ export class GameEngine {
       case 'Lunarmon': return 200;
       case 'Azuremon': return 160;
       case 'Pixelmon': return 120;
+      case 'Krakenmon': return 100;
       default: return 100;
     }
   }
@@ -2528,6 +2602,7 @@ export class GameEngine {
       case 'Lunarmon': return 'Lunar Eclipse';
       case 'Azuremon': return 'Burst Stream of Catastrophe';
       case 'Pixelmon': return 'Mega Pixelmon';
+      case 'Krakenmon': return 'Collision Course';
       default: return 'Ultimate';
     }
   }
@@ -2548,6 +2623,7 @@ export class GameEngine {
       case 'Lunarmon': return 'Shine bright in darkness... LUNAR ECLIPSE!';
       case 'Azuremon': return 'Celestial Cataclysm... BURST STREAM OF CATASTROPHE!';
       case 'Pixelmon': return '8-Bit Power... MEGA PIXELMON!';
+      case 'Krakenmon': return 'Submerge into the abyssal depths... COLLISION COURSE!';
       default: return 'Unleash full power!';
     }
   }
@@ -3051,6 +3127,45 @@ export class GameEngine {
         });
       }
       this.destroyPlatformsAbovePixelmon();
+    }
+    else if (this.selectedDraco === 'Krakenmon') {
+      soundService.playLevelUp();
+      this.damageReductionBuffTimer = 360; // 6 seconds 50% damage reduction buff
+
+      const boatVx = this.pFacing * 11;
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 44,
+        y: this.py + this.pHeight / 2 - 16,
+        vx: boatVx,
+        vy: -1.5,
+        width: 44,
+        height: 32,
+        isEnemy: false,
+        damage: Math.ceil(this.stats.attack * 2.5),
+        color: '#14b8a6',
+        type: 'ghost_boat' as any,
+        rangeCap: 1200,
+        startX: this.px,
+        hitEnemyIds: []
+      } as any);
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '☠️ COLLISION COURSE (50% DR 6s)!', '#14b8a6');
+      this.screenShake = 30;
+
+      for (let p = 0; p < 30; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 1,
+          size: Math.random() * 7 + 3,
+          color: p % 3 === 0 ? '#14b8a6' : p % 3 === 1 ? '#06b6d4' : '#6366f1',
+          life: 25,
+          maxLife: 25
+        });
+      }
     }
 
     this.birdX = this.px;
@@ -3559,7 +3674,10 @@ export class GameEngine {
       return;
     }
 
-    const netDamage = Math.max(1, damage - Math.floor(this.stats.defense / 2));
+    let netDamage = Math.max(1, damage - Math.floor(this.stats.defense / 2));
+    if (this.damageReductionBuffTimer > 0) {
+      netDamage = Math.max(1, Math.floor(netDamage * 0.5));
+    }
     this.pHP = Math.max(0, this.pHP - netDamage);
     this.callbacks.onHpChange(this.pHP, this.pMaxHP);
     this.pInvulnerableFrames = 60;
@@ -5621,6 +5739,173 @@ export class GameEngine {
         }
       }
 
+      if ((proj as any).type === 'tidal_wave') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + Math.random() * proj.height,
+            vx: (Math.random() - 0.5) * 3,
+            vy: -Math.random() * 3 - 1,
+            size: Math.random() * 6 + 3,
+            color: Math.random() > 0.5 ? '#06b6d4' : '#38bdf8',
+            life: 14,
+            maxLife: 14
+          });
+        }
+
+        const dist = Math.abs(proj.x - ((proj as any).startX || proj.x));
+        if (dist >= ((proj as any).rangeCap || 800) || this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2)) {
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 10, '#06b6d4');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+
+        if (!(proj as any).hitEnemyIds) (proj as any).hitEnemyIds = [];
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          if ((proj as any).hitEnemyIds.includes(enemy.id)) return;
+          if (
+            proj.x < enemy.x + enemy.width &&
+            proj.x + proj.width > enemy.x &&
+            proj.y < enemy.y + enemy.height &&
+            proj.y + proj.height > enemy.y
+          ) {
+            (proj as any).hitEnemyIds.push(enemy.id);
+            this.damageEnemy(enemy, proj.damage);
+            enemy.slowTimer = 120; // 2s slow (50% speed reduction)
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#06b6d4');
+            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, '🌊 SLOWED (2s)', '#06b6d4');
+          }
+        });
+        return;
+      }
+
+      if ((proj as any).type === 'ghost_boat') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + Math.random() * proj.width,
+            y: proj.y + Math.random() * proj.height,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2 - 1,
+            size: Math.random() * 7 + 3,
+            color: Math.random() > 0.5 ? '#14b8a6' : '#6366f1',
+            life: 18,
+            maxLife: 18
+          });
+        }
+
+        const hitTerrain = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2) ||
+                           this.checkPlatformOneWay(proj.x + proj.width / 2, proj.y + proj.height) ||
+                           proj.x < 0 || proj.x > this.levelWidth || proj.y > this.levelHeight;
+
+        let hitEnemy: Enemy | null = null;
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0 || hitEnemy) return;
+          if (
+            proj.x < enemy.x + enemy.width &&
+            proj.x + proj.width > enemy.x &&
+            proj.y < enemy.y + enemy.height &&
+            proj.y + proj.height > enemy.y
+          ) {
+            hitEnemy = enemy;
+          }
+        });
+
+        if (hitTerrain || hitEnemy) {
+          soundService.playHit();
+          this.screenShake = 25;
+          const impactX = proj.x + proj.width / 2;
+          const impactY = proj.y + proj.height / 2;
+
+          if (hitEnemy) {
+            this.damageEnemy(hitEnemy, proj.damage);
+          }
+
+          this.addFloatingText(impactX, impactY - 20, '☠️ GHOST SHIP EXPLOSION!', '#14b8a6');
+
+          // Split into 30 random shrapnel pieces within 400px radius
+          for (let s = 0; s < 30; s++) {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = Math.random() * 400;
+            const targetX = impactX + Math.cos(angle) * dist;
+            const targetY = impactY + Math.sin(angle) * dist * 0.4;
+            const spd = Math.random() * 8 + 4;
+            const sAngle = Math.atan2(targetY - impactY, targetX - impactX);
+
+            this.projectiles.push({
+              x: impactX,
+              y: impactY,
+              vx: Math.cos(sAngle) * spd,
+              vy: Math.sin(sAngle) * spd - (Math.random() * 3),
+              width: 14,
+              height: 14,
+              isEnemy: false,
+              damage: Math.ceil(this.stats.attack * 1.5),
+              color: '#06b6d4',
+              type: 'shrapnel' as any,
+              life: 45,
+              targetX,
+              targetY,
+              damageRadius: 50,
+              hasExploded: false
+            } as any);
+          }
+
+          this.projectiles.splice(index, 1);
+          return;
+        }
+        return;
+      }
+
+      if ((proj as any).type === 'shrapnel') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+        proj.vy += 0.25;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x,
+            y: proj.y,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2,
+            size: Math.random() * 4 + 2,
+            color: '#38bdf8',
+            life: 10,
+            maxLife: 10
+          });
+        }
+
+        const hitGround = this.isSolid(proj.x, proj.y) || this.checkPlatformOneWay(proj.x, proj.y) || (proj as any).life <= 1;
+        if (hitGround && !(proj as any).hasExploded) {
+          (proj as any).hasExploded = true;
+          const sX = proj.x;
+          const sY = proj.y;
+          const radius = (proj as any).damageRadius || 50;
+
+          // 50px AOE damage radius to surrounding foes
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - sX, ey - sY);
+            if (dist <= radius) {
+              this.damageEnemy(enemy, proj.damage);
+            }
+          });
+
+          this.spawnDustParticles(sX, sY, 8, '#06b6d4');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+        return;
+      }
+
       if ((proj as any).type === 'wisp_orb') {
         if ((proj as any).homingTimer > 0) {
           (proj as any).homingTimer--;
@@ -6283,6 +6568,23 @@ export class GameEngine {
       if (enemy.stunnedTimer && enemy.stunnedTimer > 0) {
         enemy.stunnedTimer--;
         return;
+      }
+
+      const slowMult = (enemy.slowTimer && enemy.slowTimer > 0) ? 0.5 : 1.0;
+      if (enemy.slowTimer && enemy.slowTimer > 0) {
+        enemy.slowTimer--;
+        if (this.frameCount % 10 === 0) {
+          this.particles.push({
+            x: enemy.x + Math.random() * enemy.width,
+            y: enemy.y + enemy.height - Math.random() * 8,
+            vx: (Math.random() - 0.5) * 2,
+            vy: -Math.random() * 2,
+            size: Math.random() * 4 + 2,
+            color: '#06b6d4',
+            life: 12,
+            maxLife: 12
+          });
+        }
       }
 
       let grounded = false;
@@ -9201,6 +9503,121 @@ export class GameEngine {
         this.ctx.fillStyle = '#e0f2fe';
         this.ctx.beginPath();
         this.ctx.arc(cx, cy, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
+      } else if ((proj as any).type === 'tidal_wave') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const w = proj.width;
+        const h = proj.height;
+        const isRight = proj.vx >= 0;
+
+        const waveGrad = this.ctx.createLinearGradient(proj.x, proj.y, proj.x + w, proj.y + h);
+        waveGrad.addColorStop(0, '#0284c7');
+        waveGrad.addColorStop(0.5, '#06b6d4');
+        waveGrad.addColorStop(1, '#38bdf8');
+
+        this.ctx.fillStyle = waveGrad;
+        this.ctx.beginPath();
+        if (isRight) {
+          this.ctx.moveTo(proj.x, proj.y + h);
+          this.ctx.quadraticCurveTo(proj.x + w * 0.4, proj.y - h * 0.4, proj.x + w, proj.y + h);
+        } else {
+          this.ctx.moveTo(proj.x + w, proj.y + h);
+          this.ctx.quadraticCurveTo(proj.x + w * 0.6, proj.y - h * 0.4, proj.x, proj.y + h);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffffff';
+        for (let f = 0; f < 5; f++) {
+          const fx = proj.x + Math.random() * w;
+          const fy = proj.y + Math.random() * (h * 0.6);
+          this.ctx.beginPath();
+          this.ctx.arc(fx, fy, Math.random() * 4 + 2, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        this.ctx.strokeStyle = '#e0f2fe';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.stroke();
+        this.ctx.restore();
+      } else if ((proj as any).type === 'ghost_boat') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const w = proj.width;
+        const h = proj.height;
+        const isRight = proj.vx >= 0;
+
+        const auraGrad = this.ctx.createRadialGradient(cx, cy, 5, cx, cy, w * 0.8);
+        auraGrad.addColorStop(0, 'rgba(20, 184, 166, 0.8)');
+        auraGrad.addColorStop(0.6, 'rgba(6, 182, 212, 0.4)');
+        auraGrad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+        this.ctx.fillStyle = auraGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, w * 0.8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#0f766e';
+        this.ctx.strokeStyle = '#14b8a6';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        if (isRight) {
+          this.ctx.moveTo(proj.x, proj.y + h * 0.4);
+          this.ctx.lineTo(proj.x + w * 0.8, proj.y + h * 0.4);
+          this.ctx.lineTo(proj.x + w, proj.y + h * 0.1);
+          this.ctx.lineTo(proj.x + w * 0.7, proj.y + h);
+          this.ctx.lineTo(proj.x + w * 0.1, proj.y + h);
+        } else {
+          this.ctx.moveTo(proj.x + w, proj.y + h * 0.4);
+          this.ctx.lineTo(proj.x + w * 0.2, proj.y + h * 0.4);
+          this.ctx.lineTo(proj.x, proj.y + h * 0.1);
+          this.ctx.lineTo(proj.x + w * 0.3, proj.y + h);
+          this.ctx.lineTo(proj.x + w * 0.9, proj.y + h);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#ccfbf1';
+        const mastX = isRight ? proj.x + w * 0.4 : proj.x + w * 0.6;
+        this.ctx.fillRect(mastX - 2, proj.y - h * 0.4, 4, h * 0.8);
+        this.ctx.beginPath();
+        if (isRight) {
+          this.ctx.moveTo(mastX, proj.y - h * 0.35);
+          this.ctx.lineTo(mastX + w * 0.35, proj.y - h * 0.1);
+          this.ctx.lineTo(mastX, proj.y + h * 0.1);
+        } else {
+          this.ctx.moveTo(mastX, proj.y - h * 0.35);
+          this.ctx.lineTo(mastX - w * 0.35, proj.y - h * 0.1);
+          this.ctx.lineTo(mastX, proj.y + h * 0.1);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.beginPath();
+        this.ctx.arc(mastX, proj.y + h * 0.65, 3.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
+      } else if ((proj as any).type === 'shrapnel') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const r = proj.width / 2;
+
+        const shrapGrad = this.ctx.createRadialGradient(cx, cy, 1, cx, cy, r * 1.4);
+        shrapGrad.addColorStop(0, '#ffffff');
+        shrapGrad.addColorStop(0.5, '#06b6d4');
+        shrapGrad.addColorStop(1, '#0f766e');
+
+        this.ctx.fillStyle = shrapGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, r * 1.4, 0, Math.PI * 2);
         this.ctx.fill();
 
         this.ctx.restore();
@@ -14095,6 +14512,7 @@ export class GameEngine {
     if (this.pInvulnerableFrames > 0) this.pInvulnerableFrames--;
     if (this.trampolineCooldown > 0) this.trampolineCooldown--;
     if (this.playerStunCooldown > 0) this.playerStunCooldown--;
+    if (this.damageReductionBuffTimer > 0) this.damageReductionBuffTimer--;
 
     if (this.isAttacking) {
       this.attackDuration--;

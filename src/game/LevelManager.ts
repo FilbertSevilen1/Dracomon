@@ -1,4 +1,5 @@
 import levelsData from './levels.json';
+import { levelStorageService } from '../services/levelStorage';
 
 export interface SubMapData {
   id: number;
@@ -54,7 +55,7 @@ export interface WorldData {
   stages: LevelData[];
 }
 
-const THEMES: Record<string, LevelTheme> = levelsData.themes as Record<string, LevelTheme>;
+const DEFAULT_THEMES: Record<string, LevelTheme> = levelsData.themes as Record<string, LevelTheme>;
 
 const ensureMinHeadroom = (grid?: string[]): string[] | undefined => {
   if (!grid || grid.length === 0) return grid;
@@ -79,67 +80,87 @@ const ensureMinHeadroom = (grid?: string[]): string[] | undefined => {
   return grid;
 };
 
-let globalCounter = 1;
+export const parseWorlds = (): WorldData[] => {
+  const custom = levelStorageService.getCustomData();
+  const themes = custom.themes || DEFAULT_THEMES;
+  const rawWorlds = custom.worlds || levelsData.worlds;
 
-export const WORLDS: WorldData[] = levelsData.worlds.map((worldRaw: any) => {
-  const worldTheme = THEMES[worldRaw.themeName] || THEMES.forest;
-  const totalStagesInWorld = worldRaw.stages.length;
+  let globalCounter = 1;
 
-  const stages: LevelData[] = worldRaw.stages.map((stgRaw: any) => {
-    const globalStageNum = globalCounter++;
-    const isFinalStage = stgRaw.stageInWorld === totalStagesInWorld;
-    const stageBoss = isFinalStage ? worldRaw.bossName : "None (Miniboss / Portal)";
+  return rawWorlds.map((worldRaw: any, wIndex: number) => {
+    const worldId = worldRaw.id || (wIndex + 1);
+    const worldTheme = themes[worldRaw.themeName] || themes.forest || DEFAULT_THEMES.forest;
+    const totalStagesInWorld = worldRaw.stages ? worldRaw.stages.length : 0;
 
-    const processedGrid = ensureMinHeadroom(stgRaw.grid);
-    const processedMaps = stgRaw.maps ? stgRaw.maps.map((m: SubMapData) => ({
-      ...m,
-      grid: ensureMinHeadroom(m.grid) || m.grid
-    })) : undefined;
+    const stages: LevelData[] = (worldRaw.stages || []).map((stgRaw: any, sIndex: number) => {
+      const globalStageNum = globalCounter++;
+      const stageInWorld = stgRaw.stageInWorld || (sIndex + 1);
+      const isFinalStage = stageInWorld === totalStagesInWorld;
+      const stageBoss = stgRaw.boss || (isFinalStage ? worldRaw.bossName : "None (Miniboss / Portal)");
+
+      const processedGrid = ensureMinHeadroom(stgRaw.grid);
+      const processedMaps = stgRaw.maps ? stgRaw.maps.map((m: SubMapData) => ({
+        ...m,
+        grid: ensureMinHeadroom(m.grid) || m.grid
+      })) : undefined;
+
+      return {
+        name: stgRaw.name || `World ${worldId}-${stageInWorld}: ${stgRaw.title || 'Stage'}`,
+        tileSize: stgRaw.tileSize || 40,
+        theme: worldTheme,
+        grid: processedGrid,
+        maps: processedMaps,
+        isUnderwater: stgRaw.isUnderwater,
+        isSurvivalMode: stgRaw.isSurvivalMode,
+        survivalDuration: stgRaw.survivalDuration,
+        description: stgRaw.description || '',
+        difficulty: stgRaw.difficulty || 'NORMAL',
+        diffClass: stgRaw.diffClass || 'bg-blue-100 text-blue-800 border-blue-300 font-mono',
+        boss: stageBoss,
+        icon: stgRaw.icon || '⚔️',
+        borderHover: stgRaw.borderHover || 'hover:border-blue-500',
+        color: stgRaw.color || 'blue',
+        worldId: worldId,
+        worldName: worldRaw.name || `World ${worldId}`,
+        stageInWorld: stageInWorld,
+        totalStagesInWorld,
+        rewardMultiplier: worldRaw.rewardMultiplier || 1,
+        globalStageNum
+      };
+    });
 
     return {
-      name: `World ${worldRaw.id}-${stgRaw.stageInWorld}: ${stgRaw.title}`,
-      tileSize: 40,
-      theme: worldTheme,
-      grid: processedGrid,
-      maps: processedMaps,
-      isUnderwater: stgRaw.isUnderwater,
-      isSurvivalMode: stgRaw.isSurvivalMode,
-      survivalDuration: stgRaw.survivalDuration,
-      description: stgRaw.description,
-      difficulty: stgRaw.difficulty,
-      diffClass: stgRaw.diffClass,
-      boss: stageBoss,
-      icon: stgRaw.icon,
-      borderHover: stgRaw.borderHover,
-      color: stgRaw.color,
-      worldId: worldRaw.id,
-      worldName: worldRaw.name,
-      stageInWorld: stgRaw.stageInWorld,
-      totalStagesInWorld,
-      rewardMultiplier: worldRaw.rewardMultiplier,
-      globalStageNum
+      id: worldId,
+      name: worldRaw.name || `World ${worldId}`,
+      themeName: worldRaw.themeName || 'forest',
+      icon: worldRaw.icon || '🌍',
+      color: worldRaw.color || 'emerald',
+      description: worldRaw.description || '',
+      rewardMultiplier: worldRaw.rewardMultiplier || 1,
+      bossName: worldRaw.bossName || 'Boss',
+      stages
     };
   });
+};
 
-  return {
-    id: worldRaw.id,
-    name: worldRaw.name,
-    themeName: worldRaw.themeName,
-    icon: worldRaw.icon,
-    color: worldRaw.color,
-    description: worldRaw.description,
-    rewardMultiplier: worldRaw.rewardMultiplier,
-    bossName: worldRaw.bossName,
-    stages
-  };
-});
+export let WORLDS: WorldData[] = parseWorlds();
+export let STAGES: LevelData[] = WORLDS.flatMap(w => w.stages);
 
-// Flat array of all stages across all 11 worlds for backwards compatibility
-export const STAGES: LevelData[] = WORLDS.flatMap(world => world.stages);
+export const refreshLevelManager = () => {
+  WORLDS = parseWorlds();
+  STAGES = WORLDS.flatMap(w => w.stages);
+};
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('dracoman_levels_updated', () => {
+    refreshLevelManager();
+  });
+}
 
 export const getLevel = (stageNum: number): LevelData => {
+  refreshLevelManager();
   const index = Math.max(1, Math.min(STAGES.length, stageNum)) - 1;
-  const stage = STAGES[index];
+  const stage = STAGES[index] || STAGES[0];
   return {
     ...stage,
     grid: stage.grid ? [...stage.grid] : undefined,
@@ -151,6 +172,7 @@ export const getLevel = (stageNum: number): LevelData => {
 };
 
 export const getWorld = (worldId: number): WorldData => {
+  refreshLevelManager();
   const world = WORLDS.find(w => w.id === worldId) || WORLDS[0];
   return world;
 };

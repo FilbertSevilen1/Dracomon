@@ -535,6 +535,36 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Krakenmon',
+      title: 'Abyssal Ocean Leviathan',
+      cost: 500,
+      role: 'Ocean Abyssal / Leviathan',
+      lore: 'Forged in the darkest abyssal depths of the oceanic trench. Krakenmon wields a heavy anchor for devastating melee smashes, summons an 800px Tidal Wave that slows enemies by 50%, and chokes out a Ghost Pirate Boat that splits into 30 shrapnel pieces while granting 6s 50% Damage Reduction.',
+      signatureSkill: 'Tidal Wave (800px Range • 2s 50% Slow Effect)',
+      ultimateSkill: 'Collision Course (100 Energy • Ghost Pirate Boat • 30 Shrapnel Split in 400px Radius • 50px AOE Radius • 6s 50% Damage Reduction Buff)',
+      color: 'teal',
+      tagColor: 'bg-teal-950 text-teal-300 border-teal-700 font-mono',
+      attackType: 'Heavy Anchor Melee Smash (140px Arc)',
+      hp: saveData.dracos['Krakenmon']?.hp || 24,
+      atk: saveData.dracos['Krakenmon']?.attack || 8,
+      def: saveData.dracos['Krakenmon']?.defense || 4,
+      spd: saveData.dracos['Krakenmon']?.speed || 7.0,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
+          <path d="M 30 65 Q 15 80 25 90 Q 32 85 36 72 Z" fill="#0d9488" stroke="#115e59" strokeWidth="1.5" />
+          <path d="M 70 65 Q 85 80 75 90 Q 68 85 64 72 Z" fill="#0d9488" stroke="#115e59" strokeWidth="1.5" />
+          <circle cx="50" cy="48" r="24" fill="#14b8a6" stroke="#0f766e" strokeWidth="2.5" />
+          <rect x="40" y="44" width="6" height="7" rx="2" fill="#fff" />
+          <rect x="54" y="44" width="6" height="7" rx="2" fill="#fff" />
+          <circle cx="43" cy="47.5" r="2" fill="#0284c7" />
+          <circle cx="57" cy="47.5" r="2" fill="#0284c7" />
+          <path d="M 50 56 L 50 68 M 44 64 Q 50 72 56 64" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
+        </svg>
+      ),
+    },
   ];
 
 

@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { SaveData } from '../types/game';
-import { Volume2, VolumeX, Trash2, Clipboard, Download, Upload, Check, AlertTriangle } from 'lucide-react';
+import { Volume2, VolumeX, Trash2, Clipboard, Download, Upload, Check, AlertTriangle, ShieldCheck } from 'lucide-react';
 import { soundService } from '../services/sound';
 
 interface SettingsModalProps {
@@ -21,6 +22,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onImportSave,
   onClose,
 }) => {
+  const router = useRouter();
   const [copied, setCopied] = useState(false);
   const [importText, setImportText] = useState('');
   const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
@@ -190,7 +192,17 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         {}
-        <div className="mt-8 flex justify-end">
+        <div className="mt-8 flex items-center justify-between">
+          <button
+            onClick={() => {
+              soundService.playClick();
+              onClose();
+              router.push('/admin');
+            }}
+            className="px-4 py-2.5 text-xs font-bold bg-amber-500 hover:bg-amber-600 text-stone-950 rounded-xl transition-all flex items-center gap-2 shadow-sm"
+          >
+            <ShieldCheck className="w-4 h-4" /> Admin Panel
+          </button>
           <button
             onClick={() => {
               soundService.playClick();

@@ -179,6 +179,16 @@ const DRACO_META: {
     colorClass: 'text-fuchsia-400 border-fuchsia-500 bg-fuchsia-950',
     bgGradient: 'from-fuchsia-600 via-purple-700 to-indigo-900',
   },
+  Krakenmon: {
+    role: 'Ocean Abyssal / Leviathan',
+    abilityName: 'Anchor Melee Smash & Tidal Wave',
+    abilityDesc: 'Smashes a heavy anchor in a 140px melee arc for 1.25x damage. Special summons an 800px water wave that slows foes by 50% for 2s.',
+    ultimateName: 'Collision Course (100 Energy)',
+    ultimateDesc: 'Hurls a Ghost Pirate Boat projectile that explodes on impact into 30 random shrapnel pieces (400px radius, 50px AOE radius) & grants 50% Damage Reduction for 6s.',
+    cost: 500,
+    colorClass: 'text-teal-600 border-teal-300 bg-teal-50',
+    bgGradient: 'from-teal-600 via-cyan-700 to-indigo-900',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
@@ -293,6 +303,52 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
         {/* Pixel Tetris Chest Core */}
         <rect x="44" y="54" width="12" height="4" fill="#eab308" />
         <rect x="48" y="58" width="4" height="8" fill="#eab308" />
+      </svg>
+    );
+  }
+
+  if (name === 'Krakenmon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="28" ry="6" fill="rgba(0,0,0,0.35)" />
+        {/* Ocean Halo Ring & Bio-Luminescent Water Droplets */}
+        <ellipse cx="50" cy="50" rx="44" ry="14" fill="none" stroke="#06b6d4" strokeWidth="1.5" strokeDasharray="5 3" opacity="0.85" />
+        <ellipse cx="50" cy="50" rx="36" ry="10" fill="none" stroke="#38bdf8" strokeWidth="1" strokeDasharray="3 3" opacity="0.6" />
+        <circle cx="12" cy="50" r="3" fill="#38bdf8" opacity="0.9" />
+        <circle cx="88" cy="50" r="3" fill="#38bdf8" opacity="0.9" />
+        <circle cx="50" cy="22" r="2.5" fill="#5eead4" opacity="0.9" />
+
+        {/* Outer Writhing Tentacles */}
+        <path d="M 26 62 Q 8 76 18 92 Q 28 86 32 70 Z" fill="#0f766e" stroke="#115e59" strokeWidth="1.5" />
+        <path d="M 36 66 Q 24 88 38 96 Q 44 88 42 72 Z" fill="#0d9488" stroke="#115e59" strokeWidth="1.5" />
+        <path d="M 64 66 Q 76 88 62 96 Q 56 88 58 72 Z" fill="#0d9488" stroke="#115e59" strokeWidth="1.5" />
+        <path d="M 74 62 Q 92 76 82 92 Q 72 86 68 70 Z" fill="#0f766e" stroke="#115e59" strokeWidth="1.5" />
+
+        {/* Tentacle Suction Cups */}
+        <circle cx="18" cy="80" r="2" fill="#99f6e4" />
+        <circle cx="22" cy="86" r="2" fill="#99f6e4" />
+        <circle cx="82" cy="80" r="2" fill="#99f6e4" />
+        <circle cx="78" cy="86" r="2" fill="#99f6e4" />
+
+        {/* Dragon Horns & Leviathan Crest */}
+        <path d="M 34 32 L 18 10 L 38 22 Z" fill="#0d9488" stroke="#5eead4" strokeWidth="1.5" />
+        <path d="M 66 32 L 82 10 L 62 22 Z" fill="#0d9488" stroke="#5eead4" strokeWidth="1.5" />
+        <path d="M 32 36 Q 50 14 68 36 Z" fill="#0f766e" stroke="#2dd4bf" strokeWidth="1.8" />
+
+        {/* Kraken Head Body */}
+        <circle cx="50" cy="46" r="22" fill="#14b8a6" stroke="#0f766e" strokeWidth="2.5" />
+
+        {/* Bio-Luminescent Glowing Eyes */}
+        <rect x="39" y="42" width="7" height="8" rx="3" fill="#ffffff" />
+        <rect x="54" y="42" width="7" height="8" rx="3" fill="#ffffff" />
+        <circle cx="42.5" cy="46" r="2.5" fill="#0284c7" />
+        <circle cx="57.5" cy="46" r="2.5" fill="#0284c7" />
+        <circle cx="43.5" cy="45" r="1" fill="#ffffff" />
+        <circle cx="58.5" cy="45" r="1" fill="#ffffff" />
+
+        {/* Heavy Pirate Anchor Emblem */}
+        <circle cx="50" cy="58" r="3" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+        <path d="M 50 58 L 50 72 M 42 67 Q 50 76 58 67 M 40 67 L 44 67 M 56 67 L 60 67" fill="none" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
       </svg>
     );
   }

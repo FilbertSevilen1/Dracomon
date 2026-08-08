@@ -813,7 +813,7 @@ export class StageGimmickManager {
       if (grid && grid.length > 0) {
         for (let r = 0; r < grid.length; r++) {
           for (let c = 0; c < (grid[r]?.length || 0); c++) {
-            if (grid[r][c] === 'H') {
+            if (grid[r][c] === 'm') {
               this.stageBlackHoles.push({
                 id: r * 1000 + c,
                 x: c * tileSize + tileSize / 2,

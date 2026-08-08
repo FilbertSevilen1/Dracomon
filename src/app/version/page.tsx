@@ -30,6 +30,22 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.3.0',
+    date: 'August 8, 2026',
+    tag: 'New Hero Krakenmon & Admin Level Management Suite',
+    badgeColor: 'bg-teal-600 text-white font-black shadow-sm',
+    summary: 'Features the new ocean abyssal dragon hero Krakenmon with Anchor Melee Smash, 800px Tidal Wave slow skill, 100-Energy Collision Course Ghost Pirate Boat ultimate with 30-shrapnel split & 6s 50% damage reduction buff, and the complete Admin Level & World Management Suite with interactive drag-and-drop stage map editor.',
+    highlights: [
+      'New Hero - Krakenmon: Ocean abyssal leviathan hero armed with a heavy anchor dealing 1.25x damage in a 140px melee arc with water and dust bursts.',
+      'Krakenmon Skill - Tidal Wave: Summons an 800px forward-traveling water wave that deals skill damage and slows all enemies hit by 50% for 2 seconds (slowTimer = 2.0s).',
+      'Krakenmon Ultimate - Collision Course (100 Energy): Chokes out a Ghost Pirate Boat projectile forward or towards the nearest enemy. On impact with ground or enemy, explodes into 30 random shrapnel pieces scattered in a 400px radius, each dealing 50px AOE damage to surrounding foes.',
+      '50% Damage Reduction Buff: Casting Collision Course immediately grants Krakenmon 50% Damage Reduction for 6 seconds (damageReductionBuffTimer = 6.0s), halving all incoming net damage.',
+      'Admin Portal Authentication: Secure Admin login screen accessible from Options Menu (default credentials: admin / admin123).',
+      'World & Stage Management Suite: Full CRUD management for worlds and stages (Add, Edit metadata, Reorder order via Move Up/Down, Delete).',
+      'Interactive Stage Grid Map Editor: Interactive canvas map editor featuring tile brush palette selection, pencil mark ADD with Left Click / Drag, and pencil mark REMOVE with Right Click / Drag.',
+    ],
+  },
+  {
     version: '0.2.6',
     date: 'August 1, 2026',
     tag: 'Pixel Realm, Pixelmon & Form-Shifting Blockman',

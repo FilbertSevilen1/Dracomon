@@ -196,6 +196,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Krakenmon: {
+      level: 1,
+      exp: 0,
+      hp: 24,
+      attack: 8,
+      defense: 4,
+      speed: 7.0,
+      jump: 11,
+      range: 6,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -398,6 +410,20 @@ export const storageService = {
             speed: 7.0,
             jump: 11,
             range: 8,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Krakenmon) {
+          parsed.dracos.Krakenmon = {
+            level: 1,
+            exp: 0,
+            hp: 24,
+            attack: 8,
+            defense: 4,
+            speed: 7.0,
+            jump: 11,
+            range: 6,
             unlocked: false,
             energyRegen: 1.0,
           };

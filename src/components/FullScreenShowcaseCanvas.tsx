@@ -116,6 +116,7 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
       { name: 'Lunarmon', main: '#1e1b4b', accent: '#312e81', belly: '#c7d2fe', detail: '#93c5fd' },
       { name: 'Azuremon', main: '#0284c7', accent: '#0369a1', belly: '#e0f2fe', detail: '#38bdf8' },
       { name: 'Pixelmon', main: '#a855f7', accent: '#3b0764', belly: '#c084fc', detail: '#f43f5e' },
+      { name: 'Krakenmon', main: '#14b8a6', accent: '#0f766e', belly: '#99f6e4', detail: '#06b6d4' },
     ];
 
     const resizeCanvas = () => {
