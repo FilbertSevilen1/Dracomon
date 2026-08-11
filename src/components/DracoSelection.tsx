@@ -189,6 +189,16 @@ const DRACO_META: {
     colorClass: 'text-teal-600 border-teal-300 bg-teal-50',
     bgGradient: 'from-teal-600 via-cyan-700 to-indigo-900',
   },
+  Butchermon: {
+    role: 'Blood / Melee Butcher',
+    abilityName: 'Butcher Cleaver & Rotten Flesh (Toggle)',
+    abilityDesc: 'Basic melee butcher knife slash (130px arc). Skill toggles a Rotten Flesh cloud damaging self and enemies with ramping damage over time, healing Butchermon for 25% of damage dealt.',
+    ultimateName: 'Butcher\'s Masterpiece (80 Energy)',
+    ultimateDesc: 'Fires an 800px wall-piercing hook chain. Hooking normal enemies pulls them to Butchermon (+200% Lifesteal for 6s); hooking bosses pulls Butchermon to the boss (+100% Lifesteal for 6s). Passive: +1 Max HP per kill.',
+    cost: 500,
+    colorClass: 'text-red-700 border-red-500 bg-red-950',
+    bgGradient: 'from-red-700 via-rose-800 to-slate-950',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
@@ -303,6 +313,28 @@ const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }
         {/* Pixel Tetris Chest Core */}
         <rect x="44" y="54" width="12" height="4" fill="#eab308" />
         <rect x="48" y="58" width="4" height="8" fill="#eab308" />
+      </svg>
+    );
+  }
+
+  if (name === 'Butchermon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="28" ry="6" fill="rgba(0,0,0,0.35)" />
+        {/* Rotten Flesh Toxic Haze */}
+        <circle cx="50" cy="50" r="42" fill="rgba(185, 28, 28, 0.15)" stroke="#ef4444" strokeWidth="1" strokeDasharray="4 2" />
+        <circle cx="50" cy="48" r="24" fill="#991b1b" stroke="#450a0a" strokeWidth="2.5" />
+        <rect x="40" y="44" width="6" height="7" rx="2" fill="#fff" />
+        <rect x="54" y="44" width="6" height="7" rx="2" fill="#fff" />
+        <circle cx="43" cy="47" r="2" fill="#dc2626" />
+        <circle cx="57" cy="47" r="2" fill="#dc2626" />
+        <ellipse cx="50" cy="58" rx="8" ry="10" fill="#fca5a5" />
+        {/* Heavy Butcher Cleaver in hand */}
+        <path d="M 68 32 L 88 18 L 96 32 L 76 46 Z" fill="#cbd5e1" stroke="#475569" strokeWidth="1.5" />
+        <rect x="66" y="34" width="10" height="4" fill="#78350f" rx="1" />
+        {/* Horns */}
+        <path d="M 46 26 Q 30 10 24 6 Q 38 16 48 24 Z" fill="#7f1d1d" stroke="#dc2626" strokeWidth="1.5" />
+        <path d="M 54 26 Q 70 10 76 6 Q 62 16 52 24 Z" fill="#7f1d1d" stroke="#dc2626" strokeWidth="1.5" />
       </svg>
     );
   }
@@ -549,7 +581,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   const coins = saveData.player.coins;
   const currentTier = saveData.tier || 'Free';
 
-  const dracoNames = Object.keys(saveData.dracos);
+  const dracoNames = Object.keys(saveData.dracos).sort((a, b) => a.localeCompare(b));
   const filteredDracos = dracoNames.filter((name) =>
     name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (DRACO_META[name]?.role || '').toLowerCase().includes(searchQuery.toLowerCase())
@@ -594,23 +626,38 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
 
           {onSwitchTier && (
             <div className="flex items-center gap-1 p-1 bg-stone-100 border border-stone-200 rounded-xl">
-              {(['Free', 'Basic', 'Premium'] as TierType[]).map((t) => (
-                <button
-                  key={t}
-                  onClick={() => {
-                    soundService.playClick();
-                    onSwitchTier(t);
-                  }}
-                  className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
-                    currentTier === t
-                      ? 'bg-amber-500 text-stone-950 shadow-sm'
-                      : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-                  }`}
-                >
-                  <Award className="w-3 h-3" />
-                  <span>{t}</span>
-                </button>
-              ))}
+              {(() => {
+                const TIER_RANKS: Record<TierType, number> = { Free: 0, Basic: 1, Premium: 2 };
+                const curRank = TIER_RANKS[currentTier] ?? 0;
+
+                return (['Free', 'Basic', 'Premium'] as TierType[]).map((t) => {
+                  const tRank = TIER_RANKS[t] ?? 0;
+                  const isCurrent = currentTier === t;
+                  const isLower = tRank < curRank;
+
+                  return (
+                    <button
+                      key={t}
+                      disabled={isCurrent || isLower}
+                      onClick={() => {
+                        soundService.playClick();
+                        onSwitchTier(t);
+                      }}
+                      title={isLower ? `Included in ${currentTier} Tier` : undefined}
+                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                        isCurrent
+                          ? 'bg-amber-500 text-stone-950 shadow-sm cursor-default'
+                          : isLower
+                          ? 'bg-stone-200/60 text-stone-400 cursor-not-allowed opacity-60'
+                          : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                      }`}
+                    >
+                      <Award className="w-3 h-3" />
+                      <span>{t}</span>
+                    </button>
+                  );
+                });
+              })()}
             </div>
           )}
 

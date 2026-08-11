@@ -1,10 +1,19 @@
 import levelsData from './levels.json';
 import { levelStorageService } from '../services/levelStorage';
 
+export interface LevelEntity {
+  id?: string;
+  type: string;
+  x: number; // grid cell column index
+  y: number; // grid cell row index
+  [key: string]: any;
+}
+
 export interface SubMapData {
   id: number;
   name?: string;
   grid: string[];
+  entities?: LevelEntity[];
 }
 
 export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core' | 'space' | 'pixel';
@@ -24,6 +33,7 @@ export interface LevelData {
   tileSize: number;
   theme: LevelTheme;
   grid?: string[];
+  entities?: LevelEntity[];
   maps?: SubMapData[];
   isUnderwater?: boolean;
   isSurvivalMode?: boolean;
@@ -57,8 +67,77 @@ export interface WorldData {
 
 const DEFAULT_THEMES: Record<string, LevelTheme> = levelsData.themes as Record<string, LevelTheme>;
 
-const ensureMinHeadroom = (grid?: string[]): string[] | undefined => {
-  if (!grid || grid.length === 0) return grid;
+/**
+ * Symbol to Entity Type mapping for legacy ASCII grid auto-migration.
+ */
+export const SYMBOL_TO_ENTITY_TYPE: Record<string, string> = {
+  '@': 'player_spawn',
+  'P': 'exit_portal',
+  'E': 'exit_portal',
+  'X': 'sub_portal',
+  'm': 'antimatter_vortex',
+  'c': 'coin',
+  'p': 'potion',
+  'h': 'heart',
+  'H': 'heart',
+  'u': 'upgrade_stone',
+  'U': 'upgrade_stone',
+  'T': 'trampoline',
+  'V': 'vine_trap',
+  'R': 'poison_spike',
+  'M': 'laser_cannon',
+  '1': 'slime',
+  '2': 'goblin_archer',
+  '3': 'fire_golem',
+  '4': 'bomb_thrower',
+  's': 'skeleton_archer',
+  'a': 'alien',
+  'f': 'fish',
+  'F': 'flying_wyvern',
+  'A': 'anchor',
+  'S': 'king_slime',
+  'B': 'miniboss',
+  'W': 'frost_wyvern',
+  'O': 'shadow_overlord',
+  'D': 'dragon_king',
+  'G': 'giant_wisp',
+  'L': 'lunar_goddess',
+};
+
+export const getEntityTypeFromSymbol = (char: string, isUnderwater = false): string | null => {
+  if (char === 'C') return isUnderwater ? 'scallop' : 'coin';
+  if (char === 'K') return isUnderwater ? 'killer_whale' : 'king_kong';
+  return SYMBOL_TO_ENTITY_TYPE[char] || null;
+};
+
+export const convertGridToEntities = (grid: string[], isUnderwater = false): { cleanedGrid: string[]; entities: LevelEntity[] } => {
+  if (!grid || grid.length === 0) return { cleanedGrid: [], entities: [] };
+  const cleanedGrid: string[] = [];
+  const entities: LevelEntity[] = [];
+
+  for (let r = 0; r < grid.length; r++) {
+    let rowStr = '';
+    for (let c = 0; c < grid[r].length; c++) {
+      const char = grid[r][c];
+      const entityType = getEntityTypeFromSymbol(char, isUnderwater);
+      if (entityType) {
+        entities.push({ type: entityType, x: c, y: r });
+        rowStr += '.'; // replace entity in grid with sky
+      } else {
+        rowStr += char;
+      }
+    }
+    cleanedGrid.push(rowStr);
+  }
+
+  return { cleanedGrid, entities };
+};
+
+const ensureMinHeadroomWithEntities = (
+  grid?: string[],
+  entities?: LevelEntity[]
+): { grid?: string[]; entities?: LevelEntity[] } => {
+  if (!grid || grid.length === 0) return { grid, entities };
   const width = grid[0].length;
   const emptyRow = '.'.repeat(width);
 
@@ -74,10 +153,12 @@ const ensureMinHeadroom = (grid?: string[]): string[] | undefined => {
   if (emptyCount < 8) {
     const needed = 8 - emptyCount;
     const padding = Array(needed).fill(emptyRow);
-    return [...padding, ...grid];
+    const newGrid = [...padding, ...grid];
+    const newEntities = entities ? entities.map(e => ({ ...e, y: e.y + needed })) : undefined;
+    return { grid: newGrid, entities: newEntities };
   }
 
-  return grid;
+  return { grid, entities };
 };
 
 export const parseWorlds = (): WorldData[] => {
@@ -98,17 +179,50 @@ export const parseWorlds = (): WorldData[] => {
       const isFinalStage = stageInWorld === totalStagesInWorld;
       const stageBoss = stgRaw.boss || (isFinalStage ? worldRaw.bossName : "None (Miniboss / Portal)");
 
-      const processedGrid = ensureMinHeadroom(stgRaw.grid);
-      const processedMaps = stgRaw.maps ? stgRaw.maps.map((m: SubMapData) => ({
-        ...m,
-        grid: ensureMinHeadroom(m.grid) || m.grid
-      })) : undefined;
+      let stgGrid = stgRaw.grid;
+      let stgEntities: LevelEntity[] | undefined = stgRaw.entities;
+
+      // Extract ASCII symbols from grid and merge with stgEntities
+      if (stgGrid) {
+        const converted = convertGridToEntities(stgGrid, stgRaw.isUnderwater);
+        if (converted.entities.length > 0) {
+          stgGrid = converted.cleanedGrid;
+          const existing = stgEntities || [];
+          const existingSet = new Set(existing.map(e => `${e.x},${e.y}`));
+          const newFromGrid = converted.entities.filter(e => !existingSet.has(`${e.x},${e.y}`));
+          stgEntities = [...existing, ...newFromGrid];
+        }
+      }
+
+      const { grid: processedGrid, entities: processedEntities } = ensureMinHeadroomWithEntities(stgGrid, stgEntities);
+
+      const processedMaps = stgRaw.maps ? stgRaw.maps.map((m: SubMapData) => {
+        let mGrid = m.grid;
+        let mEntities = m.entities;
+        if (mGrid) {
+          const converted = convertGridToEntities(mGrid, stgRaw.isUnderwater);
+          if (converted.entities.length > 0) {
+            mGrid = converted.cleanedGrid;
+            const existing = mEntities || [];
+            const existingSet = new Set(existing.map(e => `${e.x},${e.y}`));
+            const newFromGrid = converted.entities.filter(e => !existingSet.has(`${e.x},${e.y}`));
+            mEntities = [...existing, ...newFromGrid];
+          }
+        }
+        const { grid: pMGrid, entities: pMEntities } = ensureMinHeadroomWithEntities(mGrid, mEntities);
+        return {
+          ...m,
+          grid: pMGrid || m.grid,
+          entities: pMEntities || m.entities
+        };
+      }) : undefined;
 
       return {
         name: stgRaw.name || `World ${worldId}-${stageInWorld}: ${stgRaw.title || 'Stage'}`,
         tileSize: stgRaw.tileSize || 40,
         theme: worldTheme,
         grid: processedGrid,
+        entities: processedEntities,
         maps: processedMaps,
         isUnderwater: stgRaw.isUnderwater,
         isSurvivalMode: stgRaw.isSurvivalMode,
@@ -164,9 +278,11 @@ export const getLevel = (stageNum: number): LevelData => {
   return {
     ...stage,
     grid: stage.grid ? [...stage.grid] : undefined,
+    entities: stage.entities ? [...stage.entities] : undefined,
     maps: stage.maps ? stage.maps.map(m => ({
       ...m,
-      grid: [...m.grid]
+      grid: [...m.grid],
+      entities: m.entities ? [...m.entities] : undefined
     })) : undefined,
   };
 };
@@ -176,3 +292,4 @@ export const getWorld = (worldId: number): WorldData => {
   const world = WORLDS.find(w => w.id === worldId) || WORLDS[0];
   return world;
 };
+

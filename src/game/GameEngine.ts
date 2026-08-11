@@ -1,5 +1,5 @@
 import { PlayerStats, InventoryItem } from '../types/game';
-import { LevelData, getLevel } from './LevelManager';
+import { LevelData, LevelEntity, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
 
@@ -499,6 +499,21 @@ export class GameEngine {
   private azuremonBlastCounters: Map<string, number> = new Map();
   private azuremonSkillActive: boolean = false;
   private azuremonSkillTimer: number = 0;
+  private azuremonWingScale: number = 0;
+
+  private butchermonSkillToggle: boolean = false;
+  private butchermonSkillRampTimer: number = 0;
+  private butchermonHookActive: boolean = false;
+  private butchermonHookX: number = 0;
+  private butchermonHookY: number = 0;
+  private butchermonHookVx: number = 0;
+  private butchermonHookVy: number = 0;
+  private butchermonHookDist: number = 0;
+  private butchermonHookMaxDist: number = 800;
+  private butchermonLifestealBuffTimer: number = 0;
+  private butchermonLifestealPercent: number = 0;
+  private butchermonPullingEnemy: any = null;
+  private butchermonPullingSelfToBoss: any = null;
 
   private stageNum: number;
   private isDemoMode: boolean = false;
@@ -572,6 +587,424 @@ export class GameEngine {
       return this.level.maps[idx].grid;
     }
     return this.level.grid || [];
+  }
+
+  private getActiveEntities(): LevelEntity[] {
+    if (this.level.maps && this.level.maps.length > 0) {
+      const idx = Math.max(0, Math.min(this.level.maps.length - 1, this.currentSubMapIndex));
+      return this.level.maps[idx].entities || [];
+    }
+    return this.level.entities || [];
+  }
+
+  private spawnEntityFromType(type: string, c: number, r: number, preservePlayerPos = false, grid: string[] = []) {
+    const ts = this.level.tileSize;
+    const ex = c * ts;
+    const ey = r * ts;
+
+    if (type === 'player_spawn') {
+      if (!preservePlayerPos) {
+        this.px = ex;
+        this.py = ey + ts - this.pHeight;
+      }
+    } else if (type === 'exit_portal') {
+      this.exitPortalPos = { x: ex + ts / 2, y: ey + ts / 2 };
+    } else if (type === 'coin') {
+      this.pickups.push({ x: ex + 12, y: ey + 12, width: 16, height: 16, type: 'coin', amount: 5, collected: false });
+    } else if (type === 'potion') {
+      this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'potion', amount: 1, collected: false });
+    } else if (type === 'heart') {
+      this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'heart', amount: 1, collected: false });
+    } else if (type === 'upgrade_stone') {
+      this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'upgrade_stone', amount: 1, collected: false });
+    } else if (type === 'flying_wyvern') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey,
+        vx: -2.0,
+        vy: 0,
+        width: 34,
+        height: 28,
+        type: 'flying_wyvern',
+        hp: 15,
+        maxHp: 15,
+        attack: 4,
+        defense: 1,
+        facing: -1,
+        shootCooldown: 0,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'fish') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey,
+        vx: -2.2,
+        vy: 0,
+        width: 32,
+        height: 22,
+        type: 'fish',
+        hp: 12,
+        maxHp: 12,
+        attack: 3,
+        defense: 1,
+        facing: -1,
+        shootCooldown: 0,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'anchor') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey,
+        vx: 0,
+        vy: 2.0,
+        width: 64,
+        height: 80,
+        type: 'anchor',
+        hp: 999,
+        maxHp: 999,
+        attack: 10,
+        defense: 99,
+        facing: 1,
+        shootCooldown: 0,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'scallop') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 32,
+        vx: 0,
+        vy: 0,
+        width: 36,
+        height: 32,
+        type: 'scallop',
+        hp: 40,
+        maxHp: 40,
+        attack: 9999,
+        defense: 10,
+        facing: 1,
+        shootCooldown: 0,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'killer_whale') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey,
+        vx: -3.0,
+        vy: 0,
+        width: 80,
+        height: 50,
+        type: 'killer_whale',
+        hp: 950,
+        maxHp: 950,
+        attack: 22,
+        defense: 12,
+        facing: -1,
+        shootCooldown: 60,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Leviathan Orca',
+        suckCooldown: 240,
+        suckTimer: 0,
+      });
+    } else if (type === 'king_kong') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey - 24,
+        vx: -2.5,
+        vy: 0,
+        width: 76,
+        height: 64,
+        type: 'king_kong',
+        hp: 160,
+        maxHp: 160,
+        attack: 10,
+        defense: 5,
+        facing: -1,
+        shootCooldown: 90,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Primordial King Kong',
+      });
+    } else if (type === 'slime') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 24,
+        vx: -1.2,
+        vy: 0,
+        width: 32,
+        height: 24,
+        type: 'slime',
+        hp: 8 + (grid.length * 2),
+        maxHp: 8 + (grid.length * 2),
+        attack: 2,
+        defense: 1,
+        facing: -1,
+        shootCooldown: 0,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'goblin_archer') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 6,
+        y: ey + ts - 36,
+        vx: 0,
+        vy: 0,
+        width: 28,
+        height: 36,
+        type: 'goblin_archer',
+        hp: 12 + (grid.length * 3),
+        maxHp: 12 + (grid.length * 3),
+        attack: 3,
+        defense: 1,
+        facing: -1,
+        shootCooldown: 80,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'fire_golem') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 44,
+        vx: -0.8,
+        vy: 0,
+        width: 36,
+        height: 44,
+        type: 'fire_golem',
+        hp: 30,
+        maxHp: 30,
+        attack: 5,
+        defense: 4,
+        facing: -1,
+        shootCooldown: 0,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'bomb_thrower') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 36,
+        vx: -0.5,
+        vy: 0,
+        width: 32,
+        height: 36,
+        type: 'bomb_thrower' as any,
+        hp: 40 + (grid.length * 4),
+        maxHp: 40 + (grid.length * 4),
+        attack: 12,
+        defense: 6,
+        facing: -1,
+        shootCooldown: 120,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'king_slime') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 48,
+        vx: -0.6,
+        vy: 0,
+        width: 60,
+        height: 48,
+        type: 'king_slime',
+        hp: 250,
+        maxHp: 250,
+        attack: 10,
+        defense: 5,
+        facing: -1,
+        shootCooldown: 90,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'King Slime Lord'
+      });
+    } else if (type === 'miniboss') {
+      const isStage2 = this.level.name.includes('Stage 2');
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 64,
+        vx: -0.5,
+        vy: 0,
+        width: 56,
+        height: 64,
+        type: 'miniboss',
+        hp: isStage2 ? 350 : 500,
+        maxHp: isStage2 ? 350 : 500,
+        attack: isStage2 ? 8 : 17,
+        defense: isStage2 ? 6 : 9,
+        facing: -1,
+        shootCooldown: 100,
+        state: 'patrol',
+        animFrame: 0,
+        name: isStage2 ? 'Sentinel Archdemon' : 'Dracoguard Fire Lord'
+      });
+    } else if (type === 'frost_wyvern') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 60,
+        vx: -0.6,
+        vy: 0,
+        width: 68,
+        height: 60,
+        type: 'frost_wyvern',
+        hp: 800,
+        maxHp: 800,
+        attack: 16,
+        defense: 6,
+        facing: -1,
+        shootCooldown: 80,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Frostbite Wyvern'
+      });
+    } else if (type === 'shadow_overlord') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 68,
+        vx: -0.7,
+        vy: 0,
+        width: 72,
+        height: 68,
+        type: 'shadow_overlord',
+        hp: 1200,
+        maxHp: 1200,
+        attack: 28,
+        defense: 16,
+        facing: -1,
+        shootCooldown: 70,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Shadow Overlord'
+      });
+    } else if (type === 'dragon_king') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 80,
+        vx: -0.8,
+        vy: 0,
+        width: 88,
+        height: 80,
+        type: 'dragon_king',
+        hp: 1400,
+        maxHp: 1400,
+        attack: 30,
+        defense: 22,
+        facing: -1,
+        shootCooldown: 90,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'PRIMORDIAL DRAGON KING'
+      });
+    } else if (type === 'skeleton_archer') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 38,
+        vx: 0,
+        vy: 0,
+        width: 32,
+        height: 38,
+        type: 'skeleton_archer',
+        hp: 50,
+        maxHp: 50,
+        attack: 12,
+        defense: 6,
+        facing: -1,
+        shootCooldown: 60,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Skeleton Archer',
+        isBonePile: false,
+        respawnTimer: 0,
+        hasRevived: false
+      });
+    } else if (type === 'alien') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 40,
+        vx: -0.6,
+        vy: 0,
+        width: 36,
+        height: 40,
+        type: 'alien' as any,
+        hp: 80,
+        maxHp: 80,
+        attack: 14,
+        defense: 5,
+        facing: -1,
+        shootCooldown: 180,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Alien Laser Sniper',
+      });
+    } else if (type === 'giant_wisp') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 0,
+        y: ey - 50,
+        vx: -0.7,
+        vy: 0,
+        width: 90,
+        height: 90,
+        type: 'giant_wisp' as any,
+        hp: 2200,
+        maxHp: 2200,
+        attack: 38,
+        defense: 22,
+        facing: -1,
+        shootCooldown: 90,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'GIANT WISP OVERLORD',
+        wispOrbitAngle: 0,
+        wispDetonating: false,
+        wispDetonationTimer: 0,
+      });
+    } else if (type === 'lunar_goddess') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 80,
+        vx: -0.5,
+        vy: 0,
+        width: 72,
+        height: 80,
+        type: 'lunar_goddess',
+        hp: 2600,
+        maxHp: 2600,
+        attack: 50,
+        defense: 25,
+        facing: -1,
+        shootCooldown: 80,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'LUNAR GODDESS',
+        beamTimer: 0,
+        beamTargetX: 0,
+        beamTargetY: 0,
+        beamEndX: 0,
+        beamEndY: 0,
+        beamBarrageActive: false
+      });
+    }
   }
 
   private setGridTile(r: number, c: number, char: string) {
@@ -740,452 +1173,115 @@ export class GameEngine {
       this.survivalWaveTimer = 0;
     }
 
-    const ts = this.level.tileSize;
-    for (let r = 0; r < grid.length; r++) {
-      for (let c = 0; c < grid[r].length; c++) {
-        if (grid[r][c] === 'P') {
-          this.exitPortalPos = { x: c * ts + ts / 2, y: r * ts + ts / 2 };
-          break;
-        }
+    let playerSpawnFound = false;
+    const activeEntities = this.getActiveEntities();
+    if (activeEntities && activeEntities.length > 0) {
+      for (const ent of activeEntities) {
+        if (ent.type === 'player_spawn') playerSpawnFound = true;
+        this.spawnEntityFromType(ent.type, ent.x, ent.y, preservePlayerPos, grid);
       }
     }
+
+    // Always scan grid for any unextracted ASCII entity symbols as well
+    const ts = this.level.tileSize;
     for (let r = 0; r < grid.length; r++) {
       const row = grid[r];
       for (let c = 0; c < row.length; c++) {
         const char = row[c];
-        const ex = c * ts;
-        const ey = r * ts;
-
-        if (char === '@' && !preservePlayerPos) {
-          this.px = ex;
-          this.py = ey + ts - this.pHeight;
+        if (char === '@') {
+          playerSpawnFound = true;
+          this.spawnEntityFromType('player_spawn', c, r, preservePlayerPos, grid);
         } else if (char === 'c' || (char === 'C' && !this.level.isUnderwater)) {
-          this.pickups.push({ x: ex + 12, y: ey + 12, width: 16, height: 16, type: 'coin', amount: 5, collected: false });
+          this.spawnEntityFromType('coin', c, r, preservePlayerPos, grid);
         } else if (char === 'p') {
-          this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'potion', amount: 1, collected: false });
+          this.spawnEntityFromType('potion', c, r, preservePlayerPos, grid);
         } else if (char === 'h' || char === 'H') {
-          this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'heart', amount: 1, collected: false });
+          this.spawnEntityFromType('heart', c, r, preservePlayerPos, grid);
         } else if (char === 'u' || char === 'U') {
-          this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'upgrade_stone', amount: 1, collected: false });
+          this.spawnEntityFromType('upgrade_stone', c, r, preservePlayerPos, grid);
         } else if (char === 'F') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex,
-            y: ey,
-            vx: -2.0,
-            vy: 0,
-            width: 34,
-            height: 28,
-            type: 'flying_wyvern',
-            hp: 15,
-            maxHp: 15,
-            attack: 4,
-            defense: 1,
-            facing: -1,
-            shootCooldown: 0,
-            state: 'patrol',
-            animFrame: 0,
-          });
+          this.spawnEntityFromType('flying_wyvern', c, r, preservePlayerPos, grid);
         } else if (char === 'f') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex,
-            y: ey,
-            vx: -2.2,
-            vy: 0,
-            width: 32,
-            height: 22,
-            type: 'fish',
-            hp: 12,
-            maxHp: 12,
-            attack: 3,
-            defense: 1,
-            facing: -1,
-            shootCooldown: 0,
-            state: 'patrol',
-            animFrame: 0,
-          });
+          this.spawnEntityFromType('fish', c, r, preservePlayerPos, grid);
         } else if (char === 'A') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex,
-            y: ey,
-            vx: 0,
-            vy: 2.0,
-            width: 64,
-            height: 80,
-            type: 'anchor',
-            hp: 999,
-            maxHp: 999,
-            attack: 10,
-            defense: 99,
-            facing: 1,
-            shootCooldown: 0,
-            state: 'patrol',
-            animFrame: 0,
-          });
+          this.spawnEntityFromType('anchor', c, r, preservePlayerPos, grid);
         } else if (char === 'C' && this.level.isUnderwater) {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 32,
-            vx: 0,
-            vy: 0,
-            width: 36,
-            height: 32,
-            type: 'scallop',
-            hp: 40,
-            maxHp: 40,
-            attack: 9999,
-            defense: 10,
-            facing: 1,
-            shootCooldown: 0,
-            state: 'patrol',
-            animFrame: 0,
-          });
-        } else if (char === 'K') {
-          if (this.level.isUnderwater) {
-            this.enemies.push({
-              id: this.enemyIdCounter++,
-              x: ex,
-              y: ey,
-              vx: -3.0,
-              vy: 0,
-              width: 80,
-              height: 50,
-              type: 'killer_whale',
-              hp: 950,
-              maxHp: 950,
-              attack: 22,
-              defense: 12,
-              facing: -1,
-              shootCooldown: 60,
-              state: 'patrol',
-              animFrame: 0,
-              name: 'Leviathan Orca',
-              suckCooldown: 240,
-              suckTimer: 0,
-            });
-          } else {
-            this.enemies.push({
-              id: this.enemyIdCounter++,
-              x: ex,
-              y: ey - 24,
-              vx: -2.5,
-              vy: 0,
-              width: 76,
-              height: 64,
-              type: 'king_kong',
-              hp: 160,
-              maxHp: 160,
-              attack: 10,
-              defense: 5,
-              facing: -1,
-              shootCooldown: 90,
-              state: 'patrol',
-              animFrame: 0,
-              name: 'Primordial King Kong',
-            });
-          }
+          this.spawnEntityFromType('scallop', c, r, preservePlayerPos, grid);
+        } else if (char === 'K' && this.level.isUnderwater) {
+          this.spawnEntityFromType('killer_whale', c, r, preservePlayerPos, grid);
+        } else if (char === 'K' && !this.level.isUnderwater) {
+          this.spawnEntityFromType('king_kong', c, r, preservePlayerPos, grid);
         } else if (char === '1') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 4,
-            y: ey + ts - 24,
-            vx: -1.2,
-            vy: 0,
-            width: 32,
-            height: 24,
-            type: 'slime',
-            hp: 8 + (grid.length * 2),
-            maxHp: 8 + (grid.length * 2),
-            attack: 2,
-            defense: 1,
-            facing: -1,
-            shootCooldown: 0,
-            state: 'patrol',
-            animFrame: 0,
-          });
+          this.spawnEntityFromType('slime', c, r, preservePlayerPos, grid);
         } else if (char === '2') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 6,
-            y: ey + ts - 36,
-            vx: 0,
-            vy: 0,
-            width: 28,
-            height: 36,
-            type: 'goblin_archer',
-            hp: 12 + (grid.length * 3),
-            maxHp: 12 + (grid.length * 3),
-            attack: 3,
-            defense: 1,
-            facing: -1,
-            shootCooldown: 80,
-            state: 'patrol',
-            animFrame: 0,
-          });
+          this.spawnEntityFromType('goblin_archer', c, r, preservePlayerPos, grid);
         } else if (char === '3') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 44,
-            vx: -0.8,
-            vy: 0,
-            width: 36,
-            height: 44,
-            type: 'fire_golem',
-            hp: 30,
-            maxHp: 30,
-            attack: 5,
-            defense: 4,
-            facing: -1,
-            shootCooldown: 0,
-            state: 'patrol',
-            animFrame: 0,
-          });
+          this.spawnEntityFromType('fire_golem', c, r, preservePlayerPos, grid);
         } else if (char === '4') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 4,
-            y: ey + ts - 36,
-            vx: -0.5,
-            vy: 0,
-            width: 32,
-            height: 36,
-            type: 'bomb_thrower' as any,
-            hp: 40 + (grid.length * 4),
-            maxHp: 40 + (grid.length * 4),
-            attack: 12,
-            defense: 6,
-            facing: -1,
-            shootCooldown: 120,
-            state: 'patrol',
-            animFrame: 0,
-          });
+          this.spawnEntityFromType('bomb_thrower', c, r, preservePlayerPos, grid);
         } else if (char === 'S') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 48,
-            vx: -0.6,
-            vy: 0,
-            width: 60,
-            height: 48,
-            type: 'king_slime',
-            hp: 250,
-            maxHp: 250,
-            attack: 10,
-            defense: 5,
-            facing: -1,
-            shootCooldown: 90,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'King Slime Lord'
-          });
+          this.spawnEntityFromType('king_slime', c, r, preservePlayerPos, grid);
         } else if (char === 'B') {
-          const isStage2 = this.level.name.includes('Stage 2');
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 64,
-            vx: -0.5,
-            vy: 0,
-            width: 56,
-            height: 64,
-            type: 'miniboss',
-            hp: isStage2 ? 350 : 500,
-            maxHp: isStage2 ? 350 : 500,
-            attack: isStage2 ? 8 : 17,
-            defense: isStage2 ? 6 : 9,
-            facing: -1,
-            shootCooldown: 100,
-            state: 'patrol',
-            animFrame: 0,
-            name: isStage2 ? 'Sentinel Archdemon' : 'Dracoguard Fire Lord'
-          });
+          this.spawnEntityFromType('miniboss', c, r, preservePlayerPos, grid);
         } else if (char === 'W') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 60,
-            vx: -0.6,
-            vy: 0,
-            width: 68,
-            height: 60,
-            type: 'frost_wyvern',
-            hp: 800,
-            maxHp: 800,
-            attack: 16,
-            defense: 6,
-            facing: -1,
-            shootCooldown: 80,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'Frostbite Wyvern'
-          });
+          this.spawnEntityFromType('frost_wyvern', c, r, preservePlayerPos, grid);
         } else if (char === 'O') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 68,
-            vx: -0.7,
-            vy: 0,
-            width: 72,
-            height: 68,
-            type: 'shadow_overlord',
-            hp: 1200,
-            maxHp: 1200,
-            attack: 28,
-            defense: 16,
-            facing: -1,
-            shootCooldown: 70,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'Shadow Overlord'
-          });
+          this.spawnEntityFromType('shadow_overlord', c, r, preservePlayerPos, grid);
         } else if (char === 'D') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 80,
-            vx: -0.8,
-            vy: 0,
-            width: 88,
-            height: 80,
-            type: 'dragon_king',
-            hp: 1400,
-            maxHp: 1400,
-            attack: 30,
-            defense: 22,
-            facing: -1,
-            shootCooldown: 90,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'PRIMORDIAL DRAGON KING'
-          });
+          this.spawnEntityFromType('dragon_king', c, r, preservePlayerPos, grid);
         } else if (char === 's') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 4,
-            y: ey + ts - 38,
-            vx: 0,
-            vy: 0,
-            width: 32,
-            height: 38,
-            type: 'skeleton_archer',
-            hp: 50,
-            maxHp: 50,
-            attack: 12,
-            defense: 6,
-            facing: -1,
-            shootCooldown: 60,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'Skeleton Archer',
-            isBonePile: false,
-            respawnTimer: 0,
-            hasRevived: false
-          });
-        } else if (char === 'K') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 86,
-            vx: -0.9,
-            vy: 0,
-            width: 86,
-            height: 86,
-            type: 'king_kong',
-            hp: 2000,
-            maxHp: 2000,
-            attack: 42,
-            defense: 30,
-            facing: -1,
-            shootCooldown: 120,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'PRIMORDIAL KING KONG',
-            jumpCooldown: 120,
-            jumpCount: 0,
-            isLeaping: false
-          });
+          this.spawnEntityFromType('skeleton_archer', c, r, preservePlayerPos, grid);
         } else if (char === 'a') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 4,
-            y: ey + ts - 40,
-            vx: -0.6,
-            vy: 0,
-            width: 36,
-            height: 40,
-            type: 'alien' as any,
-            hp: 80,
-            maxHp: 80,
-            attack: 14,
-            defense: 5,
-            facing: -1,
-            shootCooldown: 180,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'Alien Laser Sniper',
-          });
+          this.spawnEntityFromType('alien', c, r, preservePlayerPos, grid);
         } else if (char === 'G') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 0,
-            y: ey - 50,
-            vx: -0.7,
-            vy: 0,
-            width: 90,
-            height: 90,
-            type: 'giant_wisp' as any,
-            hp: 2200,
-            maxHp: 2200,
-            attack: 38,
-            defense: 22,
-            facing: -1,
-            shootCooldown: 90,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'GIANT WISP OVERLORD',
-            wispOrbitAngle: 0,
-            wispDetonating: false,
-            wispDetonationTimer: 0,
-          });
+          this.spawnEntityFromType('giant_wisp', c, r, preservePlayerPos, grid);
         } else if (char === 'L') {
-          this.enemies.push({
-            id: this.enemyIdCounter++,
-            x: ex + 2,
-            y: ey + ts - 80,
-            vx: -0.5,
-            vy: 0,
-            width: 72,
-            height: 80,
-            type: 'lunar_goddess',
-            hp: 2600,
-            maxHp: 2600,
-            attack: 50,
-            defense: 25,
-            facing: -1,
-            shootCooldown: 80,
-            state: 'patrol',
-            animFrame: 0,
-            name: 'LUNAR GODDESS',
-            beamTimer: 0,
-            beamTargetX: 0,
-            beamTargetY: 0,
-            beamEndX: 0,
-            beamEndY: 0,
-            beamBarrageActive: false
-          });
+          this.spawnEntityFromType('lunar_goddess', c, r, preservePlayerPos, grid);
         }
+      }
+    }
+
+    // Fallback: If player spawn position was not explicitly found, place player safely on solid ground
+    if (!preservePlayerPos && !playerSpawnFound) {
+      let groundFound = false;
+      for (let r = 0; r < grid.length; r++) {
+        if (grid[r] && (grid[r][4] === '#' || grid[r][4] === '=')) {
+          this.px = 4 * ts;
+          this.py = r * ts - this.pHeight;
+          groundFound = true;
+          break;
+        }
+      }
+      if (!groundFound && grid.length > 0) {
+        this.px = 4 * ts;
+        this.py = (grid.length - 2) * ts - this.pHeight;
       }
     }
 
     const isFinalStage = this.level.stageInWorld === this.level.totalStagesInWorld;
     if (!isFinalStage) {
       this.enemies = this.enemies.filter(e => !this.isBossType(e.type));
+    }
+
+    // Ensure exitPortalPos is always set even if not specified in entities or grid
+    if (!this.exitPortalPos) {
+      const ts = this.level.tileSize;
+      let foundPortal = false;
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < grid[r].length; c++) {
+          if (grid[r][c] === 'P' || grid[r][c] === 'E') {
+            this.exitPortalPos = { x: c * ts + ts / 2, y: r * ts + ts / 2 };
+            foundPortal = true;
+            break;
+          }
+        }
+        if (foundPortal) break;
+      }
+      if (!this.exitPortalPos && grid.length > 0) {
+        const exitC = Math.max(0, (grid[0]?.length || 100) - 3);
+        const exitR = Math.max(0, (grid.length || 23) - 3);
+        this.exitPortalPos = { x: exitC * ts + ts / 2, y: exitR * ts + ts / 2 };
+      }
     }
 
     // Enable exit portal immediately if there is no boss or miniboss on the map
@@ -1792,6 +1888,31 @@ export class GameEngine {
         });
       }
       this.addFloatingText(slashX, slashY - 15, '⚓ ANCHOR SMASH', '#06b6d4');
+    } else if (this.selectedDraco === 'Butchermon') {
+      soundService.playHit();
+      const slashX = this.px + (this.pFacing === 1 ? this.pWidth + 10 : -10);
+      const slashY = this.py + this.pHeight / 2;
+      this.attackDuration = 10;
+      this.attackCooldown = 18;
+      const cleaverDmg = Math.ceil(this.stats.attack * 1.2);
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+        const dist = Math.hypot(ex - slashX, ey - slashY);
+        const inFront = (this.pFacing === 1 && ex >= this.px - 30) || (this.pFacing === -1 && ex <= this.px + this.pWidth + 30);
+        if (dist <= 130 && inFront) {
+          this.damageEnemy(enemy, cleaverDmg);
+          this.spawnDustParticles(ex, ey, 10, '#dc2626');
+          this.spawnDustParticles(ex, ey, 8, '#7f1d1d');
+          if (this.butchermonLifestealBuffTimer > 0) {
+            const heal = Math.max(1, Math.floor(cleaverDmg * this.butchermonLifestealPercent));
+            this.pHP = Math.min(this.pMaxHP, this.pHP + heal);
+            this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, `+${heal} HP (LIFESTEAL)`, '#4ade80');
+          }
+        }
+      });
     } else {
       soundService.playHit();
       // Default / Jumpmon melee reach doubled: extra width +48 (from +24)
@@ -2414,6 +2535,16 @@ export class GameEngine {
           maxLife: 20
         });
       }
+    } else if (this.selectedDraco === 'Butchermon') {
+      this.butchermonSkillToggle = !this.butchermonSkillToggle;
+      if (this.butchermonSkillToggle) {
+        soundService.playShoot();
+        this.butchermonSkillRampTimer = 0;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, '🥩 ROTTEN FLESH ACTIVATED!', '#ef4444');
+      } else {
+        soundService.playHit();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, '🚫 ROTTEN FLESH DEACTIVATED', '#94a3b8');
+      }
     }
   }
 
@@ -2578,6 +2709,7 @@ export class GameEngine {
       case 'Azuremon': return 160;
       case 'Pixelmon': return 120;
       case 'Krakenmon': return 100;
+      case 'Butchermon': return 80;
       default: return 100;
     }
   }
@@ -2603,6 +2735,7 @@ export class GameEngine {
       case 'Azuremon': return 'Burst Stream of Catastrophe';
       case 'Pixelmon': return 'Mega Pixelmon';
       case 'Krakenmon': return 'Collision Course';
+      case 'Butchermon': return 'Butcher\'s Masterpiece';
       default: return 'Ultimate';
     }
   }
@@ -2624,6 +2757,7 @@ export class GameEngine {
       case 'Azuremon': return 'Celestial Cataclysm... BURST STREAM OF CATASTROPHE!';
       case 'Pixelmon': return '8-Bit Power... MEGA PIXELMON!';
       case 'Krakenmon': return 'Submerge into the abyssal depths... COLLISION COURSE!';
+      case 'Butchermon': return 'Fresh Meat... BUTCHER\'S MASTERPIECE!';
       default: return 'Unleash full power!';
     }
   }
@@ -3095,12 +3229,13 @@ export class GameEngine {
       soundService.playAzuremonCharge(false);
       this.azuremonUltActive = true;
       this.azuremonUltPhase = 'channeling';
-      this.azuremonUltChannelTimer = 30; // 0.5 seconds channel (30 frames)
+      this.azuremonUltChannelTimer = 36; // ~0.6 seconds channel (36 frames)
       this.azuremonUltTimer = 240; // 4 seconds beam duration (240 frames)
       this.azuremonUltStartX = this.px;
       this.azuremonUltStartY = this.py;
       this.azuremonUltBeamAngle = this.pFacing === 1 ? 0 : Math.PI; // Shoots horizontally to the front!
       this.azuremonBlastCounters.clear();
+      this.azuremonWingScale = 0;
 
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '🌌 BURST STREAM OF CATASTROPHE!', '#38bdf8');
       this.screenShake = 35;
@@ -3166,6 +3301,35 @@ export class GameEngine {
           maxLife: 25
         });
       }
+    } else if (this.selectedDraco === 'Butchermon') {
+      soundService.playShoot();
+      this.butchermonHookActive = true;
+      this.butchermonHookX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
+      this.butchermonHookY = this.py + 16;
+      this.butchermonHookVx = this.pFacing * 22;
+      this.butchermonHookVy = 0;
+      this.butchermonHookDist = 0;
+      this.butchermonHookMaxDist = 800;
+      this.butchermonPullingEnemy = null;
+      this.butchermonPullingSelfToBoss = null;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '🪝 BUTCHER\'S MASTERPIECE (800px HOOK)!', '#ef4444');
+      this.screenShake = 30;
+
+      for (let p = 0; p < 25; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 5 + 2,
+          color: p % 2 === 0 ? '#dc2626' : '#7f1d1d',
+          life: 20,
+          maxLife: 20
+        });
+      }
     }
 
     this.birdX = this.px;
@@ -3198,6 +3362,13 @@ export class GameEngine {
     } else {
       enemy.hp -= damageDealt;
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y, `-${damageDealt}`, '#ef4444');
+    }
+
+    if (this.selectedDraco === 'Butchermon' && this.butchermonLifestealBuffTimer > 0) {
+      const lifestealHeal = Math.max(1, Math.floor(damageDealt * this.butchermonLifestealPercent));
+      this.pHP = Math.min(this.pMaxHP, this.pHP + lifestealHeal);
+      this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, `+${lifestealHeal} HP (${Math.round(this.butchermonLifestealPercent * 100)}% LIFESTEAL)`, '#4ade80');
     }
 
     soundService.playHit();
@@ -3607,6 +3778,13 @@ export class GameEngine {
     if (!this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
       this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + 15);
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
+    }
+
+    if (this.selectedDraco === 'Butchermon') {
+      this.pMaxHP += 1;
+      this.pHP = Math.min(this.pMaxHP, this.pHP + 1);
+      this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 35, '🥩 +1 MAX HP (BLOODTHIRST)', '#ef4444');
     }
 
     this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 15, '#fbbf24');
@@ -7805,14 +7983,8 @@ export class GameEngine {
         this.py = this.azuremonUltStartY;
         this.azuremonUltChannelTimer--;
 
-        if (this.azuremonUltChannelTimer % 12 === 0) {
-          const drainAmount = Math.max(1, Math.floor(this.pMaxHP * 0.01));
-          if (this.pHP > 1) {
-            this.pHP = Math.max(1, this.pHP - drainAmount);
-            this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
-            this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, `-${drainAmount} HP`, '#ef4444');
-          }
-        }
+        const channelProgress = Math.max(0, Math.min(1, 1 - (this.azuremonUltChannelTimer / 36)));
+        this.azuremonWingScale = channelProgress;
 
         for (let p = 0; p < 4; p++) {
           const ang = Math.random() * Math.PI * 2;
@@ -7838,6 +8010,12 @@ export class GameEngine {
         this.px = this.azuremonUltStartX;
         this.py = this.azuremonUltStartY;
         this.azuremonUltTimer--;
+
+        if (this.azuremonUltTimer > 30) {
+          this.azuremonWingScale = 1.0;
+        } else {
+          this.azuremonWingScale = Math.max(0, this.azuremonUltTimer / 30);
+        }
 
         if (this.keys['w'] || this.keys['W'] || this.keys['ArrowUp']) {
           this.azuremonUltBeamAngle -= 0.02;
@@ -7967,7 +8145,179 @@ export class GameEngine {
 
         if (this.azuremonUltTimer <= 0) {
           this.azuremonUltActive = false;
+          this.azuremonWingScale = 0;
         }
+      }
+    }
+
+    // Butchermon Rotten Flesh Skill (Toggle)
+    if (this.selectedDraco === 'Butchermon' && this.butchermonSkillToggle) {
+      this.butchermonSkillRampTimer++;
+      const rampMult = 1.0 + Math.min(2.0, (this.butchermonSkillRampTimer / 60) * 0.2); // Ramps up to 3x
+
+      // Swirling gas & flesh particles
+      if (this.frameCount % 3 === 0) {
+        const pAng = Math.random() * Math.PI * 2;
+        const pRad = Math.random() * 150;
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + Math.cos(pAng) * pRad,
+          y: this.py + this.pHeight / 2 + Math.sin(pAng) * pRad,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 2 - 0.5,
+          size: Math.random() * 6 + 3,
+          color: Math.random() > 0.4 ? '#dc2626' : '#15803d',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      // Damage & Heal Tick (every 15 frames = 0.25s)
+      if (this.frameCount % 15 === 0) {
+        // Self damage
+        const selfDmg = Math.max(1, Math.floor(1.5 * rampMult));
+        if (this.pHP > 1) {
+          this.pHP = Math.max(1, this.pHP - selfDmg);
+          this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, `-${selfDmg} HP`, '#f87171');
+        }
+
+        // Damage enemies in 160px radius
+        const pxCenter = this.px + this.pWidth / 2;
+        const pyCenter = this.py + this.pHeight / 2;
+        let totalFleshDmgDealt = 0;
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dist = Math.hypot(ex - pxCenter, ey - pyCenter);
+          if (dist <= 160) {
+            const fleshDmg = Math.max(1, Math.floor(this.stats.attack * 0.55 * rampMult));
+            this.damageEnemy(enemy, fleshDmg);
+            totalFleshDmgDealt += fleshDmg;
+            this.spawnDustParticles(ex, ey, 6, '#dc2626');
+          }
+        });
+
+        // 25% Lifesteal heal from enemies damaged
+        if (totalFleshDmgDealt > 0) {
+          const heal = Math.max(1, Math.floor(totalFleshDmgDealt * 0.25));
+          this.pHP = Math.min(this.pMaxHP, this.pHP + heal);
+          this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, `+${heal} HP (25% LIFESTEAL)`, '#4ade80');
+        }
+      }
+    }
+
+    // Butchermon Lifesteal Buff Timer
+    if (this.butchermonLifestealBuffTimer > 0) {
+      this.butchermonLifestealBuffTimer--;
+      if (this.frameCount % 5 === 0) {
+        this.particles.push({
+          x: this.px + Math.random() * this.pWidth,
+          y: this.py + Math.random() * this.pHeight,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 3 - 1,
+          size: Math.random() * 4 + 2,
+          color: '#ef4444',
+          life: 14,
+          maxLife: 14
+        });
+      }
+    }
+
+    // Butchermon Ultimate Hook Projectile Movement & Collision
+    if (this.butchermonHookActive) {
+      const prevX = this.butchermonHookX;
+      this.butchermonHookX += this.butchermonHookVx;
+      this.butchermonHookDist += Math.abs(this.butchermonHookVx);
+
+      const hx = this.butchermonHookX;
+      const hy = this.butchermonHookY;
+
+      // Wall-piercing segment/radius collision (checks segment from prevX to hx)
+      for (const enemy of this.enemies) {
+        if (!this.butchermonHookActive || enemy.hp <= 0) continue;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+
+        const minSegX = Math.min(prevX, hx) - 30;
+        const maxSegX = Math.max(prevX, hx) + 30;
+
+        if (ex >= minSegX && ex <= maxSegX && Math.abs(ey - hy) <= enemy.height / 2 + 30) {
+          this.butchermonHookActive = false;
+          const hookDmg = Math.floor(this.stats.attack * 2.5);
+          this.damageEnemy(enemy, hookDmg);
+
+          const isBoss = this.isBossType(enemy.type);
+          if (isBoss) {
+            // Boss hooked -> Pull Butchermon to Boss, get 100% lifesteal
+            this.butchermonPullingSelfToBoss = enemy;
+            this.butchermonLifestealBuffTimer = 360; // 6s
+            this.butchermonLifestealPercent = 1.0; // 100%
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '🪝 PULLED TO BOSS! 100% LIFESTEAL (6S)', '#ef4444');
+          } else {
+            // Normal enemy hooked -> Pull enemy to Butchermon, get 200% lifesteal
+            this.butchermonPullingEnemy = enemy;
+            enemy.stunnedTimer = 5; // Brief stun while reeled in
+            this.butchermonLifestealBuffTimer = 360; // 6s
+            this.butchermonLifestealPercent = 2.0; // 200%
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '🪝 ENEMY PULLED! 200% LIFESTEAL (6S)', '#ef4444');
+          }
+          break;
+        }
+      }
+
+      if (this.butchermonHookDist >= 800) {
+        this.butchermonHookActive = false;
+      }
+    }
+
+    // Pulling Normal Enemy to Butchermon
+    if (this.butchermonPullingEnemy) {
+      const e = this.butchermonPullingEnemy;
+      if (e.hp > 0) {
+        e.vx = 0;
+        e.vy = 0;
+        e.stunnedTimer = 2; // Keep briefly stunned while pulled
+
+        const targetX = this.px + (this.pFacing === 1 ? this.pWidth + 10 : -e.width - 10);
+        const targetY = this.py;
+        e.x += (targetX - e.x) * 0.4;
+        e.y += (targetY - e.y) * 0.4;
+
+        if (Math.hypot(targetX - e.x, targetY - e.y) < 25) {
+          e.stunnedTimer = 0; // Clear stun so enemy is NEVER stuck!
+          e.stunTimer = 0;
+          this.damageEnemy(e, Math.floor(this.stats.attack * 1.5));
+          this.spawnDustParticles(e.x + e.width / 2, e.y + e.height / 2, 12, '#dc2626');
+          this.addFloatingText(e.x + e.width / 2, e.y - 15, '💥 HOOK SMASH!', '#dc2626');
+          this.butchermonPullingEnemy = null;
+        }
+      } else {
+        this.butchermonPullingEnemy = null;
+      }
+    }
+
+    // Pulling Butchermon to Boss
+    if (this.butchermonPullingSelfToBoss) {
+      const boss = this.butchermonPullingSelfToBoss;
+      if (boss.hp > 0) {
+        this.pvx = 0;
+        this.pvy = 0;
+        this.pInvulnerableFrames = 30; // Invulnerable while pulled to boss
+        const targetX = boss.x + (this.px < boss.x ? -this.pWidth - 10 : boss.width + 10);
+        const targetY = boss.y;
+        this.px += (targetX - this.px) * 0.4;
+        this.py += (targetY - this.py) * 0.4;
+        if (Math.hypot(targetX - this.px, targetY - this.py) < 30) {
+          this.damageEnemy(boss, Math.floor(this.stats.attack * 2.0));
+          this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 15, '#dc2626');
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '💥 BOSS IMPACT SMASH!', '#dc2626');
+          this.butchermonPullingSelfToBoss = null;
+        }
+      } else {
+        this.butchermonPullingSelfToBoss = null;
       }
     }
 
@@ -8222,6 +8572,81 @@ export class GameEngine {
       life: 100,
       isUltimate
     });
+  }
+
+  private drawAzuremonWings(px: number, py: number, pw: number, ph: number, bodyY: number) {
+    if (this.azuremonWingScale <= 0) return;
+    const scale = this.azuremonWingScale;
+    const wingBaseX = px + pw / 2;
+    const wingBaseY = bodyY + 12;
+    const wingFlap = Math.sin(this.frameCount * 0.18) * 5;
+
+    this.ctx.save();
+    for (const side of [-1, 1]) {
+      this.ctx.save();
+      this.ctx.translate(wingBaseX, wingBaseY);
+      this.ctx.scale(side * scale, scale);
+
+      this.ctx.shadowColor = '#38bdf8';
+      this.ctx.shadowBlur = 12 * scale;
+
+      const memGrad = this.ctx.createLinearGradient(0, -25, 45, 15);
+      memGrad.addColorStop(0, '#e0f2fe');
+      memGrad.addColorStop(0.4, '#38bdf8');
+      memGrad.addColorStop(1, '#0284c7');
+
+      this.ctx.fillStyle = memGrad;
+      this.ctx.globalAlpha = 0.85;
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.quadraticCurveTo(15, -16 + wingFlap, 35, -28 + wingFlap * 1.2);
+      this.ctx.quadraticCurveTo(45, -22 + wingFlap * 1.2, 38, -6 + wingFlap);
+      this.ctx.quadraticCurveTo(30, 4 + wingFlap * 0.7, 24, 12);
+      this.ctx.quadraticCurveTo(12, 10, 0, 0);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      const innerGrad = this.ctx.createLinearGradient(0, -15, 30, 10);
+      innerGrad.addColorStop(0, 'rgba(255, 255, 255, 0.9)');
+      innerGrad.addColorStop(1, 'rgba(56, 189, 248, 0.7)');
+      this.ctx.fillStyle = innerGrad;
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.quadraticCurveTo(12, -12 + wingFlap * 0.8, 28, -20 + wingFlap);
+      this.ctx.quadraticCurveTo(32, -10 + wingFlap, 22, 4);
+      this.ctx.quadraticCurveTo(10, 6, 0, 0);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      this.ctx.globalAlpha = 1.0;
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.lineCap = 'round';
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.quadraticCurveTo(15, -16 + wingFlap, 35, -28 + wingFlap * 1.2);
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = '#bae6fd';
+      this.ctx.lineWidth = 1.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(15, -16 + wingFlap);
+      this.ctx.lineTo(38, -6 + wingFlap);
+      this.ctx.moveTo(10, -10 + wingFlap * 0.7);
+      this.ctx.lineTo(24, 12);
+      this.ctx.stroke();
+
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.arc(35, -28 + wingFlap * 1.2, 3, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.restore();
+    }
+    this.ctx.restore();
   }
 
   private draw() {
@@ -9002,78 +9427,85 @@ export class GameEngine {
           this.ctx.shadowBlur = 8;
           this.ctx.fillText('NEXT AREA 🌀', ex + ts / 2, ey - 14);
           this.ctx.restore();
-        } else if (char === 'P') {
-          const angle = (this.frameCount * 0.04) % (Math.PI * 2);
-          this.ctx.save();
-          this.ctx.translate(ex + ts / 2, ey + ts / 2);
-
-          if (this.exitPortalActive) {
-            this.ctx.rotate(angle);
-
-            const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
-            grad.addColorStop(0, '#ffffff');
-            grad.addColorStop(0.3, '#a855f7');
-            grad.addColorStop(0.7, '#6366f1');
-            grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
-
-            this.ctx.fillStyle = grad;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 26, 0, Math.PI * 2);
-            this.ctx.fill();
-
-            this.ctx.strokeStyle = '#c084fc';
-            this.ctx.lineWidth = 2.5;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 18 + Math.sin(this.frameCount * 0.1) * 3, 0, Math.PI * 2);
-            this.ctx.stroke();
-          } else {
-            this.ctx.rotate(-angle * 0.5);
-
-            const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 22);
-            grad.addColorStop(0, 'rgba(239, 68, 68, 0.7)');
-            grad.addColorStop(0.6, 'rgba(153, 27, 27, 0.4)');
-            grad.addColorStop(1, 'rgba(153, 27, 27, 0)');
-
-            this.ctx.fillStyle = grad;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 22, 0, Math.PI * 2);
-            this.ctx.fill();
-
-            this.ctx.strokeStyle = '#ef4444';
-            this.ctx.lineWidth = 2;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 16, 0, Math.PI * 2);
-            this.ctx.stroke();
-
-            this.ctx.fillStyle = '#fef08a';
-            this.ctx.fillRect(-4, -2, 8, 7);
-            this.ctx.strokeStyle = '#fef08a';
-            this.ctx.lineWidth = 1.5;
-            this.ctx.beginPath();
-            this.ctx.arc(0, -3, 3, Math.PI, 0);
-            this.ctx.stroke();
-          }
-
-          this.ctx.restore();
-
-          this.ctx.save();
-          this.ctx.font = 'bold 11px monospace';
-          this.ctx.textAlign = 'center';
-
-          if (this.exitPortalActive) {
-            this.ctx.fillStyle = '#ffffff';
-            this.ctx.shadowColor = '#a855f7';
-            this.ctx.shadowBlur = 10;
-            this.ctx.fillText('EXIT PORTAL 🌀', ex + ts / 2, ey - 14);
-          } else {
-            this.ctx.fillStyle = '#fca5a5';
-            this.ctx.shadowColor = '#ef4444';
-            this.ctx.shadowBlur = 6;
-            this.ctx.fillText('EXIT PORTAL (LOCKED 🔒)', ex + ts / 2, ey - 14);
-          }
-          this.ctx.restore();
         }
       }
+    }
+
+    // Explicitly render exit portal at this.exitPortalPos if present
+    if (this.exitPortalPos) {
+      const ts = this.level.tileSize;
+      const ex = this.exitPortalPos.x - ts / 2;
+      const ey = this.exitPortalPos.y - ts / 2;
+      const angle = (this.frameCount * 0.04) % (Math.PI * 2);
+
+      this.ctx.save();
+      this.ctx.translate(ex + ts / 2, ey + ts / 2);
+
+      if (this.exitPortalActive) {
+        this.ctx.rotate(angle);
+
+        const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 26);
+        grad.addColorStop(0, '#ffffff');
+        grad.addColorStop(0.3, '#a855f7');
+        grad.addColorStop(0.7, '#6366f1');
+        grad.addColorStop(1, 'rgba(99, 102, 241, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 26, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#c084fc';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 18 + Math.sin(this.frameCount * 0.1) * 3, 0, Math.PI * 2);
+        this.ctx.stroke();
+      } else {
+        this.ctx.rotate(-angle * 0.5);
+
+        const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 22);
+        grad.addColorStop(0, 'rgba(239, 68, 68, 0.7)');
+        grad.addColorStop(0.6, 'rgba(153, 27, 27, 0.4)');
+        grad.addColorStop(1, 'rgba(153, 27, 27, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 22, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#ef4444';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 16, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.fillRect(-4, -2, 8, 7);
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(0, -3, 3, Math.PI, 0);
+        this.ctx.stroke();
+      }
+
+      this.ctx.restore();
+
+      this.ctx.save();
+      this.ctx.font = 'bold 11px monospace';
+      this.ctx.textAlign = 'center';
+
+      if (this.exitPortalActive) {
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.shadowColor = '#a855f7';
+        this.ctx.shadowBlur = 10;
+        this.ctx.fillText('EXIT PORTAL 🌀', ex + ts / 2, ey - 14);
+      } else {
+        this.ctx.fillStyle = '#fca5a5';
+        this.ctx.shadowColor = '#ef4444';
+        this.ctx.shadowBlur = 6;
+        this.ctx.fillText('EXIT PORTAL (LOCKED 🔒)', ex + ts / 2, ey - 14);
+      }
+      this.ctx.restore();
     }
 
     this.pickups.forEach(pickup => {
@@ -11184,6 +11616,16 @@ export class GameEngine {
         accentColor = '#0c4a6e';
         bellyColor = '#bae6fd';
         detailColor = '#38bdf8';
+      } else if (this.selectedDraco === 'Krakenmon') {
+        mainColor = '#14b8a6';
+        accentColor = '#0f766e';
+        bellyColor = '#99f6e4';
+        detailColor = '#06b6d4';
+      } else if (this.selectedDraco === 'Butchermon') {
+        mainColor = '#991b1b';
+        accentColor = '#450a0a';
+        bellyColor = '#fca5a5';
+        detailColor = '#dc2626';
       }
 
       const px = this.px;
@@ -11241,6 +11683,107 @@ export class GameEngine {
           this.ctx.lineWidth = 1;
           this.ctx.stroke();
         }
+        this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Butchermon') {
+        this.ctx.save();
+
+        // 1. Organic Swirling Rotten Flesh Cloud (when skill toggle is ON)
+        if (this.butchermonSkillToggle) {
+          const centerX = px + pw / 2;
+          const centerY = py + ph / 2;
+          const cloudPulse = Math.sin(this.frameCount * 0.1) * 8;
+          const cloudRadius = 160 + cloudPulse;
+
+          // Main Organic Toxic Haze
+          const hazeGrad = this.ctx.createRadialGradient(centerX, centerY, 8, centerX, centerY, cloudRadius);
+          hazeGrad.addColorStop(0, 'rgba(220, 38, 38, 0.45)');
+          hazeGrad.addColorStop(0.35, 'rgba(34, 197, 94, 0.35)');
+          hazeGrad.addColorStop(0.7, 'rgba(127, 29, 29, 0.2)');
+          hazeGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+          this.ctx.fillStyle = hazeGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(centerX, centerY, cloudRadius, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Sub-Clouds Orbiting Off-Center (Dynamic Flowing Gas Storm)
+          for (let c = 0; c < 3; c++) {
+            const cAng = this.frameCount * 0.04 + c * ((Math.PI * 2) / 3);
+            const cDist = 40 + Math.sin(this.frameCount * 0.08 + c) * 15;
+            const subX = centerX + Math.cos(cAng) * cDist;
+            const subY = centerY + Math.sin(cAng) * (cDist * 0.5);
+            const subRad = 80 + Math.cos(this.frameCount * 0.1 + c) * 10;
+
+            const subGrad = this.ctx.createRadialGradient(subX, subY, 4, subX, subY, subRad);
+            subGrad.addColorStop(0, c % 2 === 0 ? 'rgba(220, 38, 38, 0.28)' : 'rgba(34, 197, 94, 0.25)');
+            subGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+
+            this.ctx.fillStyle = subGrad;
+            this.ctx.beginPath();
+            this.ctx.arc(subX, subY, subRad, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+
+          // Rising Toxic Gas Tendrils
+          for (let t = 0; t < 5; t++) {
+            const tAng = (this.frameCount * 0.03) + (t * Math.PI * 0.4);
+            const tRad = 50 + (t * 20);
+            const tx = centerX + Math.cos(tAng) * tRad;
+            const ty = centerY + Math.sin(tAng) * 20;
+            const rise = ((this.frameCount * 1.5 + t * 20) % 50);
+
+            this.ctx.strokeStyle = t % 2 === 0 ? 'rgba(239, 68, 68, 0.4)' : 'rgba(34, 197, 94, 0.4)';
+            this.ctx.lineWidth = 3 - (rise / 50) * 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(tx, ty - rise * 0.5);
+            this.ctx.quadraticCurveTo(tx + Math.sin(this.frameCount * 0.1 + t) * 15, ty - rise, tx, ty - rise * 1.5);
+            this.ctx.stroke();
+          }
+
+          // Orbiting Toxic Bubbles & Spores
+          for (let b = 0; b < 8; b++) {
+            const bAng = (this.frameCount * 0.06) + (b * Math.PI / 4);
+            const bRad = cloudRadius * (0.35 + (b % 4) * 0.18);
+            const bx = centerX + Math.cos(bAng) * bRad;
+            const by = centerY + Math.sin(bAng) * (bRad * 0.55);
+            const bSize = 3.5 + Math.sin(this.frameCount * 0.18 + b) * 2;
+
+            this.ctx.fillStyle = b % 2 === 0 ? '#ef4444' : '#22c55e';
+            this.ctx.shadowColor = b % 2 === 0 ? '#ef4444' : '#22c55e';
+            this.ctx.shadowBlur = 8;
+            this.ctx.beginPath();
+            this.ctx.arc(bx, by, Math.max(1, bSize), 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+          this.ctx.shadowBlur = 0;
+        }
+
+        // 2. Lifesteal Buff Glowing Blood Aura (when ultimate buff active)
+        if (this.butchermonLifestealBuffTimer > 0) {
+          const lifestealPulse = Math.sin(this.frameCount * 0.2) * 5;
+          const auraRad = pw / 2 + 16 + lifestealPulse;
+          const lsGrad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, pw / 2, px + pw / 2, py + ph / 2, auraRad);
+          lsGrad.addColorStop(0, 'rgba(239, 68, 68, 0.5)');
+          lsGrad.addColorStop(0.7, 'rgba(185, 28, 28, 0.3)');
+          lsGrad.addColorStop(1, 'rgba(127, 29, 29, 0)');
+
+          this.ctx.fillStyle = lsGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(px + pw / 2, py + ph / 2, auraRad, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#ef4444';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.shadowColor = '#ef4444';
+          this.ctx.shadowBlur = 10;
+          this.ctx.beginPath();
+          this.ctx.arc(px + pw / 2, py + ph / 2, auraRad - 2, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.shadowBlur = 0;
+        }
+
         this.ctx.restore();
       }
 
@@ -11323,6 +11866,58 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
+
+        this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Krakenmon') {
+        this.ctx.save();
+        const pulse = Math.sin(this.frameCount * 0.1) * 3;
+        // Ocean halo ring
+        this.ctx.strokeStyle = 'rgba(6, 182, 212, 0.7)';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.setLineDash([5, 3]);
+        this.ctx.beginPath();
+        this.ctx.ellipse(px + pw / 2, py + ph / 2 + 4, pw / 2 + 14 + pulse, 8 + pulse * 0.5, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+        this.ctx.lineWidth = 1;
+        this.ctx.setLineDash([3, 3]);
+        this.ctx.beginPath();
+        this.ctx.ellipse(px + pw / 2, py + ph / 2 + 4, pw / 2 + 10, 6, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.setLineDash([]);
+
+        // Bio-luminescent water droplets orbiting
+        for (let d = 0; d < 4; d++) {
+          const dropAng = (this.frameCount * 0.08) + (d * Math.PI / 2);
+          const dropX = px + pw / 2 + Math.cos(dropAng) * (pw / 2 + 12);
+          const dropY = py + ph / 2 + Math.sin(dropAng) * 10;
+          this.ctx.fillStyle = d % 2 === 0 ? '#38bdf8' : '#5eead4';
+          this.ctx.beginPath();
+          this.ctx.arc(dropX, dropY, 2.5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        // Damage Reduction Buff (Collision Course Ultimate active) ghost abyssal shield
+        if (this.damageReductionBuffTimer > 0) {
+          const shieldPulse = Math.sin(this.frameCount * 0.2) * 4;
+          const shieldGrad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, pw / 2, px + pw / 2, py + ph / 2, pw + 12);
+          shieldGrad.addColorStop(0, 'rgba(20, 184, 166, 0.25)');
+          shieldGrad.addColorStop(0.7, 'rgba(6, 182, 212, 0.45)');
+          shieldGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+          this.ctx.fillStyle = shieldGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 12 + shieldPulse, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#2dd4bf';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 10 + shieldPulse, 0, Math.PI * 2);
+          this.ctx.stroke();
+        }
 
         this.ctx.restore();
       }
@@ -11449,7 +12044,312 @@ export class GameEngine {
         this.ctx.fillRect(coreX + 2, bodyY + 24, 4, 6);
 
         this.ctx.restore();
+      } else if (this.selectedDraco === 'Krakenmon') {
+        this.ctx.save();
+
+        // 1. Animated Writhing Tentacles (2 Left, 2 Right)
+        const tWave = Math.sin(this.frameCount * 0.12);
+        const tWave2 = Math.cos(this.frameCount * 0.14);
+
+        // Tentacle 1 (Outer Left)
+        this.ctx.fillStyle = '#0f766e';
+        this.ctx.strokeStyle = '#115e59';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 4, bodyY + ph - 14);
+        this.ctx.quadraticCurveTo(px - 14 + tWave * 4, bodyY + ph - 4, px - 18 + tWave * 6, bodyY + ph + 6 + tWave2 * 3);
+        this.ctx.quadraticCurveTo(px - 6, bodyY + ph - 2, px + 10, bodyY + ph - 8);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Tentacle 2 (Inner Left)
+        this.ctx.fillStyle = '#0d9488';
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 10, bodyY + ph - 10);
+        this.ctx.quadraticCurveTo(px - 6 + tWave2 * 3, bodyY + ph + 8, px - 10 + tWave2 * 5, bodyY + ph + 12);
+        this.ctx.quadraticCurveTo(px, bodyY + ph + 4, px + 16, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Tentacle 3 (Inner Right)
+        this.ctx.fillStyle = '#0d9488';
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 16, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw + tWave2 * 3, bodyY + ph + 8, px + pw + 10 - tWave2 * 5, bodyY + ph + 12);
+        this.ctx.quadraticCurveTo(px + pw + 6, bodyY + ph + 4, px + pw - 10, bodyY + ph - 10);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Tentacle 4 (Outer Right)
+        this.ctx.fillStyle = '#0f766e';
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 10, bodyY + ph - 8);
+        this.ctx.quadraticCurveTo(px + pw + 6, bodyY + ph - 2, px + pw + 18 - tWave * 6, bodyY + ph + 6 - tWave2 * 3);
+        this.ctx.quadraticCurveTo(px + pw + 14 - tWave * 4, bodyY + ph - 4, px + pw - 4, bodyY + ph - 14);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Tentacle Suction Cups
+        this.ctx.fillStyle = '#99f6e4';
+        this.ctx.beginPath();
+        this.ctx.arc(px - 14 + tWave * 5, bodyY + ph + 2, 2, 0, Math.PI * 2);
+        this.ctx.arc(px - 8 + tWave2 * 4, bodyY + ph + 8, 1.8, 0, Math.PI * 2);
+        this.ctx.arc(px + pw + 14 - tWave * 5, bodyY + ph + 2, 2, 0, Math.PI * 2);
+        this.ctx.arc(px + pw + 8 - tWave2 * 4, bodyY + ph + 8, 1.8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 2. Abyssal Leviathan Horns & Crest atop Head
+        // Left Horn
+        this.ctx.fillStyle = '#0d9488';
+        this.ctx.strokeStyle = '#5eead4';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 10, bodyY + 6);
+        this.ctx.quadraticCurveTo(px - 8, bodyY - 14, px - 12 + (this.pFacing === -1 ? -3 : 0), bodyY - 18);
+        this.ctx.quadraticCurveTo(px + 4, bodyY - 6, px + 18, bodyY + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right Horn
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 18, bodyY + 2);
+        this.ctx.quadraticCurveTo(px + pw - 4, bodyY - 6, px + pw + 12 + (this.pFacing === 1 ? 3 : 0), bodyY - 18);
+        this.ctx.quadraticCurveTo(px + pw + 8, bodyY - 14, px + pw - 10, bodyY + 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Central Leviathan Crest
+        this.ctx.fillStyle = '#0f766e';
+        this.ctx.strokeStyle = '#2dd4bf';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2 - 12, bodyY + 4);
+        this.ctx.quadraticCurveTo(px + pw / 2, bodyY - 14, px + pw / 2 + 12, bodyY + 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 3. Kraken Body
+        this.ctx.fillStyle = mainColor;
+        this.ctx.strokeStyle = accentColor;
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Belly Area Highlight
+        this.ctx.fillStyle = bellyColor;
+        this.ctx.beginPath();
+        this.ctx.ellipse(px + pw / 2, bodyY + ph / 2 + 5, 8, 10, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 4. Heavy Pirate Anchor Emblem on Chest/Belly
+        const anchorX = px + pw / 2;
+        const anchorY = bodyY + ph / 2 + 4;
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.strokeStyle = '#b45309';
+        this.ctx.lineWidth = 1.8;
+
+        // Anchor Top Ring
+        this.ctx.beginPath();
+        this.ctx.arc(anchorX, anchorY - 6, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Anchor Central Shaft & Arms
+        this.ctx.beginPath();
+        this.ctx.moveTo(anchorX, anchorY - 3.5);
+        this.ctx.lineTo(anchorX, anchorY + 7);
+        // Crossbar
+        this.ctx.moveTo(anchorX - 5, anchorY - 1);
+        this.ctx.lineTo(anchorX + 5, anchorY - 1);
+        // Curved Flukes
+        this.ctx.moveTo(anchorX - 6, anchorY + 3);
+        this.ctx.quadraticCurveTo(anchorX, anchorY + 9, anchorX + 6, anchorY + 3);
+        this.ctx.stroke();
+
+        // 5. Bio-Luminescent Glowing Eyes
+        const eyeW = 7;
+        const eyeH = 8;
+        const eyeY = bodyY + 8;
+        const eyeX1 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = this.pFacing === 1 ? px + 8 : px + pw - 12;
+
+        // Eye background (white with cyan glow)
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.ellipse(eyeX1 + eyeW / 2, eyeY + eyeH / 2, eyeW / 2, eyeH / 2, 0, 0, Math.PI * 2);
+        this.ctx.ellipse(eyeX2 + eyeW / 2, eyeY + eyeH / 2, eyeW / 2, eyeH / 2, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Iris (Deep Oceanic Cyan)
+        this.ctx.fillStyle = '#0284c7';
+        const pupilOffset = this.pFacing === 1 ? 1.5 : -1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(eyeX1 + eyeW / 2 + pupilOffset, eyeY + eyeH / 2, 2.5, 0, Math.PI * 2);
+        this.ctx.arc(eyeX2 + eyeW / 2 + pupilOffset, eyeY + eyeH / 2, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // White Specular Highlight
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(eyeX1 + eyeW / 2 + pupilOffset - 0.8, eyeY + eyeH / 2 - 0.8, 1, 0, Math.PI * 2);
+        this.ctx.arc(eyeX2 + eyeW / 2 + pupilOffset - 0.8, eyeY + eyeH / 2 - 0.8, 1, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Butchermon') {
+        this.ctx.save();
+
+        // 1. Bloody Butcher Horns
+        this.ctx.fillStyle = '#7f1d1d';
+        this.ctx.strokeStyle = '#dc2626';
+        this.ctx.lineWidth = 1.8;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 8, bodyY + 4);
+        this.ctx.quadraticCurveTo(px - 6, bodyY - 12, px - 10 + (this.pFacing === -1 ? -3 : 0), bodyY - 16);
+        this.ctx.quadraticCurveTo(px + 4, bodyY - 4, px + 16, bodyY + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 16, bodyY + 2);
+        this.ctx.quadraticCurveTo(px + pw - 4, bodyY - 4, px + pw + 10 + (this.pFacing === 1 ? 3 : 0), bodyY - 16);
+        this.ctx.quadraticCurveTo(px + pw + 6, bodyY - 12, px + pw - 8, bodyY + 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 2. Butchermon Main Body
+        this.ctx.fillStyle = mainColor; // #991b1b
+        this.ctx.strokeStyle = accentColor; // #450a0a
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 3. Fleshy Belly & Leather Apron
+        this.ctx.fillStyle = bellyColor; // #fca5a5
+        this.ctx.beginPath();
+        this.ctx.ellipse(px + pw / 2, bodyY + ph / 2 + 5, 8, 10, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Leather Apron
+        this.ctx.fillStyle = '#450a0a';
+        this.ctx.strokeStyle = '#7f1d1d';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 10, bodyY + 18);
+        this.ctx.lineTo(px + pw - 10, bodyY + 18);
+        this.ctx.lineTo(px + pw - 6, bodyY + ph - 4);
+        this.ctx.lineTo(px + 6, bodyY + ph - 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Apron Blood Stains
+        this.ctx.fillStyle = '#dc2626';
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2 - 3, bodyY + ph / 2 + 6, 3, 0, Math.PI * 2);
+        this.ctx.arc(px + pw / 2 + 4, bodyY + ph / 2 + 10, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 4. Glowing Red Eyes
+        const eyeW = 7;
+        const eyeH = 7;
+        const eyeY = bodyY + 8;
+        const eyeX1 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = this.pFacing === 1 ? px + 8 : px + pw - 12;
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(eyeX1, eyeY, eyeW, eyeH);
+        this.ctx.fillRect(eyeX2, eyeY, eyeW, eyeH);
+
+        this.ctx.fillStyle = '#dc2626';
+        const pupilOffset = this.pFacing === 1 ? 2 : 0;
+        this.ctx.fillRect(eyeX1 + pupilOffset, eyeY + 1, 4, 5);
+        this.ctx.fillRect(eyeX2 + pupilOffset, eyeY + 1, 4, 5);
+
+        // 5. Heavy Butcher Knife Cleaver in Hand
+        const cleaverHandX = this.pFacing === 1 ? px + pw - 2 : px - 18;
+        const cleaverHandY = bodyY + 12;
+
+        // Cleaver Blade
+        this.ctx.fillStyle = '#cbd5e1';
+        this.ctx.strokeStyle = '#334155';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.fillRect(cleaverHandX, cleaverHandY, 20, 14);
+        this.ctx.strokeRect(cleaverHandX, cleaverHandY, 20, 14);
+
+        // Sharp Edge Highlight
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(cleaverHandX, cleaverHandY + 12, 20, 2);
+
+        // Blood Drips on Cleaver
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.arc(cleaverHandX + 16, cleaverHandY + 12, 2.5, 0, Math.PI * 2);
+        this.ctx.arc(cleaverHandX + 6, cleaverHandY + 13, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Cleaver Handle
+        this.ctx.fillStyle = '#78350f';
+        this.ctx.fillRect(this.pFacing === 1 ? cleaverHandX - 5 : cleaverHandX + 20, cleaverHandY + 4, 5, 6);
+
+        // 6. Cleaver Slash Arc (when attacking)
+        if (this.attackDuration > 0) {
+          const slashProgress = (10 - this.attackDuration) / 10;
+          const slashAngStart = this.pFacing === 1 ? -Math.PI / 3 : Math.PI + Math.PI / 3;
+          const slashAngEnd = slashAngStart + this.pFacing * (Math.PI * 0.7);
+          const currentSlashAng = slashAngStart + (slashAngEnd - slashAngStart) * slashProgress;
+
+          this.ctx.save();
+          this.ctx.translate(px + pw / 2, bodyY + ph / 2);
+          this.ctx.rotate(currentSlashAng);
+
+          this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+          this.ctx.lineWidth = 8;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 70, -0.6, 0.6);
+          this.ctx.stroke();
+
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 70, -0.4, 0.4);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        }
+
+        this.ctx.restore();
       } else {
+        if (this.selectedDraco === 'Azuremon' || this.azuremonWingScale > 0) {
+          this.drawAzuremonWings(px, py, pw, ph, bodyY);
+        }
+
         this.ctx.fillStyle = mainColor;
         this.ctx.strokeStyle = accentColor;
         this.ctx.lineWidth = 2.5;
@@ -12739,100 +13639,77 @@ export class GameEngine {
       const startY = this.py + 14;
 
       if (this.azuremonUltPhase === 'channeling') {
-        // CHARGING PHASE: Celestial Black Hole Singularity Charging at Azuremon Maw
-        const progress = Math.max(0, Math.min(1, 1 - (this.azuremonUltChannelTimer / 30)));
-        const orbRadius = 20 + progress * 35 + Math.sin(this.frameCount * 0.4) * 4;
+        // CHARGING PHASE: Celestial Azure Energy Gathering & Wing Unfurling
+        const progress = Math.max(0, Math.min(1, 1 - (this.azuremonUltChannelTimer / 36)));
+        const centerX = this.px + this.pWidth / 2;
+        const centerY = this.py + this.pHeight / 2;
 
-        // 1. Gravitational Outer Distortion Field
-        const hazeGrad = this.ctx.createRadialGradient(startX, startY, 4, startX, startY, orbRadius * 2.2);
-        hazeGrad.addColorStop(0, 'rgba(56, 189, 248, 0.6)');
-        hazeGrad.addColorStop(0.5, 'rgba(2, 132, 199, 0.35)');
-        hazeGrad.addColorStop(0.85, 'rgba(12, 74, 110, 0.15)');
-        hazeGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
-        this.ctx.fillStyle = hazeGrad;
+        // 1. Radiant Soft Azure Body Aura
+        const auraRadius = 35 + progress * 25 + Math.sin(this.frameCount * 0.3) * 3;
+        const auraGrad = this.ctx.createRadialGradient(centerX, centerY, 6, centerX, centerY, auraRadius);
+        auraGrad.addColorStop(0, 'rgba(186, 230, 253, 0.6)');
+        auraGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.35)');
+        auraGrad.addColorStop(1, 'rgba(2, 132, 199, 0)');
+        this.ctx.fillStyle = auraGrad;
         this.ctx.beginPath();
-        this.ctx.arc(startX, startY, orbRadius * 2.2, 0, Math.PI * 2);
+        this.ctx.arc(centerX, centerY, auraRadius, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // 2. Swirling Accretion Orbit Rings
-        const rot0 = this.frameCount * 0.15;
-        const rings = [
-          { r: orbRadius * 1.6, rot: rot0, color: '#38bdf8', w: 3.5, scaleY: 0.35 },
-          { r: orbRadius * 1.3, rot: -rot0 * 1.4, color: '#c084fc', w: 3.0, scaleY: 0.45 },
-          { r: orbRadius * 1.0, rot: rot0 * 1.9, color: '#ffffff', w: 2.5, scaleY: 0.3 }
-        ];
-        rings.forEach(ring => {
+        // 2. Focused Luminous Core at Maw (Preparing Beam)
+        const orbRadius = 6 + progress * 16;
+        const coreGrad = this.ctx.createRadialGradient(startX, startY, 2, startX, startY, orbRadius);
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.4, '#e0f2fe');
+        coreGrad.addColorStop(0.8, '#38bdf8');
+        coreGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+        this.ctx.fillStyle = coreGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(startX, startY, orbRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 3. Sleek Energy Charge Rings
+        for (let r = 0; r < 2; r++) {
+          const ringR = (orbRadius + 6 + r * 8);
+          const rot = (this.frameCount * 0.2 * (r === 0 ? 1 : -1));
           this.ctx.save();
           this.ctx.translate(startX, startY);
-          this.ctx.rotate(ring.rot);
-          this.ctx.scale(1.0, ring.scaleY);
-          this.ctx.strokeStyle = ring.color;
-          this.ctx.lineWidth = ring.w;
-          this.ctx.shadowColor = ring.color;
-          this.ctx.shadowBlur = 10;
+          this.ctx.rotate(rot);
+          this.ctx.scale(1.0, 0.4);
+          this.ctx.strokeStyle = r === 0 ? '#ffffff' : '#38bdf8';
+          this.ctx.lineWidth = 2;
+          this.ctx.shadowColor = '#38bdf8';
+          this.ctx.shadowBlur = 8;
           this.ctx.beginPath();
-          this.ctx.arc(0, 0, ring.r, 0, Math.PI * 2);
+          this.ctx.arc(0, 0, ringR, 0, Math.PI * 2);
           this.ctx.stroke();
           this.ctx.restore();
-        });
+        }
         this.ctx.shadowBlur = 0;
 
-        // 3. Glowing Event Horizon Rim
-        const rimGrad = this.ctx.createRadialGradient(startX, startY, orbRadius * 0.6, startX, startY, orbRadius * 1.05);
-        rimGrad.addColorStop(0, 'rgba(2, 6, 23, 0.95)');
-        rimGrad.addColorStop(0.7, '#0284c7');
-        rimGrad.addColorStop(1, '#ffffff');
-        this.ctx.fillStyle = rimGrad;
-        this.ctx.beginPath();
-        this.ctx.arc(startX, startY, orbRadius * 1.05, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // 4. Dark Singularity Void Core
-        const voidGrad = this.ctx.createRadialGradient(startX, startY, 1, startX, startY, orbRadius * 0.65);
-        voidGrad.addColorStop(0, '#020617');
-        voidGrad.addColorStop(0.7, '#090d16');
-        voidGrad.addColorStop(1, '#0c4a6e');
-        this.ctx.fillStyle = voidGrad;
-        this.ctx.beginPath();
-        this.ctx.arc(startX, startY, orbRadius * 0.65, 0, Math.PI * 2);
-        this.ctx.fill();
-
-        // 5. Expanding energy shockwave rings
+        // 4. Expanding cyan pulse rings
         for (let r = 0; r < 3; r++) {
-          const ringR = ((this.frameCount * 5 + r * 25) % 75);
-          const ringAlpha = Math.max(0, 1 - ringR / 75);
+          const ringR = ((this.frameCount * 4 + r * 20) % 60);
+          const ringAlpha = Math.max(0, 1 - ringR / 60) * progress;
           this.ctx.strokeStyle = `rgba(186, 230, 253, ${ringAlpha})`;
-          this.ctx.lineWidth = 3;
+          this.ctx.lineWidth = 2;
           this.ctx.beginPath();
           this.ctx.arc(startX, startY, ringR, 0, Math.PI * 2);
           this.ctx.stroke();
         }
 
-        // 6. Swirling Inflow Energy Particles
-        for (let p = 0; p < 10; p++) {
-          const inAng = this.frameCount * 0.15 + p * (Math.PI / 5);
-          const inRad = 75 * (1 - ((this.frameCount * 2.5 + p * 8) % 35) / 35);
+        // 5. Inflow Spark Particles towards maw
+        for (let p = 0; p < 8; p++) {
+          const inAng = this.frameCount * 0.15 + p * (Math.PI / 4);
+          const inRad = 55 * (1 - ((this.frameCount * 2.5 + p * 7) % 30) / 30);
           const inX = startX + Math.cos(inAng) * inRad;
           const inY = startY + Math.sin(inAng) * inRad;
           this.ctx.fillStyle = p % 2 === 0 ? '#ffffff' : '#38bdf8';
           this.ctx.beginPath();
-          this.ctx.arc(inX, inY, 3.5, 0, Math.PI * 2);
+          this.ctx.arc(inX, inY, 3, 0, Math.PI * 2);
           this.ctx.fill();
         }
-
-        // 7. Core Maw Bloom Flare (Mouth grows brighter and brighter)
-        const bloomRadius = 10 + progress * 60;
-        const bloomGrad = this.ctx.createRadialGradient(startX, startY, 2, startX, startY, bloomRadius);
-        bloomGrad.addColorStop(0, `rgba(255, 255, 255, ${progress})`);
-        bloomGrad.addColorStop(0.2, `rgba(186, 230, 253, ${progress * 0.95})`);
-        bloomGrad.addColorStop(0.5, `rgba(56, 189, 248, ${progress * 0.7})`);
-        bloomGrad.addColorStop(1, 'rgba(2, 132, 199, 0)');
-        this.ctx.fillStyle = bloomGrad;
-        this.ctx.beginPath();
-        this.ctx.arc(startX, startY, bloomRadius, 0, Math.PI * 2);
-        this.ctx.fill();
       } else if (this.azuremonUltPhase === 'beam') {
-        // SLEEK LUNARMON-STYLE AZURE SINGULARITY BEAM (BALANCED VISIBILITY & CRISP EFFECTS)
+        // SLEEK AZURE SINGULARITY BEAM
         const beamLength = 1200;
         const endX = startX + Math.cos(this.azuremonUltBeamAngle) * beamLength;
         const endY = startY + Math.sin(this.azuremonUltBeamAngle) * beamLength;
@@ -12844,8 +13721,8 @@ export class GameEngine {
         }
         this.ctx.globalAlpha = fadeAlpha;
 
-        // LAYER 1: Soft Ambient Void Sheath (70px width, low opacity)
-        this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.25)';
+        // LAYER 1: Soft Ambient Azure Sheath (70px width, soft cyan glow)
+        this.ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
         this.ctx.lineWidth = (70 + Math.sin(this.frameCount * 0.3) * 6) * fadeAlpha;
         this.ctx.lineCap = 'round';
         this.ctx.beginPath();
@@ -12880,13 +13757,7 @@ export class GameEngine {
         this.ctx.stroke();
         this.ctx.shadowBlur = 0;
 
-        // LAYER 5: Dark Singularity Center Accent (4px width)
-        this.ctx.strokeStyle = 'rgba(2, 6, 23, 0.7)';
-        this.ctx.lineWidth = 4 * fadeAlpha;
-        this.ctx.beginPath();
-        this.ctx.moveTo(startX, startY);
-        this.ctx.lineTo(endX, endY);
-        this.ctx.stroke();
+        // LAYER 5 (Former Dark Line) REMOVED COMPLETELY!
 
         // LAYER 6: Precision White Center Line (2px width)
         this.ctx.strokeStyle = '#ffffff';
@@ -12955,6 +13826,70 @@ export class GameEngine {
         this.ctx.arc(endX, endY, (55 + Math.sin(this.frameCount * 0.4) * 8) * fadeAlpha, 0, Math.PI * 2);
         this.ctx.fill();
       }
+
+      this.ctx.restore();
+    }
+
+    // Butchermon Ultimate Hook Chain Visual
+    if (this.butchermonHookActive || this.butchermonPullingEnemy || this.butchermonPullingSelfToBoss) {
+      this.ctx.save();
+      const startX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
+      const startY = this.py + 16;
+      let targetX = this.butchermonHookX;
+      let targetY = this.butchermonHookY;
+
+      if (this.butchermonPullingEnemy) {
+        targetX = this.butchermonPullingEnemy.x + this.butchermonPullingEnemy.width / 2;
+        targetY = this.butchermonPullingEnemy.y + this.butchermonPullingEnemy.height / 2;
+      } else if (this.butchermonPullingSelfToBoss) {
+        targetX = this.butchermonPullingSelfToBoss.x + this.butchermonPullingSelfToBoss.width / 2;
+        targetY = this.butchermonPullingSelfToBoss.y + this.butchermonPullingSelfToBoss.height / 2;
+      }
+
+      // Draw Heavy Iron Chain
+      this.ctx.strokeStyle = '#475569';
+      this.ctx.lineWidth = 4;
+      this.ctx.beginPath();
+      this.ctx.moveTo(startX, startY);
+      this.ctx.lineTo(targetX, targetY);
+      this.ctx.stroke();
+
+      // Draw Chain Links
+      const dist = Math.hypot(targetX - startX, targetY - startY);
+      const angle = Math.atan2(targetY - startY, targetX - startX);
+      const steps = Math.floor(dist / 14);
+      for (let i = 0; i <= steps; i++) {
+        const cx = startX + Math.cos(angle) * (i * 14);
+        const cy = startY + Math.sin(angle) * (i * 14);
+        this.ctx.fillStyle = i % 2 === 0 ? '#94a3b8' : '#334155';
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // Draw Meat Hook Tip
+      this.ctx.translate(targetX, targetY);
+      this.ctx.rotate(angle);
+
+      this.ctx.fillStyle = '#cbd5e1';
+      this.ctx.strokeStyle = '#475569';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, -6);
+      this.ctx.lineTo(16, 0);
+      this.ctx.quadraticCurveTo(24, 12, 10, 18);
+      this.ctx.lineTo(12, 12);
+      this.ctx.quadraticCurveTo(18, 8, 10, 2);
+      this.ctx.lineTo(0, 6);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Blood Tip
+      this.ctx.fillStyle = '#dc2626';
+      this.ctx.beginPath();
+      this.ctx.arc(10, 18, 3, 0, Math.PI * 2);
+      this.ctx.fill();
 
       this.ctx.restore();
     }
@@ -14554,6 +15489,7 @@ export class GameEngine {
       } else {
         // Lock all 3 slimes firmly on ground level so knockback explosions never make them fly
         this.enemies.forEach((slime, idx) => {
+          if (this.butchermonPullingEnemy === slime) return; // Allow Butchermon's hook to reel in the slime during ultimate preview!
           slime.x = positions[idx] || (260 + idx * 60);
           slime.y = 328;
           slime.vx = 0;

@@ -541,6 +541,14 @@ export function useGameState() {
   }, [activationTier, activationCodeInput, updateSaveState]);
 
   const switchTier = useCallback((newTier: TierType) => {
+    const TIER_RANKS: Record<TierType, number> = { Free: 0, Basic: 1, Premium: 2 };
+    const currentRank = TIER_RANKS[saveData.tier || 'Free'] ?? 0;
+    const newRank = TIER_RANKS[newTier] ?? 0;
+
+    if (newRank < currentRank) {
+      return;
+    }
+
     soundService.playClick();
 
     if (newTier === 'Free') {
@@ -554,7 +562,7 @@ export function useGameState() {
     setActivationTier(newTier);
     setActivationCodeInput('');
     setActivationError(false);
-  }, [updateSaveState]);
+  }, [saveData.tier, updateSaveState]);
 
   const markStageCleared = useCallback((stageNum: number) => {
     updateSaveState(prev => {

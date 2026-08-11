@@ -30,6 +30,19 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.3.1',
+    date: 'August 11, 2026',
+    tag: 'New Hero Butchermon - The Bloodthirsty Cleaver',
+    badgeColor: 'bg-red-700 text-white font-black shadow-sm',
+    summary: 'Introduces Butchermon, a bloodthirsty butcher dragon equipped with a heavy cleaver melee attack, a toggleable Rotten Flesh cloud with self/enemy damage ramping and 25% lifesteal heal, an 800px wall-piercing hook ultimate with 200%/100% lifesteal, and a passive that permanently gains +1 Max HP on every kill.',
+    highlights: [
+      'New Hero - Butchermon: Bloodthirsty butcher dragon wielding a heavy butcher knife with 130px melee slash arc and blood splatter VFX.',
+      'Butchermon Skill - Rotten Flesh (Toggle): Toggleable cloud of toxic flesh gas around Butchermon. Ticks damage to self and enemies, ramping up over time while active, and healing Butchermon for 25% of damage dealt to enemies.',
+      'Butchermon Ultimate - Butcher\'s Masterpiece (80 Energy): Fires an 800px wall-piercing hook chain. Hooking normal enemies pulls them to Butchermon (+200% Lifesteal for 6s); hooking bosses pulls Butchermon to the boss (+100% Lifesteal for 6s).',
+      'Butchermon Passive - Bloodthirst Feast: Permanently gains +1 Max HP and restores +1 HP whenever an enemy is defeated during the stage.',
+    ],
+  },
+  {
     version: '0.3.0',
     date: 'August 8, 2026',
     tag: 'New Hero Krakenmon & Admin Level Management Suite',

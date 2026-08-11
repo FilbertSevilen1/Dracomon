@@ -117,6 +117,7 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
       { name: 'Azuremon', main: '#0284c7', accent: '#0369a1', belly: '#e0f2fe', detail: '#38bdf8' },
       { name: 'Pixelmon', main: '#a855f7', accent: '#3b0764', belly: '#c084fc', detail: '#f43f5e' },
       { name: 'Krakenmon', main: '#14b8a6', accent: '#0f766e', belly: '#99f6e4', detail: '#06b6d4' },
+      { name: 'Butchermon', main: '#991b1b', accent: '#450a0a', belly: '#fca5a5', detail: '#dc2626' },
     ];
 
     const resizeCanvas = () => {
@@ -829,6 +830,42 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
         }
       }
 
+      if (draco.name === 'Butchermon') {
+        const pulse = Math.sin(frameCount * 0.1) * 4;
+        ctx.fillStyle = 'rgba(220, 38, 38, 0.15)';
+        ctx.beginPath();
+        ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 12 + pulse, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      if (draco.name === 'Krakenmon') {
+        const pulse = Math.sin(frameCount * 0.1) * 3;
+        ctx.strokeStyle = 'rgba(6, 182, 212, 0.7)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([5, 3]);
+        ctx.beginPath();
+        ctx.ellipse(px + pw / 2, py + ph / 2 + 4, pw / 2 + 14 + pulse, 8 + pulse * 0.5, 0, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([3, 3]);
+        ctx.beginPath();
+        ctx.ellipse(px + pw / 2, py + ph / 2 + 4, pw / 2 + 10, 6, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        for (let d = 0; d < 4; d++) {
+          const dropAng = (frameCount * 0.08) + (d * Math.PI / 2);
+          const dropX = px + pw / 2 + Math.cos(dropAng) * (pw / 2 + 12);
+          const dropY = py + ph / 2 + Math.sin(dropAng) * 10;
+          ctx.fillStyle = d % 2 === 0 ? '#38bdf8' : '#5eead4';
+          ctx.beginPath();
+          ctx.arc(dropX, dropY, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
       // Legs/feet
       ctx.fillStyle = draco.accentColor;
       if (draco.grounded) {
@@ -893,6 +930,163 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
         const coreX = px + pw / 2 - 4;
         ctx.fillRect(coreX - 2, bodyY + 20, 12, 4);
         ctx.fillRect(coreX + 2, bodyY + 24, 4, 6);
+      } else if (draco.name === 'Krakenmon') {
+        ctx.save();
+
+        // 1. Animated Writhing Tentacles (2 Left, 2 Right)
+        const tWave = Math.sin(frameCount * 0.12);
+        const tWave2 = Math.cos(frameCount * 0.14);
+
+        // Tentacle 1 (Outer Left)
+        ctx.fillStyle = '#0f766e';
+        ctx.strokeStyle = '#115e59';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 4, bodyY + ph - 14);
+        ctx.quadraticCurveTo(px - 14 + tWave * 4, bodyY + ph - 4, px - 18 + tWave * 6, bodyY + ph + 6 + tWave2 * 3);
+        ctx.quadraticCurveTo(px - 6, bodyY + ph - 2, px + 10, bodyY + ph - 8);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Tentacle 2 (Inner Left)
+        ctx.fillStyle = '#0d9488';
+        ctx.beginPath();
+        ctx.moveTo(px + 10, bodyY + ph - 10);
+        ctx.quadraticCurveTo(px - 6 + tWave2 * 3, bodyY + ph + 8, px - 10 + tWave2 * 5, bodyY + ph + 12);
+        ctx.quadraticCurveTo(px, bodyY + ph + 4, px + 16, bodyY + ph - 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Tentacle 3 (Inner Right)
+        ctx.fillStyle = '#0d9488';
+        ctx.beginPath();
+        ctx.moveTo(px + pw - 16, bodyY + ph - 6);
+        ctx.quadraticCurveTo(px + pw + tWave2 * 3, bodyY + ph + 8, px + pw + 10 - tWave2 * 5, bodyY + ph + 12);
+        ctx.quadraticCurveTo(px + pw + 6, bodyY + ph + 4, px + pw - 10, bodyY + ph - 10);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Tentacle 4 (Outer Right)
+        ctx.fillStyle = '#0f766e';
+        ctx.beginPath();
+        ctx.moveTo(px + pw - 10, bodyY + ph - 8);
+        ctx.quadraticCurveTo(px + pw + 6, bodyY + ph - 2, px + pw + 18 - tWave * 6, bodyY + ph + 6 - tWave2 * 3);
+        ctx.quadraticCurveTo(px + pw + 14 - tWave * 4, bodyY + ph - 4, px + pw - 4, bodyY + ph - 14);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Tentacle Suction Cups
+        ctx.fillStyle = '#99f6e4';
+        ctx.beginPath();
+        ctx.arc(px - 14 + tWave * 5, bodyY + ph + 2, 2, 0, Math.PI * 2);
+        ctx.arc(px - 8 + tWave2 * 4, bodyY + ph + 8, 1.8, 0, Math.PI * 2);
+        ctx.arc(px + pw + 14 - tWave * 5, bodyY + ph + 2, 2, 0, Math.PI * 2);
+        ctx.arc(px + pw + 8 - tWave2 * 4, bodyY + ph + 8, 1.8, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 2. Abyssal Leviathan Horns & Crest atop Head
+        ctx.fillStyle = '#0d9488';
+        ctx.strokeStyle = '#5eead4';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(px + 10, bodyY + 6);
+        ctx.quadraticCurveTo(px - 8, bodyY - 14, px - 12 + (face === -1 ? -3 : 0), bodyY - 18);
+        ctx.quadraticCurveTo(px + 4, bodyY - 6, px + 18, bodyY + 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(px + pw - 18, bodyY + 2);
+        ctx.quadraticCurveTo(px + pw - 4, bodyY - 6, px + pw + 12 + (face === 1 ? 3 : 0), bodyY - 18);
+        ctx.quadraticCurveTo(px + pw + 8, bodyY - 14, px + pw - 10, bodyY + 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#0f766e';
+        ctx.strokeStyle = '#2dd4bf';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(px + pw / 2 - 12, bodyY + 4);
+        ctx.quadraticCurveTo(px + pw / 2, bodyY - 14, px + pw / 2 + 12, bodyY + 4);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // 3. Kraken Body
+        ctx.fillStyle = draco.mainColor;
+        ctx.strokeStyle = draco.accentColor;
+        ctx.lineWidth = 2.5;
+
+        ctx.beginPath();
+        ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        ctx.lineTo(px + pw, bodyY + ph - 6);
+        ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        ctx.lineTo(px + 6, bodyY + ph - 2);
+        ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Belly Area Highlight
+        ctx.fillStyle = draco.bellyColor;
+        ctx.beginPath();
+        ctx.ellipse(px + pw / 2, bodyY + ph / 2 + 5, 8, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 4. Heavy Pirate Anchor Emblem on Chest/Belly
+        const anchorX = px + pw / 2;
+        const anchorY = bodyY + ph / 2 + 4;
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 1.8;
+
+        ctx.beginPath();
+        ctx.arc(anchorX, anchorY - 6, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(anchorX, anchorY - 3.5);
+        ctx.lineTo(anchorX, anchorY + 7);
+        ctx.moveTo(anchorX - 5, anchorY - 1);
+        ctx.lineTo(anchorX + 5, anchorY - 1);
+        ctx.moveTo(anchorX - 6, anchorY + 3);
+        ctx.quadraticCurveTo(anchorX, anchorY + 9, anchorX + 6, anchorY + 3);
+        ctx.stroke();
+
+        // 5. Bio-Luminescent Glowing Eyes
+        const eyeW = 7;
+        const eyeH = 8;
+        const eyeY = bodyY + 8;
+        const eyeX1 = face === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = face === 1 ? px + 8 : px + pw - 12;
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.ellipse(eyeX1 + eyeW / 2, eyeY + eyeH / 2, eyeW / 2, eyeH / 2, 0, 0, Math.PI * 2);
+        ctx.ellipse(eyeX2 + eyeW / 2, eyeY + eyeH / 2, eyeW / 2, eyeH / 2, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#0284c7';
+        const pupilOffset = face === 1 ? 1.5 : -1.5;
+        ctx.beginPath();
+        ctx.arc(eyeX1 + eyeW / 2 + pupilOffset, eyeY + eyeH / 2, 2.5, 0, Math.PI * 2);
+        ctx.arc(eyeX2 + eyeW / 2 + pupilOffset, eyeY + eyeH / 2, 2.5, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(eyeX1 + eyeW / 2 + pupilOffset - 0.8, eyeY + eyeH / 2 - 0.8, 1, 0, Math.PI * 2);
+        ctx.arc(eyeX2 + eyeW / 2 + pupilOffset - 0.8, eyeY + eyeH / 2 - 0.8, 1, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
       } else {
         ctx.fillStyle = draco.mainColor;
         ctx.strokeStyle = draco.accentColor;

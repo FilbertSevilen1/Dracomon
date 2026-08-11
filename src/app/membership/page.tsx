@@ -13,11 +13,18 @@ import {
   Coins,
   Award,
   Layers,
+  Lock,
 } from 'lucide-react';
 import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
 import { Footer } from '../../components/Footer';
 import { ActivationModal } from '../../components/ActivationModal';
+
+const TIER_RANKS: Record<string, number> = {
+  Free: 0,
+  Basic: 1,
+  Premium: 2,
+};
 
 export default function MembershipPage() {
   const {
@@ -33,6 +40,15 @@ export default function MembershipPage() {
   } = useGameState();
 
   const currentTier = saveData.tier || 'Free';
+  const currentRank = TIER_RANKS[currentTier] ?? 0;
+
+  const isFreeActive = currentTier === 'Free';
+  const isFreeLower = currentRank > 0;
+
+  const isBasicActive = currentTier === 'Basic';
+  const isBasicLower = currentRank > 1;
+
+  const isPremiumActive = currentTier === 'Premium';
 
   return (
     <div className="min-h-screen bg-stone-50 text-stone-900 font-display flex flex-col justify-between relative overflow-hidden select-none">
@@ -50,17 +66,24 @@ export default function MembershipPage() {
         </div>
 
         <div className="grid md:grid-cols-3 gap-8">
+          {/* FREE TIER CARD */}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-            currentTier === 'Free'
+            isFreeActive
               ? 'bg-white border-stone-300 ring-2 ring-stone-400/30 shadow-lg'
+              : isFreeLower
+              ? 'bg-stone-100/60 border-stone-200 opacity-75 shadow-none'
               : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
           }`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-bold text-stone-400 uppercase">Standard Tier</span>
-                {currentTier === 'Free' && (
+                {isFreeActive ? (
                   <span className="text-[10px] font-mono font-black bg-stone-200 text-stone-800 px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                )}
+                ) : isFreeLower ? (
+                  <span className="text-[10px] font-mono font-bold bg-stone-200/80 text-stone-500 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> INCLUDED
+                  </span>
+                ) : null}
               </div>
               <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
               <div className="text-3xl font-black text-stone-800 font-mono">Standard Progression</div>
@@ -72,31 +95,45 @@ export default function MembershipPage() {
               </ul>
             </div>
             <button
+              disabled={isFreeActive || isFreeLower}
               onClick={() => {
                 soundService.playClick();
                 switchTier('Free');
               }}
               className={`w-full py-3.5 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                currentTier === 'Free'
+                isFreeActive
                   ? 'bg-stone-200 text-stone-600 cursor-default'
+                  : isFreeLower
+                  ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-75'
                   : 'bg-stone-900 text-white hover:bg-stone-800 shadow-md active:scale-95'
               }`}
             >
-              {currentTier === 'Free' ? 'Current Active Tier' : 'Activate Free Tier'}
+              {isFreeActive
+                ? 'Current Active Tier'
+                : isFreeLower
+                ? `Included in ${currentTier} Tier`
+                : 'Activate Free Tier'}
             </button>
           </div>
 
+          {/* BASIC TIER CARD */}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-            currentTier === 'Basic'
+            isBasicActive
               ? 'bg-emerald-50/40 border-emerald-300 ring-2 ring-emerald-400/30 shadow-lg'
+              : isBasicLower
+              ? 'bg-stone-100/60 border-stone-200 opacity-75 shadow-none'
               : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
           }`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-extrabold text-emerald-600 uppercase">Recommended</span>
-                {currentTier === 'Basic' && (
+                {isBasicActive ? (
                   <span className="text-[10px] font-mono font-black bg-emerald-500 text-white px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                )}
+                ) : isBasicLower ? (
+                  <span className="text-[10px] font-mono font-bold bg-stone-200/80 text-stone-500 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                    <Lock className="w-3 h-3" /> INCLUDED
+                  </span>
+                ) : null}
               </div>
               <h3 className="text-2xl font-black text-stone-900">Basic Tier</h3>
               <div className="text-3xl font-black text-emerald-600 font-mono">Starter Boost</div>
@@ -108,29 +145,37 @@ export default function MembershipPage() {
               </ul>
             </div>
             <button
+              disabled={isBasicActive || isBasicLower}
               onClick={() => {
                 soundService.playLevelUp();
                 switchTier('Basic');
               }}
               className={`w-full py-3.5 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                currentTier === 'Basic'
+                isBasicActive
                   ? 'bg-stone-200 text-stone-600 cursor-default'
+                  : isBasicLower
+                  ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-75'
                   : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-95'
               }`}
             >
-              {currentTier === 'Basic' ? 'Current Active Tier' : 'Activate Basic Tier'}
+              {isBasicActive
+                ? 'Current Active Tier'
+                : isBasicLower
+                ? `Included in ${currentTier} Tier`
+                : 'Activate Basic Tier'}
             </button>
           </div>
 
+          {/* PREMIUM TIER CARD */}
           <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-            currentTier === 'Premium'
+            isPremiumActive
               ? 'bg-purple-50/40 border-purple-300 ring-2 ring-purple-400/30 shadow-lg'
               : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
           }`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-mono font-extrabold text-purple-600 uppercase">God Tier</span>
-                {currentTier === 'Premium' && (
+                {isPremiumActive && (
                   <span className="text-[10px] font-mono font-black bg-purple-600 text-white px-2.5 py-0.5 rounded-full">ACTIVE</span>
                 )}
               </div>
@@ -144,17 +189,18 @@ export default function MembershipPage() {
               </ul>
             </div>
             <button
+              disabled={isPremiumActive}
               onClick={() => {
                 soundService.playLevelUp();
                 switchTier('Premium');
               }}
               className={`w-full py-3.5 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                currentTier === 'Premium'
+                isPremiumActive
                   ? 'bg-stone-200 text-stone-600 cursor-default'
                   : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md active:scale-95'
               }`}
             >
-              {currentTier === 'Premium' ? 'Current Active Tier' : 'Activate Premium Tier'}
+              {isPremiumActive ? 'Current Active Tier' : 'Activate Premium Tier'}
             </button>
           </div>
         </div>

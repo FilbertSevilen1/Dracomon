@@ -29,77 +29,83 @@ import {
 } from 'lucide-react';
 import { levelStorageService } from '../../services/levelStorage';
 import levelsData from '../../game/levels.json';
+import { LevelEntity } from '../../game/LevelManager';
 
 const THEMES_LIST = Object.keys(levelsData.themes);
 
-const TILE_PALETTE = [
+export interface PaletteItem {
+  id: string;
+  label: string;
+  category: 'Terrain' | 'Spawns' | 'Portals' | 'Hazards' | 'Items' | 'Minions' | 'Bosses';
+  color: string;
+  icon: string;
+  isEntity?: boolean;
+  symbol?: string;
+  entityType?: string;
+}
+
+const TILE_PALETTE: PaletteItem[] = [
   // TERRAIN & GROUND
-  { symbol: '.', label: 'Sky / Air', category: 'Terrain', color: 'bg-slate-200 border-slate-300 text-slate-500 font-bold', icon: '☁️' },
-  { symbol: '#', label: 'Solid Ground', category: 'Terrain', color: 'bg-emerald-600 border-emerald-700 text-white font-black shadow-xs', icon: '🧱' },
-  { symbol: '=', label: 'Wooden Platform', category: 'Terrain', color: 'bg-amber-600 border-amber-700 text-white font-black shadow-xs', icon: '🪵' },
+  { id: '.', symbol: '.', label: 'Sky / Air', category: 'Terrain', color: 'bg-slate-200 border-slate-300 text-slate-500 font-bold', icon: '☁️', isEntity: false },
+  { id: '#', symbol: '#', label: 'Solid Ground', category: 'Terrain', color: 'bg-emerald-600 border-emerald-700 text-white font-black shadow-xs', icon: '🧱', isEntity: false },
+  { id: '=', symbol: '=', label: 'Wooden Platform', category: 'Terrain', color: 'bg-amber-600 border-amber-700 text-white font-black shadow-xs', icon: '🪵', isEntity: false },
+  { id: '^', symbol: '^', label: 'Spikes Hazard', category: 'Hazards', color: 'bg-rose-600 border-rose-700 text-white font-black shadow-xs', icon: '⚠️', isEntity: false },
 
   // SPAWNS & PORTALS
-  { symbol: '@', label: 'Player Spawn', category: 'Spawns', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '👤' },
-  { symbol: 'E', label: 'Exit Portal', category: 'Portals', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🌀' },
-  { symbol: 'X', label: 'Sub-Map Portal', category: 'Portals', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🚪' },
-  { symbol: 'm', label: 'Antimatter Vortex Field', category: 'Portals', color: 'bg-indigo-900 border-indigo-700 text-indigo-200 font-black shadow-xs', icon: '🌌' },
+  { id: 'player_spawn', entityType: 'player_spawn', label: 'Player Spawn', category: 'Spawns', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '👤', isEntity: true, symbol: '@' },
+  { id: 'exit_portal', entityType: 'exit_portal', label: 'Exit Portal', category: 'Portals', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🌀', isEntity: true, symbol: 'E' },
+  { id: 'sub_portal', entityType: 'sub_portal', label: 'Sub-Map Portal', category: 'Portals', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🚪', isEntity: true, symbol: 'X' },
+  { id: 'antimatter_vortex', entityType: 'antimatter_vortex', label: 'Antimatter Vortex', category: 'Portals', color: 'bg-indigo-900 border-indigo-700 text-indigo-200 font-black shadow-xs', icon: '🌌', isEntity: true, symbol: 'm' },
 
   // HAZARDS & TRAPS
-  { symbol: '^', label: 'Spikes Hazard', category: 'Hazards', color: 'bg-rose-600 border-rose-700 text-white font-black shadow-xs', icon: '⚠️' },
-  { symbol: '*', label: 'Hazard Spike', category: 'Hazards', color: 'bg-rose-600 border-rose-700 text-white font-black shadow-xs', icon: '⚠️' },
-  { symbol: 'V', label: 'Vine Trap', category: 'Hazards', color: 'bg-green-800 border-green-900 text-green-200 font-black shadow-xs', icon: '🌿' },
-  { symbol: 'R', label: 'Poison Spike Trap', category: 'Hazards', color: 'bg-emerald-800 border-emerald-900 text-emerald-200 font-black shadow-xs', icon: '☠️' },
-  { symbol: 'M', label: 'Laser Cannon Trap', category: 'Hazards', color: 'bg-red-800 border-red-900 text-red-200 font-black shadow-xs', icon: '⚡' },
+  { id: 'vine_trap', entityType: 'vine_trap', label: 'Vine Trap', category: 'Hazards', color: 'bg-green-800 border-green-900 text-green-200 font-black shadow-xs', icon: '🌿', isEntity: true, symbol: 'V' },
+  { id: 'poison_spike', entityType: 'poison_spike', label: 'Poison Spike Trap', category: 'Hazards', color: 'bg-emerald-800 border-emerald-900 text-emerald-200 font-black shadow-xs', icon: '☠️', isEntity: true, symbol: 'R' },
+  { id: 'laser_cannon', entityType: 'laser_cannon', label: 'Laser Cannon Trap', category: 'Hazards', color: 'bg-red-800 border-red-900 text-red-200 font-black shadow-xs', icon: '⚡', isEntity: true, symbol: 'M' },
+  { id: 'anchor', entityType: 'anchor', label: 'Heavy Anchor Trap', category: 'Hazards', color: 'bg-cyan-900 border-cyan-700 text-cyan-200 font-black shadow-xs', icon: '⚓', isEntity: true, symbol: 'A' },
+  { id: 'scallop', entityType: 'scallop', label: 'Scallop Trap', category: 'Hazards', color: 'bg-teal-900 border-teal-700 text-teal-200 font-black shadow-xs', icon: '🐚', isEntity: true, symbol: 'C' },
 
   // ITEMS & PICKUPS
-  { symbol: 'c', label: 'Gold Coin', category: 'Items', color: 'bg-yellow-400 border-yellow-500 text-stone-950 font-black shadow-xs', icon: '🪙' },
-  { symbol: 'p', label: 'Healing Potion', category: 'Items', color: 'bg-rose-500 border-rose-600 text-white font-black shadow-xs', icon: '🧪' },
-  { symbol: 'u', label: 'Upgrade Stone', category: 'Items', color: 'bg-purple-600 border-purple-700 text-white font-black shadow-xs', icon: '💎' },
-  { symbol: 'h', label: 'Extra Heart', category: 'Items', color: 'bg-pink-500 border-pink-600 text-white font-black shadow-xs', icon: '❤️' },
-  { symbol: 'T', label: 'Bouncy Trampoline', category: 'Items', color: 'bg-blue-500 border-blue-600 text-white font-black shadow-xs', icon: '🌀' },
+  { id: 'coin', entityType: 'coin', label: 'Gold Coin', category: 'Items', color: 'bg-yellow-400 border-yellow-500 text-stone-950 font-black shadow-xs', icon: '🪙', isEntity: true, symbol: 'c' },
+  { id: 'potion', entityType: 'potion', label: 'Healing Potion', category: 'Items', color: 'bg-rose-500 border-rose-600 text-white font-black shadow-xs', icon: '🧪', isEntity: true, symbol: 'p' },
+  { id: 'upgrade_stone', entityType: 'upgrade_stone', label: 'Upgrade Stone', category: 'Items', color: 'bg-purple-600 border-purple-700 text-white font-black shadow-xs', icon: '💎', isEntity: true, symbol: 'u' },
+  { id: 'heart', entityType: 'heart', label: 'Extra Heart', category: 'Items', color: 'bg-pink-500 border-pink-600 text-white font-black shadow-xs', icon: '❤️', isEntity: true, symbol: 'h' },
+  { id: 'trampoline', entityType: 'trampoline', label: 'Bouncy Trampoline', category: 'Items', color: 'bg-blue-500 border-blue-600 text-white font-black shadow-xs', icon: '🌀', isEntity: true, symbol: 'T' },
 
   // MINIONS (ENEMIES)
-  { symbol: '1', label: 'Slime Minion', category: 'Minions', color: 'bg-lime-500 border-lime-600 text-stone-950 font-black shadow-xs', icon: '🟢' },
-  { symbol: '2', label: 'Goblin Archer', category: 'Minions', color: 'bg-green-700 border-green-800 text-white font-black shadow-xs', icon: '🏹' },
-  { symbol: '3', label: 'Fire Golem', category: 'Minions', color: 'bg-orange-600 border-orange-700 text-white font-black shadow-xs', icon: '🔥' },
-  { symbol: '4', label: 'Bomb Thrower', category: 'Minions', color: 'bg-red-600 border-red-700 text-white font-black shadow-xs', icon: '💣' },
-  { symbol: 's', label: 'Skeleton Archer', category: 'Minions', color: 'bg-stone-600 border-stone-700 text-white font-black shadow-xs', icon: '💀' },
-  { symbol: 'a', label: 'Alien Laser Sniper', category: 'Minions', color: 'bg-indigo-600 border-indigo-700 text-white font-black shadow-xs', icon: '👽' },
-  { symbol: 'f', label: 'Aquatic Fish', category: 'Minions', color: 'bg-sky-500 border-sky-600 text-white font-black shadow-xs', icon: '🐟' },
-  { symbol: 'F', label: 'Flying Wyvern', category: 'Minions', color: 'bg-teal-600 border-teal-700 text-white font-black shadow-xs', icon: '🦅' },
+  { id: 'slime', entityType: 'slime', label: 'Slime Minion', category: 'Minions', color: 'bg-lime-500 border-lime-600 text-stone-950 font-black shadow-xs', icon: '🟢', isEntity: true, symbol: '1' },
+  { id: 'goblin_archer', entityType: 'goblin_archer', label: 'Goblin Archer', category: 'Minions', color: 'bg-green-700 border-green-800 text-white font-black shadow-xs', icon: '🏹', isEntity: true, symbol: '2' },
+  { id: 'fire_golem', entityType: 'fire_golem', label: 'Fire Golem', category: 'Minions', color: 'bg-orange-600 border-orange-700 text-white font-black shadow-xs', icon: '🔥', isEntity: true, symbol: '3' },
+  { id: 'bomb_thrower', entityType: 'bomb_thrower', label: 'Bomb Thrower', category: 'Minions', color: 'bg-red-600 border-red-700 text-white font-black shadow-xs', icon: '💣', isEntity: true, symbol: '4' },
+  { id: 'skeleton_archer', entityType: 'skeleton_archer', label: 'Skeleton Archer', category: 'Minions', color: 'bg-stone-600 border-stone-700 text-white font-black shadow-xs', icon: '💀', isEntity: true, symbol: 's' },
+  { id: 'alien', entityType: 'alien', label: 'Alien Laser Sniper', category: 'Minions', color: 'bg-indigo-600 border-indigo-700 text-white font-black shadow-xs', icon: '👽', isEntity: true, symbol: 'a' },
+  { id: 'fish', entityType: 'fish', label: 'Aquatic Fish', category: 'Minions', color: 'bg-sky-500 border-sky-600 text-white font-black shadow-xs', icon: '🐟', isEntity: true, symbol: 'f' },
+  { id: 'flying_wyvern', entityType: 'flying_wyvern', label: 'Flying Wyvern', category: 'Minions', color: 'bg-teal-600 border-teal-700 text-white font-black shadow-xs', icon: '🦅', isEntity: true, symbol: 'F' },
 
   // BOSSES
-  { symbol: 'S', label: 'King Slime Boss', category: 'Bosses', color: 'bg-lime-600 border-lime-700 text-white font-black shadow-xs', icon: '👑' },
-  { symbol: 'B', label: 'Miniboss Sentinel', category: 'Bosses', color: 'bg-purple-800 border-purple-900 text-white font-black shadow-xs', icon: '👾' },
-  { symbol: 'W', label: 'Frost Wyvern Boss', category: 'Bosses', color: 'bg-cyan-600 border-cyan-700 text-white font-black shadow-xs', icon: '🐉' },
-  { symbol: 'O', label: 'Shadow Overlord', category: 'Bosses', color: 'bg-indigo-950 border-purple-900 text-purple-200 font-black shadow-xs', icon: '👁️' },
-  { symbol: 'D', label: 'Dragon King Boss', category: 'Bosses', color: 'bg-red-900 border-red-950 text-red-100 font-black shadow-xs', icon: '🐲' },
-  { symbol: 'K', label: 'King Kong Boss', category: 'Bosses', color: 'bg-amber-900 border-amber-950 text-amber-200 font-black shadow-xs', icon: '🦍' },
-  { symbol: 'G', label: 'Giant Wisp Boss', category: 'Bosses', color: 'bg-fuchsia-600 border-fuchsia-700 text-white font-black shadow-xs', icon: '✨' },
-  { symbol: 'L', label: 'Lunar Goddess Boss', category: 'Bosses', color: 'bg-indigo-900 border-indigo-950 text-indigo-200 font-black shadow-xs', icon: '🌙' },
+  { id: 'king_slime', entityType: 'king_slime', label: 'King Slime Boss', category: 'Bosses', color: 'bg-lime-600 border-lime-700 text-white font-black shadow-xs', icon: '👑', isEntity: true, symbol: 'S' },
+  { id: 'miniboss', entityType: 'miniboss', label: 'Miniboss Sentinel', category: 'Bosses', color: 'bg-purple-800 border-purple-900 text-white font-black shadow-xs', icon: '👾', isEntity: true, symbol: 'B' },
+  { id: 'frost_wyvern', entityType: 'frost_wyvern', label: 'Frost Wyvern Boss', category: 'Bosses', color: 'bg-cyan-600 border-cyan-700 text-white font-black shadow-xs', icon: '🐉', isEntity: true, symbol: 'W' },
+  { id: 'shadow_overlord', entityType: 'shadow_overlord', label: 'Shadow Overlord', category: 'Bosses', color: 'bg-indigo-950 border-purple-900 text-purple-200 font-black shadow-xs', icon: '👁️', isEntity: true, symbol: 'O' },
+  { id: 'dragon_king', entityType: 'dragon_king', label: 'Dragon King Boss', category: 'Bosses', color: 'bg-red-900 border-red-950 text-red-100 font-black shadow-xs', icon: '🐲', isEntity: true, symbol: 'D' },
+  { id: 'king_kong', entityType: 'king_kong', label: 'King Kong Boss', category: 'Bosses', color: 'bg-amber-900 border-amber-950 text-amber-200 font-black shadow-xs', icon: '🦍', isEntity: true, symbol: 'K' },
+  { id: 'giant_wisp', entityType: 'giant_wisp', label: 'Giant Wisp Boss', category: 'Bosses', color: 'bg-fuchsia-600 border-fuchsia-700 text-white font-black shadow-xs', icon: '✨', isEntity: true, symbol: 'G' },
+  { id: 'lunar_goddess', entityType: 'lunar_goddess', label: 'Lunar Goddess Boss', category: 'Bosses', color: 'bg-indigo-900 border-indigo-950 text-indigo-200 font-black shadow-xs', icon: '🌙', isEntity: true, symbol: 'L' },
 ];
 
-const getTileMeta = (char: string) => {
-  const found = TILE_PALETTE.find(t => t.symbol === char);
+const getTileMeta = (key: string) => {
+  const found = TILE_PALETTE.find(t => t.id === key || t.entityType === key || t.symbol === key);
   if (found) return found;
 
   // Case alias fallbacks
-  if (char === 'm') return { symbol: 'm', label: 'Antimatter Vortex Field', category: 'Portals', color: 'bg-indigo-900 border-indigo-700 text-indigo-200 font-black shadow-xs', icon: '🌌' };
-  if (char === 'h' || char === 'H') return { symbol: 'h', label: 'Extra Heart', category: 'Items', color: 'bg-pink-500 border-pink-600 text-white font-black shadow-xs', icon: '❤️' };
-  if (char === 'c' || char === 'C') return { symbol: 'c', label: 'Gold Coin', category: 'Items', color: 'bg-yellow-400 border-yellow-500 text-stone-950 font-black shadow-xs', icon: '🪙' };
-  if (char === 'p') return { symbol: 'p', label: 'Healing Potion', category: 'Items', color: 'bg-rose-500 border-rose-600 text-white font-black shadow-xs', icon: '🧪' };
-  if (char === 'P' || char === 'E') return { symbol: 'E', label: 'Exit Portal Marker', category: 'Portals', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🌀' };
-  if (char === '@') return { symbol: '@', label: 'Player Spawn', category: 'Spawns', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '👤' };
-  if (char === 'X') return { symbol: 'X', label: 'Sub-Map Portal', category: 'Portals', color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🚪' };
-  if (char === 'u' || char === 'U') return { symbol: 'u', label: 'Upgrade Stone', category: 'Items', color: 'bg-purple-600 border-purple-700 text-white font-black shadow-xs', icon: '💎' };
-  if (char === 'f') return { symbol: 'f', label: 'Aquatic Fish', category: 'Minions', color: 'bg-sky-500 border-sky-600 text-white font-black shadow-xs', icon: '🐟' };
-  if (char === 'F') return { symbol: 'F', label: 'Flying Wyvern', category: 'Minions', color: 'bg-teal-600 border-teal-700 text-white font-black shadow-xs', icon: '🦅' };
-  if (char === '1') return { symbol: '1', label: 'Slime Minion', category: 'Minions', color: 'bg-lime-500 border-lime-600 text-stone-950 font-black shadow-xs', icon: '🟢' };
-  if (char === '2') return { symbol: '2', label: 'Goblin Archer', category: 'Minions', color: 'bg-green-700 border-green-800 text-white font-black shadow-xs', icon: '🏹' };
-  if (char === '3') return { symbol: '3', label: 'Fire Golem', category: 'Minions', color: 'bg-orange-600 border-orange-700 text-white font-black shadow-xs', icon: '🔥' };
-  if (char === '4') return { symbol: '4', label: 'Bomb Thrower', category: 'Minions', color: 'bg-red-600 border-red-700 text-white font-black shadow-xs', icon: '💣' };
-  if (char === '*') return { symbol: '*', label: 'Hazard Spike', category: 'Hazards', color: 'bg-rose-600 border-rose-700 text-white font-black shadow-xs', icon: '⚠️' };
-  return { symbol: char, label: `Entity ${char}`, category: 'Minions', color: 'bg-indigo-600 border-indigo-700 text-white font-black shadow-xs', icon: '👾' };
+  if (key === 'm') return { id: 'm', symbol: 'm', entityType: 'antimatter_vortex', isEntity: true, label: 'Antimatter Vortex Field', category: 'Portals' as const, color: 'bg-indigo-900 border-indigo-700 text-indigo-200 font-black shadow-xs', icon: '🌌' };
+  if (key === 'h' || key === 'H') return { id: 'h', symbol: 'h', entityType: 'heart', isEntity: true, label: 'Extra Heart', category: 'Items' as const, color: 'bg-pink-500 border-pink-600 text-white font-black shadow-xs', icon: '❤️' };
+  if (key === 'c' || key === 'C') return { id: 'c', symbol: 'c', entityType: 'coin', isEntity: true, label: 'Gold Coin', category: 'Items' as const, color: 'bg-yellow-400 border-yellow-500 text-stone-950 font-black shadow-xs', icon: '🪙' };
+  if (key === 'p') return { id: 'p', symbol: 'p', entityType: 'potion', isEntity: true, label: 'Healing Potion', category: 'Items' as const, color: 'bg-rose-500 border-rose-600 text-white font-black shadow-xs', icon: '🧪' };
+  if (key === 'P' || key === 'E') return { id: 'E', symbol: 'E', entityType: 'exit_portal', isEntity: true, label: 'Exit Portal Marker', category: 'Portals' as const, color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🌀' };
+  if (key === '@') return { id: '@', symbol: '@', entityType: 'player_spawn', isEntity: true, label: 'Player Spawn', category: 'Spawns' as const, color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '👤' };
+  if (key === 'X') return { id: 'X', symbol: 'X', entityType: 'sub_portal', isEntity: true, label: 'Sub-Map Portal', category: 'Portals' as const, color: 'bg-transparent border-2 border-blue-500 text-blue-600 font-bold shadow-xs', icon: '🚪' };
+  if (key === 'u' || key === 'U') return { id: 'u', symbol: 'u', entityType: 'upgrade_stone', isEntity: true, label: 'Upgrade Stone', category: 'Items' as const, color: 'bg-purple-600 border-purple-700 text-white font-black shadow-xs', icon: '💎' };
+  return { id: key, symbol: key, entityType: key, isEntity: true, label: `Entity ${key}`, category: 'Minions' as const, color: 'bg-indigo-600 border-indigo-700 text-white font-black shadow-xs', icon: '👾' };
 };
 
 export default function AdminPage() {
@@ -134,6 +140,7 @@ export default function AdminPage() {
   const [paletteSearch, setPaletteSearch] = useState<string>('');
   const [viewMode, setViewMode] = useState<'icons' | 'ascii'>('icons');
   const [editorGrid, setEditorGrid] = useState<string[]>([]);
+  const [editorEntities, setEditorEntities] = useState<LevelEntity[]>([]);
   const [isMouseDown, setIsMouseDown] = useState(false);
   const [mouseButton, setMouseButton] = useState<number>(0); // 0 = Left, 2 = Right
   const [savedSuccessMsg, setSavedSuccessMsg] = useState('');
@@ -196,9 +203,14 @@ export default function AdminPage() {
       const stg = selectedWorld.stages[selectedStageIdx];
       if (stg.grid) {
         setEditorGrid([...stg.grid]);
-        setSavedSuccessMsg('Reverted layout to saved state.');
-        setTimeout(() => setSavedSuccessMsg(''), 3000);
       }
+      if (stg.entities) {
+        setEditorEntities([...stg.entities]);
+      } else {
+        setEditorEntities([]);
+      }
+      setSavedSuccessMsg('Reverted layout to saved state.');
+      setTimeout(() => setSavedSuccessMsg(''), 3000);
     }
     setShowRevertConfirmModal(false);
   };
@@ -209,6 +221,7 @@ export default function AdminPage() {
     const currentRows = editorGrid.length || 23;
     const emptyGrid = Array(currentRows).fill('.'.repeat(currentCols));
     setEditorGrid(emptyGrid);
+    setEditorEntities([]);
     setSavedSuccessMsg('Grid reset to empty sky.');
     setTimeout(() => setSavedSuccessMsg(''), 3000);
     setShowResetConfirmModal(false);
@@ -258,6 +271,8 @@ export default function AdminPage() {
       }
     }
     setEditorGrid(newGrid);
+    // Remove entities outside new dimensions
+    setEditorEntities(prev => prev.filter(e => e.x < newCols && e.y < newRows));
   };
 
   // Load grid into editor when selected stage changes
@@ -271,6 +286,11 @@ export default function AdminPage() {
         } else {
           const defaultGrid = Array(16).fill('.'.repeat(120));
           setEditorGrid(defaultGrid);
+        }
+        if (stg.entities) {
+          setEditorEntities([...stg.entities]);
+        } else {
+          setEditorEntities([]);
         }
       }
     }
@@ -450,17 +470,62 @@ export default function AdminPage() {
     }
   };
 
-  // Stage Grid Painting Logic
+  // Stage Grid & Entity Painting Logic
   const handleCellPaint = (rowIndex: number, colIndex: number, isRightClick = false) => {
     if (!editorGrid || editorGrid.length === 0) return;
-    const targetSymbol = isRightClick ? '.' : activeBrush;
-    const updatedGrid = [...editorGrid];
-    const row = updatedGrid[rowIndex];
-    if (!row || colIndex >= row.length) return;
 
-    const newRow = row.substring(0, colIndex) + targetSymbol + row.substring(colIndex + 1);
-    updatedGrid[rowIndex] = newRow;
-    setEditorGrid(updatedGrid);
+    if (isRightClick) {
+      // Eraser: remove any entity at (colIndex, rowIndex) and reset terrain to '.'
+      setEditorEntities(prev => prev.filter(e => !(e.x === colIndex && e.y === rowIndex)));
+      const updatedGrid = [...editorGrid];
+      const row = updatedGrid[rowIndex];
+      if (row && colIndex < row.length) {
+        updatedGrid[rowIndex] = row.substring(0, colIndex) + '.' + row.substring(colIndex + 1);
+        setEditorGrid(updatedGrid);
+      }
+      return;
+    }
+
+    const brushMeta = getTileMeta(activeBrush);
+    if (brushMeta.isEntity) {
+      const entityType = brushMeta.entityType || activeBrush;
+
+      // Single-instance entity check: exit_portal, player_spawn, and boss entities
+      const isSingleInstance = entityType === 'exit_portal' || entityType === 'player_spawn' || brushMeta.category === 'Bosses';
+
+      setEditorEntities(prev => {
+        let filtered = prev;
+        if (isSingleInstance) {
+          // Remove any existing instance of this single-instance entity across the whole map
+          filtered = filtered.filter(e => e.type !== entityType);
+        }
+        // Remove any entity currently sitting at this cell
+        filtered = filtered.filter(e => !(e.x === colIndex && e.y === rowIndex));
+
+        return [...filtered, { type: entityType, x: colIndex, y: rowIndex }];
+      });
+
+      // Clear terrain grid cell to '.' (open air) so entity isn't embedded in solid wall or old ASCII symbol
+      const updatedGrid = [...editorGrid];
+      const row = updatedGrid[rowIndex];
+      if (row && colIndex < row.length) {
+        updatedGrid[rowIndex] = row.substring(0, colIndex) + '.' + row.substring(colIndex + 1);
+        setEditorGrid(updatedGrid);
+      }
+    } else {
+      // Placing terrain block (e.g. '#', '=', '*', '.')
+      const symbol = brushMeta.symbol || activeBrush;
+
+      // Remove any entity at this cell when painting terrain over it
+      setEditorEntities(prev => prev.filter(e => !(e.x === colIndex && e.y === rowIndex)));
+
+      const updatedGrid = [...editorGrid];
+      const row = updatedGrid[rowIndex];
+      if (row && colIndex < row.length) {
+        updatedGrid[rowIndex] = row.substring(0, colIndex) + symbol + row.substring(colIndex + 1);
+        setEditorGrid(updatedGrid);
+      }
+    }
   };
 
   const handleSaveGridToStorage = () => {
@@ -470,7 +535,8 @@ export default function AdminPage() {
         if (stages[selectedStageIdx]) {
           stages[selectedStageIdx] = {
             ...stages[selectedStageIdx],
-            grid: editorGrid
+            grid: editorGrid,
+            entities: editorEntities
           };
         }
         return { ...w, stages };
@@ -478,7 +544,8 @@ export default function AdminPage() {
       return w;
     });
     handleSaveWorlds(updated);
-    setSavedSuccessMsg('🚀 Stage map saved & deployed directly to src/game/levels.json!');
+    levelStorageService.deployLevelsToRepo(updated);
+    setSavedSuccessMsg('🚀 Stage map & entities saved & deployed directly to src/game/levels.json!');
     setTimeout(() => setSavedSuccessMsg(''), 3000);
   };
 
@@ -964,7 +1031,9 @@ export default function AdminPage() {
                 {(() => {
                   const filteredPalette = TILE_PALETTE.filter(t =>
                     t.label.toLowerCase().includes(paletteSearch.toLowerCase()) ||
-                    t.symbol.toLowerCase().includes(paletteSearch.toLowerCase()) ||
+                    t.id.toLowerCase().includes(paletteSearch.toLowerCase()) ||
+                    (t.entityType && t.entityType.toLowerCase().includes(paletteSearch.toLowerCase())) ||
+                    (t.symbol && t.symbol.toLowerCase().includes(paletteSearch.toLowerCase())) ||
                     t.icon.includes(paletteSearch)
                   );
                   return (
@@ -987,23 +1056,23 @@ export default function AdminPage() {
                         <Search className="w-3.5 h-3.5 text-stone-400 absolute left-2 top-1/2 -translate-y-1/2" />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-1.5 flex-1 overflow-y-auto pr-1 min-h-0">
+                      <div className="grid grid-cols-2 gap-1.5 content-start auto-rows-max flex-1 overflow-y-auto pr-1 min-h-0">
                         {filteredPalette.map((tile) => {
-                          const isSelected = activeBrush === tile.symbol;
+                          const isSelected = activeBrush === tile.id || activeBrush === tile.entityType || activeBrush === tile.symbol;
                           return (
                             <button
-                              key={tile.symbol}
-                              onClick={() => setActiveBrush(tile.symbol)}
-                              className={`p-1.5 rounded-lg border text-[11px] font-bold flex items-center gap-1.5 transition-all text-left truncate ${
+                              key={tile.id}
+                              onClick={() => setActiveBrush(tile.id)}
+                              className={`p-2 rounded-xl border text-[11px] font-bold flex items-center gap-1.5 transition-all text-left truncate h-fit ${
                                 isSelected
                                   ? 'bg-amber-500 text-stone-950 border-amber-400 font-black shadow-sm ring-2 ring-amber-400/40'
                                   : 'bg-stone-50 text-stone-700 border-stone-200 hover:bg-stone-100'
                               }`}
-                              title={`${tile.label} (${tile.symbol})`}
+                              title={`${tile.label} (${tile.entityType || tile.symbol})`}
                             >
                               <span className="text-base shrink-0">{tile.icon}</span>
                               <span className="truncate leading-tight text-[10px]">
-                                {tile.label} <strong className="font-mono text-[9px] opacity-75">({tile.symbol})</strong>
+                                {tile.label} <strong className="font-mono text-[9px] opacity-75">({tile.entityType || tile.symbol})</strong>
                               </span>
                             </button>
                           );
@@ -1029,7 +1098,9 @@ export default function AdminPage() {
                       <div key={rIdx} className="flex items-center gap-0.5">
                         <span className="w-5 text-[9px] text-stone-400 font-bold shrink-0">{rIdx}</span>
                         {rowStr.split('').map((char, cIdx) => {
-                          const tileMeta = getTileMeta(char);
+                          const entityAtCell = editorEntities.find(e => e.x === cIdx && e.y === rIdx);
+                          const terrainMeta = getTileMeta(char);
+                          const displayMeta = entityAtCell ? getTileMeta(entityAtCell.type) : terrainMeta;
                           return (
                             <div
                               key={cIdx}
@@ -1039,15 +1110,17 @@ export default function AdminPage() {
                                 setMouseButton(e.button);
                                 handleCellPaint(rIdx, cIdx, isRight);
                               }}
-                              onMouseEnter={(e) => {
+                              onMouseEnter={() => {
                                 if (isMouseDown) {
                                   handleCellPaint(rIdx, cIdx, mouseButton === 2);
                                 }
                               }}
-                              className={`w-6 h-6 rounded-[4px] flex items-center justify-center text-[12px] font-black border transition-all cursor-pointer ${tileMeta.color}`}
-                              title={`Row ${rIdx}, Col ${cIdx}: ${tileMeta.label}`}
+                              className={`w-6 h-6 rounded-[4px] flex items-center justify-center text-[12px] font-black border transition-all cursor-pointer ${displayMeta.color}`}
+                              title={`Row ${rIdx}, Col ${cIdx}: ${displayMeta.label}${entityAtCell ? ` [Entity: ${entityAtCell.type}]` : ''}`}
                             >
-                              {viewMode === 'icons' ? (char === '.' ? '.' : tileMeta.icon) : char}
+                              {viewMode === 'icons'
+                                ? (entityAtCell ? displayMeta.icon : (char === '.' ? '.' : displayMeta.icon))
+                                : (entityAtCell ? (displayMeta.symbol || 'E') : char)}
                             </div>
                           );
                         })}

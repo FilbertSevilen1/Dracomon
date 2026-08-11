@@ -746,104 +746,145 @@ export default function Home() {
                 </div>
 
                 <div className="grid md:grid-cols-3 gap-8 mt-12">
-                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-                    saveData.tier === 'Free' || !saveData.tier
-                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
-                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
-                  }`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-extrabold text-stone-500 uppercase">Standard Tier</span>
-                        { (saveData.tier === 'Free' || !saveData.tier) && (
-                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                        )}
-                      </div>
-                      <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
-                      <div className="text-3xl font-black text-stone-900 font-mono">0 <span className="text-sm text-stone-500 font-sans">Coins</span></div>
-                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon, Archermon & Shieldmon</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock remaining roster via campaign coins</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Full offline local save persistence</li>
-                      </ul>
-                    </div>
-                    <button
-                      onClick={() => switchTier('Free')}
-                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                        saveData.tier === 'Free' || !saveData.tier
-                          ? 'bg-stone-200 text-stone-600 cursor-default'
-                          : 'bg-stone-900 text-white hover:bg-stone-800 shadow-md active:scale-95'
-                      }`}
-                    >
-                      {saveData.tier === 'Free' || !saveData.tier ? 'Current Active Tier' : 'Switch to Free Tier'}
-                    </button>
-                  </div>
+                  {(() => {
+                    const TIER_RANKS: Record<string, number> = { Free: 0, Basic: 1, Premium: 2 };
+                    const curTier = saveData.tier || 'Free';
+                    const curRank = TIER_RANKS[curTier] ?? 0;
 
-                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-                    saveData.tier === 'Basic'
-                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
-                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
-                  }`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-extrabold text-emerald-600 uppercase">Recommended Tier</span>
-                        { saveData.tier === 'Basic' && (
-                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                        )}
-                      </div>
-                      <h3 className="text-2xl font-black text-stone-900">Basic Tier</h3>
-                      <div className="text-3xl font-black text-emerald-600 font-mono">Level 5 <span className="text-sm text-stone-500 font-sans">All Unlocked</span></div>
-                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Every Character Unlocked Immediately!</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Level 5 starting level</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> +1 Bonus splitted to ALL attributes per level up</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Whitemon & Bird Familiar access</li>
-                      </ul>
-                    </div>
-                    <button
-                      onClick={() => switchTier('Basic')}
-                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                        saveData.tier === 'Basic'
-                          ? 'bg-stone-200 text-stone-600 cursor-default'
-                          : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-95'
-                      }`}
-                    >
-                      {saveData.tier === 'Basic' ? 'Current Active Tier' : 'Activate Basic Tier'}
-                    </button>
-                  </div>
+                    const isFreeActive = curTier === 'Free';
+                    const isFreeLower = curRank > 0;
 
-                  <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
-                    saveData.tier === 'Premium'
-                      ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
-                      : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
-                  }`}>
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-mono font-extrabold text-purple-600 uppercase">God Tier</span>
-                        { saveData.tier === 'Premium' && (
-                          <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
-                        )}
-                      </div>
-                      <h3 className="text-2xl font-black text-stone-900">Premium Tier</h3>
-                      <div className="text-3xl font-black text-purple-600 font-mono">Max Boost <span className="text-sm text-stone-500 font-sans">Full Roster</span></div>
-                      <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Every Character Unlocked immediately</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> High starting level (Level 10)</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Maximized +1 bonus to ALL stats per level</li>
-                        <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Full energy regeneration perks</li>
-                      </ul>
-                    </div>
-                    <button
-                      onClick={() => switchTier('Premium')}
-                      className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
-                        saveData.tier === 'Premium'
-                          ? 'bg-stone-200 text-stone-600 cursor-default'
-                          : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md active:scale-95'
-                      }`}
-                    >
-                      {saveData.tier === 'Premium' ? 'Current Active Tier' : 'Activate Premium Tier'}
-                    </button>
-                  </div>
+                    const isBasicActive = curTier === 'Basic';
+                    const isBasicLower = curRank > 1;
+
+                    const isPremiumActive = curTier === 'Premium';
+
+                    return (
+                      <>
+                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                          isFreeActive
+                            ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                            : isFreeLower
+                            ? 'bg-stone-100/60 border-stone-200 opacity-75 shadow-none'
+                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                        }`}>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono font-extrabold text-stone-500 uppercase">Standard Tier</span>
+                              {isFreeActive ? (
+                                <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                              ) : isFreeLower ? (
+                                <span className="text-[10px] font-mono font-bold bg-stone-200 text-stone-500 px-2.5 py-0.5 rounded-full">INCLUDED</span>
+                              ) : null}
+                            </div>
+                            <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
+                            <div className="text-3xl font-black text-stone-900 font-mono">0 <span className="text-sm text-stone-500 font-sans">Coins</span></div>
+                            <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon, Archermon & Shieldmon</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock remaining roster via campaign coins</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Full offline local save persistence</li>
+                            </ul>
+                          </div>
+                          <button
+                            disabled={isFreeActive || isFreeLower}
+                            onClick={() => switchTier('Free')}
+                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                              isFreeActive
+                                ? 'bg-stone-200 text-stone-600 cursor-default'
+                                : isFreeLower
+                                ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-75'
+                                : 'bg-stone-900 text-white hover:bg-stone-800 shadow-md active:scale-95'
+                            }`}
+                          >
+                            {isFreeActive
+                              ? 'Current Active Tier'
+                              : isFreeLower
+                              ? `Included in ${curTier} Tier`
+                              : 'Switch to Free Tier'}
+                          </button>
+                        </div>
+
+                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                          isBasicActive
+                            ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                            : isBasicLower
+                            ? 'bg-stone-100/60 border-stone-200 opacity-75 shadow-none'
+                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                        }`}>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono font-extrabold text-emerald-600 uppercase">Recommended Tier</span>
+                              {isBasicActive ? (
+                                <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                              ) : isBasicLower ? (
+                                <span className="text-[10px] font-mono font-bold bg-stone-200 text-stone-500 px-2.5 py-0.5 rounded-full">INCLUDED</span>
+                              ) : null}
+                            </div>
+                            <h3 className="text-2xl font-black text-stone-900">Basic Tier</h3>
+                            <div className="text-3xl font-black text-emerald-600 font-mono">Level 5 <span className="text-sm text-stone-500 font-sans">All Unlocked</span></div>
+                            <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Every Character Unlocked Immediately!</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Level 5 starting level</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> +1 Bonus splitted to ALL attributes per level up</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Whitemon & Bird Familiar access</li>
+                            </ul>
+                          </div>
+                          <button
+                            disabled={isBasicActive || isBasicLower}
+                            onClick={() => switchTier('Basic')}
+                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                              isBasicActive
+                                ? 'bg-stone-200 text-stone-600 cursor-default'
+                                : isBasicLower
+                                ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-75'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-95'
+                            }`}
+                          >
+                            {isBasicActive
+                              ? 'Current Active Tier'
+                              : isBasicLower
+                              ? `Included in ${curTier} Tier`
+                              : 'Activate Basic Tier'}
+                          </button>
+                        </div>
+
+                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                          isPremiumActive
+                            ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                        }`}>
+                          <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-mono font-extrabold text-purple-600 uppercase">God Tier</span>
+                              {isPremiumActive && (
+                                <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                              )}
+                            </div>
+                            <h3 className="text-2xl font-black text-stone-900">Premium Tier</h3>
+                            <div className="text-3xl font-black text-purple-600 font-mono">Max Boost <span className="text-sm text-stone-500 font-sans">Full Roster</span></div>
+                            <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Every Character Unlocked immediately</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> High starting level (Level 10)</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Maximized +1 bonus to ALL stats per level</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Full energy regeneration perks</li>
+                            </ul>
+                          </div>
+                          <button
+                            disabled={isPremiumActive}
+                            onClick={() => switchTier('Premium')}
+                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                              isPremiumActive
+                                ? 'bg-stone-200 text-stone-600 cursor-default'
+                                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md active:scale-95'
+                            }`}
+                          >
+                            {isPremiumActive ? 'Current Active Tier' : 'Activate Premium Tier'}
+                          </button>
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               </section>
 

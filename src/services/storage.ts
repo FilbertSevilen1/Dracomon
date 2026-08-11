@@ -208,6 +208,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Butchermon: {
+      level: 1,
+      exp: 0,
+      hp: 26,
+      attack: 9,
+      defense: 4,
+      speed: 6.5,
+      jump: 11,
+      range: 5,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -424,6 +436,20 @@ export const storageService = {
             speed: 7.0,
             jump: 11,
             range: 6,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Butchermon) {
+          parsed.dracos.Butchermon = {
+            level: 1,
+            exp: 0,
+            hp: 26,
+            attack: 9,
+            defense: 4,
+            speed: 6.5,
+            jump: 11,
+            range: 5,
             unlocked: false,
             energyRegen: 1.0,
           };
