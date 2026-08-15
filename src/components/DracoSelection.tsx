@@ -649,21 +649,23 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   const canLevelUp = isUnlocked && lvl < 15 && coins >= levelUpCost;
 
   const content = (
-    <div className={`w-full flex flex-col ${isFullPage ? 'min-h-[500px]' : 'bg-white border border-stone-200/90 rounded-3xl shadow-xl overflow-hidden max-h-[92vh]'}`}>
+    <div className={`w-full flex flex-col ${isFullPage ? 'min-h-[550px]' : 'bg-stone-950 border border-stone-800/90 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh]'}`}>
       {!isFullPage && (
-        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-stone-100 bg-stone-50/50 flex-shrink-0">
+        <div className="flex flex-wrap items-center justify-between gap-3 px-6 py-4 border-b border-stone-800/80 bg-stone-900/60 backdrop-blur-md flex-shrink-0">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-stone-900 text-white rounded-2xl shadow-sm">
-              <Shield className="w-5 h-5 text-amber-400" />
+            <div className="p-2.5 bg-gradient-to-br from-amber-500 to-orange-600 text-stone-950 rounded-2xl shadow-lg shadow-amber-500/20">
+              <Shield className="w-5 h-5 fill-current" />
             </div>
             <div>
-              <h2 className="text-xl font-bold tracking-tight text-stone-900 font-display">Draco Sanctuary</h2>
-              <p className="text-xs text-stone-500">Select & upgrade your battle companion</p>
+              <h2 className="text-xl font-black tracking-wider text-stone-100 uppercase font-display flex items-center gap-2">
+                Hero Roster <span className="text-amber-400 text-xs font-mono lowercase tracking-normal">dota 2 edition</span>
+              </h2>
+              <p className="text-xs text-stone-400 font-mono">Select & equip your battle companion</p>
             </div>
           </div>
 
           {onSwitchTier && (
-            <div className="flex items-center gap-1 p-1 bg-stone-100 border border-stone-200 rounded-xl">
+            <div className="flex items-center gap-1 p-1 bg-stone-900 border border-stone-800 rounded-xl">
               {(() => {
                 const TIER_RANKS: Record<TierType, number> = { Free: 0, Basic: 1, Premium: 2 };
                 const curRank = TIER_RANKS[currentTier] ?? 0;
@@ -682,12 +684,12 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                         onSwitchTier(t);
                       }}
                       title={isLower ? `Included in ${currentTier} Tier` : undefined}
-                      className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
+                      className={`px-3 py-1 rounded-lg text-xs font-bold transition-all flex items-center gap-1 ${
                         isCurrent
                           ? 'bg-amber-500 text-stone-950 shadow-sm cursor-default'
                           : isLower
-                          ? 'bg-stone-200/60 text-stone-400 cursor-not-allowed opacity-60'
-                          : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
+                          ? 'bg-stone-800/60 text-stone-500 cursor-not-allowed opacity-60'
+                          : 'text-stone-300 hover:text-white hover:bg-stone-800'
                       }`}
                     >
                       <Award className="w-3 h-3" />
@@ -700,9 +702,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
           )}
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-full border border-stone-200 shadow-sm">
-              <Coins className="w-4 h-4 text-amber-500 fill-amber-500" />
-              <span className="font-mono font-bold text-xs text-stone-800">{coins} Coins</span>
+            <div className="flex items-center gap-2 px-3.5 py-1.5 bg-stone-900/90 rounded-full border border-stone-800 shadow-inner">
+              <Coins className="w-4 h-4 text-amber-400 fill-amber-400" />
+              <span className="font-mono font-bold text-xs text-amber-300">{coins} Coins</span>
             </div>
             {onClose && (
               <button
@@ -710,7 +712,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   soundService.playClick();
                   onClose();
                 }}
-                className="p-1.5 text-stone-400 hover:text-stone-800 hover:bg-stone-100 rounded-full transition-colors"
+                className="p-1.5 text-stone-400 hover:text-white hover:bg-stone-800 rounded-full transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -719,8 +721,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 items-start p-6 overflow-y-auto">
-        <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 items-start p-6 overflow-y-auto bg-stone-950 text-stone-100">
+        {/* Left Column: Dota 2 Hero Roster Grid */}
+        <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col space-y-3">
           <div className="flex items-center justify-between gap-3">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -729,80 +732,91 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 placeholder="Filter hero by name or role..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-white border border-stone-200/80 rounded-2xl text-xs font-mono text-stone-800 placeholder-stone-400 focus:outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-sm"
+                className="w-full pl-9 pr-4 py-2 bg-stone-900/90 border border-stone-800 rounded-2xl text-xs font-mono text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-inner"
               />
             </div>
-            <div className="text-xs font-black uppercase tracking-wider text-stone-500 bg-stone-200/60 px-3 py-1.5 rounded-2xl shrink-0">
+            <div className="text-xs font-black uppercase tracking-wider text-amber-400 bg-stone-900/90 border border-stone-800 px-3.5 py-2 rounded-2xl shrink-0 font-display">
               Roster ({filteredDracos.length})
             </div>
           </div>
 
-          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 max-h-[500px] overflow-y-auto p-2">
-            {filteredDracos.map((name) => {
-              const dData = saveData.dracos[name];
-              const meta = DRACO_META[name];
-              const itemUnlocked = !!dData.unlocked;
-              const itemEquipped = equippedDraco === name;
-              const isSelected = selectedName === name;
+          <div className="p-3 bg-stone-900/40 rounded-3xl border border-stone-800/80 max-h-[520px] overflow-y-auto">
+            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 p-1">
+              {filteredDracos.map((name) => {
+                const dData = saveData.dracos[name];
+                const meta = DRACO_META[name];
+                const itemUnlocked = !!dData.unlocked;
+                const itemEquipped = equippedDraco === name;
+                const isSelected = selectedName === name;
 
-              return (
-                <button
-                  key={name}
-                  onClick={() => {
-                    soundService.playClick();
-                    setSelectedName(name);
-                  }}
-                  className={`p-2 rounded-2xl border transition-all flex flex-col items-center justify-between relative group ${
-                    isSelected
-                      ? 'bg-amber-50/90 border-amber-400 ring-2 ring-amber-400/80 shadow-md -translate-y-0.5'
-                      : itemEquipped
-                      ? 'bg-emerald-50/80 border-emerald-300 ring-1 ring-emerald-300'
-                      : itemUnlocked
-                      ? 'bg-white hover:bg-stone-50 border-stone-200 hover:border-amber-300'
-                      : 'bg-stone-100/60 border-stone-200/60 opacity-60 hover:opacity-90'
-                  }`}
-                >
-                  {itemEquipped && (
-                    <div className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white shadow-sm" />
-                  )}
-
-                  <div
-                    className={`w-12 h-12 rounded-xl flex items-center justify-center p-1 transition-transform group-hover:scale-105 ${
+                return (
+                  <button
+                    key={name}
+                    onClick={() => {
+                      soundService.playClick();
+                      setSelectedName(name);
+                    }}
+                    className={`h-36 sm:h-40 rounded-2xl border transition-all duration-300 relative group overflow-hidden flex flex-col justify-between p-2 shadow-lg ${
                       isSelected
-                        ? 'bg-amber-500/20 ring-2 ring-amber-400 shadow-sm'
+                        ? 'border-2 border-amber-400 ring-4 ring-amber-500/30 scale-[1.03] z-20 shadow-[0_0_25px_rgba(251,191,36,0.6)] bg-amber-950/80'
                         : itemEquipped
-                        ? 'bg-emerald-50 ring-1 ring-emerald-400 hover:scale-105'
+                        ? 'border-emerald-500/80 ring-2 ring-emerald-500/30 hover:scale-[1.02] hover:z-10 hover:border-emerald-400 bg-emerald-950/40'
                         : itemUnlocked
-                        ? 'bg-stone-100 hover:bg-stone-200/70 hover:scale-105'
-                        : 'bg-stone-100/50 opacity-45 hover:opacity-90 hover:scale-105'
+                        ? 'border-stone-800 hover:border-amber-400/80 hover:scale-[1.02] hover:z-10 bg-stone-900/90'
+                        : 'border-stone-900 opacity-40 hover:opacity-85 hover:scale-[1.02] bg-stone-950/80'
                     }`}
                   >
-                    <DracoArtwork name={name} animated={isSelected} size={44} />
-                  </div>
+                    {/* Dota 2 Full Background Hero Elemental Gradient */}
+                    <div className={`absolute inset-0 bg-gradient-to-b ${meta.bgGradient} opacity-40 group-hover:opacity-75 transition-opacity`} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/30 to-transparent" />
 
-                  <span className={`text-xs font-bold font-display mt-1.5 truncate max-w-full text-center ${isSelected ? 'text-amber-600 font-extrabold' : 'text-stone-800'}`}>
-                    {name}
-                  </span>
-                  <span className="text-[10px] text-stone-400 font-semibold leading-tight">
-                    {itemUnlocked ? `Lv.${dData.level || 1}` : 'Locked'}
-                  </span>
-                </button>
-              );
-            })}
+                    {/* Top Badges */}
+                    <div className="relative z-10 w-full flex items-center justify-between px-0.5 pt-0.5">
+                      {itemEquipped ? (
+                        <span className="px-1.5 py-0.5 bg-emerald-500 text-stone-950 text-[9px] font-black uppercase rounded tracking-wider shadow-sm font-display">
+                          ACTIVE
+                        </span>
+                      ) : (
+                        <span />
+                      )}
+                      {!itemUnlocked && (
+                        <Lock className="w-3.5 h-3.5 text-stone-400 ml-auto drop-shadow-md" />
+                      )}
+                    </div>
+
+                    {/* Hero SVG Character Artwork Floating in Upper Center */}
+                    <div className="relative z-10 my-auto p-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]">
+                      <DracoArtwork name={name} animated={isSelected} size={44} />
+                    </div>
+
+                    {/* Bottom Hero Name & Level Badge */}
+                    <div className="relative z-10 w-full flex flex-col items-center">
+                      <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider truncate max-w-full text-center drop-shadow-md font-display ${isSelected ? 'text-amber-300' : 'text-stone-100'}`}>
+                        {name}
+                      </span>
+                      <span className="text-[9px] font-mono text-stone-400 font-bold drop-shadow">
+                        {itemUnlocked ? `Lv.${dData.level || 1}` : 'Locked'}
+                      </span>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         </div>
 
-        <div className="order-1 lg:order-2 lg:col-span-5 p-5 sm:p-6 rounded-3xl bg-white border border-stone-200/80 shadow-md flex flex-col justify-between space-y-4">
-          <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-100/90 rounded-2xl border border-stone-200/80">
+        {/* Right Column: Dota 2 Dark Obsidian Inspect Panel */}
+        <div className="order-1 lg:order-2 lg:col-span-5 p-5 sm:p-6 rounded-3xl bg-stone-900/90 border border-stone-800 shadow-2xl flex flex-col justify-between space-y-4 backdrop-blur-md">
+          <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-950/90 rounded-2xl border border-stone-800">
             <button
               onClick={() => {
                 soundService.playClick();
                 setInspectTab('details');
               }}
-              className={`py-1.5 px-3 rounded-xl text-xs font-bold font-display flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-2 px-3 rounded-xl text-xs font-bold font-display flex items-center justify-center gap-1.5 transition-all ${
                 inspectTab === 'details'
-                  ? 'bg-white text-stone-900 shadow-sm border border-stone-200'
-                  : 'text-stone-500 hover:text-stone-800'
+                  ? 'bg-amber-500 text-stone-950 shadow-md'
+                  : 'text-stone-400 hover:text-stone-100'
               }`}
             >
               <span>📋 Details & Stats</span>
@@ -812,10 +826,10 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 soundService.playClick();
                 setInspectTab('preview');
               }}
-              className={`py-1.5 px-3 rounded-xl text-xs font-bold font-display flex items-center justify-center gap-1.5 transition-all ${
+              className={`py-2 px-3 rounded-xl text-xs font-bold font-display flex items-center justify-center gap-1.5 transition-all ${
                 inspectTab === 'preview'
-                  ? 'bg-amber-500 text-stone-950 shadow-sm'
-                  : 'text-stone-500 hover:text-stone-800'
+                  ? 'bg-amber-500 text-stone-950 shadow-md'
+                  : 'text-stone-400 hover:text-stone-100'
               }`}
             >
               <Zap className="w-3.5 h-3.5 fill-current" />
@@ -825,9 +839,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
 
           {inspectTab === 'preview' ? (
             <div className="w-full space-y-3">
-              <div className="flex items-center justify-between border-b border-stone-200/70 pb-2">
+              <div className="flex items-center justify-between border-b border-stone-800 pb-2">
                 <div>
-                  <h4 className="text-sm font-extrabold text-stone-900 font-display">
+                  <h4 className="text-sm font-black text-stone-100 font-display uppercase tracking-wider">
                     {selectedName} Combat Preview
                   </h4>
                 </div>
@@ -836,25 +850,21 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
             </div>
           ) : (
             <div className="space-y-4">
-              <div className={`flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 rounded-2xl transition-all ${
+              <div className={`flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3 p-4 rounded-2xl border transition-all ${
                 isEquipped
-                  ? 'bg-emerald-50/40 border-2 border-emerald-500 shadow-sm'
-                  : 'bg-stone-50/80 border border-stone-100'
+                  ? 'bg-emerald-950/40 border-emerald-500/80 shadow-lg shadow-emerald-950/50'
+                  : 'bg-stone-950/70 border-stone-800'
               }`}>
                 <div className="flex items-center gap-3.5 min-w-0 flex-1">
-                  <div
-                    className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${inspectedMeta.bgGradient} p-1 shadow-md flex items-center justify-center flex-shrink-0`}
-                  >
-                    <div className="w-full h-full bg-white/90 rounded-xl flex items-center justify-center">
+                  <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${inspectedMeta.bgGradient} p-1 shadow-lg flex items-center justify-center flex-shrink-0`}>
+                    <div className="w-full h-full bg-stone-950/90 rounded-xl flex items-center justify-center">
                       <DracoArtwork name={selectedName} animated={isEquipped} size={52} />
                     </div>
                   </div>
                   <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-lg font-bold text-stone-900 font-display truncate">{selectedName}</h3>
-                    </div>
-                    <p className="text-xs font-semibold text-stone-500 mt-0.5 truncate">{inspectedMeta.role}</p>
-                    <p className="text-[11px] text-stone-400 mt-0.5 truncate">
+                    <h3 className="text-lg font-black text-white uppercase tracking-wider font-display truncate">{selectedName}</h3>
+                    <p className="text-xs font-semibold text-amber-400 mt-0.5 truncate">{inspectedMeta.role}</p>
+                    <p className="text-[11px] font-mono text-stone-400 mt-0.5 truncate">
                       {isUnlocked ? `Class Unlocked • Level ${lvl}` : `Unlock Cost: ${inspectedMeta.cost} Coins`}
                     </p>
                   </div>
@@ -868,21 +878,13 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                         soundService.playLevelUp();
                         onSelect(selectedName);
                       }}
-                      className={`w-full xl:w-auto px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                      className={`w-full xl:w-auto px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider font-display transition-all shadow-lg flex items-center justify-center gap-1.5 whitespace-nowrap ${
                         isEquipped
-                          ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-default'
-                          : 'bg-stone-900 hover:bg-stone-800 text-white shadow-md active:scale-95'
+                          ? 'bg-stone-800 text-stone-500 border border-stone-700 cursor-default'
+                          : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-stone-950 shadow-amber-500/20 active:scale-95'
                       }`}
                     >
-                      {isEquipped ? (
-                        <>
-                          Active
-                        </>
-                      ) : (
-                        <>
-                          Equip
-                        </>
-                      )}
+                      {isEquipped ? 'ACTIVE HERO' : 'EQUIP HERO'}
                     </button>
                   ) : (
                     <button
@@ -891,30 +893,30 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                         soundService.playLevelUp();
                         onUnlock(selectedName, inspectedMeta.cost);
                       }}
-                      className={`w-full xl:w-auto px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-1.5 whitespace-nowrap ${
+                      className={`w-full xl:w-auto px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider font-display transition-all shadow-lg flex items-center justify-center gap-1.5 whitespace-nowrap ${
                         canAfford
-                          ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-md active:scale-95'
-                          : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
+                          ? 'bg-amber-500 hover:bg-amber-400 text-stone-950 shadow-amber-500/20 active:scale-95'
+                          : 'bg-stone-800 text-stone-500 border border-stone-700 cursor-not-allowed'
                       }`}
                     >
-                      <Coins className="w-4 h-4 shrink-0" />
-                      Unlock for {inspectedMeta.cost} Coins
+                      <Coins className="w-4 h-4 shrink-0 fill-current" />
+                      Unlock ({inspectedMeta.cost}🪙)
                     </button>
                   )}
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-stone-50/50 border border-stone-100">
+              <div className="p-4 rounded-2xl bg-stone-950/80 border border-stone-800">
                 <div className="flex items-center justify-between mb-3">
-                  <div className="text-xs font-bold text-stone-800 flex items-center gap-1">
+                  <div className="text-xs font-black uppercase tracking-wider text-stone-200 flex items-center gap-1.5 font-display">
                     <span>Battle Attributes</span>
-                    {isUnlocked && <span className="text-stone-400 font-normal text-[11px]">(Level {lvl}/15)</span>}
+                    {isUnlocked && <span className="text-stone-400 font-mono text-[11px] font-normal">(Lv.{lvl}/15)</span>}
                   </div>
 
                   {isUnlocked && (
                     <div>
                       {lvl >= 15 ? (
-                        <span className="px-2.5 py-1 text-[10px] font-bold text-purple-700 bg-purple-100 rounded-lg">
+                        <span className="px-2.5 py-1 text-[10px] font-black text-purple-300 bg-purple-950/80 border border-purple-800 rounded-lg">
                           MAX LEVEL
                         </span>
                       ) : (
@@ -930,11 +932,11 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                           }}
                           className={`px-3 py-1.5 rounded-xl text-[11px] font-bold flex items-center gap-1.5 transition-all ${
                             canLevelUp
-                              ? 'bg-amber-500 hover:bg-amber-600 text-white shadow-sm active:scale-95'
-                              : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
+                              ? 'bg-amber-500 hover:bg-amber-400 text-stone-950 shadow-md active:scale-95'
+                              : 'bg-stone-800 text-stone-500 border border-stone-700 cursor-not-allowed'
                           }`}
                         >
-                          <Coins className="w-3.5 h-3.5" />
+                          <Coins className="w-3.5 h-3.5 fill-current" />
                           Upgrade ({levelUpCost}🪙)
                         </button>
                       )}
@@ -944,52 +946,52 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
 
                 <div className="grid grid-cols-2 gap-3 text-xs">
                   <div>
-                    <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
-                      <span>HP</span>
-                      <span className="font-mono font-bold text-stone-700">{hp}</span>
+                    <div className="flex justify-between text-[11px] font-mono text-stone-400 mb-1">
+                      <span className="font-bold text-stone-300">HP</span>
+                      <span className="font-bold text-rose-400">{hp}</span>
                     </div>
-                    <div className="h-1.5 bg-stone-200/70 rounded-full overflow-hidden">
+                    <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
                       <div
-                        className="h-full bg-rose-500 rounded-full"
+                        className="h-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)] rounded-full"
                         style={{ width: `${Math.min(100, (hp / 35) * 100)}%` }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
-                      <span>Attack</span>
-                      <span className="font-mono font-bold text-stone-700">{att}</span>
+                    <div className="flex justify-between text-[11px] font-mono text-stone-400 mb-1">
+                      <span className="font-bold text-stone-300">Attack</span>
+                      <span className="font-bold text-amber-400">{att}</span>
                     </div>
-                    <div className="h-1.5 bg-stone-200/70 rounded-full overflow-hidden">
+                    <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
                       <div
-                        className="h-full bg-amber-500 rounded-full"
+                        className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)] rounded-full"
                         style={{ width: `${Math.min(100, (att / 20) * 100)}%` }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
-                      <span>Defense</span>
-                      <span className="font-mono font-bold text-stone-700">{def}</span>
+                    <div className="flex justify-between text-[11px] font-mono text-stone-400 mb-1">
+                      <span className="font-bold text-stone-300">Defense</span>
+                      <span className="font-bold text-blue-400">{def}</span>
                     </div>
-                    <div className="h-1.5 bg-stone-200/70 rounded-full overflow-hidden">
+                    <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
                       <div
-                        className="h-full bg-blue-500 rounded-full"
+                        className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] rounded-full"
                         style={{ width: `${Math.min(100, (def / 20) * 100)}%` }}
                       />
                     </div>
                   </div>
 
                   <div>
-                    <div className="flex justify-between text-[11px] text-stone-500 mb-0.5">
-                      <span>Speed</span>
-                      <span className="font-mono font-bold text-stone-700">{spd}</span>
+                    <div className="flex justify-between text-[11px] font-mono text-stone-400 mb-1">
+                      <span className="font-bold text-stone-300">Speed</span>
+                      <span className="font-bold text-emerald-400">{spd}</span>
                     </div>
-                    <div className="h-1.5 bg-stone-200/70 rounded-full overflow-hidden">
+                    <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
                       <div
-                        className="h-full bg-emerald-500 rounded-full"
+                        className="h-full bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.6)] rounded-full"
                         style={{ width: `${Math.min(100, (spd / 15) * 100)}%` }}
                       />
                     </div>
@@ -998,24 +1000,24 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div className="p-3 bg-stone-50 rounded-2xl border border-stone-100">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-stone-800">
-                    <Sparkles className="w-3.5 h-3.5 text-stone-900" />
+                <div className="p-3.5 bg-stone-950/80 rounded-2xl border border-stone-800">
+                  <div className="flex items-center gap-1.5 text-xs font-black uppercase text-amber-400 font-display">
+                    <Sparkles className="w-3.5 h-3.5" />
                     <span>Special Skill</span>
                   </div>
-                  <p className="text-xs font-extrabold text-amber-700 mt-1 leading-tight">{inspectedMeta.abilityName}</p>
-                  <p className="text-[11px] text-stone-600 mt-1 leading-normal">{inspectedMeta.abilityDesc}</p>
+                  <p className="text-xs font-bold text-stone-100 mt-1 leading-tight">{inspectedMeta.abilityName}</p>
+                  <p className="text-[11px] text-stone-400 mt-1 leading-normal">{inspectedMeta.abilityDesc}</p>
                 </div>
 
-                <div className="p-3 bg-amber-50/80 rounded-2xl border border-amber-200/70">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-amber-950">
-                    <Zap className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+                <div className="p-3.5 bg-purple-950/30 rounded-2xl border border-purple-800/60">
+                  <div className="flex items-center gap-1.5 text-xs font-black uppercase text-purple-400 font-display">
+                    <Zap className="w-3.5 h-3.5 fill-current" />
                     <span>Ultimate Skill</span>
                   </div>
-                  <p className="text-xs font-extrabold text-purple-700 mt-1 leading-tight">
+                  <p className="text-xs font-bold text-purple-300 mt-1 leading-tight">
                     {inspectedMeta.ultimateName}
                   </p>
-                  <p className="text-[11px] text-amber-950/80 mt-1 leading-normal">{inspectedMeta.ultimateDesc}</p>
+                  <p className="text-[11px] text-purple-200/80 mt-1 leading-normal">{inspectedMeta.ultimateDesc}</p>
                 </div>
               </div>
             </div>

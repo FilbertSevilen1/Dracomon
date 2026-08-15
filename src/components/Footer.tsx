@@ -7,43 +7,43 @@ import { soundService } from '../services/sound';
 
 export const Footer: React.FC = () => {
   return (
-    <footer className="w-full border-t border-stone-200 bg-white/80 backdrop-blur-md pt-12 pb-8 z-40 select-none font-sans">
+    <footer className="w-full border-t border-stone-800/80 bg-stone-950/90 backdrop-blur-xl pt-12 pb-8 z-40 select-none font-sans text-stone-100">
       <div className="max-w-6xl mx-auto px-6 md:px-12 grid md:grid-cols-4 gap-8 text-left text-xs">
         {/* Brand Column */}
         <div className="space-y-3">
           <Link
             href="/"
             onClick={() => soundService.playClick()}
-            className="text-lg font-black text-stone-900 flex items-center gap-1 font-display hover:opacity-90 transition-opacity"
+            className="text-lg font-black text-white flex items-center gap-1.5 font-display uppercase tracking-wider hover:opacity-90 transition-opacity"
           >
             🐉 Dracoman
           </Link>
-          <p className="text-stone-500 leading-relaxed text-[11px]">
+          <p className="text-stone-400 leading-relaxed text-[11px] font-mono">
             Offline platforming dragon action RPG built with HTML5 Canvas 2D engine &amp; Next.js / React.
           </p>
         </div>
 
         {/* Quick Links */}
         <div>
-          <h4 className="font-extrabold text-stone-900 uppercase tracking-wider mb-3 font-mono">Quick Navigation</h4>
-          <ul className="space-y-2 text-stone-500 font-semibold">
+          <h4 className="font-black text-amber-400 uppercase tracking-wider mb-3 font-display">Quick Navigation</h4>
+          <ul className="space-y-2 text-stone-400 font-mono">
             <li>
-              <Link href="/" onClick={() => soundService.playClick()} className="hover:text-amber-600 transition-colors">
+              <Link href="/" onClick={() => soundService.playClick()} className="hover:text-amber-300 transition-colors">
                 Home / Overview
               </Link>
             </li>
             <li>
-              <Link href="/heroes" onClick={() => soundService.playClick()} className="hover:text-amber-600 transition-colors">
+              <Link href="/heroes" onClick={() => soundService.playClick()} className="hover:text-amber-300 transition-colors">
                 Hero Roster
               </Link>
             </li>
             <li>
-              <Link href="/maps" onClick={() => soundService.playClick()} className="hover:text-amber-600 transition-colors">
+              <Link href="/maps" onClick={() => soundService.playClick()} className="hover:text-amber-300 transition-colors">
                 Campaign Maps
               </Link>
             </li>
             <li>
-              <Link href="/membership" onClick={() => soundService.playClick()} className="hover:text-amber-600 transition-colors">
+              <Link href="/membership" onClick={() => soundService.playClick()} className="hover:text-amber-300 transition-colors">
                 Membership Perks
               </Link>
             </li>
@@ -52,46 +52,41 @@ export const Footer: React.FC = () => {
 
         {/* Info & Help */}
         <div>
-          <h4 className="font-extrabold text-stone-900 uppercase tracking-wider mb-3 font-mono">Community &amp; Help</h4>
-          <ul className="space-y-2 text-stone-500 font-semibold">
+          <h4 className="font-black text-amber-400 uppercase tracking-wider mb-3 font-display">Community &amp; Help</h4>
+          <ul className="space-y-2 text-stone-400 font-mono">
             <li>
-              <Link href="/version" onClick={() => soundService.playClick()} className="hover:text-amber-600 transition-colors">
+              <Link href="/version" onClick={() => soundService.playClick()} className="hover:text-amber-300 transition-colors">
                 Patch Notes &amp; Updates
               </Link>
             </li>
             <li>
-              <Link href="/#faq" onClick={() => soundService.playClick()} className="hover:text-amber-600 transition-colors">
-                FAQ &amp; Guide
-              </Link>
-            </li>
-            <li>
-              <Link href="/#contact" onClick={() => soundService.playClick()} className="hover:text-amber-600 transition-colors">
-                Developer Guild
+              <Link href="/admin" onClick={() => soundService.playClick()} className="hover:text-amber-300 transition-colors">
+                Admin Panel &amp; Stage Editor
               </Link>
             </li>
           </ul>
         </div>
 
-        {/* Release Info */}
-        <div className="space-y-3">
-          <h4 className="font-extrabold text-stone-900 uppercase tracking-wider font-mono">Release Info</h4>
-          <p className="text-stone-400 text-[11px] font-mono">
-            Version: <strong className="text-stone-700">v0.2.4 Lunar Goddess</strong> <br />
-            Stack: React 19, Next.js 15, Canvas 2D
-          </p>
+        {/* Dynamic Latest Version Tag */}
+        <div>
+          <h4 className="font-black text-amber-400 uppercase tracking-wider mb-3 font-display">System Version</h4>
           <Link
             href="/version"
             onClick={() => soundService.playClick()}
-            className="px-4 py-2 bg-rose-950 text-rose-300 border border-rose-700 hover:bg-rose-900 rounded-xl text-[11px] font-mono font-black transition-all inline-flex items-center gap-1.5 shadow-sm"
+            className="inline-flex items-center gap-2 p-3 rounded-2xl bg-stone-900 border border-stone-800 hover:border-amber-500/50 hover:bg-stone-850 transition-all group"
           >
-            <ScrollText className="w-3.5 h-3.5 text-rose-400" />
-            View Patch Notes
+            <ScrollText className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
+            <div>
+              <span className="text-[10px] font-mono text-stone-500 uppercase block leading-none">Current Build</span>
+              <span className="text-xs font-mono font-bold text-amber-300">v0.3.2</span>
+            </div>
           </Link>
         </div>
       </div>
 
-      <div className="mt-8 pt-6 border-t border-stone-100 text-center text-[11px] text-stone-400 font-mono">
-        © {new Date().getFullYear()} Dracoman RPG • FilbertSevilen1. All rights reserved.
+      <div className="max-w-6xl mx-auto px-6 md:px-12 mt-10 pt-6 border-t border-stone-900 flex flex-col sm:flex-row items-center justify-between text-[11px] font-mono text-stone-500 gap-3">
+        <p>© 2026 Dracoman RPG. All rights reserved.</p>
+        <p>Built with Next.js 15, Tailwind CSS, &amp; HTML5 Canvas Engine</p>
       </div>
     </footer>
   );

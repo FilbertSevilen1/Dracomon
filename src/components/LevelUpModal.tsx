@@ -65,65 +65,65 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
   ];
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-md">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md">
       <motion.div
         initial={{ scale: 0.9, rotate: -1, y: 30 }}
         animate={{ scale: 1, rotate: 0, y: 0 }}
-        className="w-full max-w-lg max-h-[90vh] overflow-y-auto border border-yellow-200 bg-white/95 rounded-3xl p-6 md:p-8 shadow-2xl relative text-center scrollbar-thin scrollbar-thumb-stone-200"
+        className="w-full max-w-lg max-h-[90vh] overflow-y-auto border border-amber-500/50 bg-stone-900/95 rounded-3xl p-6 md:p-8 shadow-2xl relative text-center scrollbar-thin scrollbar-thumb-stone-800 text-stone-100 backdrop-blur-xl"
       >
         {/* Glow Effects */}
-        <div className="absolute -top-12 -left-12 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl" />
-        <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-400/20 rounded-full blur-2xl" />
+        <div className="absolute -top-12 -left-12 w-32 h-32 bg-amber-500/20 rounded-full blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-12 -right-12 w-32 h-32 bg-purple-500/20 rounded-full blur-2xl pointer-events-none" />
 
         {/* Icon & Title */}
-        <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-amber-100 rounded-2xl flex items-center justify-center mb-3 border border-amber-200 shadow-sm animate-bounce">
-          <Award className="w-6 h-6 md:w-8 md:h-8 text-amber-600" />
+        <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-amber-500/10 rounded-2xl flex items-center justify-center mb-3 border border-amber-500/30 shadow-inner animate-bounce">
+          <Award className="w-6 h-6 md:w-8 md:h-8 text-amber-400" />
         </div>
 
         {pendingCount && pendingCount > 1 && (
-          <div className="mb-2 inline-block px-3 py-1 bg-amber-100 border border-amber-300 text-amber-900 rounded-full text-xs font-bold font-mono">
+          <div className="mb-2 inline-block px-3 py-1 bg-amber-500/20 border border-amber-500/40 text-amber-300 rounded-full text-xs font-bold font-mono">
             Level Up Bonus ({pendingCount} Remaining)
           </div>
         )}
 
-        <h2 className="text-2xl md:text-3xl font-extrabold tracking-tight text-stone-900 font-display">LEVEL UP!</h2>
-        <p className="text-xs md:text-sm font-semibold text-stone-400 mt-1 uppercase tracking-wider">
+        <h2 className="text-2xl md:text-3xl font-black tracking-wider text-white uppercase font-display">LEVEL UP!</h2>
+        <p className="text-xs md:text-sm font-semibold text-amber-400 mt-1 uppercase tracking-wider font-display">
           {dracoName} reached Level {newLevel}!
         </p>
 
         {/* Level Progression badges */}
-        <div className="mt-1 md:mt-2 flex items-center justify-center gap-3 text-stone-400 font-bold text-sm">
+        <div className="mt-1 md:mt-2 flex items-center justify-center gap-3 text-stone-400 font-mono font-bold text-sm">
           <span>Lv.{oldLevel}</span>
           <span>→</span>
-          <span className="text-amber-500 font-extrabold text-lg">Lv.{newLevel}</span>
+          <span className="text-amber-400 font-black text-lg">Lv.{newLevel}</span>
         </div>
 
         {/* Base stats panel */}
-        <div className="mt-4 p-3 md:p-4 rounded-2xl border border-stone-100 bg-stone-50/50 max-w-sm mx-auto text-left space-y-1">
-          <h4 className="text-[10px] md:text-xs font-bold uppercase tracking-wider text-stone-400 mb-1">Base Stat Upgrades:</h4>
-          <div className="grid grid-cols-2 gap-2 text-xs font-mono font-bold text-stone-700">
-            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
+        <div className="mt-4 p-3 md:p-4 rounded-2xl border border-stone-800 bg-stone-950/80 max-w-sm mx-auto text-left space-y-1">
+          <h4 className="text-[10px] md:text-xs font-black uppercase tracking-wider text-stone-400 mb-1 font-display">Base Stat Upgrades:</h4>
+          <div className="grid grid-cols-2 gap-2 text-xs font-mono font-bold text-stone-300">
+            <div className="flex justify-between p-1.5 md:p-2 bg-stone-900 rounded-lg border border-stone-800">
               <span>HP</span>
-              <span className="text-emerald-600">+{baseIncrease.hp}</span>
+              <span className="text-emerald-400">+{baseIncrease.hp}</span>
             </div>
-            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
+            <div className="flex justify-between p-1.5 md:p-2 bg-stone-900 rounded-lg border border-stone-800">
               <span>Attack</span>
-              <span className="text-emerald-600">+{baseIncrease.attack}</span>
+              <span className="text-emerald-400">+{baseIncrease.attack}</span>
             </div>
-            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
+            <div className="flex justify-between p-1.5 md:p-2 bg-stone-900 rounded-lg border border-stone-800">
               <span>Defense</span>
-              <span className="text-emerald-600">+{baseIncrease.defense}</span>
+              <span className="text-emerald-400">+{baseIncrease.defense}</span>
             </div>
-            <div className="flex justify-between p-1.5 md:p-2 bg-white rounded-lg border border-stone-100">
+            <div className="flex justify-between p-1.5 md:p-2 bg-stone-900 rounded-lg border border-stone-800">
               <span>Speed</span>
-              <span className="text-emerald-600">+{baseIncrease.speed}</span>
+              <span className="text-emerald-400">+{baseIncrease.speed}</span>
             </div>
           </div>
         </div>
 
         {/* Dice roll animation */}
-        <div className="mt-4 md:mt-6 mb-4 flex flex-col items-center justify-center p-3 md:p-4 border border-dashed border-amber-200 rounded-2xl bg-amber-50/30 max-w-xs mx-auto">
-          <div className="flex items-center gap-2 mb-1.5 text-amber-800 text-[10px] md:text-xs font-bold">
+        <div className="mt-4 md:mt-6 mb-4 flex flex-col items-center justify-center p-3 md:p-4 border border-dashed border-amber-500/40 rounded-2xl bg-amber-950/20 max-w-xs mx-auto">
+          <div className="flex items-center gap-2 mb-1.5 text-amber-400 text-[10px] md:text-xs font-bold font-mono">
             <Dices className="w-3.5 h-3.5 animate-spin" />
             <span>ROLLING RANDOM BONUS...</span>
           </div>
@@ -131,13 +131,13 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
           <motion.div
             animate={diceRolling ? { rotate: 360 } : { scale: [1, 1.15, 1] }}
             transition={diceRolling ? { repeat: Infinity, duration: 0.5, ease: 'linear' } : { duration: 0.3 }}
-            className="w-12 h-12 md:w-14 md:h-14 bg-white border-2 border-amber-500 rounded-2xl shadow-md flex items-center justify-center font-mono font-black text-xl md:text-2xl text-amber-600"
+            className="w-12 h-12 md:w-14 md:h-14 bg-stone-950 border-2 border-amber-400 rounded-2xl shadow-lg flex items-center justify-center font-mono font-black text-xl md:text-2xl text-amber-400"
           >
             +{currentDiceVal}
           </motion.div>
 
           {!diceRolling && (
-            <p className="text-[9px] md:text-[10px] text-amber-600 font-bold uppercase tracking-wider mt-1.5">
+            <p className="text-[9px] md:text-[10px] text-amber-300 font-bold uppercase tracking-wider mt-1.5 font-mono">
               Select one stat to apply this +{bonusRoll} bonus!
             </p>
           )}
@@ -155,17 +155,17 @@ export const LevelUpModal: React.FC<LevelUpModalProps> = ({
                 key={key}
                 disabled={isDisabled}
                 onClick={() => handleSelectStat(key)}
-                className={`py-2 px-3 md:py-3 md:px-4 rounded-xl border text-[11px] md:text-xs font-bold transition-all text-left flex justify-between items-center bg-white ${
+                className={`py-2 px-3 md:py-3 md:px-4 rounded-xl border text-[11px] md:text-xs font-bold transition-all text-left flex justify-between items-center bg-stone-950 ${
                   isDisabled
-                    ? 'opacity-50 cursor-not-allowed border-stone-200 text-stone-400 bg-stone-100'
-                    : 'border-stone-200 text-stone-700 hover:border-amber-500 hover:bg-amber-50/20 active:scale-95'
+                    ? 'opacity-50 cursor-not-allowed border-stone-900 text-stone-500'
+                    : 'border-stone-800 text-stone-200 hover:border-amber-400 hover:bg-amber-950/40 active:scale-95'
                 }`}
               >
                 <span>{name}</span>
                 {isCapped ? (
-                  <span className="font-mono text-stone-400 text-[8px] md:text-[9px] font-extrabold uppercase">CAPPED</span>
+                  <span className="font-mono text-stone-500 text-[8px] md:text-[9px] font-extrabold uppercase">CAPPED</span>
                 ) : !diceRolling ? (
-                  <span className="font-mono text-emerald-600">+{bonusRoll}</span>
+                  <span className="font-mono text-emerald-400">+{bonusRoll}</span>
                 ) : null}
               </button>
             );

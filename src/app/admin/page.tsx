@@ -552,56 +552,56 @@ export default function AdminPage() {
   };
 
 
-  // LIGHT MODE LOGIN SCREEN
+  // DARK OBSIDIAN GLASS LOGIN SCREEN
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-stone-100 text-stone-900 flex items-center justify-center p-4 font-display select-none relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-[35rem] h-[35rem] bg-teal-200/40 rounded-full blur-3xl -z-10" />
-        <div className="absolute bottom-0 left-0 w-[35rem] h-[35rem] bg-amber-200/40 rounded-full blur-3xl -z-10" />
+      <div className="min-h-screen bg-stone-950 text-stone-100 flex items-center justify-center p-4 font-display select-none relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[35rem] h-[35rem] bg-purple-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[35rem] h-[35rem] bg-amber-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
 
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-md bg-white border border-stone-200 rounded-3xl p-8 shadow-xl backdrop-blur-xl relative"
+          className="w-full max-w-md bg-stone-900/90 border border-stone-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl relative text-stone-100"
         >
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 rounded-2xl bg-amber-100 border border-amber-300 flex items-center justify-center text-amber-800">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-2xl font-black text-stone-900 tracking-tight">Admin Portal</h1>
-              <p className="text-xs text-stone-500">Level &amp; World Management Suite</p>
+              <h1 className="text-2xl font-black text-white tracking-wider uppercase font-display">Admin Portal</h1>
+              <p className="text-xs text-stone-400 font-mono">Level &amp; World Management Suite</p>
             </div>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Username</label>
+              <label className="block text-xs font-mono font-bold text-stone-400 uppercase tracking-wider mb-2">Username</label>
               <input
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 placeholder="Admin username"
-                className="w-full px-4 py-3 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-900 focus:outline-none focus:border-amber-500 font-mono transition-all"
+                className="w-full px-4 py-3 bg-stone-950 border border-stone-800 rounded-xl text-sm text-stone-100 focus:outline-none focus:border-amber-400 font-mono transition-all shadow-inner"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-stone-700 uppercase tracking-wider mb-2">Password</label>
+              <label className="block text-xs font-mono font-bold text-stone-400 uppercase tracking-wider mb-2">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Admin password"
-                  className="w-full px-4 py-3 bg-stone-50 border border-stone-300 rounded-xl text-sm text-stone-900 focus:outline-none focus:border-amber-500 font-mono transition-all pr-12"
+                  className="w-full px-4 py-3 bg-stone-950 border border-stone-800 rounded-xl text-sm text-stone-100 focus:outline-none focus:border-amber-400 font-mono transition-all pr-12 shadow-inner"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-500 hover:text-stone-300"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
@@ -609,7 +609,7 @@ export default function AdminPage() {
             </div>
 
             {authError && (
-              <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded-xl flex items-center gap-2">
+              <div className="p-3 bg-rose-950/40 border border-rose-800/80 text-rose-300 text-xs rounded-xl flex items-center gap-2 font-mono">
                 <AlertTriangle className="w-4 h-4 shrink-0" />
                 <span>{authError}</span>
               </div>
@@ -617,20 +617,20 @@ export default function AdminPage() {
 
             <button
               type="submit"
-              className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 font-black text-sm rounded-xl shadow-md transition-all flex items-center justify-center gap-2 mt-4"
+              className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-stone-950 font-black text-xs uppercase tracking-wider font-display rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 mt-4"
             >
-              <Lock className="w-4 h-4" /> Login to Dashboard
+              <Lock className="w-4 h-4 fill-current" /> Login to Dashboard
             </button>
           </form>
 
-          <div className="mt-6 pt-6 border-t border-stone-200 flex justify-between items-center text-xs text-stone-500">
+          <div className="mt-6 pt-6 border-t border-stone-800 flex justify-between items-center text-xs text-stone-400">
             <button
               onClick={() => router.push('/')}
-              className="hover:text-stone-800 flex items-center gap-1 transition-all"
+              className="hover:text-amber-400 flex items-center gap-1 transition-all font-mono"
             >
               <Home className="w-3.5 h-3.5" /> Back to Game
             </button>
-            <span className="font-mono text-[10px]">v0.3.0 Light Admin Suite</span>
+            <span className="font-mono text-[10px] text-amber-400 font-bold">v0.3.2 Dark Admin Suite</span>
           </div>
         </motion.div>
       </div>

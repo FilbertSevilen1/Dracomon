@@ -128,12 +128,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
 
   const tierColor =
     currentTier === 'Premium'
-      ? 'bg-purple-600 text-white border-purple-400'
+      ? 'bg-purple-500/20 text-purple-300 border-purple-500/40 font-mono font-bold'
       : currentTier === 'Basic'
-      ? 'bg-emerald-600 text-white border-emerald-400'
-      : isTransparent
-      ? 'bg-white/10 text-stone-200 border-white/20'
-      : 'bg-stone-100 text-stone-700 border-stone-300';
+      ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 font-mono font-bold'
+      : 'bg-stone-900 text-stone-300 border-stone-800 font-mono font-bold';
 
   if (pathname === '/play') return null;
 
@@ -141,20 +139,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
     <>
       <header className={`w-full z-50 px-3 md:px-8 py-3 flex items-center justify-between select-none transition-all duration-300 fixed top-0 left-0 ${
         isTransparent
-          ? 'bg-transparent border-b border-transparent shadow-none'
-          : 'border-b border-stone-200/80 bg-white/90 backdrop-blur-md shadow-sm'
+          ? 'bg-stone-950/40 backdrop-blur-md border-b border-white/5'
+          : 'border-b border-stone-800/80 bg-stone-950/90 backdrop-blur-xl shadow-2xl'
       }`}>
 
         {/* ── Logo ── */}
         <Link
           href="/"
           onClick={() => soundService.playClick()}
-          className={`flex items-center gap-1.5 font-mono font-black tracking-tight hover:opacity-90 transition-all shrink-0 ${
-            isTransparent ? 'text-white' : 'text-stone-900'
-          }`}
+          className="flex items-center gap-1.5 font-mono font-black tracking-tight hover:opacity-90 transition-all shrink-0 text-stone-100"
         >
           <span className="text-2xl leading-none">🐉</span>
-          <span className="hidden sm:inline text-lg md:text-xl">Dracoman</span>
+          <span className="hidden sm:inline text-lg md:text-xl font-display uppercase tracking-wider text-white">Dracoman</span>
         </Link>
 
         {/* ── Desktop Full Nav ── */}
@@ -172,12 +168,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                 onClick={() => soundService.playClick()}
                 className={`flex items-center gap-1.5 transition-colors ${
                   isActive
-                    ? isTransparent
-                      ? 'text-amber-400 font-black border-b-2 border-amber-400 pb-0.5'
-                      : 'text-amber-600 font-black border-b-2 border-amber-500 pb-0.5'
-                    : isTransparent
-                    ? 'text-stone-300 hover:text-white'
-                    : 'text-stone-600 hover:text-amber-600'
+                    ? 'text-amber-400 font-black border-b-2 border-amber-400 pb-0.5'
+                    : 'text-stone-400 hover:text-white'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -199,12 +191,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                 title={label}
                 className={`p-2 rounded-xl transition-all ${
                   isActive
-                    ? isTransparent
-                      ? 'text-amber-400 bg-white/10'
-                      : 'text-amber-600 bg-amber-50'
-                    : isTransparent
-                    ? 'text-stone-300 hover:text-white hover:bg-white/10'
-                    : 'text-stone-500 hover:text-amber-600 hover:bg-stone-50'
+                    ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
+                    : 'text-stone-400 hover:text-white hover:bg-stone-900'
                 }`}
               >
                 <Icon className="w-[18px] h-[18px]" />
@@ -219,12 +207,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
               title="More"
               className={`p-2 rounded-xl transition-all ${
                 showDropdown
-                  ? isTransparent
-                    ? 'text-amber-400 bg-white/10'
-                    : 'text-amber-600 bg-amber-50'
-                  : isTransparent
-                  ? 'text-stone-300 hover:text-white hover:bg-white/10'
-                  : 'text-stone-500 hover:text-amber-600 hover:bg-stone-50'
+                  ? 'text-amber-400 bg-amber-500/10 border border-amber-500/20'
+                  : 'text-stone-400 hover:text-white hover:bg-stone-900'
               }`}
             >
               {showDropdown
@@ -241,128 +225,90 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -6 }}
                   transition={{ duration: 0.15, ease: 'easeOut' }}
-                  className={`absolute right-0 top-[calc(100%+8px)] w-56 rounded-2xl shadow-xl overflow-hidden z-50 border transition-all duration-300 ${
-                    isTransparent
-                      ? 'bg-stone-950/95 backdrop-blur-md border-stone-800 text-stone-200 shadow-2xl'
-                      : 'bg-white border-stone-200 text-stone-850'
-                  }`}
+                  className="absolute right-0 top-[calc(100%+8px)] w-56 rounded-2xl shadow-2xl overflow-hidden z-50 border border-stone-800 bg-stone-950/95 backdrop-blur-xl text-stone-100"
                 >
                   {/* Character / Hero */}
                   <Link
                     href="/heroes"
                     onClick={() => { soundService.playClick(); setShowDropdown(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors border-b group ${
-                      isTransparent
-                        ? 'hover:bg-white/5 border-stone-900'
-                        : 'hover:bg-amber-50 border-stone-100'
-                    }`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors border-b border-stone-800/80 hover:bg-stone-900 group"
                   >
-                    <div className="p-1.5 bg-stone-900 rounded-full shrink-0">
+                    <div className="p-1.5 bg-stone-900 border border-stone-800 rounded-full shrink-0">
                       <Sparkles className="w-3 h-3 text-amber-400 fill-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] font-mono font-black truncate ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>{activeDracoName}</p>
-                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>Lv.{activeLevel} · Active Hero</p>
+                      <p className="text-[11px] font-mono font-black truncate text-stone-100">{activeDracoName}</p>
+                      <p className="text-[9px] font-mono text-stone-400">Lv.{activeLevel} · Active Hero</p>
                     </div>
-                    <ChevronRight className={`w-3.5 h-3.5 transition-colors shrink-0 ${isTransparent ? 'text-stone-600 group-hover:text-amber-400' : 'text-stone-400 group-hover:text-amber-500'}`} />
+                    <ChevronRight className="w-3.5 h-3.5 transition-colors shrink-0 text-stone-500 group-hover:text-amber-400" />
                   </Link>
 
                   {/* Coins row */}
-                  <div className={`flex items-center gap-3 px-4 py-2.5 border-b ${
-                    isTransparent
-                      ? 'border-stone-900 bg-amber-500/10'
-                      : 'border-stone-100 bg-amber-50/40'
-                  }`}>
-                    <Coins className="w-4 h-4 text-amber-500 fill-amber-500 shrink-0" />
-                    <span className={`text-xs font-mono font-bold ${isTransparent ? 'text-amber-400' : 'text-amber-700'}`}>{coins} Coins</span>
+                  <div className="flex items-center gap-3 px-4 py-2.5 border-b border-stone-800/80 bg-stone-900/60">
+                    <Coins className="w-4 h-4 text-amber-400 fill-amber-400 shrink-0" />
+                    <span className="text-xs font-mono font-bold text-amber-300">{coins} Coins</span>
                   </div>
 
                   {/* Membership Tier */}
                   <Link
                     href="/membership"
                     onClick={() => { soundService.playClick(); setShowDropdown(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors border-b group ${
-                      isTransparent
-                        ? 'hover:bg-white/5 border-stone-900'
-                        : 'hover:bg-stone-50 border-stone-100'
-                    }`}
+                    className="flex items-center gap-3 px-4 py-3 transition-colors border-b border-stone-800/80 hover:bg-stone-900 group"
                   >
                     <div className={`p-1.5 rounded-full border shrink-0 ${tierColor}`}>
                       <Crown className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-white' : 'text-stone-800'}`}>{currentTier.toUpperCase()} TIER</p>
-                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>Membership</p>
+                      <p className="text-[11px] font-mono font-black text-white">{currentTier.toUpperCase()} TIER</p>
+                      <p className="text-[9px] font-mono text-stone-400">Membership</p>
                     </div>
-                    <ChevronRight className={`w-3.5 h-3.5 transition-colors shrink-0 ${isTransparent ? 'text-stone-600 group-hover:text-amber-400' : 'text-stone-400 group-hover:text-amber-500'}`} />
+                    <ChevronRight className="w-3.5 h-3.5 transition-colors shrink-0 text-stone-500 group-hover:text-amber-400" />
                   </Link>
 
                   {/* Patch Notes */}
                   <Link
                     href="/version"
                     onClick={() => { soundService.playClick(); setShowDropdown(false); }}
-                    className={`flex items-center gap-3 px-4 py-3 transition-colors border-b group ${
-                      isTransparent
-                        ? 'hover:bg-white/5 border-stone-900'
-                        : 'hover:bg-stone-50 border-stone-100'
-                    } ${
-                      pathname === '/version' ? (isTransparent ? 'bg-white/5' : 'bg-amber-50') : ''
+                    className={`flex items-center gap-3 px-4 py-3 transition-colors border-b border-stone-800/80 hover:bg-stone-900 group ${
+                      pathname === '/version' ? 'bg-amber-500/10' : ''
                     }`}
                   >
-                    <div className={`p-1.5 rounded-full border shrink-0 ${
-                      isTransparent
-                        ? 'bg-stone-900 border-stone-800 text-stone-300'
-                        : 'bg-stone-100 border-stone-200 text-stone-600'
-                    }`}>
+                    <div className="p-1.5 rounded-full border shrink-0 bg-stone-900 border-stone-800 text-stone-300">
                       <ScrollText className="w-3.5 h-3.5" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Patch Notes</p>
-                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>v0.2.6 — Latest</p>
+                      <p className="text-[11px] font-mono font-black text-stone-100">Patch Notes</p>
+                      <p className="text-[9px] font-mono text-stone-400">v0.3.2 — Latest</p>
                     </div>
-                    <ChevronRight className={`w-3.5 h-3.5 transition-colors shrink-0 ${isTransparent ? 'text-stone-600 group-hover:text-amber-400' : 'text-stone-400 group-hover:text-amber-500'}`} />
+                    <ChevronRight className="w-3.5 h-3.5 transition-colors shrink-0 text-stone-500 group-hover:text-amber-400" />
                   </Link>
 
                   {/* Inventory (if available) */}
                   <button
                     onClick={() => { soundService.playClick(); setShowInventory(true); setShowDropdown(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 transition-colors border-b group text-left ${
-                      isTransparent
-                        ? 'hover:bg-white/5 border-stone-900'
-                        : 'hover:bg-stone-50 border-stone-100'
-                    }`}
+                    className="w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-stone-800/80 hover:bg-stone-900 group text-left"
                   >
-                    <div className={`p-1.5 rounded-full border shrink-0 ${
-                      isTransparent
-                        ? 'bg-stone-900 border-stone-800 text-amber-400'
-                        : 'bg-amber-50 border-amber-200 text-amber-600'
-                    }`}>
-                      <Briefcase className="w-3.5 h-3.5" />
+                    <div className="p-1.5 rounded-full border shrink-0 bg-stone-900 border-stone-800 text-stone-300">
+                      <Briefcase className="w-3.5 h-3.5 text-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Inventory</p>
-                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>Bag &amp; Items</p>
+                      <p className="text-[11px] font-mono font-black text-stone-100">Inventory</p>
+                      <p className="text-[9px] font-mono text-stone-400">Bag &amp; Items</p>
                     </div>
-                    <ChevronRight className={`w-3.5 h-3.5 transition-colors shrink-0 ${isTransparent ? 'text-stone-600 group-hover:text-amber-400' : 'text-stone-400 group-hover:text-amber-500'}`} />
+                    <ChevronRight className="w-3.5 h-3.5 transition-colors shrink-0 text-stone-500 group-hover:text-amber-400" />
                   </button>
 
                   {/* Settings */}
                   <button
                     onClick={() => { soundService.playClick(); setShowSettings(true); setShowDropdown(false); }}
-                    className={`w-full flex items-center gap-3 px-4 py-3 transition-colors group text-left ${
-                      isTransparent ? 'hover:bg-white/5' : 'hover:bg-stone-50'
-                    }`}
+                    className="w-full flex items-center gap-3 px-4 py-3 transition-colors group text-left hover:bg-stone-900"
                   >
-                    <div className={`p-1.5 rounded-full border shrink-0 ${
-                      isTransparent
-                        ? 'bg-stone-900 border-stone-800 text-stone-300'
-                        : 'bg-stone-100 border-stone-200 text-stone-600'
-                    }`}>
-                      <Settings className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300" />
+                    <div className="p-1.5 rounded-full border shrink-0 bg-stone-900 border-stone-800 text-stone-300">
+                      <Settings className="w-3.5 h-3.5 group-hover:rotate-45 transition-transform duration-300 text-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[11px] font-mono font-black ${isTransparent ? 'text-stone-200' : 'text-stone-800'}`}>Settings</p>
-                      <p className={`text-[9px] font-mono ${isTransparent ? 'text-stone-500' : 'text-stone-400'}`}>Audio &amp; Save</p>
+                      <p className="text-[11px] font-mono font-black text-stone-100">Settings</p>
+                      <p className="text-[9px] font-mono text-stone-400">Audio &amp; Save</p>
                     </div>
                   </button>
                 </motion.div>
@@ -377,16 +323,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           <Link
             href="/heroes"
             onClick={() => soundService.playClick()}
-            className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold shadow-sm transition-all active:scale-95 border ${
-              isTransparent
-                ? 'bg-white/10 hover:bg-white/20 text-white border-white/10'
-                : 'bg-stone-900 hover:bg-stone-800 text-white border-stone-800'
-            }`}
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold shadow-sm transition-all active:scale-95 border bg-stone-900 hover:bg-stone-800 text-white border-stone-800"
             title="Equipped Dragon Guardian"
           >
             <Sparkles className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
-            <span>{activeDracoName}</span>
-            <span className="text-[10px] text-amber-300 font-black">Lv.{activeLevel}</span>
+            <span className="text-amber-400">{activeDracoName}</span>
+            <span className="text-stone-400 text-[10px]">Lv.{activeLevel}</span>
           </Link>
 
           {/* Tier badge */}
@@ -400,39 +342,27 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           </Link>
 
           {/* Coins */}
-          <div className={`flex items-center gap-1.5 px-3 py-1 border rounded-full text-xs font-mono font-bold shadow-sm ${
-            isTransparent
-              ? 'bg-amber-500/10 border-amber-500/20 text-amber-300'
-              : 'bg-amber-50/90 border-amber-200 text-amber-700'
-          }`}>
-            <Coins className="w-3.5 h-3.5 text-amber-500 fill-amber-500" />
+          <div className="flex items-center gap-1.5 px-3 py-1 border border-amber-500/30 bg-amber-500/10 rounded-full text-xs font-mono font-bold text-amber-300 shadow-sm">
+            <Coins className="w-3.5 h-3.5 text-amber-400 fill-amber-400" />
             <span>{coins}</span>
           </div>
 
           {/* Inventory */}
           <button
             onClick={() => { soundService.playClick(); setShowInventory(true); }}
-            className={`p-1.5 border rounded-xl shadow-sm transition-all active:scale-95 ${
-              isTransparent
-                ? 'bg-white/10 border-white/10 hover:bg-white/20 text-white'
-                : 'bg-white border-stone-200 hover:bg-stone-50 text-stone-700'
-            }`}
+            className="p-1.5 border border-stone-800 bg-stone-900 hover:bg-stone-800 text-amber-400 rounded-xl shadow-sm transition-all active:scale-95"
             title="Open Inventory"
           >
-            <Briefcase className={`w-4 h-4 ${isTransparent ? 'text-amber-400' : 'text-amber-600'}`} />
+            <Briefcase className="w-4 h-4 text-amber-400" />
           </button>
 
           {/* Settings */}
           <button
             onClick={() => { soundService.playClick(); setShowSettings(true); }}
-            className={`p-1.5 border rounded-xl shadow-sm transition-all active:scale-95 group ${
-              isTransparent
-                ? 'bg-white/10 border-white/10 hover:bg-white/20 text-white'
-                : 'bg-white border-stone-200 hover:bg-stone-50 text-stone-700'
-            }`}
+            className="p-1.5 border border-stone-800 bg-stone-900 hover:bg-stone-800 text-stone-200 rounded-xl shadow-sm transition-all active:scale-95 group"
             title="Game Settings"
           >
-            <Settings className={`w-4 h-4 group-hover:rotate-45 transition-transform duration-300 ${isTransparent ? 'text-white' : 'text-stone-600'}`} />
+            <Settings className="w-4 h-4 text-stone-300 group-hover:rotate-45 transition-transform duration-300" />
           </button>
         </div>
       </header>

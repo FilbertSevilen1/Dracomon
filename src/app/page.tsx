@@ -622,7 +622,7 @@ export default function Home() {
   const currentStages = STAGE_CARDS.slice(stagePage * itemsPerPage, (stagePage + 1) * itemsPerPage);
 
   return (
-    <div className={`min-h-screen ${isPlaying ? 'bg-stone-950 overflow-hidden' : 'bg-stone-50 bg-grid'} text-stone-900 flex flex-col justify-between font-display relative overflow-hidden scroll-smooth`}>
+    <div className={`min-h-screen ${isPlaying ? 'bg-stone-950 overflow-hidden' : 'bg-stone-950'} text-stone-100 flex flex-col justify-between font-display relative overflow-hidden scroll-smooth`}>
 
       {!isPlaying && (
         <>
@@ -686,61 +686,91 @@ export default function Home() {
                 </div>
               </section>
 
-              <section id="about" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
-                <div className="text-center max-w-3xl mx-auto space-y-3">
-                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">About The Dracony Realm</h2>
-                  <p className="text-stone-600 text-sm leading-relaxed">
+              <section id="about" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80">
+                <motion.div 
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6 }}
+                  className="text-center max-w-3xl mx-auto space-y-3"
+                >
+                  <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-wider font-display">About The Dracony Realm</h2>
+                  <p className="text-stone-400 text-sm leading-relaxed font-mono">
                     Explore an ancient sky continent divided into distinct platforming realms. Defend the realm from patrolling slimes, archers, and lava golems.
                   </p>
-                </div>
+                </motion.div>
 
                 <div className="grid md:grid-cols-4 gap-6 my-16">
-                  <div className="p-6 bg-white border border-stone-200 rounded-3xl shadow-sm space-y-3 hover:shadow-md transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-50 border border-amber-200 flex items-center justify-center text-amber-600">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: 0.1 }}
+                    className="p-6 bg-stone-900/80 border border-stone-800 rounded-3xl shadow-xl space-y-3 hover:border-amber-500/50 hover:shadow-2xl transition-all"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
                       <Sword className="w-6 h-6" />
                     </div>
-                    <h3 className="font-extrabold text-base text-stone-900">Swinging Attack Physics</h3>
-                    <p className="text-xs text-stone-500 leading-relaxed">
+                    <h3 className="font-black text-base text-white font-display">Swinging Attack Physics</h3>
+                    <p className="text-xs text-stone-400 leading-relaxed font-mono">
                       Weapon blades sweep in dynamic 160-degree rotational arcs with trailing slash trails and spark collision effects.
                     </p>
-                  </div>
+                  </motion.div>
 
-                  <div className="p-6 bg-white border border-stone-200 rounded-3xl shadow-sm space-y-3 hover:shadow-md transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: 0.2 }}
+                    className="p-6 bg-stone-900/80 border border-stone-800 rounded-3xl shadow-xl space-y-3 hover:border-emerald-500/50 hover:shadow-2xl transition-all"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
                       <Compass className="w-6 h-6" />
                     </div>
-                    <h3 className="font-extrabold text-base text-stone-900">Platform & Drop Down</h3>
-                    <p className="text-xs text-stone-500 leading-relaxed">
-                      One-way wooden platform landing ensures secure footing. Press <code className="bg-stone-100 px-1 font-mono rounded">S</code> or <code className="bg-stone-100 px-1 font-mono rounded">Down</code> to drop through intentionally.
+                    <h3 className="font-black text-base text-white font-display">Platform & Drop Down</h3>
+                    <p className="text-xs text-stone-400 leading-relaxed font-mono">
+                      One-way wooden platform landing ensures secure footing. Press <code className="bg-stone-800 text-amber-300 px-1 font-mono rounded">S</code> or <code className="bg-stone-800 text-amber-300 px-1 font-mono rounded">Down</code> to drop through intentionally.
                     </p>
-                  </div>
+                  </motion.div>
 
-                  <div className="p-6 bg-white border border-stone-200 rounded-3xl shadow-sm space-y-3 hover:shadow-md transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-purple-50 border border-purple-200 flex items-center justify-center text-purple-600">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: 0.3 }}
+                    className="p-6 bg-stone-900/80 border border-stone-800 rounded-3xl shadow-xl space-y-3 hover:border-purple-500/50 hover:shadow-2xl transition-all"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-purple-500/10 border border-purple-500/30 flex items-center justify-center text-purple-400">
                       <Sparkles className="w-6 h-6" />
                     </div>
-                    <h3 className="font-extrabold text-base text-stone-900">Stat Synthesis & Evolution</h3>
-                    <p className="text-xs text-stone-500 leading-relaxed">
+                    <h3 className="font-black text-base text-white font-display">Stat Synthesis & Evolution</h3>
+                    <p className="text-xs text-stone-400 leading-relaxed font-mono">
                       Collect sacred Upgrade Stones during stages to permanently synthesize HP, Attack, Defense, and Speed attributes.
                     </p>
-                  </div>
+                  </motion.div>
 
-                  <div className="p-6 bg-white border border-stone-200 rounded-3xl shadow-sm space-y-3 hover:shadow-md transition-all">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 border border-blue-200 flex items-center justify-center text-blue-600">
+                  <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.4, delay: 0.4 }}
+                    className="p-6 bg-stone-900/80 border border-stone-800 rounded-3xl shadow-xl space-y-3 hover:border-blue-500/50 hover:shadow-2xl transition-all"
+                  >
+                    <div className="w-12 h-12 rounded-2xl bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-blue-400">
                       <Award className="w-6 h-6" />
                     </div>
-                    <h3 className="font-extrabold text-base text-stone-900">100% Offline Persistence</h3>
-                    <p className="text-xs text-stone-500 leading-relaxed">
+                    <h3 className="font-black text-base text-white font-display">100% Offline Persistence</h3>
+                    <p className="text-xs text-stone-400 leading-relaxed font-mono">
                       Your save data is saved locally in browser storage. Export or import save JSON strings anytime to back up progress.
                     </p>
-                  </div>
+                  </motion.div>
                 </div>
               </section>
 
-              <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+              <section id="membership" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
-                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">Choose Your Membership Tier</h2>
-                  <p className="text-stone-600 text-sm leading-relaxed">
+                  <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-wider font-display">Choose Your Membership Tier</h2>
+                  <p className="text-stone-400 text-sm leading-relaxed font-mono">
                     Unlock instant access to all dragon companions, boosted starting attributes, and exclusive summoner perks.
                   </p>
                 </div>
@@ -761,40 +791,40 @@ export default function Home() {
 
                     return (
                       <>
-                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between backdrop-blur-md ${
                           isFreeActive
-                            ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                            ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-500/30 shadow-2xl'
                             : isFreeLower
-                            ? 'bg-stone-100/60 border-stone-200 opacity-75 shadow-none'
-                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                            ? 'bg-stone-900/40 border-stone-800 opacity-60 shadow-none'
+                            : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 shadow-xl'
                         }`}>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-extrabold text-stone-500 uppercase">Standard Tier</span>
+                              <span className="text-xs font-mono font-bold text-stone-400 uppercase">Standard Tier</span>
                               {isFreeActive ? (
                                 <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
                               ) : isFreeLower ? (
-                                <span className="text-[10px] font-mono font-bold bg-stone-200 text-stone-500 px-2.5 py-0.5 rounded-full">INCLUDED</span>
+                                <span className="text-[10px] font-mono font-bold bg-stone-800 text-stone-400 px-2.5 py-0.5 rounded-full">INCLUDED</span>
                               ) : null}
                             </div>
-                            <h3 className="text-2xl font-black text-stone-900">Free Tier</h3>
-                            <div className="text-3xl font-black text-stone-900 font-mono">0 <span className="text-sm text-stone-500 font-sans">Coins</span></div>
-                            <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Start with Jumpmon, Archermon & Shieldmon</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Unlock remaining roster via campaign coins</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Standard Level 1 starting stats</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Full offline local save persistence</li>
+                            <h3 className="text-2xl font-black text-white font-display">Free Tier</h3>
+                            <div className="text-3xl font-black text-stone-100 font-mono">0 <span className="text-sm text-stone-400 font-sans">Coins</span></div>
+                            <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Start with Jumpmon, Archermon &amp; Shieldmon</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlock remaining roster via campaign coins</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Standard Level 1 starting stats</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Full offline local save persistence</li>
                             </ul>
                           </div>
                           <button
                             disabled={isFreeActive || isFreeLower}
                             onClick={() => switchTier('Free')}
-                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs uppercase tracking-wider font-mono transition-all ${
                               isFreeActive
-                                ? 'bg-stone-200 text-stone-600 cursor-default'
+                                ? 'bg-stone-800 text-stone-400 cursor-default'
                                 : isFreeLower
-                                ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-75'
-                                : 'bg-stone-900 text-white hover:bg-stone-800 shadow-md active:scale-95'
+                                ? 'bg-stone-900 text-stone-500 border border-stone-800 cursor-not-allowed opacity-75'
+                                : 'bg-stone-100 text-stone-950 hover:bg-white shadow-md active:scale-95'
                             }`}
                           >
                             {isFreeActive
@@ -805,40 +835,40 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between backdrop-blur-md ${
                           isBasicActive
-                            ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
+                            ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-500/30 shadow-2xl'
                             : isBasicLower
-                            ? 'bg-stone-100/60 border-stone-200 opacity-75 shadow-none'
-                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                            ? 'bg-stone-900/40 border-stone-800 opacity-60 shadow-none'
+                            : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 shadow-xl'
                         }`}>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-extrabold text-emerald-600 uppercase">Recommended Tier</span>
+                              <span className="text-xs font-mono font-bold text-emerald-400 uppercase">Recommended Tier</span>
                               {isBasicActive ? (
                                 <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
                               ) : isBasicLower ? (
-                                <span className="text-[10px] font-mono font-bold bg-stone-200 text-stone-500 px-2.5 py-0.5 rounded-full">INCLUDED</span>
+                                <span className="text-[10px] font-mono font-bold bg-stone-800 text-stone-400 px-2.5 py-0.5 rounded-full">INCLUDED</span>
                               ) : null}
                             </div>
-                            <h3 className="text-2xl font-black text-stone-900">Basic Tier</h3>
-                            <div className="text-3xl font-black text-emerald-600 font-mono">Level 5 <span className="text-sm text-stone-500 font-sans">All Unlocked</span></div>
-                            <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Every Character Unlocked Immediately!</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Level 5 starting level</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> +1 Bonus splitted to ALL attributes per level up</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-500" /> Instant Whitemon & Bird Familiar access</li>
+                            <h3 className="text-2xl font-black text-white font-display">Basic Tier</h3>
+                            <div className="text-3xl font-black text-emerald-400 font-mono">Level 5 <span className="text-sm text-stone-400 font-sans">All Unlocked</span></div>
+                            <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Every Character Unlocked Immediately!</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Instant Level 5 starting level</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> +1 Bonus splitted to ALL attributes per level up</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Instant Whitemon &amp; Bird Familiar access</li>
                             </ul>
                           </div>
                           <button
                             disabled={isBasicActive || isBasicLower}
                             onClick={() => switchTier('Basic')}
-                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs uppercase tracking-wider font-mono transition-all ${
                               isBasicActive
-                                ? 'bg-stone-200 text-stone-600 cursor-default'
+                                ? 'bg-stone-800 text-stone-400 cursor-default'
                                 : isBasicLower
-                                ? 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed opacity-75'
-                                : 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md active:scale-95'
+                                ? 'bg-stone-900 text-stone-500 border border-stone-800 cursor-not-allowed opacity-75'
+                                : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-950/50 active:scale-95'
                             }`}
                           >
                             {isBasicActive
@@ -849,34 +879,34 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between ${
+                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between backdrop-blur-md ${
                           isPremiumActive
-                            ? 'bg-amber-50/40 border-amber-300 ring-2 ring-amber-400/30 shadow-lg'
-                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
+                            ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-500/30 shadow-2xl'
+                            : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 shadow-xl'
                         }`}>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-extrabold text-purple-600 uppercase">God Tier</span>
+                              <span className="text-xs font-mono font-bold text-purple-400 uppercase">God Tier</span>
                               {isPremiumActive && (
                                 <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
                               )}
                             </div>
-                            <h3 className="text-2xl font-black text-stone-900">Premium Tier</h3>
-                            <div className="text-3xl font-black text-purple-600 font-mono">Max Boost <span className="text-sm text-stone-500 font-sans">Full Roster</span></div>
-                            <ul className="space-y-2.5 text-xs text-stone-600 pt-4 border-t border-stone-100">
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Every Character Unlocked immediately</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> High starting level (Level 10)</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Maximized +1 bonus to ALL stats per level</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-500" /> Full energy regeneration perks</li>
+                            <h3 className="text-2xl font-black text-white font-display">Premium Tier</h3>
+                            <div className="text-3xl font-black text-purple-400 font-mono">Max Boost <span className="text-sm text-stone-400 font-sans">Full Roster</span></div>
+                            <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Every Character Unlocked immediately</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> High starting level (Level 10)</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Maximized +1 bonus to ALL stats per level</li>
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Full energy regeneration perks</li>
                             </ul>
                           </div>
                           <button
                             disabled={isPremiumActive}
                             onClick={() => switchTier('Premium')}
-                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs transition-all ${
+                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs uppercase tracking-wider font-mono transition-all ${
                               isPremiumActive
-                                ? 'bg-stone-200 text-stone-600 cursor-default'
-                                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-md active:scale-95'
+                                ? 'bg-stone-800 text-stone-400 cursor-default'
+                                : 'bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-950/50 active:scale-95'
                             }`}
                           >
                             {isPremiumActive ? 'Current Active Tier' : 'Activate Premium Tier'}
@@ -888,10 +918,10 @@ export default function Home() {
                 </div>
               </section>
 
-              <section id="characters" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+              <section id="characters" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
-                  <h2 className="text-3xl md:text-5xl font-black text-stone-900">Meet The Dragon Guardians</h2>
-                  <p className="text-xs md:text-sm text-stone-500 max-w-xl mx-auto">
+                  <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-wider font-display">Meet The Dragon Guardians</h2>
+                  <p className="text-xs md:text-sm text-stone-400 max-w-xl mx-auto font-mono">
                     Each dragon companion possesses deep lore, distinct weapon swing styles, and active battle abilities.
                   </p>
                 </div>
@@ -906,13 +936,13 @@ export default function Home() {
                       <motion.div
                         key={item.name}
                         whileHover={{ y: -6 }}
-                        className={`p-7 rounded-3xl border ${
+                        className={`p-7 rounded-3xl border backdrop-blur-md ${
                           isSelected
-                            ? 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-500/5'
+                            ? 'border-amber-400 ring-2 ring-amber-500/30 bg-stone-900/90 shadow-2xl'
                             : isUnlocked
-                            ? 'border-emerald-500/50 bg-white'
-                            : 'border-stone-200 bg-stone-50/70 opacity-90'
-                        } shadow-md hover:shadow-xl transition-all flex flex-col justify-between relative overflow-hidden`}
+                            ? 'border-stone-800 bg-stone-900/80 hover:border-stone-700 shadow-xl'
+                            : 'border-stone-900 bg-stone-950/80 opacity-75'
+                        } transition-all flex flex-col justify-between relative overflow-hidden`}
                       >
                         <div>
                           <div className="flex items-center justify-between gap-2 mb-3">
@@ -922,15 +952,15 @@ export default function Home() {
 
                             <div className="shrink-0">
                               {isSelected ? (
-                                <span className="px-2.5 py-1 text-[10px] font-mono font-black uppercase tracking-wider bg-amber-500 text-stone-950 rounded-md shadow-sm flex items-center gap-1 border border-amber-400">
+                                <span className="px-2.5 py-1 text-[10px] font-mono font-black uppercase tracking-wider bg-amber-400 text-stone-950 rounded-md shadow-sm flex items-center gap-1 border border-amber-300">
                                   <Sparkles className="w-3 h-3 text-stone-950 fill-stone-950" /> EQUIPPED
                                 </span>
                               ) : isUnlocked ? (
-                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/15 text-emerald-800 border border-emerald-500/30 rounded-md flex items-center gap-1">
-                                  <Check className="w-3 h-3 text-emerald-600" /> UNLOCKED
+                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-md flex items-center gap-1">
+                                  <Check className="w-3 h-3 text-emerald-400" /> UNLOCKED
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-stone-200 text-stone-700 border border-stone-300 rounded-md flex items-center gap-1">
+                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-stone-950 text-stone-400 border border-stone-800 rounded-md flex items-center gap-1">
                                   <Lock className="w-3 h-3 text-stone-500" /> LOCKED
                                 </span>
                               )}
@@ -938,62 +968,62 @@ export default function Home() {
                           </div>
 
                           <div className="flex items-center gap-3.5">
-                            <div className={`w-16 h-16 shrink-0 rounded-2xl ${isUnlocked ? 'bg-stone-100 border-stone-200' : 'bg-stone-200/60 border-stone-300'} border flex items-center justify-center p-2 shadow-inner relative`}>
+                            <div className={`w-16 h-16 shrink-0 rounded-2xl ${isUnlocked ? 'bg-stone-950 border-stone-800' : 'bg-stone-950/80 border-stone-900'} border flex items-center justify-center p-2 shadow-inner relative`}>
                               {item.svg}
                               {!isUnlocked && (
-                                <div className="absolute inset-0 bg-stone-900/10 backdrop-blur-[1px] rounded-2xl flex items-center justify-center">
-                                  <Lock className="w-5 h-5 text-stone-700" />
+                                <div className="absolute inset-0 bg-stone-950/80 backdrop-blur-[1px] rounded-2xl flex items-center justify-center">
+                                  <Lock className="w-5 h-5 text-stone-500" />
                                 </div>
                               )}
                             </div>
                             <div>
-                              <h3 className="text-2xl font-black text-stone-900 leading-tight">{item.name}</h3>
-                              <span className="text-xs font-semibold text-stone-400 block mt-0.5">{item.role}</span>
+                              <h3 className="text-2xl font-black text-white font-display leading-tight">{item.name}</h3>
+                              <span className="text-xs font-mono text-amber-400 block mt-0.5">{item.role}</span>
                             </div>
                           </div>
 
-                          <div className="mt-4 p-3.5 bg-stone-50/80 border border-stone-100 rounded-2xl text-xs leading-relaxed text-stone-600">
+                          <div className="mt-4 p-3.5 bg-stone-950 border border-stone-800/80 rounded-2xl text-xs leading-relaxed text-stone-300 font-mono">
                             <p>{item.lore}</p>
                           </div>
 
-                          <div className="mt-3 space-y-1.5 text-xs">
-                            <div className="flex justify-between text-stone-600">
-                              <span className="font-semibold">Attack Style:</span>
-                              <span className="font-bold text-stone-900">{item.attackType}</span>
+                          <div className="mt-3 space-y-1.5 text-xs font-mono">
+                            <div className="flex justify-between text-stone-400">
+                              <span>Attack Style:</span>
+                              <span className="font-bold text-stone-200">{item.attackType}</span>
                             </div>
-                            <div className="flex justify-between text-stone-600">
-                              <span className="font-semibold">Special Skill:</span>
-                              <span className="font-bold text-amber-600">{item.signatureSkill}</span>
+                            <div className="flex justify-between text-stone-400">
+                              <span>Special Skill:</span>
+                              <span className="font-bold text-amber-400">{item.signatureSkill}</span>
                             </div>
-                            <div className="flex justify-between text-stone-600">
-                              <span className="font-semibold flex items-center gap-1">
-                                <Zap className="w-3 h-3 text-purple-500 fill-purple-500" />
+                            <div className="flex justify-between text-stone-400">
+                              <span className="flex items-center gap-1">
+                                <Zap className="w-3 h-3 text-purple-400 fill-purple-400" />
                                 Ultimate Skill:
                               </span>
-                              <span className="font-bold text-purple-600">{item.ultimateSkill}</span>
+                              <span className="font-bold text-purple-400">{item.ultimateSkill}</span>
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-5 gap-1.5 mt-4 pt-3 border-t border-stone-100 text-center font-mono">
-                            <div className="p-1.5 bg-stone-50 rounded-xl">
-                              <span className="text-[8px] text-stone-400 block font-sans">HP</span>
-                              <span className="text-xs font-bold text-stone-800">{item.hp}</span>
+                          <div className="grid grid-cols-5 gap-1.5 mt-4 pt-3 border-t border-stone-800 text-center font-mono">
+                            <div className="p-1.5 bg-stone-950 rounded-xl border border-stone-800/80">
+                              <span className="text-[8px] text-stone-500 block font-sans">HP</span>
+                              <span className="text-xs font-bold text-stone-200">{item.hp}</span>
                             </div>
-                            <div className="p-1.5 bg-stone-50 rounded-xl">
-                              <span className="text-[8px] text-stone-400 block font-sans">ATK</span>
-                              <span className="text-xs font-bold text-rose-600">{item.atk}</span>
+                            <div className="p-1.5 bg-stone-950 rounded-xl border border-stone-800/80">
+                              <span className="text-[8px] text-stone-500 block font-sans">ATK</span>
+                              <span className="text-xs font-bold text-rose-400">{item.atk}</span>
                             </div>
-                            <div className="p-1.5 bg-stone-50 rounded-xl">
-                              <span className="text-[8px] text-stone-400 block font-sans">DEF</span>
-                              <span className="text-xs font-bold text-blue-600">{item.def}</span>
+                            <div className="p-1.5 bg-stone-950 rounded-xl border border-stone-800/80">
+                              <span className="text-[8px] text-stone-500 block font-sans">DEF</span>
+                              <span className="text-xs font-bold text-blue-400">{item.def}</span>
                             </div>
-                            <div className="p-1.5 bg-stone-50 rounded-xl">
-                              <span className="text-[8px] text-stone-400 block font-sans">SPD</span>
-                              <span className="text-xs font-bold text-emerald-600">{item.spd}</span>
+                            <div className="p-1.5 bg-stone-950 rounded-xl border border-stone-800/80">
+                              <span className="text-[8px] text-stone-500 block font-sans">SPD</span>
+                              <span className="text-xs font-bold text-emerald-400">{item.spd}</span>
                             </div>
-                            <div className="p-1.5 bg-stone-50 rounded-xl">
-                              <span className="text-[8px] text-stone-400 block font-sans">JUMP</span>
-                              <span className="text-xs font-bold text-amber-600">{item.jump}</span>
+                            <div className="p-1.5 bg-stone-950 rounded-xl border border-stone-800/80">
+                              <span className="text-[8px] text-stone-500 block font-sans">JUMP</span>
+                              <span className="text-xs font-bold text-amber-400">{item.jump}</span>
                             </div>
                           </div>
                         </div>
@@ -1002,7 +1032,7 @@ export default function Home() {
                           <div className="space-y-2 mt-5">
                             <button
                               disabled
-                              className="w-full py-3 rounded-xl text-xs font-mono font-extrabold bg-amber-500 text-stone-950 border border-amber-400 shadow-md cursor-default flex items-center justify-center gap-1.5"
+                              className="w-full py-3 rounded-xl text-xs font-mono font-black bg-amber-400 text-stone-950 border border-amber-300 shadow-md cursor-default flex items-center justify-center gap-1.5"
                             >
                               <Sparkles className="w-4 h-4 text-stone-950 fill-stone-950" />
                               <span>EQUIPPED</span>
@@ -1018,8 +1048,8 @@ export default function Home() {
                               disabled={coins < activeLevel * 100}
                               className={`w-full py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
                                 coins >= activeLevel * 100
-                                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm active:scale-95'
-                                  : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
+                                  ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 shadow-md active:scale-95'
+                                  : 'bg-stone-950 text-stone-500 border border-stone-800 cursor-not-allowed'
                               }`}
                             >
                               <Coins className="w-3.5 h-3.5" />
@@ -1033,7 +1063,7 @@ export default function Home() {
                                 soundService.playClick();
                                 selectDraco(item.name);
                               }}
-                              className="w-full py-3 rounded-xl text-xs font-mono font-extrabold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                              className="w-full py-3 rounded-xl text-xs font-mono font-black bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
                             >
                               <Check className="w-4 h-4" />
                               <span>EQUIP COMPANION</span>
@@ -1050,8 +1080,8 @@ export default function Home() {
                               disabled={coins < (saveData.dracos[item.name]?.level || 1) * 100}
                               className={`w-full py-2 rounded-xl text-xs font-mono font-bold flex items-center justify-center gap-1.5 transition-all ${
                                 coins >= (saveData.dracos[item.name]?.level || 1) * 100
-                                  ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm active:scale-95'
-                                  : 'bg-stone-100 text-stone-400 border border-stone-200 cursor-not-allowed'
+                                  ? 'bg-amber-600 hover:bg-amber-500 text-stone-950 shadow-md active:scale-95'
+                                  : 'bg-stone-950 text-stone-500 border border-stone-800 cursor-not-allowed'
                               }`}
                             >
                               <Coins className="w-3.5 h-3.5" />
@@ -1068,15 +1098,15 @@ export default function Home() {
                               }
                             }}
                             disabled={!canAfford}
-                            className={`w-full mt-5 py-3 rounded-xl text-xs font-mono font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                            className={`w-full mt-5 py-3 rounded-xl text-xs font-mono font-black transition-all flex items-center justify-center gap-1.5 ${
                               canAfford
-                                ? 'bg-stone-900 hover:bg-amber-600 text-white shadow-md active:scale-95'
-                                : 'bg-stone-200 text-stone-400 cursor-not-allowed border border-stone-300'
+                                ? 'bg-amber-500 hover:bg-amber-400 text-stone-950 shadow-md active:scale-95'
+                                : 'bg-stone-950 text-stone-500 cursor-not-allowed border border-stone-800'
                             }`}
                           >
                             {canAfford ? (
                               <>
-                                <Coins className="w-4 h-4 text-amber-400 fill-amber-400" />
+                                <Coins className="w-4 h-4 text-stone-950 fill-stone-950" />
                                 <span>UNLOCK ({item.cost} COINS)</span>
                               </>
                             ) : (
@@ -1096,7 +1126,7 @@ export default function Home() {
                   <Link
                     href="/heroes"
                     onClick={() => soundService.playClick()}
-                    className="inline-flex items-center gap-2 px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl text-xs font-mono font-black shadow-lg transition-all active:scale-95 border border-stone-800"
+                    className="inline-flex items-center gap-2 px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl text-xs font-mono font-black shadow-xl transition-all active:scale-95 border border-stone-800"
                   >
                     <Sparkles className="w-4 h-4 text-amber-400" />
                     <span>EXPLORE →</span>
@@ -1104,11 +1134,11 @@ export default function Home() {
                 </div>
               </section>
 
-              <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+              <section id="realms" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80">
                 <div className="text-center max-w-3xl mx-auto space-y-3 mb-10">
-                  <h2 className="text-3xl md:text-5xl font-black text-stone-900 font-display">Explore Platform Realms</h2>
-                  <p className="text-stone-600 text-xs md:text-sm leading-relaxed max-w-xl mx-auto">
-                    Conquer custom hand-crafted platform stages. Basic & Premium members get all maps unlocked instantly!
+                  <h2 className="text-3xl md:text-5xl font-black text-white font-display uppercase tracking-wider">Explore Platform Realms</h2>
+                  <p className="text-stone-400 text-xs md:text-sm leading-relaxed max-w-xl mx-auto font-mono">
+                    Conquer custom hand-crafted platform stages. Basic &amp; Premium members get all maps unlocked instantly!
                   </p>
                 </div>
 
@@ -1120,10 +1150,10 @@ export default function Home() {
                       setRealmPage(p => Math.max(0, p - 1));
                     }}
                     disabled={realmPage === 0}
-                    className="absolute -left-4 md:-left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-0 disabled:pointer-events-none transition-all flex items-center justify-center shadow-lg hover:scale-105 active:scale-95"
+                    className="absolute -left-4 md:-left-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full border border-stone-800 bg-stone-900 hover:bg-stone-800 text-stone-200 disabled:opacity-0 disabled:pointer-events-none transition-all flex items-center justify-center shadow-xl hover:scale-105 active:scale-95"
                     title="Previous Page"
                   >
-                    <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-stone-800" />
+                    <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-stone-200" />
                   </button>
 
                   <div className="grid md:grid-cols-3 gap-6">
@@ -1133,26 +1163,26 @@ export default function Home() {
                     return (
                       <div
                         key={stage.num}
-                        className={`relative p-7 border rounded-3xl transition-all flex flex-col justify-between space-y-4 overflow-hidden ${
+                        className={`relative p-7 border rounded-3xl transition-all flex flex-col justify-between space-y-4 overflow-hidden backdrop-blur-md ${
                           stage.num === 9
-                            ? 'bg-gradient-to-b from-cyan-950/5 via-sky-500/10 to-cyan-500/20 border-cyan-300 ring-2 ring-cyan-400/40 shadow-lg'
+                            ? 'bg-gradient-to-b from-cyan-950/40 via-sky-950/20 to-cyan-950/50 border-cyan-500/40 ring-2 ring-cyan-400/30 shadow-2xl'
                             : stage.num === 8
-                            ? 'bg-gradient-to-b from-amber-500/5 to-amber-500/10 border-amber-300 ring-2 ring-amber-400/30 shadow-md'
-                            : 'bg-white border-stone-200 shadow-sm hover:shadow-md'
-                        } ${!unlocked ? 'opacity-90' : ''}`}
+                            ? 'bg-gradient-to-b from-amber-950/40 to-amber-950/20 border-amber-500/40 ring-2 ring-amber-400/30 shadow-2xl'
+                            : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 shadow-xl'
+                        } ${!unlocked ? 'opacity-80' : ''}`}
                       >
                         {!unlocked && (
-                          <div className="absolute inset-0 z-20 bg-stone-900/65 backdrop-blur-[2px] p-6 flex flex-col items-center justify-center text-center text-white space-y-2 rounded-3xl">
+                          <div className="absolute inset-0 z-20 bg-stone-950/80 backdrop-blur-[2px] p-6 flex flex-col items-center justify-center text-center text-white space-y-2 rounded-3xl">
                             <div className="w-10 h-10 rounded-2xl bg-amber-500/20 border border-amber-400/40 flex items-center justify-center text-amber-400 text-lg shadow-inner">
                               <Lock className="w-5 h-5" />
                             </div>
                             <h4 className="font-extrabold text-sm text-stone-100 font-display">Stage {stage.num} Locked</h4>
-                            <p className="text-[10px] text-stone-300 max-w-[200px] leading-tight">
+                            <p className="text-[10px] text-stone-400 max-w-[200px] leading-tight font-mono">
                               Complete Stage {stage.num - 1} or activate <span className="text-amber-400 font-bold">Basic Membership</span> to unlock!
                             </p>
                             <button
                               onClick={() => scrollToSection('membership')}
-                              className="mt-2 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95"
+                              className="mt-2 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-[10px] font-black uppercase tracking-wider transition-all shadow-md active:scale-95 font-mono"
                             >
                               Unlock with Membership
                             </button>
@@ -1161,21 +1191,21 @@ export default function Home() {
 
                         <div>
                           <div className="flex justify-between items-center">
-                            <span className="text-xs font-black text-stone-600 uppercase tracking-wider font-mono">Stage {stage.num}</span>
+                            <span className="text-xs font-bold text-amber-400 uppercase tracking-wider font-mono">Stage {stage.num}</span>
                             <span className={`px-2.5 py-0.5 text-[9px] font-mono rounded-md font-extrabold ${stage.diffClass}`}>
                               {stage.difficulty}
                             </span>
                           </div>
-                          <h3 className="text-xl font-extrabold text-stone-900 mt-2 font-display flex items-center gap-2">
+                          <h3 className="text-xl font-extrabold text-white mt-2 font-display flex items-center gap-2">
                             <span>{stage.name}</span>
-                            {stage.num === 9 && <span className="text-xs text-cyan-600 font-mono">🌊 SUB-MAP</span>}
+                            {stage.num === 9 && <span className="text-xs text-cyan-400 font-mono">🌊 SUB-MAP</span>}
                           </h3>
-                          <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                          <p className="text-xs text-stone-400 mt-2 leading-relaxed font-mono">
                             {stage.desc}
                           </p>
                         </div>
 
-                        <div className="pt-2 border-t border-stone-100/80 flex flex-col gap-2">
+                        <div className="pt-2 border-t border-stone-800 flex flex-col gap-2">
                           <div className="flex justify-between text-[10px] font-bold text-stone-400 font-mono">
                             <span>Boss: {stage.boss}</span>
                             <span>{unlocked ? 'Unlocked' : 'Locked'}</span>
@@ -1183,14 +1213,14 @@ export default function Home() {
                           <button
                             onClick={() => handleStartStage(stage.num)}
                             disabled={!unlocked}
-                            className={`w-full py-3 rounded-2xl text-xs font-black transition-all flex items-center justify-center gap-2 ${
+                            className={`w-full py-3 rounded-2xl text-xs font-black font-mono transition-all flex items-center justify-center gap-2 ${
                               !unlocked
-                                ? 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                                ? 'bg-stone-950 text-stone-600 border border-stone-800 cursor-not-allowed'
                                 : stage.num === 9
-                                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-md active:scale-95'
+                                ? 'bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white shadow-lg active:scale-95'
                                 : stage.num === 8
-                                ? 'bg-amber-500 hover:bg-amber-600 text-stone-950 shadow-md active:scale-95'
-                                : 'bg-stone-900 hover:bg-amber-600 text-white shadow-sm active:scale-95'
+                                ? 'bg-amber-500 hover:bg-amber-400 text-stone-950 shadow-lg active:scale-95'
+                                : 'bg-stone-100 hover:bg-white text-stone-950 shadow-md active:scale-95'
                             }`}
                           >
                             <Play className="w-4 h-4 fill-current" />
@@ -1209,10 +1239,10 @@ export default function Home() {
                     setRealmPage(p => Math.min(Math.ceil(STAGE_CARDS.length / 3) - 1, p + 1));
                   }}
                   disabled={realmPage >= Math.ceil(STAGE_CARDS.length / 3) - 1}
-                  className="absolute -right-4 md:-right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full border border-stone-200 bg-white hover:bg-stone-50 text-stone-700 disabled:opacity-0 disabled:pointer-events-none transition-all flex items-center justify-center shadow-lg hover:scale-105 active:scale-95"
+                  className="absolute -right-4 md:-right-8 top-1/2 -translate-y-1/2 z-20 w-10 h-10 md:w-12 md:h-12 rounded-full border border-stone-800 bg-stone-900 hover:bg-stone-800 text-stone-200 disabled:opacity-0 disabled:pointer-events-none transition-all flex items-center justify-center shadow-xl hover:scale-105 active:scale-95"
                   title="Next Page"
                 >
-                  <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-stone-800" />
+                  <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-stone-200" />
                 </button>
               </div>
 
@@ -1229,7 +1259,7 @@ export default function Home() {
                         className={`h-2.5 rounded-full transition-all duration-300 ${
                           realmPage === idx
                             ? 'bg-gradient-to-r from-amber-400 to-orange-500 ring-4 ring-amber-400/25 w-8'
-                            : 'bg-stone-200 hover:bg-stone-300 hover:scale-110 w-2.5'
+                            : 'bg-stone-800 hover:bg-stone-700 hover:scale-110 w-2.5'
                         }`}
                         title={`Go to Page ${idx + 1}`}
                       />
@@ -1240,7 +1270,7 @@ export default function Home() {
                   <Link
                     href="/maps"
                     onClick={() => soundService.playClick()}
-                    className="px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl text-xs font-extrabold transition-all flex items-center gap-2 shadow-md active:scale-95 border border-stone-800/80"
+                    className="px-8 py-4 bg-stone-900 hover:bg-stone-800 text-white rounded-2xl text-xs font-mono font-black transition-all flex items-center gap-2 shadow-xl active:scale-95 border border-stone-800"
                   >
                     <span>View All Campaign Maps</span>
                     <ArrowRight className="w-4 h-4 text-amber-400" />
@@ -1248,11 +1278,11 @@ export default function Home() {
                 </div>
               </section>
 
-              <section id="faq" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
+              <section id="faq" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80">
                 <div className="max-w-4xl mx-auto">
                   <div className="text-center space-y-2 mb-8">
-                  <h2 className="text-3xl md:text-4xl font-black text-stone-900">Frequently Asked Questions</h2>
-                  <p className="text-xs text-stone-500">Quick answers regarding game mechanics, controls, and save files.</p>
+                  <h2 className="text-3xl md:text-4xl font-black text-white uppercase tracking-wider font-display">Frequently Asked Questions</h2>
+                  <p className="text-xs text-stone-400 font-mono">Quick answers regarding game mechanics, controls, and save files.</p>
                 </div>
 
                 <div className="space-y-4">
@@ -1261,17 +1291,17 @@ export default function Home() {
                     return (
                       <div
                         key={index}
-                        className="bg-white border border-stone-200 rounded-2xl overflow-hidden shadow-sm transition-all"
+                        className="bg-stone-900/90 border border-stone-800 rounded-2xl overflow-hidden shadow-xl transition-all"
                       >
                         <button
                           onClick={() => {
                             soundService.playClick();
                             setOpenFaq(isOpen ? null : index);
                           }}
-                          className="w-full px-6 py-4 flex items-center justify-between text-left font-extrabold text-sm text-stone-800 hover:text-amber-600 transition-colors"
+                          className="w-full px-6 py-4 flex items-center justify-between text-left font-mono font-bold text-sm text-stone-200 hover:text-amber-400 transition-colors"
                         >
                           <span>{faq.q}</span>
-                          {isOpen ? <ChevronUp className="w-4 h-4 text-amber-500" /> : <ChevronDown className="w-4 h-4 text-stone-400" />}
+                          {isOpen ? <ChevronUp className="w-4 h-4 text-amber-400" /> : <ChevronDown className="w-4 h-4 text-stone-500" />}
                         </button>
                         <AnimatePresence initial={false}>
                           {isOpen && (
@@ -1280,9 +1310,9 @@ export default function Home() {
                               animate={{ height: 'auto', opacity: 1 }}
                               exit={{ height: 0, opacity: 0 }}
                               transition={{ duration: 0.2, ease: 'easeInOut' }}
-                              className="overflow-hidden border-t border-stone-100"
+                              className="overflow-hidden border-t border-stone-800/80"
                             >
-                              <div className="px-6 pb-5 pt-4 text-xs text-stone-600 leading-relaxed">
+                              <div className="px-6 pb-5 pt-4 text-xs text-stone-300 leading-relaxed font-mono">
                                 {faq.a}
                               </div>
                             </motion.div>
@@ -1295,38 +1325,37 @@ export default function Home() {
                 </div>
               </section>
 
-              <section id="support" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60 select-none">
-                <div className="max-w-4xl mx-auto bg-gradient-to-r from-amber-500/10 via-purple-500/5 to-purple-500/10 border border-purple-200/60 rounded-3xl p-8 md:p-10 shadow-md flex flex-col md:flex-row items-center justify-between gap-8">
+              <section id="support" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80 select-none">
+                <div className="max-w-4xl mx-auto bg-gradient-to-r from-amber-500/10 via-purple-500/10 to-stone-900 border border-stone-800 rounded-3xl p-8 md:p-10 shadow-2xl backdrop-blur-xl flex flex-col md:flex-row items-center justify-between gap-8">
                   <div className="space-y-3 text-left md:max-w-md">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-100 text-purple-700 text-[10px] font-extrabold uppercase tracking-widest rounded-full font-mono border border-purple-200/40 animate-pulse">
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-purple-500/20 text-purple-300 text-[10px] font-mono font-bold uppercase tracking-widest rounded-full border border-purple-500/30 animate-pulse">
                       💖 Support Guild
                     </div>
-                    <h3 className="text-2xl font-black text-stone-900 font-display">Support the Developer</h3>
-                    <p className="text-xs text-stone-500 leading-relaxed">
+                    <h3 className="text-2xl font-black text-white font-display">Support the Developer</h3>
+                    <p className="text-xs text-stone-400 leading-relaxed font-mono">
                       If you enjoyed playing Dracoman, consider supporting the developers! Your donations help us add new characters, mechanics, and stages to the realm.
                     </p>
                   </div>
-
                 </div>
               </section>
 
-              <section id="contact" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-200/60">
-                <div className="max-w-4xl mx-auto grid md:grid-cols-12 gap-8 items-center bg-white border border-stone-200 rounded-3xl p-8 md:p-10 shadow-lg">
+              <section id="contact" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80">
+                <div className="max-w-4xl mx-auto grid md:grid-cols-12 gap-8 items-center bg-stone-900/90 border border-stone-800 rounded-3xl p-8 md:p-10 shadow-2xl backdrop-blur-xl">
                   <div className="md:col-span-5 space-y-4 text-left">
-                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+                    <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
                       <MessageSquare className="w-6 h-6" />
                     </div>
-                    <h3 className="text-2xl font-black text-stone-900">Dragon Keeper Guild</h3>
-                    <p className="text-xs text-stone-500 leading-relaxed">
+                    <h3 className="text-2xl font-black text-white font-display">Dragon Keeper Guild</h3>
+                    <p className="text-xs text-stone-400 leading-relaxed font-mono">
                       Have feedback, feature ideas, or bug reports? Contact our developer guild directly!
                     </p>
-                    <div className="space-y-2 text-xs font-semibold text-stone-600 pt-2">
+                    <div className="space-y-2 text-xs font-mono text-stone-300 pt-2">
                       <div className="flex items-center gap-2">
-                        <Mail className="w-4 h-4 text-amber-500" />
+                        <Mail className="w-4 h-4 text-amber-400" />
                         <span>sevilenfilbert@gmail.com</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <Globe className="w-4 h-4 text-emerald-500" />
+                        <Globe className="w-4 h-4 text-emerald-400" />
                         <span>Offline Singleplayer RPG</span>
                       </div>
                     </div>
@@ -1334,54 +1363,54 @@ export default function Home() {
 
                   <div className="md:col-span-7">
                     {contactSubmitted ? (
-                      <div className="p-6 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
-                        <div className="w-10 h-10 bg-emerald-500 text-white rounded-full flex items-center justify-center mx-auto">
+                      <div className="p-6 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl text-center space-y-2">
+                        <div className="w-10 h-10 bg-emerald-500 text-stone-950 rounded-full flex items-center justify-center mx-auto">
                           <Check className="w-6 h-6" />
                         </div>
-                        <h4 className="font-extrabold text-emerald-900 text-sm">Message Dispatched!</h4>
-                        <p className="text-xs text-emerald-700">Thank you Dragon Keeper! Your note has been received.</p>
+                        <h4 className="font-mono font-black text-emerald-300 text-sm">Message Dispatched!</h4>
+                        <p className="text-xs text-emerald-400 font-mono">Thank you Dragon Keeper! Your note has been received.</p>
                       </div>
                     ) : (
-                      <form onSubmit={handleContactSubmit} className="space-y-3">
+                      <form onSubmit={handleContactSubmit} className="space-y-3 font-mono">
                         <div>
-                          <label className="text-[11px] font-bold text-stone-700 block mb-1">Your Name</label>
+                          <label className="text-[11px] font-bold text-stone-400 block mb-1 uppercase">Your Name</label>
                           <input
                             type="text"
                             required
                             placeholder="Dragon Keeper Name"
                             value={contactName}
                             onChange={e => setContactName(e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:outline-none focus:border-amber-500"
+                            className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-400"
                           />
                         </div>
 
                         <div>
-                          <label className="text-[11px] font-bold text-stone-700 block mb-1">Email Address</label>
+                          <label className="text-[11px] font-bold text-stone-400 block mb-1 uppercase">Email Address</label>
                           <input
                             type="email"
                             required
                             placeholder="keeper@Dracoman.dev"
                             value={contactEmail}
                             onChange={e => setContactEmail(e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:outline-none focus:border-amber-500"
+                            className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-400"
                           />
                         </div>
 
                         <div>
-                          <label className="text-[11px] font-bold text-stone-700 block mb-1">Message / Feedback</label>
+                          <label className="text-[11px] font-bold text-stone-400 block mb-1 uppercase">Message / Feedback</label>
                           <textarea
                             required
                             rows={3}
                             placeholder="Share your thoughts on game balance, platform physics, or character skills..."
                             value={contactMessage}
                             onChange={e => setContactMessage(e.target.value)}
-                            className="w-full px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-xs text-stone-800 focus:outline-none focus:border-amber-500 resize-none"
+                            className="w-full px-3.5 py-2.5 bg-stone-950 border border-stone-800 rounded-xl text-xs text-stone-100 placeholder-stone-600 focus:outline-none focus:border-amber-400 resize-none"
                           />
                         </div>
 
                         <button
                           type="submit"
-                          className="w-full py-3 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-extrabold shadow-md transition-all active:scale-95 flex items-center justify-center gap-2"
+                          className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-xs font-mono font-black shadow-md transition-all active:scale-95 flex items-center justify-center gap-2 uppercase tracking-wider"
                         >
                           <Send className="w-3.5 h-3.5" />
                           <span>Send Feedback</span>
@@ -1401,16 +1430,16 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md"
           >
             <motion.div
               initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 15 }}
-              className="w-full max-w-3xl overflow-hidden border bg-white border-stone-200 rounded-3xl p-8 shadow-2xl backdrop-blur-xl"
+              className="w-full max-w-3xl overflow-hidden border bg-stone-900/95 border-stone-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-stone-100"
             >
-              <h2 className="text-2xl font-extrabold tracking-tight text-stone-900 font-display">Select Campaign Map</h2>
-              <p className="text-xs text-stone-500 mt-1">Deploy your companion into custom platform realms.</p>
+              <h2 className="text-2xl font-black uppercase tracking-wider text-white font-display">Select Campaign Map</h2>
+              <p className="text-xs text-stone-400 font-mono mt-1">Deploy your companion into custom platform realms.</p>
               <div className="grid md:grid-cols-2 gap-4 mt-6 min-h-[310px] p-1">
                 {currentStages.map((stage) => {
                   const unlocked = isStageUnlocked(stage.num);
@@ -1418,41 +1447,41 @@ export default function Home() {
                     <div
                       key={stage.num}
                       onClick={() => handleStartStage(stage.num)}
-                      className={`relative p-5 border border-stone-200 rounded-2xl transition-all flex flex-col justify-between group overflow-hidden ${
+                      className={`relative p-5 border rounded-2xl transition-all flex flex-col justify-between group overflow-hidden ${
                         unlocked
-                          ? 'cursor-pointer hover:shadow-md bg-white ' + stage.borderHover
-                          : 'cursor-not-allowed bg-stone-50 opacity-80'
+                          ? 'cursor-pointer hover:shadow-xl bg-stone-950 border-stone-800 hover:border-amber-400'
+                          : 'cursor-not-allowed bg-stone-950/60 border-stone-900 opacity-75'
                       }`}
                     >
                       {!unlocked && (
-                        <div className="absolute inset-0 z-20 bg-stone-900/60 backdrop-blur-[2px] p-4 flex flex-col items-center justify-center text-center text-white space-y-1">
+                        <div className="absolute inset-0 z-20 bg-stone-950/80 backdrop-blur-[2px] p-4 flex flex-col items-center justify-center text-center text-white space-y-1 font-mono">
                           <Lock className="w-5 h-5 text-amber-400" />
                           <span className="text-xs font-black">Stage {stage.num} Locked</span>
-                          <span className="text-[10px] text-stone-300">Complete Stage {stage.num - 1} or Activate Basic Membership</span>
+                          <span className="text-[10px] text-stone-400">Complete Stage {stage.num - 1} or Activate Basic Membership</span>
                         </div>
                       )}
                       <div>
                         <div className="flex justify-between items-center">
-                          <span className="text-xs font-extrabold text-stone-400 tracking-wider uppercase font-mono">Stage {stage.num}</span>
+                          <span className="text-xs font-mono font-bold text-amber-400 tracking-wider uppercase">Stage {stage.num}</span>
                           <span className={`px-2 py-0.5 text-[9px] font-mono rounded font-bold ${stage.diffClass}`}>
                             {stage.difficulty}
                           </span>
                         </div>
-                        <h3 className="font-extrabold text-stone-900 text-lg mt-2 font-display">{stage.name}</h3>
-                        <p className="text-xs text-stone-500 mt-2 leading-relaxed">
+                        <h3 className="font-black text-white text-lg mt-2 font-display">{stage.name}</h3>
+                        <p className="text-xs text-stone-400 mt-2 leading-relaxed font-mono">
                           {stage.desc}
                         </p>
                       </div>
-                      <div className="mt-6 flex items-center justify-between text-xs font-bold text-stone-600 group-hover:text-stone-900 font-mono">
+                      <div className="mt-6 flex items-center justify-between text-xs font-mono font-bold text-stone-400 group-hover:text-stone-200">
                         <span>Boss: {stage.boss}</span>
-                        <span className="group-hover:translate-x-1 transition-transform">{unlocked ? 'Deploy ➔' : 'Locked 🔒'}</span>
+                        <span className="group-hover:translate-x-1 transition-transform text-amber-400">{unlocked ? 'Deploy ➔' : 'Locked 🔒'}</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
 
-              <div className="mt-8 flex items-center justify-between border-t border-stone-100 pt-5">
+              <div className="mt-8 flex items-center justify-between border-t border-stone-800 pt-5">
                 <div className="flex items-center gap-2">
                   {Array.from({ length: pageCount }).map((_, idx) => (
                     <button
@@ -1463,8 +1492,8 @@ export default function Home() {
                       }}
                       className={`w-8 h-8 rounded-full text-xs font-mono font-bold transition-all border ${
                         stagePage === idx
-                          ? 'bg-stone-900 border-stone-900 text-white shadow-sm'
-                          : 'bg-white border-stone-200 text-stone-600 hover:bg-stone-50'
+                          ? 'bg-amber-500 border-amber-400 text-stone-950 shadow-md'
+                          : 'bg-stone-950 border-stone-800 text-stone-400 hover:bg-stone-900'
                       }`}
                     >
                       {idx + 1}
@@ -1472,10 +1501,10 @@ export default function Home() {
                   ))}
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 font-mono">
                   <button
                     onClick={() => { soundService.playClick(); setShowStageSelector(false); }}
-                    className="px-6 py-2.5 bg-stone-100 hover:bg-stone-200 rounded-xl text-stone-700 text-xs font-bold transition-all"
+                    className="px-6 py-2.5 bg-stone-800 hover:bg-stone-700 text-stone-200 rounded-xl text-xs font-bold transition-all border border-stone-700"
                   >
                     Back
                   </button>
@@ -1492,86 +1521,86 @@ export default function Home() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/40 backdrop-blur-md"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/80 backdrop-blur-md"
           >
             <motion.div
               initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 15 }}
-              className="w-full max-w-xl border bg-white border-stone-200 rounded-3xl p-8 shadow-2xl backdrop-blur-xl"
+              className="w-full max-w-xl border bg-stone-900/95 border-stone-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-stone-100"
             >
-              <h2 className="text-2xl font-black text-stone-900 font-display">Game Controls Guide</h2>
-              <p className="text-xs text-stone-500 mt-1">Master movement, platform landing, and weapon swinging.</p>
+              <h2 className="text-2xl font-black text-white font-display uppercase tracking-wider">Game Controls Guide</h2>
+              <p className="text-xs text-stone-400 font-mono mt-1">Master movement, platform landing, and weapon swinging.</p>
 
-              <div className="space-y-4 mt-6 text-sm">
-                <div className="flex items-center justify-between p-3 bg-stone-50 rounded-2xl border border-stone-100">
-                  <span className="font-semibold text-stone-700">Move Left / Right</span>
-                  <div className="flex gap-1.5 font-mono text-xs">
-                    <span className="px-2 py-1 bg-white border rounded shadow-sm font-bold">A</span>
-                    <span className="px-2 py-1 bg-white border rounded shadow-sm font-bold">D</span>
-                    <span className="text-stone-400">or</span>
-                    <span className="px-2 py-1 bg-white border rounded shadow-sm font-bold">←</span>
-                    <span className="px-2 py-1 bg-white border rounded shadow-sm font-bold">→</span>
+              <div className="space-y-3 mt-6 text-xs font-mono">
+                <div className="flex items-center justify-between p-3 bg-stone-950 rounded-2xl border border-stone-800">
+                  <span className="font-bold text-stone-300">Move Left / Right</span>
+                  <div className="flex gap-1.5 text-xs">
+                    <span className="px-2 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">A</span>
+                    <span className="px-2 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">D</span>
+                    <span className="text-stone-500">or</span>
+                    <span className="px-2 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">←</span>
+                    <span className="px-2 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">→</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-stone-50 rounded-2xl border border-stone-100">
-                  <span className="font-semibold text-stone-700">Jump / Double Jump</span>
-                  <div className="flex gap-1.5 font-mono text-xs">
-                    <span className="px-2.5 py-1 bg-white border rounded shadow-sm font-bold">W</span>
-                    <span className="text-stone-400">or</span>
-                    <span className="px-2.5 py-1 bg-white border rounded shadow-sm font-bold">↑</span>
+                <div className="flex items-center justify-between p-3 bg-stone-950 rounded-2xl border border-stone-800">
+                  <span className="font-bold text-stone-300">Jump / Double Jump</span>
+                  <div className="flex gap-1.5 text-xs">
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">W</span>
+                    <span className="text-stone-500">or</span>
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">↑</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-amber-50/70 border border-amber-200/80 rounded-2xl">
+                <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
                   <div className="flex flex-col">
-                    <span className="font-bold text-amber-900">Companion Ultimate Skill</span>
-                    <span className="text-[11px] text-amber-700">Requires charged energy (Meteor, Shower, Avatar, Knives, Laser)</span>
+                    <span className="font-bold text-amber-300">Companion Ultimate Skill</span>
+                    <span className="text-[10px] text-amber-400/80">Requires charged energy (Meteor, Shower, Avatar, Knives, Laser)</span>
                   </div>
-                  <div className="flex gap-1.5 font-mono text-xs">
-                    <span className="px-3.5 py-1 bg-white border border-amber-300 text-amber-900 rounded shadow-sm font-bold">SPACE</span>
+                  <div className="flex gap-1.5 text-xs">
+                    <span className="px-3 py-1 bg-amber-500 text-stone-950 rounded font-black">SPACE</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-amber-50/60 border border-amber-200/60 rounded-2xl">
+                <div className="flex items-center justify-between p-3 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
                   <div className="flex flex-col">
-                    <span className="font-bold text-amber-900">Drop Down Platform</span>
-                    <span className="text-[11px] text-amber-700">Drop down through wooden floating platforms</span>
+                    <span className="font-bold text-amber-300">Drop Down Platform</span>
+                    <span className="text-[10px] text-amber-400/80">Drop down through wooden floating platforms</span>
                   </div>
-                  <div className="flex gap-1.5 font-mono text-xs">
-                    <span className="px-2.5 py-1 bg-white border border-amber-300 text-amber-900 rounded shadow-sm font-bold">S</span>
+                  <div className="flex gap-1.5 text-xs">
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">S</span>
                     <span className="text-amber-500">or</span>
-                    <span className="px-2.5 py-1 bg-white border border-amber-300 text-amber-900 rounded shadow-sm font-bold">↓</span>
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">↓</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-stone-50 rounded-2xl border border-stone-100">
+                <div className="flex items-center justify-between p-3 bg-stone-950 rounded-2xl border border-stone-800">
                   <div className="flex flex-col">
-                    <span className="font-semibold text-stone-700">Swinging Attack</span>
-                    <span className="text-[11px] text-stone-500">Slash blade arc & spark particles</span>
+                    <span className="font-bold text-stone-300">Swinging Attack</span>
+                    <span className="text-[10px] text-stone-500">Slash blade arc &amp; spark particles</span>
                   </div>
-                  <div className="flex gap-1.5 font-mono text-xs">
-                    <span className="px-2.5 py-1 bg-white border rounded shadow-sm font-bold">J</span>
-                    <span className="text-stone-400">or</span>
-                    <span className="px-2.5 py-1 bg-white border rounded shadow-sm font-bold">Z</span>
+                  <div className="flex gap-1.5 text-xs">
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">J</span>
+                    <span className="text-stone-500">or</span>
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">Z</span>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-between p-3 bg-stone-50 rounded-2xl border border-stone-100">
-                  <span className="font-semibold text-stone-700">Companion Special Skill</span>
-                  <div className="flex gap-1.5 font-mono text-xs">
-                    <span className="px-2.5 py-1 bg-white border rounded shadow-sm font-bold">K</span>
-                    <span className="text-stone-400">or</span>
-                    <span className="px-2.5 py-1 bg-white border rounded shadow-sm font-bold">X</span>
+                <div className="flex items-center justify-between p-3 bg-stone-950 rounded-2xl border border-stone-800">
+                  <span className="font-bold text-stone-300">Companion Special Skill</span>
+                  <div className="flex gap-1.5 text-xs">
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">K</span>
+                    <span className="text-stone-500">or</span>
+                    <span className="px-2.5 py-1 bg-stone-900 border border-stone-800 text-amber-400 rounded font-bold">X</span>
                   </div>
                 </div>
               </div>
 
-              <div className="mt-8 flex justify-end">
+              <div className="mt-8 flex justify-end font-mono">
                 <button
                   onClick={() => { soundService.playClick(); setShowControlsModal(false); }}
-                  className="px-6 py-2.5 bg-stone-900 hover:bg-stone-800 text-white rounded-xl text-xs font-bold transition-all"
+                  className="px-6 py-2.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-xl text-xs font-black uppercase transition-all shadow-md active:scale-95"
                 >
                   Got It
                 </button>

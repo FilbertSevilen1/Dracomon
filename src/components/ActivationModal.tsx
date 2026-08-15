@@ -31,16 +31,16 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}
-          className="w-full max-w-md bg-white border border-stone-200 rounded-[2rem] p-6 shadow-2xl space-y-5 text-center relative overflow-hidden"
+          className="w-full max-w-md bg-stone-900/95 border border-stone-800 rounded-[2rem] p-6 shadow-2xl space-y-5 text-center relative overflow-hidden backdrop-blur-xl text-stone-100"
         >
           <div className="flex flex-col items-center justify-center gap-2">
-            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-600">
+            <div className="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
               <Lock className="w-6 h-6" />
             </div>
-            <h3 className="text-xl font-black text-stone-900 font-display mt-2">
+            <h3 className="text-xl font-black text-white font-display uppercase tracking-wider mt-2">
               Unlock {activationTier} Tier
             </h3>
-            <p className="text-xs text-stone-500 max-w-xs mx-auto">
+            <p className="text-xs text-stone-400 max-w-xs mx-auto font-mono">
               Please enter your membership activation code below to unlock premium features.
             </p>
           </div>
@@ -59,15 +59,15 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
                 }
               }}
               placeholder=""
-              className={`w-full px-4 py-3 bg-stone-50 border rounded-2xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 ${
+              className={`w-full px-4 py-3 bg-stone-950 border rounded-2xl text-sm font-semibold transition-all focus:outline-none focus:ring-2 ${
                 activationError
-                  ? 'border-rose-300 focus:ring-rose-500/20 text-rose-600 focus:border-rose-300'
-                  : 'border-stone-200 focus:border-amber-500 focus:ring-amber-500/20 text-stone-800'
+                  ? 'border-rose-500/80 focus:ring-rose-500/20 text-rose-400 focus:border-rose-500'
+                  : 'border-stone-800 focus:border-amber-400 focus:ring-amber-500/20 text-stone-100'
               }`}
               autoFocus
             />
             {activationError && (
-              <p className="text-[10px] font-bold text-rose-500 animate-pulse mt-1">
+              <p className="text-[10px] font-bold text-rose-400 animate-pulse mt-1 font-mono">
                 Invalid activation code. Please try again.
               </p>
             )}
@@ -76,13 +76,13 @@ export const ActivationModal: React.FC<ActivationModalProps> = ({
           <div className="flex gap-3 pt-2">
             <button
               onClick={onClose}
-              className="flex-1 py-3.5 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-2xl text-xs font-bold transition-all active:scale-95"
+              className="flex-1 py-3.5 bg-stone-800 hover:bg-stone-700 text-stone-300 rounded-2xl text-xs font-black uppercase font-display tracking-wider transition-all active:scale-95 border border-stone-700"
             >
               Cancel
             </button>
             <button
               onClick={onVerify}
-              className="flex-1 py-3.5 bg-amber-500 hover:bg-amber-400 text-stone-950 rounded-2xl text-xs font-extrabold transition-all active:scale-95 shadow-md shadow-amber-500/10 hover:shadow-amber-500/25"
+              className="flex-1 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-stone-950 rounded-2xl text-xs font-black uppercase font-display tracking-wider transition-all active:scale-95 shadow-lg shadow-amber-500/20"
             >
               Unlock Tier
             </button>

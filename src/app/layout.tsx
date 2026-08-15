@@ -20,8 +20,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="h-full antialiased">
-      <body className={`${plusJakarta.className} min-h-full flex flex-col`}>
+    <html lang="en" className="h-full antialiased dark">
+      <body className={`${plusJakarta.className} min-h-full flex flex-col bg-stone-950 text-stone-100 selection:bg-amber-500 selection:text-stone-950`}>
         <Navbar />
         {children}
       </body>

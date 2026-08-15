@@ -29,21 +29,21 @@ export default function HeroesPage() {
   } = useGameState();
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900 font-display flex flex-col justify-between relative overflow-hidden select-none">
+    <div className="min-h-screen bg-stone-950 text-stone-100 font-display flex flex-col justify-between relative overflow-hidden select-none">
       {/* BACKGROUND DECORATIONS */}
-      <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-amber-100/40 rounded-full blur-3xl -z-10" />
-      <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-purple-100/40 rounded-full blur-3xl -z-10" />
+      <div className="absolute top-0 right-0 w-[45rem] h-[45rem] bg-amber-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
+      <div className="absolute bottom-0 left-0 w-[45rem] h-[45rem] bg-purple-900/10 rounded-full blur-3xl -z-10 pointer-events-none" />
 
       {/* MAIN HERO ROSTER */}
       <main className="flex-1 w-full max-w-6xl mx-auto px-6 md:px-12 pt-24 pb-10 space-y-8 z-10">
 
         {/* HEADER */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-6">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-800 pb-6">
           <div>
-            <h1 className="text-3xl md:text-5xl font-black text-stone-900 tracking-tight font-display">
-              Hero Roster <span className="text-amber-500">&amp; Selection</span>
+            <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight font-display uppercase">
+              Hero Roster <span className="text-amber-400">&amp; Selection</span>
             </h1>
-            <p className="text-xs md:text-sm text-stone-500 mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs md:text-sm text-stone-400 mt-1 max-w-2xl leading-relaxed font-mono">
               View all dracos, compare base attributes, unlock new companions, and equip your active partner.
             </p>
           </div>
