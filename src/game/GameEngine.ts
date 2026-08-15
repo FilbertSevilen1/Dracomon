@@ -246,6 +246,7 @@ interface Enemy {
   beamTimer?: number;
   beamTargetX?: number;
   beamTargetY?: number;
+  beamAngle?: number;
   beamEndX?: number;
   beamEndY?: number;
   beamBarrageActive?: boolean;
@@ -7472,7 +7473,9 @@ export class GameEngine {
       } else if (enemy.type === 'lunar_goddess') {
         const dx = this.px - enemy.x;
         const dy = this.py - enemy.y;
-        enemy.facing = dx > 0 ? 1 : -1;
+        if (!enemy.beamBarrageActive) {
+          enemy.facing = dx > 0 ? 1 : -1;
+        }
 
         if (Math.abs(dx) < 650 && Math.abs(dy) < 350) {
           if (!enemy.beamBarrageActive) {
@@ -7502,6 +7505,7 @@ export class GameEngine {
                 enemy.beamTimer = 180;
                 enemy.beamTargetX = this.px + this.pWidth / 2;
                 enemy.beamTargetY = this.py + this.pHeight / 2;
+                enemy.beamAngle = undefined;
                 enemy.vx = 0;
               }
             }
@@ -7510,10 +7514,16 @@ export class GameEngine {
             if (enemy.beamTimer! <= 0) {
               enemy.beamBarrageActive = false;
               enemy.shootCooldown = 120;
+              enemy.beamAngle = undefined;
             } else if (enemy.beamTimer! < 120) {
               const startX = enemy.x + enemy.width / 2;
               const startY = enemy.y + enemy.height / 2;
-              const angle = Math.atan2(enemy.beamTargetY! - startY, enemy.beamTargetX! - startX);
+
+              // Lock fixed laser angle once lock-on completes (at transition beamTimer < 120) and NEVER change direction until finished firing!
+              if (enemy.beamAngle === undefined) {
+                enemy.beamAngle = Math.atan2((enemy.beamTargetY ?? (this.py + this.pHeight / 2)) - startY, (enemy.beamTargetX ?? (this.px + this.pWidth / 2)) - startX);
+              }
+              const angle = enemy.beamAngle;
 
               let curX = startX;
               let curY = startY;
