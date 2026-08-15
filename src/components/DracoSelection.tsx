@@ -199,10 +199,48 @@ const DRACO_META: {
     colorClass: 'text-red-700 border-red-500 bg-red-950',
     bgGradient: 'from-red-700 via-rose-800 to-slate-950',
   },
+  Reapermon: {
+    role: 'Shadow Reaper / Death Scythe',
+    abilityName: 'Death Scythe Cleave & Ascent Dash',
+    abilityDesc: 'Basic attack swings the Scythe of Death in alternating wide arcs. Skill dashes 450px forward slicing enemies caught in path while swinging scythe upwards.',
+    ultimateName: 'Giant Scythe of Damnation (120 Energy)',
+    ultimateDesc: 'Marks & locks the enemy with the lowest % HP in 500px radius for 2s, then summons a Giant Spectral Scythe that slashes for massive execute damage (higher when enemy HP is low).',
+    cost: 500,
+    colorClass: 'text-purple-400 border-purple-600 bg-purple-950',
+    bgGradient: 'from-purple-900 via-stone-900 to-emerald-950',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
+
+  if (name === 'Reapermon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.35)" />
+        {/* Dark Soul Aura */}
+        <circle cx="50" cy="50" r="38" fill="rgba(168, 85, 247, 0.15)" stroke="#a855f7" strokeWidth="1" strokeDasharray="4 2" />
+        {/* Tattered Shadow Cape / Wings */}
+        <path d="M 30 42 Q 6 12 26 28 Q 16 48 32 60 Z" fill="#18181b" stroke="#a855f7" strokeWidth="1.5" />
+        <path d="M 70 42 Q 94 12 74 28 Q 84 48 68 60 Z" fill="#18181b" stroke="#a855f7" strokeWidth="1.5" />
+        {/* Main Reaper Body / Cloak */}
+        <rect x="34" y="32" width="32" height="44" rx="12" fill="#090514" stroke="#c084fc" strokeWidth="2.5" />
+        {/* Hood Shadow & Skull Head */}
+        <path d="M 32 30 Q 50 16 68 30 L 64 48 Q 50 52 36 48 Z" fill="#1e1b4b" stroke="#a855f7" strokeWidth="1.8" />
+        {/* Glowing Emerald Skull Eyes */}
+        <circle cx="44" cy="38" r="3" fill="#10b981" />
+        <circle cx="56" cy="38" r="3" fill="#10b981" />
+        <circle cx="44" cy="38" r="1.2" fill="#ffffff" />
+        <circle cx="56" cy="38" r="1.2" fill="#ffffff" />
+        {/* Spectral Scythe of Death */}
+        <path d="M 68 70 L 78 20" stroke="#71717a" strokeWidth="3" strokeLinecap="round" />
+        <path d="M 78 20 Q 94 16 86 38 Q 82 28 78 20 Z" fill="#a855f7" stroke="#10b981" strokeWidth="1.8" />
+        {/* Floating Souls */}
+        <circle cx="28" cy="36" r="2.5" fill="#10b981" opacity="0.8" />
+        <circle cx="72" cy="62" r="2" fill="#c084fc" opacity="0.8" />
+      </svg>
+    );
+  }
 
   if (name === 'Enigmon') {
     return (

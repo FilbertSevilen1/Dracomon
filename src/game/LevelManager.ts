@@ -94,6 +94,8 @@ export const SYMBOL_TO_ENTITY_TYPE: Record<string, string> = {
   'a': 'alien',
   'f': 'fish',
   'F': 'flying_wyvern',
+  'g': 'ghost',
+  'r': 'reaper',
   'A': 'anchor',
   'S': 'king_slime',
   'B': 'miniboss',

@@ -220,6 +220,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Reapermon: {
+      level: 1,
+      exp: 0,
+      hp: 22,
+      attack: 9.5,
+      defense: 3.5,
+      speed: 8.0,
+      jump: 11,
+      range: 7,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   inventory: DEFAULT_ITEMS,
@@ -450,6 +462,20 @@ export const storageService = {
             speed: 6.5,
             jump: 11,
             range: 5,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Reapermon) {
+          parsed.dracos.Reapermon = {
+            level: 1,
+            exp: 0,
+            hp: 22,
+            attack: 9.5,
+            defense: 3.5,
+            speed: 8.0,
+            jump: 11,
+            range: 7,
             unlocked: false,
             energyRegen: 1.0,
           };

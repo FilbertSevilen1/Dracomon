@@ -30,6 +30,21 @@ interface VersionLog {
 
 const VERSION_LOGS: VersionLog[] = [
   {
+    version: '0.3.2',
+    date: 'August 15, 2026',
+    tag: 'New Hero Reapermon & Shadow Realm Entities',
+    badgeColor: 'bg-purple-700 text-white font-black shadow-sm',
+    summary: 'Introduces Reapermon equipped with the Scythe of Death basic attack, 450px Upward Scythe Dash skill, 120-Energy Giant Scythe Execution ultimate targeting the lowest % HP enemy, new Ghost & Reaper entities for Shadow Theme maps, modernized sprites for every character, and upgraded basic attack visual effects.',
+    highlights: [
+      'New Hero - Reapermon: Shadow reaper hero wielding the Scythe of Death with wide alternating arc sweeps and spectral soul trail VFX.',
+      'Reapermon Skill - Upward Scythe Death Dash: Dashes 450px forward slicing enemies caught along the dash path while swinging scythe upwards (2.2x damage).',
+      'Reapermon Ultimate - Giant Scythe of Damnation (120 Energy): Marks and locks the enemy with the lowest % HP in a 500px radius for 2 seconds, then summons a Giant Spectral Scythe overhead to execute foes with scaling damage based on missing HP percentage.',
+      'New Shadow Theme Entities: Ghost (hovering phantom minion shooting soul pulses) and Reaper (elite shadow melee minion wielding dual scythes).',
+      'Modernized Character Sprites: Overhauled body visuals, crests, glowing elemental back-auras, and silhouettes for all heroes.',
+      'Enhanced Basic Attack Animations: Upgraded unique visual attack effects, slash trails, and elemental particles for all 17 playable heroes.',
+    ],
+  },
+  {
     version: '0.3.1',
     date: 'August 11, 2026',
     tag: 'New Hero Butchermon - The Bloodthirsty Cleaver',

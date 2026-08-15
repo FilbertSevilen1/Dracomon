@@ -218,7 +218,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess' | 'ghost' | 'reaper';
   hp: number;
   maxHp: number;
   attack: number;
@@ -354,6 +354,20 @@ export class GameEngine {
   private assassinmonDashActive = false;
   private assassinmonDashTimer = 0;
   private shadowAfterimages: { x: number; y: number; facing: number; alpha: number }[] = [];
+
+  private reapermonBasicSwingDirection = 1;
+  private reapermonDashActive = false;
+  private reapermonDashTimer = 0;
+  private reapermonUltActive = false;
+  private reapermonUltTimer = 0;
+  private reapermonUltTargetEnemy: any = null;
+  private reapermonUltTargetX = 0;
+  private reapermonUltTargetY = 0;
+  private reapermonUltStartX = 0;
+  private reapermonUltStartY = 0;
+  private reapermonSlashImpactTimer = 0;
+  private reapermonSlashImpactX = 0;
+  private reapermonSlashImpactY = 0;
 
   private musouSlashActive = false;
   private musouSlashTimer = 0;
@@ -734,6 +748,44 @@ export class GameEngine {
         state: 'patrol',
         animFrame: 0,
         name: 'Primordial King Kong',
+      });
+    } else if (type === 'ghost') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 36,
+        vx: -1.0,
+        vy: 0,
+        width: 32,
+        height: 36,
+        type: 'ghost' as any,
+        hp: 28 + (grid.length * 3),
+        maxHp: 28 + (grid.length * 3),
+        attack: 5,
+        defense: 2,
+        facing: -1,
+        shootCooldown: 100,
+        state: 'patrol',
+        animFrame: 0,
+      });
+    } else if (type === 'reaper') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 48,
+        vx: -1.5,
+        vy: 0,
+        width: 40,
+        height: 48,
+        type: 'reaper' as any,
+        hp: 55 + (grid.length * 5),
+        maxHp: 55 + (grid.length * 5),
+        attack: 9,
+        defense: 4,
+        facing: -1,
+        shootCooldown: 90,
+        state: 'patrol',
+        animFrame: 0,
       });
     } else if (type === 'slime') {
       this.enemies.push({
@@ -1913,11 +1965,59 @@ export class GameEngine {
           }
         }
       });
+    } else if (this.selectedDraco === 'Reapermon') {
+      soundService.playScytheSwing();
+      const slashX = this.px + (this.pFacing === 1 ? this.pWidth + 15 : -15);
+      const slashY = this.py + this.pHeight / 2;
+      this.attackDuration = 10;
+      this.attackCooldown = 18;
+      this.reapermonBasicSwingDirection *= -1;
+      const scytheDmg = Math.ceil(this.stats.attack * 1.3);
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+        const dist = Math.hypot(ex - slashX, ey - slashY);
+        const inFront = (this.pFacing === 1 && ex >= this.px - 35) || (this.pFacing === -1 && ex <= this.px + this.pWidth + 35);
+        if (dist <= 140 && inFront) {
+          this.damageEnemy(enemy, scytheDmg);
+          this.spawnDustParticles(ex, ey, 10, '#a855f7');
+          this.spawnDustParticles(ex, ey, 8, '#10b981');
+        }
+      });
+
+      for (let i = 0; i < 16; i++) {
+        const ang = (Math.random() - 0.5) * Math.PI * 0.9 + (this.pFacing === 1 ? 0 : Math.PI);
+        const spd = Math.random() * 9 + 4;
+        this.particles.push({
+          x: slashX,
+          y: slashY,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 1.5,
+          size: Math.random() * 6 + 3,
+          color: i % 3 === 0 ? '#a855f7' : i % 3 === 1 ? '#10b981' : '#c084fc',
+          life: 22,
+          maxLife: 22
+        });
+      }
+      this.addFloatingText(slashX, slashY - 15, '☠️ SCYTHE CLEAVE', '#c084fc');
     } else {
       soundService.playHit();
-      // Default / Jumpmon melee reach doubled: extra width +48 (from +24)
       this.checkMeleeHit(this.px - 24, this.py - 16, this.pWidth + 48, this.pHeight + 32, this.stats.attack, true);
-      this.spawnDustParticles(slashX, slashY, 10, '#fbbf24');
+      this.spawnDustParticles(slashX, slashY, 12, '#fbbf24');
+      for (let p = 0; p < 8; p++) {
+        this.particles.push({
+          x: slashX,
+          y: slashY + (Math.random() - 0.5) * 16,
+          vx: this.pFacing * (Math.random() * 5 + 3),
+          vy: (Math.random() - 0.5) * 4,
+          size: Math.random() * 4 + 2,
+          color: p % 2 === 0 ? '#f59e0b' : '#fef08a',
+          life: 14,
+          maxLife: 14
+        });
+      }
     }
   }
 
@@ -2545,6 +2645,38 @@ export class GameEngine {
         soundService.playHit();
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, '🚫 ROTTEN FLESH DEACTIVATED', '#94a3b8');
       }
+    } else if (this.selectedDraco === 'Reapermon') {
+      soundService.playShoot();
+      this.specialCooldown = 240;
+      this.reapermonDashActive = true;
+      this.reapermonDashTimer = 15;
+      this.pInvulnerableFrames = 18;
+
+      this.pvx = this.pFacing * 30;
+
+      const hitStartX = this.px;
+      const hitWidth = 450;
+      const hitX = this.pFacing === 1 ? hitStartX : hitStartX - hitWidth + this.pWidth;
+      const dashDmg = Math.ceil(this.stats.attack * 2.2);
+
+      this.checkMeleeHit(hitX, this.py - 30, hitWidth, this.pHeight + 60, dashDmg, true);
+
+      for (let i = 0; i < 20; i++) {
+        const ang = (Math.random() - 0.5) * Math.PI * 0.8 - Math.PI / 2;
+        const spd = Math.random() * 12 + 4;
+        this.particles.push({
+          x: this.px + (Math.random() - 0.5) * 40,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd + this.pFacing * 10,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 7 + 3,
+          color: i % 2 === 0 ? '#a855f7' : '#10b981',
+          life: 24,
+          maxLife: 24
+        });
+      }
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '☠️ UPWARD SCYTHE DASH (450px)!', '#a855f7');
     }
   }
 
@@ -2710,6 +2842,7 @@ export class GameEngine {
       case 'Pixelmon': return 120;
       case 'Krakenmon': return 100;
       case 'Butchermon': return 80;
+      case 'Reapermon': return 120;
       default: return 100;
     }
   }
@@ -2736,6 +2869,7 @@ export class GameEngine {
       case 'Pixelmon': return 'Mega Pixelmon';
       case 'Krakenmon': return 'Collision Course';
       case 'Butchermon': return 'Butcher\'s Masterpiece';
+      case 'Reapermon': return 'Giant Scythe of Damnation';
       default: return 'Ultimate';
     }
   }
@@ -2758,6 +2892,7 @@ export class GameEngine {
       case 'Pixelmon': return '8-Bit Power... MEGA PIXELMON!';
       case 'Krakenmon': return 'Submerge into the abyssal depths... COLLISION COURSE!';
       case 'Butchermon': return 'Fresh Meat... BUTCHER\'S MASTERPIECE!';
+      case 'Reapermon': return 'FEEL THE EMBRACE OF DEATH!';
       default: return 'Unleash full power!';
     }
   }
@@ -3328,6 +3463,61 @@ export class GameEngine {
           color: p % 2 === 0 ? '#dc2626' : '#7f1d1d',
           life: 20,
           maxLife: 20
+        });
+      }
+    } else if (this.selectedDraco === 'Reapermon') {
+      soundService.playLevelUp(this.isDemoMode);
+
+      let lowestHpEnemy: any = null;
+      let lowestHpPercent = 9999;
+      const playerCenterX = this.px + this.pWidth / 2;
+      const playerCenterY = this.py + this.pHeight / 2;
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dist = Math.hypot((enemy.x + enemy.width / 2) - playerCenterX, (enemy.y + enemy.height / 2) - playerCenterY);
+        if (dist <= 500) {
+          const hpPercent = enemy.hp / enemy.maxHp;
+          if (hpPercent < lowestHpPercent) {
+            lowestHpPercent = hpPercent;
+            lowestHpEnemy = enemy;
+          }
+        }
+      });
+
+      soundService.playScytheSwing();
+      this.reapermonUltActive = true;
+      this.reapermonUltTimer = 120;
+      this.reapermonUltStartX = playerCenterX - (this.pFacing * 300);
+      this.reapermonUltStartY = playerCenterY - 140;
+
+      if (lowestHpEnemy) {
+        this.reapermonUltTargetEnemy = lowestHpEnemy;
+        this.reapermonUltTargetX = lowestHpEnemy.x + lowestHpEnemy.width / 2;
+        this.reapermonUltTargetY = lowestHpEnemy.y + lowestHpEnemy.height / 2;
+        (lowestHpEnemy as any).stunnedTimer = 120;
+        this.addFloatingText(this.reapermonUltTargetX, this.reapermonUltTargetY - 30, '💀 DEATH MARKED & LOCKED (2s)!', '#ef4444', true);
+      } else {
+        this.reapermonUltTargetEnemy = null;
+        this.reapermonUltTargetX = this.px + this.pFacing * 250;
+        this.reapermonUltTargetY = this.py;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, '☠️ GIANT SCYTHE OF DAMNATION!', '#c084fc', true);
+      }
+
+      this.screenShake = 40;
+
+      for (let p = 0; p < 36; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 8 + 3;
+        this.particles.push({
+          x: this.reapermonUltTargetX,
+          y: this.reapermonUltTargetY,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 2,
+          size: Math.random() * 8 + 3,
+          color: p % 2 === 0 ? '#a855f7' : '#10b981',
+          life: 30,
+          maxLife: 30
         });
       }
     }
@@ -6767,13 +6957,67 @@ export class GameEngine {
 
       let grounded = false;
 
-      if (enemy.type === 'flying_wyvern' || enemy.type === 'fish' || enemy.type === 'giant_wisp') {
+      if (enemy.type === 'flying_wyvern' || enemy.type === 'fish' || enemy.type === 'giant_wisp' || enemy.type === 'ghost') {
         enemy.vx = enemy.vx || -1.2;
         enemy.x += enemy.vx;
         enemy.y += Math.sin(this.frameCount * 0.05 + enemy.id) * 1.5;
         if (this.isSolid(enemy.x, enemy.y) || enemy.x < 10 || enemy.x > this.levelWidth - 100) {
           enemy.vx = -enemy.vx;
           enemy.facing = enemy.vx > 0 ? 1 : -1;
+        }
+
+        if (enemy.type === 'ghost' && enemy.shootCooldown !== undefined) {
+          enemy.shootCooldown--;
+          if (enemy.shootCooldown <= 0) {
+            enemy.shootCooldown = 120;
+            const dist = Math.hypot(this.px - enemy.x, this.py - enemy.y);
+            if (dist < 450) {
+              const ang = Math.atan2(this.py - enemy.y, this.px - enemy.x);
+              this.projectiles.push({
+                x: enemy.x + enemy.width / 2,
+                y: enemy.y + enemy.height / 2,
+                vx: Math.cos(ang) * 5,
+                vy: Math.sin(ang) * 5,
+                width: 14,
+                height: 14,
+                isEnemy: true,
+                damage: enemy.attack,
+                color: '#a855f7',
+                type: 'dark_energy' as any,
+                rangeCap: 500,
+                startX: enemy.x
+              } as any);
+            }
+          }
+        }
+      } else if (enemy.type === 'reaper') {
+        enemy.vx = enemy.vx || -1.5;
+        enemy.x += enemy.vx;
+        if (this.isSolid(enemy.x, enemy.y) || enemy.x < 10 || enemy.x > this.levelWidth - 100) {
+          enemy.vx = -enemy.vx;
+          enemy.facing = enemy.vx > 0 ? 1 : -1;
+        }
+        if (enemy.shootCooldown !== undefined) {
+          enemy.shootCooldown--;
+          const dist = Math.hypot(this.px - enemy.x, this.py - enemy.y);
+          if (dist < 90 && enemy.shootCooldown <= 0) {
+            enemy.shootCooldown = 80;
+            this.handlePlayerHit(enemy.attack * 1.4, enemy.x + enemy.width / 2);
+            for (let p = 0; p < 12; p++) {
+              const ang = (Math.random() - 0.5) * Math.PI * 0.8 + (enemy.facing === 1 ? 0 : Math.PI);
+              const spd = Math.random() * 6 + 2;
+              this.particles.push({
+                x: enemy.x + enemy.width / 2,
+                y: enemy.y + enemy.height / 2,
+                vx: Math.cos(ang) * spd,
+                vy: Math.sin(ang) * spd,
+                size: Math.random() * 5 + 2,
+                color: p % 2 === 0 ? '#ef4444' : '#a855f7',
+                life: 16,
+                maxLife: 16
+              });
+            }
+          }
         }
       } else if (enemy.type === 'anchor') {
         enemy.y += enemy.vy;
@@ -8148,6 +8392,123 @@ export class GameEngine {
           this.azuremonWingScale = 0;
         }
       }
+    }
+
+    if (this.reapermonDashActive) {
+      this.reapermonDashTimer--;
+      if (this.frameCount % 2 === 0) {
+        this.shadowAfterimages.push({
+          x: this.px,
+          y: this.py,
+          facing: this.pFacing,
+          alpha: 0.8
+        });
+      }
+      for (let p = 0; p < 3; p++) {
+        this.particles.push({
+          x: this.px + Math.random() * this.pWidth,
+          y: this.py + Math.random() * this.pHeight,
+          vx: -this.pFacing * (Math.random() * 4 + 2),
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 5 + 2,
+          color: p % 2 === 0 ? '#a855f7' : '#10b981',
+          life: 14,
+          maxLife: 14
+        });
+      }
+      if (this.reapermonDashTimer <= 0) {
+        this.reapermonDashActive = false;
+      }
+    }
+
+    if (this.reapermonUltActive) {
+      this.reapermonUltTimer--;
+
+      if (this.reapermonUltTargetEnemy && this.reapermonUltTargetEnemy.hp > 0) {
+        this.reapermonUltTargetEnemy.stunnedTimer = Math.max(this.reapermonUltTargetEnemy.stunnedTimer || 0, this.reapermonUltTimer);
+        this.reapermonUltTargetX = this.reapermonUltTargetEnemy.x + this.reapermonUltTargetEnemy.width / 2;
+        this.reapermonUltTargetY = this.reapermonUltTargetEnemy.y + this.reapermonUltTargetEnemy.height / 2;
+      }
+
+      // Swirling soul particles around target location
+      const rotAng = this.frameCount * 0.15;
+      for (let p = 0; p < 3; p++) {
+        const pAng = rotAng + p * ((Math.PI * 2) / 3);
+        const pRad = 35 + Math.sin(this.frameCount * 0.1) * 10;
+        this.particles.push({
+          x: this.reapermonUltTargetX + Math.cos(pAng) * pRad,
+          y: this.reapermonUltTargetY + Math.sin(pAng) * (pRad * 0.6),
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 3 - 1,
+          size: Math.random() * 6 + 3,
+          color: p % 2 === 0 ? '#a855f7' : '#10b981',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      if (this.reapermonUltTimer === 35) {
+        soundService.playScytheSwing();
+      }
+
+      if (this.reapermonUltTimer === 1) {
+        soundService.playReaperExecution();
+        soundService.playHit();
+        this.screenShake = 55;
+        this.reapermonSlashImpactTimer = 18;
+        this.reapermonSlashImpactX = this.reapermonUltTargetX;
+        this.reapermonSlashImpactY = this.reapermonUltTargetY;
+
+        let hpPct = 0.5;
+        if (this.reapermonUltTargetEnemy && this.reapermonUltTargetEnemy.maxHp > 0) {
+          hpPct = Math.max(0.01, Math.min(1.0, this.reapermonUltTargetEnemy.hp / this.reapermonUltTargetEnemy.maxHp));
+        }
+
+        // Execute Scaling Multiplier: lower HP percentage = up to 4x damage multiplier!
+        const executeMult = 1.0 + (1.0 - hpPct) * 3.0;
+        const baseDmg = Math.floor(this.stats.attack * 5.0);
+        const finalDmg = Math.floor(baseDmg * executeMult);
+
+        const radius = 250;
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dist = Math.hypot(ex - this.reapermonUltTargetX, ey - this.reapermonUltTargetY);
+          if (dist <= radius) {
+            this.damageEnemy(enemy, finalDmg);
+            this.spawnDustParticles(ex, ey, 14, '#a855f7');
+            this.spawnDustParticles(ex, ey, 10, '#10b981');
+          }
+        });
+
+        // Massive Soul Eruption Blast Particles
+        for (let p = 0; p < 48; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 12 + 4;
+          this.particles.push({
+            x: this.reapermonUltTargetX,
+            y: this.reapermonUltTargetY,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 3,
+            size: Math.random() * 8 + 4,
+            color: p % 3 === 0 ? '#a855f7' : p % 3 === 1 ? '#10b981' : '#c084fc',
+            life: 30,
+            maxLife: 30
+          });
+        }
+
+        this.addFloatingText(this.reapermonUltTargetX, this.reapermonUltTargetY - 40, `☠️ REAPER EXECUTION! (${finalDmg} DMG)`, '#c084fc', true);
+      }
+
+      if (this.reapermonUltTimer <= 0) {
+        this.reapermonUltActive = false;
+        this.reapermonUltTargetEnemy = null;
+      }
+    }
+
+    if (this.reapermonSlashImpactTimer > 0) {
+      this.reapermonSlashImpactTimer--;
     }
 
     // Butchermon Rotten Flesh Skill (Toggle)
@@ -10335,6 +10696,63 @@ export class GameEngine {
         this.ctx.arc(enemy.x + enemy.width / 2 + (enemy.facing * 4) - 1, enemy.y + enemy.height / 2 - 2, 1.5, 0, Math.PI * 2);
         this.ctx.arc(enemy.x + enemy.width / 2 + (enemy.facing * 4) + 5, enemy.y + enemy.height / 2 - 2, 1.5, 0, Math.PI * 2);
         this.ctx.fill();
+      } else if (enemy.type === 'ghost') {
+        this.ctx.save();
+        const floatY = enemy.y + Math.sin(this.frameCount * 0.1 + enemy.id) * 3;
+        this.ctx.fillStyle = 'rgba(168, 85, 247, 0.45)';
+        this.ctx.strokeStyle = '#c084fc';
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowColor = '#c084fc';
+        this.ctx.shadowBlur = 8;
+
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, floatY + 12, 14, Math.PI, 0, false);
+        this.ctx.lineTo(enemy.x + enemy.width, floatY + enemy.height - 4);
+        this.ctx.quadraticCurveTo(enemy.x + enemy.width / 2, floatY + enemy.height + 4, enemy.x, floatY + enemy.height - 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#10b981';
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + 10, floatY + 12, 2.5, 0, Math.PI * 2);
+        this.ctx.arc(enemy.x + 22, floatY + 12, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+      } else if (enemy.type === 'reaper') {
+        this.ctx.save();
+        this.ctx.fillStyle = '#18181b';
+        this.ctx.strokeStyle = '#a855f7';
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowColor = '#ef4444';
+        this.ctx.shadowBlur = 10;
+
+        this.ctx.fillRect(enemy.x + 4, enemy.y + 10, enemy.width - 8, enemy.height - 10);
+        this.ctx.strokeRect(enemy.x + 4, enemy.y + 10, enemy.width - 8, enemy.height - 10);
+
+        this.ctx.fillStyle = '#312e81';
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + 12, 12, Math.PI, 0, false);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.fillRect(enemy.x + 12, enemy.y + 10, 4, 4);
+        this.ctx.fillRect(enemy.x + 24, enemy.y + 10, 4, 4);
+
+        const scytheHandX = enemy.facing === 1 ? enemy.x + enemy.width + 2 : enemy.x - 14;
+        this.ctx.strokeStyle = '#c084fc';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(scytheHandX, enemy.y - 4);
+        this.ctx.lineTo(scytheHandX, enemy.y + enemy.height);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#10b981';
+        this.ctx.beginPath();
+        this.ctx.arc(scytheHandX + enemy.facing * 8, enemy.y - 2, 8, 0, Math.PI);
+        this.ctx.fill();
+        this.ctx.restore();
       } else if (enemy.type === 'goblin_archer') {
         this.ctx.fillStyle = '#8b5cf6';
         this.ctx.strokeStyle = '#4c1d95';
@@ -11626,12 +12044,42 @@ export class GameEngine {
         accentColor = '#450a0a';
         bellyColor = '#fca5a5';
         detailColor = '#dc2626';
+      } else if (this.selectedDraco === 'Reapermon') {
+        mainColor = '#090514';
+        accentColor = '#1e1b4b';
+        bellyColor = '#c084fc';
+        detailColor = '#10b981';
       }
 
       const px = this.px;
       const py = this.py;
       const pw = this.pWidth;
       const ph = this.pHeight;
+
+      if (this.selectedDraco === 'Reapermon') {
+        this.ctx.save();
+        const auraPulse = Math.sin(this.frameCount * 0.12) * 4;
+        const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse);
+        grad.addColorStop(0, 'rgba(168, 85, 247, 0.4)');
+        grad.addColorStop(0.6, 'rgba(16, 185, 129, 0.2)');
+        grad.addColorStop(1, 'rgba(9, 5, 20, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        for (let d = 0; d < 3; d++) {
+          const dang = this.frameCount * 0.08 + d * ((Math.PI * 2) / 3);
+          const dx = px + pw / 2 + Math.cos(dang) * (pw / 2 + 12);
+          const dy = py + ph / 2 + Math.sin(dang) * 10;
+          this.ctx.fillStyle = d % 2 === 0 ? '#c084fc' : '#10b981';
+          this.ctx.beginPath();
+          this.ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+        this.ctx.restore();
+      }
 
       if (this.selectedDraco === 'Enigmon') {
         this.ctx.save();
@@ -12339,6 +12787,113 @@ export class GameEngine {
           this.ctx.lineWidth = 3;
           this.ctx.beginPath();
           this.ctx.arc(0, 0, 70, -0.4, 0.4);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        }
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Reapermon') {
+        this.ctx.save();
+
+        this.ctx.fillStyle = '#18181b';
+        this.ctx.strokeStyle = '#a855f7';
+        this.ctx.lineWidth = 1.8;
+        const capeWave = Math.sin(this.frameCount * 0.15) * 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 4, bodyY + 12);
+        this.ctx.quadraticCurveTo(px - 14 + capeWave, bodyY + ph / 2, px - 18 + capeWave, bodyY + ph + 2);
+        this.ctx.quadraticCurveTo(px + pw / 2, bodyY + ph + 6, px + pw + 18 - capeWave, bodyY + ph + 2);
+        this.ctx.quadraticCurveTo(px + pw + 14 - capeWave, bodyY + ph / 2, px + pw - 4, bodyY + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = mainColor;
+        this.ctx.strokeStyle = '#c084fc';
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = bellyColor;
+        this.ctx.beginPath();
+        this.ctx.ellipse(px + pw / 2, bodyY + ph / 2 + 5, 7, 9, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#1e1b4b';
+        this.ctx.strokeStyle = '#a855f7';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, bodyY + 14, 15, Math.PI, 0, false);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        const eyeW = 7;
+        const eyeH = 7;
+        const eyeY = bodyY + 8;
+        const eyeX1 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = this.pFacing === 1 ? px + 8 : px + pw - 12;
+
+        this.ctx.fillStyle = '#10b981';
+        this.ctx.fillRect(eyeX1, eyeY, eyeW, eyeH);
+        this.ctx.fillRect(eyeX2, eyeY, eyeW, eyeH);
+
+        this.ctx.fillStyle = '#ffffff';
+        const pupilOffset = this.pFacing === 1 ? 2 : 0;
+        this.ctx.fillRect(eyeX1 + pupilOffset, eyeY + 1, 3, 4);
+        this.ctx.fillRect(eyeX2 + pupilOffset, eyeY + 1, 3, 4);
+
+        const scytheHandX = this.pFacing === 1 ? px + pw - 2 : px - 18;
+        const scytheHandY = bodyY + 10;
+
+        this.ctx.strokeStyle = '#71717a';
+        this.ctx.lineWidth = 3.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(scytheHandX, scytheHandY - 25);
+        this.ctx.lineTo(scytheHandX, scytheHandY + 30);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#a855f7';
+        this.ctx.strokeStyle = '#10b981';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(scytheHandX, scytheHandY - 25);
+        this.ctx.quadraticCurveTo(scytheHandX + this.pFacing * 40, scytheHandY - 35, scytheHandX + this.pFacing * 25, scytheHandY - 2);
+        this.ctx.quadraticCurveTo(scytheHandX + this.pFacing * 15, scytheHandY - 20, scytheHandX, scytheHandY - 25);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        if (this.attackDuration > 0) {
+          const slashProgress = (10 - this.attackDuration) / 10;
+          const swingDir = this.reapermonBasicSwingDirection;
+          const slashAngStart = this.pFacing === 1 ? -Math.PI / 3 * swingDir : Math.PI + Math.PI / 3 * swingDir;
+          const slashAngEnd = slashAngStart + this.pFacing * (Math.PI * 0.8) * swingDir;
+          const currentSlashAng = slashAngStart + (slashAngEnd - slashAngStart) * slashProgress;
+
+          this.ctx.save();
+          this.ctx.translate(px + pw / 2, bodyY + ph / 2);
+          this.ctx.rotate(currentSlashAng);
+
+          this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.85)';
+          this.ctx.lineWidth = 10;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 75, -0.7, 0.7);
+          this.ctx.stroke();
+
+          this.ctx.strokeStyle = '#10b981';
+          this.ctx.lineWidth = 4;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 75, -0.5, 0.5);
           this.ctx.stroke();
 
           this.ctx.restore();
@@ -13894,6 +14449,175 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    if (this.reapermonUltActive) {
+      this.ctx.save();
+
+      const camX = this.cameraX;
+      const camY = this.cameraY;
+      const cw = this.canvas.width;
+      const ch = this.canvas.height;
+      const vCenterX = camX + cw / 2;
+      const vCenterY = camY + ch / 2;
+
+      const vignetteGrad = this.ctx.createRadialGradient(vCenterX, vCenterY, cw * 0.2, vCenterX, vCenterY, cw * 0.72);
+      vignetteGrad.addColorStop(0, 'rgba(0, 0, 0, 0.25)');
+      vignetteGrad.addColorStop(0.5, 'rgba(15, 7, 30, 0.75)');
+      vignetteGrad.addColorStop(1, 'rgba(5, 2, 12, 0.95)');
+
+      this.ctx.fillStyle = vignetteGrad;
+      this.ctx.fillRect(camX, camY, cw, ch);
+
+      const targetX = this.reapermonUltTargetX;
+      const targetY = this.reapermonUltTargetY;
+      const startX = this.reapermonUltStartX || (targetX - 300);
+      const startY = this.reapermonUltStartY || (targetY - 140);
+      const tProgressRaw = Math.max(0, Math.min(1.0, 1 - (this.reapermonUltTimer / 120)));
+
+      // Exponential Ease-In (Starts slow & ominous, then accelerates rapidly into the enemy!)
+      const tEase = Math.pow(tProgressRaw, 3);
+
+      const playerCenterX = this.px + this.pWidth / 2;
+      const playerCenterY = this.py + this.pHeight / 2;
+
+      const chainAnchors = [
+        { x: playerCenterX, y: playerCenterY },
+        { x: targetX - 120, y: targetY + 70 },
+        { x: targetX + 120, y: targetY + 70 },
+        { x: targetX, y: targetY + 110 }
+      ];
+
+      chainAnchors.forEach((anchor, idx) => {
+        this.ctx.strokeStyle = idx % 2 === 0 ? '#581c87' : '#047857';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(anchor.x, anchor.y);
+        this.ctx.lineTo(targetX, targetY);
+        this.ctx.stroke();
+
+        const cDist = Math.hypot(targetX - anchor.x, targetY - anchor.y);
+        const cAngle = Math.atan2(targetY - anchor.y, targetX - anchor.x);
+        const cSteps = Math.floor(cDist / 15);
+        for (let s = 0; s <= cSteps; s++) {
+          const cx = anchor.x + Math.cos(cAngle) * (s * 15);
+          const cy = anchor.y + Math.sin(cAngle) * (s * 15);
+          this.ctx.fillStyle = s % 2 === 0 ? '#e879f9' : '#34d399';
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, 3.5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+      });
+
+      this.ctx.strokeStyle = '#c084fc';
+      this.ctx.lineWidth = 3.5;
+      for (let c = 0; c < 3; c++) {
+        const cPulse = Math.sin(this.frameCount * 0.2 + c * 2) * 5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(targetX, targetY, 28 + cPulse, 15 + cPulse * 0.5, (c * Math.PI) / 3, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
+      const pulse = Math.sin(this.frameCount * 0.2) * 5;
+      const ringRadius = 44 + pulse;
+      this.ctx.strokeStyle = '#a855f7';
+      this.ctx.lineWidth = 3.5;
+      this.ctx.setLineDash([8, 4]);
+      this.ctx.beginPath();
+      this.ctx.arc(targetX, targetY, ringRadius, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+
+      this.ctx.strokeStyle = '#10b981';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(targetX, targetY, ringRadius - 6, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      const dx = (targetX - startX);
+      const dyLinear = (targetY - startY);
+      const arcHeight = 220;
+
+      const currX = startX + dx * tEase;
+      const linearY = startY + dyLinear * tEase;
+      const parabolicArc = 4 * arcHeight * tEase * (1.0 - tEase);
+      const currY = linearY - parabolicArc;
+
+      const startAngle = -Math.PI * 0.85;
+      const endAngle = Math.PI * 0.65;
+      const scytheAngle = startAngle + (endAngle - startAngle) * tEase;
+
+      // Blade offset calculation so the crescent blade edge (not handle) lands directly on targetX, targetY at impact!
+      const bladeOffsetX = (55 * Math.cos(scytheAngle) - (-45) * Math.sin(scytheAngle)) * tEase;
+      const bladeOffsetY = (55 * Math.sin(scytheAngle) + (-45) * Math.cos(scytheAngle)) * tEase;
+      const renderX = currX - bladeOffsetX;
+      const renderY = currY - bladeOffsetY;
+
+      this.ctx.save();
+      this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.65)';
+      this.ctx.lineWidth = 16;
+      this.ctx.shadowColor = '#c084fc';
+      this.ctx.shadowBlur = 20;
+      this.ctx.beginPath();
+      for (let step = 0; step <= 40; step++) {
+        const pStep = (step / 40) * tEase;
+        const pxPos = startX + dx * pStep;
+        const pyLinear = startY + dyLinear * pStep;
+        const pyArc = 4 * arcHeight * pStep * (1.0 - pStep);
+        const pyPos = pyLinear - pyArc;
+        if (step === 0) this.ctx.moveTo(pxPos, pyPos);
+        else this.ctx.lineTo(pxPos, pyPos);
+      }
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = '#10b981';
+      this.ctx.lineWidth = 5;
+      this.ctx.stroke();
+      this.ctx.restore();
+
+      const scytheScale = 2.5 + Math.sin(this.frameCount * 0.15) * 0.15;
+
+      this.ctx.save();
+      this.ctx.translate(renderX, renderY);
+      this.ctx.rotate(scytheAngle);
+      this.ctx.scale(scytheScale, scytheScale);
+
+      this.ctx.shadowColor = '#c084fc';
+      this.ctx.shadowBlur = 35;
+
+      this.ctx.strokeStyle = '#4c1d95';
+      this.ctx.lineWidth = 5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, -65);
+      this.ctx.lineTo(0, 55);
+      this.ctx.stroke();
+
+      const bladeGrad = this.ctx.createLinearGradient(0, -65, 80, -20);
+      bladeGrad.addColorStop(0, '#c084fc');
+      bladeGrad.addColorStop(0.5, '#10b981');
+      bladeGrad.addColorStop(1, '#ffffff');
+
+      this.ctx.fillStyle = bladeGrad;
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 3.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, -65);
+      this.ctx.quadraticCurveTo(85, -85, 55, -10);
+      this.ctx.quadraticCurveTo(28, -50, 0, -65);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, -65);
+      this.ctx.quadraticCurveTo(85, -85, 55, -10);
+      this.ctx.stroke();
+
+      this.ctx.shadowBlur = 0;
+      this.ctx.restore();
+      this.ctx.restore();
+    }
+
     if (this.lunarmonSkillActive && this.lunarmonSkillTimer > 0) {
       this.lunarmonSkillTimer--;
       if (this.lunarmonSkillTimer <= 0) {
@@ -15006,6 +15730,66 @@ export class GameEngine {
         }
         this.ctx.restore();
       }
+
+      this.ctx.restore();
+    }
+
+    if (this.reapermonSlashImpactTimer > 0) {
+      this.ctx.save();
+      const alpha = Math.min(1.0, this.reapermonSlashImpactTimer / 18);
+      const tx = this.reapermonSlashImpactX;
+      const ty = this.reapermonSlashImpactY;
+      const isWhiteFlash = this.frameCount % 2 === 0;
+
+      const cw = this.canvas.width || 800;
+      const ch = this.canvas.height || 600;
+      this.ctx.fillStyle = isWhiteFlash ? `rgba(255, 255, 255, ${0.45 * alpha})` : `rgba(168, 85, 247, ${0.35 * alpha})`;
+      this.ctx.fillRect(this.cameraX, this.cameraY, cw, ch);
+
+      const p1x = tx - 340;
+      const p1y = ty - 240;
+      const p2x = tx + 340;
+      const p2y = ty + 240;
+
+      this.ctx.shadowColor = '#c084fc';
+      this.ctx.shadowBlur = 35;
+      this.ctx.strokeStyle = `rgba(168, 85, 247, ${alpha})`;
+      this.ctx.lineWidth = 36 * alpha;
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1x, p1y);
+      this.ctx.lineTo(p2x, p2y);
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = `rgba(16, 185, 129, ${alpha})`;
+      this.ctx.lineWidth = 16 * alpha;
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1x, p1y);
+      this.ctx.lineTo(p2x, p2y);
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      this.ctx.lineWidth = 6 * alpha;
+      this.ctx.beginPath();
+      this.ctx.moveTo(p1x, p1y);
+      this.ctx.lineTo(p2x, p2y);
+      this.ctx.stroke();
+
+      this.ctx.strokeStyle = isWhiteFlash ? `rgba(255, 255, 255, ${0.8 * alpha})` : `rgba(232, 121, 249, ${0.8 * alpha})`;
+      this.ctx.lineWidth = 3.5 * alpha;
+      for (let ray = -3; ray <= 3; ray++) {
+        if (ray === 0) continue;
+        const offset = ray * 40;
+        this.ctx.beginPath();
+        this.ctx.moveTo(p1x + offset, p1y - offset * 0.5);
+        this.ctx.lineTo(p2x + offset, p2y - offset * 0.5);
+        this.ctx.stroke();
+      }
+
+      this.ctx.shadowBlur = 0;
+      this.ctx.font = `bold ${Math.floor(32 * alpha)}px monospace`;
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillText('💀', tx, ty - 10);
 
       this.ctx.restore();
     }

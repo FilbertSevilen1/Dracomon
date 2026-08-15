@@ -80,6 +80,8 @@ const TILE_PALETTE: PaletteItem[] = [
   { id: 'alien', entityType: 'alien', label: 'Alien Laser Sniper', category: 'Minions', color: 'bg-indigo-600 border-indigo-700 text-white font-black shadow-xs', icon: '👽', isEntity: true, symbol: 'a' },
   { id: 'fish', entityType: 'fish', label: 'Aquatic Fish', category: 'Minions', color: 'bg-sky-500 border-sky-600 text-white font-black shadow-xs', icon: '🐟', isEntity: true, symbol: 'f' },
   { id: 'flying_wyvern', entityType: 'flying_wyvern', label: 'Flying Wyvern', category: 'Minions', color: 'bg-teal-600 border-teal-700 text-white font-black shadow-xs', icon: '🦅', isEntity: true, symbol: 'F' },
+  { id: 'ghost', entityType: 'ghost', label: 'Shadow Ghost', category: 'Minions', color: 'bg-purple-900 border-purple-700 text-purple-200 font-black shadow-xs', icon: '👻', isEntity: true, symbol: 'g' },
+  { id: 'reaper', entityType: 'reaper', label: 'Shadow Reaper', category: 'Minions', color: 'bg-slate-900 border-purple-800 text-red-400 font-black shadow-xs', icon: '💀', isEntity: true, symbol: 'r' },
 
   // BOSSES
   { id: 'king_slime', entityType: 'king_slime', label: 'King Slime Boss', category: 'Bosses', color: 'bg-lime-600 border-lime-700 text-white font-black shadow-xs', icon: '👑', isEntity: true, symbol: 'S' },
