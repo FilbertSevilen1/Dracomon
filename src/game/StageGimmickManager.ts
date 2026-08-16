@@ -837,7 +837,7 @@ export class StageGimmickManager {
           if (dist < 32) {
             callbacks.onInstaKillPlayer('Disintegrated in Antimatter Field');
             callbacks.addFloatingText(pxMid, py - 20, FT_DISSOLVED_ANTIMATTER.text, FT_DISSOLVED_ANTIMATTER.color);
-            soundService.playHit();
+            soundService.playAntimatterDeath();
           }
         }
 

@@ -209,10 +209,52 @@ const DRACO_META: {
     colorClass: 'text-purple-400 border-purple-600 bg-purple-950',
     bgGradient: 'from-purple-900 via-stone-900 to-emerald-950',
   },
+  Mikomon: {
+    role: 'Japanese Miko Draco / Sacred Fortune Master',
+    abilityName: 'Omikuji Slip & Fortune Blast',
+    abilityDesc: 'Basic attack throws a fortune slip card to enemies in 800px range. Skill (Fortune Blast) throws 5 homing fortune slips that inflict 3s DoT and end in mini explosions. Gimmick: 1% chance per attack hit to trigger Supernova Insta-Kill!',
+    ultimateName: 'The Fate of the World (100 Energy)',
+    ultimateDesc: 'Marks all visible enemies on screen. When a marked enemy is hit, it triggers a mini explosion and unleashes 12 fortune slips in 360° clock directions (blocked by ground).',
+    cost: 500,
+    colorClass: 'text-rose-400 border-rose-600 bg-rose-950',
+    bgGradient: 'from-rose-900 via-stone-900 to-amber-950',
+  },
 };
 
 const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
+
+  if (name === 'Mikomon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.35)" />
+        {/* Sacred Shrine Torii Halo */}
+        <path d="M 28 20 L 72 20 M 34 20 L 34 38 M 66 20 L 66 38 M 24 25 L 76 25" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" />
+        {/* Floating Omikuji Cards & Sakura Petals */}
+        <rect x="20" y="40" width="8" height="13" rx="1" fill="#f8fafc" stroke="#fbbf24" strokeWidth="1" transform="rotate(-15 24 46)" />
+        <rect x="72" y="38" width="8" height="13" rx="1" fill="#f8fafc" stroke="#fbbf24" strokeWidth="1" transform="rotate(20 76 44)" />
+        <circle cx="22" cy="30" r="2.5" fill="#f472b6" />
+        <circle cx="78" cy="28" r="2" fill="#f472b6" />
+        {/* Miko Robe Body */}
+        <path d="M 32 46 L 22 76 L 40 76 L 50 56 L 60 76 L 78 76 L 68 46 Z" fill="#e11d48" stroke="#9f1239" strokeWidth="2" />
+        <path d="M 40 44 L 50 60 L 60 44 Z" fill="#f8fafc" stroke="#e2e8f0" strokeWidth="1.5" />
+        {/* Golden Obi Sash */}
+        <rect x="36" y="52" width="28" height="6" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+        {/* Head / Miko Hood & Horns */}
+        <circle cx="50" cy="36" r="14" fill="#e11d48" stroke="#9f1239" strokeWidth="2" />
+        {/* Dragon Horns */}
+        <path d="M 40 26 Q 34 16 38 12 Q 42 16 44 24 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+        <path d="M 60 26 Q 66 16 62 12 Q 58 16 56 24 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+        {/* Face & Miko Mark */}
+        <circle cx="45" cy="36" r="2" fill="#000000" />
+        <circle cx="55" cy="36" r="2" fill="#000000" />
+        <circle cx="50" cy="30" r="1.5" fill="#fbbf24" />
+        {/* Kagura Bell in Hand */}
+        <circle cx="72" cy="56" r="4" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+        <path d="M 72 60 L 72 68" stroke="#e11d48" strokeWidth="2" />
+      </svg>
+    );
+  }
 
   if (name === 'Reapermon') {
     return (
@@ -857,9 +899,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 min-h-0 items-start p-6 overflow-y-auto bg-stone-950 text-stone-100">
-        {/* Left Column: Dota 2 Hero Roster Grid */}
-        <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col space-y-3">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 items-start p-2 sm:p-4 text-stone-100">
+        {/* Left Column: Dota 2 / Valorant Style Hero Roster Grid */}
+        <div className="order-2 lg:order-1 lg:col-span-7 flex flex-col space-y-4">
           <div className="flex items-center justify-between gap-3">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-stone-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
@@ -868,16 +910,16 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 placeholder="Filter hero by name or role..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 bg-stone-900/90 border border-stone-800 rounded-2xl text-xs font-mono text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-inner"
+                className="w-full pl-9 pr-4 py-2.5 bg-stone-900/90 border border-stone-800 rounded-2xl text-xs font-mono text-stone-100 placeholder-stone-500 focus:outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-500/20 transition-all shadow-inner"
               />
             </div>
-            <div className="text-xs font-black uppercase tracking-wider text-amber-400 bg-stone-900/90 border border-stone-800 px-3.5 py-2 rounded-2xl shrink-0 font-display">
+            <div className="text-xs font-black uppercase tracking-wider text-amber-400 bg-stone-900/90 border border-stone-800 px-4 py-2.5 rounded-2xl shrink-0 font-display shadow-lg">
               Roster ({filteredDracos.length})
             </div>
           </div>
 
-          <div className="p-3 bg-stone-900/40 rounded-3xl border border-stone-800/80 max-h-[520px] overflow-y-auto">
-            <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-5 gap-3 p-1">
+          <div className="p-4 bg-stone-900/40 rounded-3xl border border-stone-800/80 backdrop-blur-xl">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
               {filteredDracos.map((name) => {
                 const dData = saveData.dracos[name];
                 const meta = DRACO_META[name];
@@ -892,9 +934,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                       soundService.playClick();
                       setSelectedName(name);
                     }}
-                    className={`h-36 sm:h-40 rounded-2xl border transition-all duration-300 relative group overflow-hidden flex flex-col justify-between p-2 shadow-lg ${
+                    className={`h-44 sm:h-48 rounded-3xl border transition-all duration-300 relative group overflow-hidden flex flex-col justify-between p-3.5 shadow-xl ${
                       isSelected
-                        ? 'border-2 border-amber-400 ring-4 ring-amber-500/30 scale-[1.03] z-20 shadow-[0_0_25px_rgba(251,191,36,0.6)] bg-amber-950/80'
+                        ? 'border-2 border-amber-400 ring-4 ring-amber-500/30 scale-[1.03] z-20 shadow-[0_0_30px_rgba(251,191,36,0.5)] bg-amber-950/80'
                         : itemEquipped
                         ? 'border-emerald-500/80 ring-2 ring-emerald-500/30 hover:scale-[1.02] hover:z-10 hover:border-emerald-400 bg-emerald-950/40'
                         : itemUnlocked
@@ -902,18 +944,20 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                         : 'border-stone-900 opacity-40 hover:opacity-85 hover:scale-[1.02] bg-stone-950/80'
                     }`}
                   >
-                    {/* Dota 2 Full Background Hero Elemental Gradient */}
-                    <div className={`absolute inset-0 bg-gradient-to-b ${meta.bgGradient} opacity-40 group-hover:opacity-75 transition-opacity`} />
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/30 to-transparent" />
+                    {/* Full Background Hero Elemental Gradient */}
+                    <div className={`absolute inset-0 bg-gradient-to-b ${meta.bgGradient} opacity-35 group-hover:opacity-70 transition-opacity`} />
+                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/40 to-transparent" />
 
                     {/* Top Badges */}
                     <div className="relative z-10 w-full flex items-center justify-between px-0.5 pt-0.5">
                       {itemEquipped ? (
-                        <span className="px-1.5 py-0.5 bg-emerald-500 text-stone-950 text-[9px] font-black uppercase rounded tracking-wider shadow-sm font-display">
+                        <span className="px-2 py-0.5 bg-emerald-500 text-stone-950 text-[9px] font-black uppercase rounded-md tracking-wider shadow-sm font-display">
                           ACTIVE
                         </span>
                       ) : (
-                        <span />
+                        <span className="px-1.5 py-0.5 bg-stone-900/80 text-stone-400 text-[8px] font-mono font-bold rounded uppercase truncate max-w-[80px]">
+                          {meta.role.split('/')[0]}
+                        </span>
                       )}
                       {!itemUnlocked && (
                         <Lock className="w-3.5 h-3.5 text-stone-400 ml-auto drop-shadow-md" />
@@ -921,17 +965,17 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     </div>
 
                     {/* Hero SVG Character Artwork Floating in Upper Center */}
-                    <div className="relative z-10 my-auto p-1 drop-shadow-[0_4px_10px_rgba(0,0,0,0.6)]">
-                      <DracoArtwork name={name} animated={isSelected} size={44} />
+                    <div className="relative z-10 my-auto p-1 drop-shadow-[0_6px_12px_rgba(0,0,0,0.7)] transform group-hover:scale-110 transition-transform duration-300 flex justify-center">
+                      <DracoArtwork name={name} animated={isSelected} size={56} />
                     </div>
 
                     {/* Bottom Hero Name & Level Badge */}
-                    <div className="relative z-10 w-full flex flex-col items-center">
-                      <span className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider truncate max-w-full text-center drop-shadow-md font-display ${isSelected ? 'text-amber-300' : 'text-stone-100'}`}>
+                    <div className="relative z-10 w-full flex flex-col items-center pt-1 border-t border-stone-800/50">
+                      <span className={`text-xs font-black uppercase tracking-wider truncate max-w-full text-center drop-shadow-md font-display ${isSelected ? 'text-amber-300' : 'text-stone-100'}`}>
                         {name}
                       </span>
-                      <span className="text-[9px] font-mono text-stone-400 font-bold drop-shadow">
-                        {itemUnlocked ? `Lv.${dData.level || 1}` : 'Locked'}
+                      <span className="text-[10px] font-mono text-stone-400 font-bold drop-shadow">
+                        {itemUnlocked ? `Lv.${dData.level || 1}` : `Unlock: ${meta.cost}🪙`}
                       </span>
                     </div>
                   </button>
@@ -941,8 +985,8 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Dota 2 Dark Obsidian Inspect Panel */}
-        <div className="order-1 lg:order-2 lg:col-span-5 p-5 sm:p-6 rounded-3xl bg-stone-900/90 border border-stone-800 shadow-2xl flex flex-col justify-between space-y-4 backdrop-blur-md">
+        {/* Right Column: Sticky Dota 2 Dark Obsidian Inspect Panel */}
+        <div className="order-1 lg:order-2 lg:col-span-5 lg:sticky lg:top-24 p-5 sm:p-6 rounded-3xl bg-stone-900/90 border border-stone-800 shadow-2xl flex flex-col justify-between space-y-4 backdrop-blur-xl">
           <div className="grid grid-cols-2 gap-1.5 p-1 bg-stone-950/90 rounded-2xl border border-stone-800">
             <button
               onClick={() => {

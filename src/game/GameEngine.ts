@@ -181,7 +181,7 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
@@ -369,6 +369,7 @@ export class GameEngine {
   private reapermonSlashImpactTimer = 0;
   private reapermonSlashImpactX = 0;
   private reapermonSlashImpactY = 0;
+  private mikomonUltActiveTimer = 0;
 
   private musouSlashActive = false;
   private musouSlashTimer = 0;
@@ -1950,6 +1951,36 @@ export class GameEngine {
           maxLife: 14
         });
       }
+    } else if (this.selectedDraco === 'Mikomon') {
+      soundService.playShoot();
+      const slipVx = this.pFacing * (this.stats.speed + 7.5);
+      this.projectiles.push({
+        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 18,
+        y: this.py + this.pHeight / 2 - 6,
+        vx: slipVx,
+        vy: 0,
+        width: 18,
+        height: 10,
+        isEnemy: false,
+        damage: this.stats.attack,
+        color: '#f472b6',
+        type: 'fortune_slip' as any,
+        rangeCap: 800,
+        startX: this.px
+      } as any);
+
+      for (let p = 0; p < 8; p++) {
+        this.particles.push({
+          x: slashX,
+          y: slashY + (Math.random() - 0.5) * 10,
+          vx: this.pFacing * (Math.random() * 4 + 2),
+          vy: (Math.random() - 0.5) * 3,
+          size: Math.random() * 4 + 2,
+          color: p % 2 === 0 ? '#f472b6' : '#fbbf24',
+          life: 14,
+          maxLife: 14
+        });
+      }
     } else if (this.selectedDraco === 'Krakenmon') {
       soundService.playHit();
       const slashX = this.px + (this.pFacing === 1 ? this.pWidth + 10 : -10);
@@ -2721,6 +2752,49 @@ export class GameEngine {
       }
 
       this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '☠️ UPWARD SCYTHE DASH (450px)!', '#a855f7');
+    } else if (this.selectedDraco === 'Mikomon') {
+      soundService.playShoot();
+      this.specialCooldown = 200;
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, '🌸 FORTUNE BLAST!', '#f472b6');
+
+      for (let i = 0; i < 5; i++) {
+        const angleSpread = (i - 2) * 0.16;
+        const baseAngle = this.pFacing === 1 ? 0 : Math.PI;
+        const launchAngle = baseAngle + angleSpread;
+        const speed = 8.5;
+
+        this.projectiles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 18,
+          y: this.py + this.pHeight / 2 - 8 + (i - 2) * 4,
+          vx: Math.cos(launchAngle) * speed,
+          vy: Math.sin(launchAngle) * speed,
+          width: 18,
+          height: 10,
+          isEnemy: false,
+          damage: Math.ceil(this.stats.attack * 1.1),
+          color: '#f472b6',
+          type: 'fortune_slip_homing' as any,
+          isHoming: true,
+          startX: this.px,
+          startY: this.py,
+          rangeCap: 800,
+        } as any);
+      }
+
+      for (let p = 0; p < 16; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 5 + 3,
+          color: p % 2 === 0 ? '#f472b6' : '#fbbf24',
+          life: 20,
+          maxLife: 20
+        });
+      }
     }
   }
 
@@ -2916,6 +2990,7 @@ export class GameEngine {
       case 'Krakenmon': return 100;
       case 'Butchermon': return 80;
       case 'Reapermon': return 120;
+      case 'Mikomon': return 100;
       default: return 100;
     }
   }
@@ -2943,6 +3018,7 @@ export class GameEngine {
       case 'Krakenmon': return 'Collision Course';
       case 'Butchermon': return 'Butcher\'s Masterpiece';
       case 'Reapermon': return 'Giant Scythe of Damnation';
+      case 'Mikomon': return 'The Fate of the World';
       default: return 'Ultimate';
     }
   }
@@ -2966,6 +3042,7 @@ export class GameEngine {
       case 'Krakenmon': return 'Submerge into the abyssal depths... COLLISION COURSE!';
       case 'Butchermon': return 'Fresh Meat... BUTCHER\'S MASTERPIECE!';
       case 'Reapermon': return 'FEEL THE EMBRACE OF DEATH!';
+      case 'Mikomon': return 'FEEL THE SACRED FATE! THE FATE OF THE WORLD!';
       default: return 'Unleash full power!';
     }
   }
@@ -3593,6 +3670,41 @@ export class GameEngine {
           maxLife: 30
         });
       }
+    } else if (this.selectedDraco === 'Mikomon') {
+      soundService.playLevelUp();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, '⛩️ THE FATE OF THE WORLD!', '#f472b6');
+      this.screenShake = 35;
+      this.mikomonUltActiveTimer = 600;
+
+      let markedCount = 0;
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const dist = Math.hypot((enemy.x + enemy.width / 2) - (this.px + this.pWidth / 2), (enemy.y + enemy.height / 2) - (this.py + this.pHeight / 2));
+        if (dist <= 1000) {
+          (enemy as any).fateMarked = true;
+          (enemy as any).fateMarkTimer = 600;
+          markedCount++;
+
+          for (let p = 0; p < 18; p++) {
+            const ang = (p / 18) * Math.PI * 2;
+            this.particles.push({
+              x: enemy.x + enemy.width / 2,
+              y: enemy.y + enemy.height / 2,
+              vx: Math.cos(ang) * 5,
+              vy: Math.sin(ang) * 5,
+              size: Math.random() * 6 + 3,
+              color: p % 2 === 0 ? '#f472b6' : '#fbbf24',
+              life: 25,
+              maxLife: 25
+            });
+          }
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, '⛩️ MARKED BY FATE', '#f472b6');
+        }
+      });
+
+      if (markedCount === 0) {
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'NO ENEMIES VISIBLE', '#f472b6');
+      }
     }
 
     this.birdX = this.px;
@@ -3647,9 +3759,97 @@ export class GameEngine {
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
     }
 
+    if (this.selectedDraco === 'Mikomon') {
+      this.checkMikomonSupernovaGimmick(enemy);
+
+      if ((enemy as any).fateMarked) {
+        (enemy as any).fateMarked = false;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+
+        this.createMikomonMiniExplosion(ex, ey);
+
+        for (let i = 0; i < 12; i++) {
+          const angle = (i * 30 - 90) * (Math.PI / 180);
+          const speed = 9.0;
+          const spawnX = ex + Math.cos(angle) * 18 - 8;
+          const spawnY = ey + Math.sin(angle) * 18 - 5;
+
+          this.projectiles.push({
+            x: spawnX,
+            y: spawnY,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            width: 16,
+            height: 10,
+            isEnemy: false,
+            damage: Math.ceil(this.stats.attack * 1.2),
+            color: '#f472b6',
+            type: 'fortune_slip_clock' as any,
+            startX: spawnX,
+            startY: spawnY,
+            rangeCap: 700,
+          } as any);
+        }
+      }
+    }
+
     if (!enemy.isImmortal && enemy.hp <= 0) {
       this.defeatEnemy(enemy);
     }
+  }
+
+  private checkMikomonSupernovaGimmick(enemy: Enemy): boolean {
+    if (this.selectedDraco !== 'Mikomon') return false;
+    if (enemy.hp <= 0) return false;
+
+    if (Math.random() < 0.01) {
+      soundService.playLevelUp();
+      enemy.hp = 0;
+      const cx = enemy.x + enemy.width / 2;
+      const cy = enemy.y + enemy.height / 2;
+      this.screenShake = 35;
+
+      this.addFloatingText(cx, cy - 25, '🌟 SUPERNOVA! INSTA-KILL! 🌟', '#fbbf24');
+
+      for (let p = 0; p < 45; p++) {
+        const ang = (p / 45) * Math.PI * 2;
+        const spd = Math.random() * 14 + 4;
+        this.particles.push({
+          x: cx,
+          y: cy,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 8 + 4,
+          color: p % 4 === 0 ? '#fbbf24' : p % 4 === 1 ? '#06b6d4' : p % 4 === 2 ? '#ec4899' : '#ffffff',
+          life: 32,
+          maxLife: 32
+        });
+      }
+      this.defeatEnemy(enemy);
+      return true;
+    }
+    return false;
+  }
+
+  private createMikomonMiniExplosion(ex: number, ey: number) {
+    soundService.playHit();
+    this.spawnDustParticles(ex, ey, 14, '#f472b6');
+    this.spawnDustParticles(ex, ey, 10, '#fbbf24');
+    this.addFloatingText(ex, ey - 20, '💥 MINI EXPLOSION!', '#f472b6');
+
+    const radius = 70;
+    const explosionDmg = Math.ceil(this.stats.attack * 1.4);
+
+    this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      const enemyCx = enemy.x + enemy.width / 2;
+      const enemyCy = enemy.y + enemy.height / 2;
+      const dist = Math.hypot(enemyCx - ex, enemyCy - ey);
+      if (dist <= radius) {
+        this.damageEnemy(enemy, explosionDmg);
+      }
+    });
   }
 
   private defeatEnemy(enemy: Enemy) {
@@ -5661,7 +5861,7 @@ export class GameEngine {
             this.callbacks.onPlayerDeath();
           }, 1000);
         } else if (themeType === 'space') {
-          soundService.playHit();
+          soundService.playAntimatterDeath();
           this.antimatterDeathTimer = 90;
           this.pvx = 0;
           this.pvy = 0;
@@ -5784,7 +5984,7 @@ export class GameEngine {
             this.pvx = 0;
             this.pvy = 0;
           } else if (reason.includes('Antimatter') || reason.includes('Disintegrated')) {
-            soundService.playHit();
+            soundService.playAntimatterDeath();
             this.antimatterDeathTimer = 90;
             this.screenShake = 30;
             this.pvx = 0;
@@ -6720,6 +6920,154 @@ export class GameEngine {
             this.projectiles.splice(index, 1);
             return;
           }
+        }
+        else if (proj.type === 'fortune_slip_homing') {
+          let nearestEnemy: Enemy | null = null;
+          let minDistance = 9999;
+          const px = proj.x + proj.width / 2;
+          const py = proj.y + proj.height / 2;
+
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - px, ey - py);
+            if (dist < minDistance && dist <= 800) {
+              minDistance = dist;
+              nearestEnemy = enemy;
+            }
+          });
+
+          if (nearestEnemy) {
+            const ex = (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2;
+            const ey = (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2;
+            const angle = Math.atan2(ey - py, ex - px);
+            const speed = 8.5;
+            proj.vx = Math.cos(angle) * speed;
+            proj.vy = Math.sin(angle) * speed;
+          }
+
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.hypot(proj.vx, proj.vy);
+
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              size: Math.random() * 4 + 2,
+              color: Math.random() > 0.5 ? '#f472b6' : '#fbbf24',
+              life: 10,
+              maxLife: 10
+            });
+          }
+
+          let hitEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0 || hitEnemy) return;
+            if (
+              proj.x < enemy.x + enemy.width &&
+              proj.x + proj.width > enemy.x &&
+              proj.y < enemy.y + enemy.height &&
+              proj.y + proj.height > enemy.y
+            ) {
+              hitEnemy = enemy;
+            }
+          });
+
+          const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2);
+          const maxRangeReached = (proj as any).traveledDist >= ((proj as any).rangeCap || 800);
+
+          if (hitEnemy || hitSolid || maxRangeReached) {
+            if (hitEnemy) {
+              this.damageEnemy(hitEnemy, proj.damage);
+              (hitEnemy as any).mikomonDoTTimer = 180;
+              (hitEnemy as any).mikomonDoTTickTimer = 30;
+              this.addFloatingText((hitEnemy as Enemy).x + (hitEnemy as Enemy).width / 2, (hitEnemy as Enemy).y - 15, '🌸 FORTUNE SEEDED (3s)', '#f472b6');
+            }
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, '#f472b6');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          return;
+        }
+        else if (proj.type === 'fortune_slip_clock') {
+          let nearestEnemy: Enemy | null = null;
+          let minDistance = 350;
+          const px = proj.x + proj.width / 2;
+          const py = proj.y + proj.height / 2;
+
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - px, ey - py);
+            if (dist < minDistance) {
+              minDistance = dist;
+              nearestEnemy = enemy;
+            }
+          });
+
+          if (nearestEnemy) {
+            const ex = (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2;
+            const ey = (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2;
+            const targetAngle = Math.atan2(ey - py, ex - px);
+            const currentAngle = Math.atan2(proj.vy, proj.vx);
+            const speed = Math.hypot(proj.vx, proj.vy) || 9.0;
+            const turnSpeed = 0.08;
+            let diff = targetAngle - currentAngle;
+            while (diff < -Math.PI) diff += Math.PI * 2;
+            while (diff > Math.PI) diff -= Math.PI * 2;
+            const newAngle = currentAngle + Math.sign(diff) * Math.min(Math.abs(diff), turnSpeed);
+
+            proj.vx = Math.cos(newAngle) * speed;
+            proj.vy = Math.sin(newAngle) * speed;
+          }
+
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.hypot(proj.vx, proj.vy);
+
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: (Math.random() - 0.5) * 1.5,
+              vy: (Math.random() - 0.5) * 1.5,
+              size: Math.random() * 4 + 2,
+              color: '#f472b6',
+              life: 10,
+              maxLife: 10
+            });
+          }
+
+          const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2);
+          let hitEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0 || hitEnemy) return;
+            if (
+              proj.x < enemy.x + enemy.width &&
+              proj.x + proj.width > enemy.x &&
+              proj.y < enemy.y + enemy.height &&
+              proj.y + proj.height > enemy.y
+            ) {
+              hitEnemy = enemy;
+            }
+          });
+
+          if (hitSolid || hitEnemy || (proj as any).traveledDist >= ((proj as any).rangeCap || 700)) {
+            if (hitEnemy) {
+              this.damageEnemy(hitEnemy, proj.damage);
+              (hitEnemy as any).mikomonDoTTimer = 180;
+              (hitEnemy as any).mikomonDoTTickTimer = 30;
+            }
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, hitSolid ? '#fbbf24' : '#f472b6');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          return;
         }
         else {
           if ((proj as any).type === 'arrow' && !proj.isEnemy && this.selectedDraco === 'Flymon' && this.flymonTornadoActive) {
@@ -8870,6 +9218,35 @@ export class GameEngine {
     // Process burn/electrocution tick exactly once per frame per enemy to prevent overlapping acceleration
     this.enemies.forEach(enemy => {
       if (enemy.hp <= 0) return;
+
+      if ((enemy as any).mikomonDoTTimer && (enemy as any).mikomonDoTTimer > 0) {
+        (enemy as any).mikomonDoTTimer--;
+        if ((enemy as any).mikomonDoTTickTimer && (enemy as any).mikomonDoTTickTimer > 0) {
+          (enemy as any).mikomonDoTTickTimer--;
+        } else {
+          (enemy as any).mikomonDoTTickTimer = 30;
+          const dotDmg = Math.ceil(this.stats.attack * 0.35);
+          this.damageEnemy(enemy, dotDmg);
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, `-${dotDmg} 🌸`, '#f472b6');
+        }
+
+        if (this.frameCount % 4 === 0) {
+          this.particles.push({
+            x: enemy.x + Math.random() * enemy.width,
+            y: enemy.y + Math.random() * enemy.height,
+            vx: (Math.random() - 0.5) * 2,
+            vy: -Math.random() * 2 - 0.5,
+            size: Math.random() * 4 + 2,
+            color: Math.random() > 0.5 ? '#f472b6' : '#fbbf24',
+            life: 14,
+            maxLife: 14
+          });
+        }
+
+        if ((enemy as any).mikomonDoTTimer === 0) {
+          this.createMikomonMiniExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+        }
+      }
 
       if ((enemy as any).touchingElectricZone) {
         enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
@@ -12216,6 +12593,83 @@ export class GameEngine {
       this.ctx.restore();
     });
 
+    this.projectiles.forEach(proj => {
+      const pType = proj.type as string;
+      const px = proj.x;
+      const py = proj.y;
+      const pw = proj.width || 18;
+      const ph = proj.height || 10;
+      const cx = px + pw / 2;
+      const cy = py + ph / 2;
+
+      this.ctx.save();
+
+      if (pType === 'fortune_slip' || pType === 'fortune_slip_homing' || pType === 'fortune_slip_clock') {
+        const flyAngle = Math.atan2(proj.vy, proj.vx);
+        const flutter = Math.sin(this.frameCount * 0.3 + px * 0.05) * 0.18;
+
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(flyAngle + flutter);
+
+        const auraGrad = this.ctx.createRadialGradient(0, 0, 2, 0, 0, pw * 1.2);
+        auraGrad.addColorStop(0, 'rgba(244, 114, 182, 0.75)');
+        auraGrad.addColorStop(0.5, 'rgba(251, 191, 36, 0.45)');
+        auraGrad.addColorStop(1, 'rgba(244, 114, 182, 0)');
+        this.ctx.fillStyle = auraGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, pw * 1.2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+        this.ctx.fillRect(-pw / 2 + 2, -ph / 2 + 2, pw, ph);
+
+        this.ctx.fillStyle = '#fff1f2';
+        this.ctx.strokeStyle = '#e11d48';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.roundRect(-pw / 2, -ph / 2, pw, ph, 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#e11d48';
+        this.ctx.fillRect(-pw / 2 + 1, -ph / 2 + 1, 4, ph - 2);
+
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#be123c';
+        this.ctx.fillRect(-pw / 2 + 6, -1, pw - 9, 2);
+
+        if (pType === 'fortune_slip_homing') {
+          this.ctx.strokeStyle = 'rgba(244, 114, 182, 0.8)';
+          this.ctx.lineWidth = 1.2;
+          this.ctx.setLineDash([4, 2]);
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, pw * 0.9, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+        } else if (pType === 'fortune_slip_clock') {
+          const spin = this.frameCount * 0.15;
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 1;
+          for (let s = 0; s < 4; s++) {
+            const sang = spin + (s * Math.PI) / 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(Math.cos(sang) * (pw * 0.75), Math.sin(sang) * (pw * 0.75));
+            this.ctx.stroke();
+          }
+        }
+      } else {
+        this.ctx.fillStyle = proj.color || '#fbbf24';
+        this.ctx.fillRect(px, py, pw, ph);
+      }
+
+      this.ctx.restore();
+    });
+
     this.particles.forEach(part => {
       this.ctx.save();
       const alpha = Math.max(0, part.life / part.maxLife);
@@ -12447,12 +12901,42 @@ export class GameEngine {
         accentColor = '#1e1b4b';
         bellyColor = '#c084fc';
         detailColor = '#10b981';
+      } else if (this.selectedDraco === 'Mikomon') {
+        mainColor = '#e11d48';
+        accentColor = '#9f1239';
+        bellyColor = '#f8fafc';
+        detailColor = '#fbbf24';
       }
 
       const px = this.px;
       const py = this.py;
       const pw = this.pWidth;
       const ph = this.pHeight;
+
+      if (this.selectedDraco === 'Mikomon') {
+        this.ctx.save();
+        const auraPulse = Math.sin(this.frameCount * 0.12) * 4;
+        const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse);
+        grad.addColorStop(0, 'rgba(225, 29, 72, 0.4)');
+        grad.addColorStop(0.6, 'rgba(251, 191, 36, 0.2)');
+        grad.addColorStop(1, 'rgba(225, 29, 72, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, pw / 2 + 14 + auraPulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        for (let d = 0; d < 3; d++) {
+          const dang = this.frameCount * 0.08 + d * ((Math.PI * 2) / 3);
+          const dx = px + pw / 2 + Math.cos(dang) * (pw / 2 + 12);
+          const dy = py + ph / 2 + Math.sin(dang) * 10;
+          this.ctx.fillStyle = d % 2 === 0 ? '#f472b6' : '#fbbf24';
+          this.ctx.beginPath();
+          this.ctx.arc(dx, dy, 2.5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+        this.ctx.restore();
+      }
 
       if (this.selectedDraco === 'Reapermon') {
         this.ctx.save();
@@ -13293,6 +13777,101 @@ export class GameEngine {
           this.ctx.beginPath();
           this.ctx.arc(0, 0, 75, -0.5, 0.5);
           this.ctx.stroke();
+
+          this.ctx.restore();
+        }
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Mikomon') {
+        this.ctx.save();
+
+        this.ctx.fillStyle = mainColor;
+        this.ctx.strokeStyle = accentColor;
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = bellyColor;
+        this.ctx.beginPath();
+        this.ctx.ellipse(px + pw / 2, bodyY + ph / 2 + 3, 7, 10, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = detailColor;
+        this.ctx.fillRect(px + pw / 2 - 8, bodyY + ph / 2 + 4, 16, 4);
+
+        this.ctx.fillStyle = detailColor;
+        this.ctx.strokeStyle = '#d97706';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 10, bodyY + 4);
+        this.ctx.quadraticCurveTo(px - 4, bodyY - 10, px - 6, bodyY - 14);
+        this.ctx.quadraticCurveTo(px + 4, bodyY - 4, px + 14, bodyY + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 14, bodyY + 2);
+        this.ctx.quadraticCurveTo(px + pw - 4, bodyY - 4, px + pw + 6, bodyY - 14);
+        this.ctx.quadraticCurveTo(px + pw + 4, bodyY - 10, px + pw - 10, bodyY + 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        const handX = this.pFacing === 1 ? px + pw - 2 : px - 18;
+        const handY = bodyY + 10;
+        this.ctx.fillStyle = detailColor;
+        this.ctx.strokeStyle = '#d97706';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(handX, handY - 10, 5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        if (this.attackDuration > 0) {
+          const attackProgress = (10 - this.attackDuration) / 10;
+          this.ctx.save();
+          this.ctx.translate(handX, handY - 10);
+
+          for (let f = -1; f <= 1; f++) {
+            const cardAng = f * 0.3 + (this.pFacing === 1 ? 0 : Math.PI);
+            this.ctx.save();
+            this.ctx.rotate(cardAng);
+
+            this.ctx.fillStyle = '#fff1f2';
+            this.ctx.strokeStyle = '#e11d48';
+            this.ctx.lineWidth = 1.2;
+            this.ctx.fillRect(8, -5, 14, 10);
+            this.ctx.strokeRect(8, -5, 14, 10);
+
+            this.ctx.fillStyle = '#e11d48';
+            this.ctx.fillRect(9, -4, 3, 8);
+
+            this.ctx.fillStyle = '#fbbf24';
+            this.ctx.beginPath();
+            this.ctx.arc(15, 0, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.restore();
+          }
+
+          const burstRad = 12 + attackProgress * 22;
+          const burstGrad = this.ctx.createRadialGradient(0, 0, 2, 0, 0, burstRad);
+          burstGrad.addColorStop(0, 'rgba(244, 114, 182, 0.8)');
+          burstGrad.addColorStop(0.6, 'rgba(251, 191, 36, 0.4)');
+          burstGrad.addColorStop(1, 'rgba(244, 114, 182, 0)');
+          this.ctx.fillStyle = burstGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, burstRad, 0, Math.PI * 2);
+          this.ctx.fill();
 
           this.ctx.restore();
         }
@@ -14265,7 +14844,8 @@ export class GameEngine {
           this.selectedDraco === 'Pixelmon' ||
           this.selectedDraco === 'Krakenmon' ||
           this.selectedDraco === 'Butchermon' ||
-          this.selectedDraco === 'Reapermon'
+          this.selectedDraco === 'Reapermon' ||
+          this.selectedDraco === 'Mikomon'
         ) {
           // Custom Dracos render their own dedicated weapons & spell effects
         } else {
@@ -15399,6 +15979,7 @@ export class GameEngine {
       this.ctx.arc(targetX, targetY, ringRadius - 6, 0, Math.PI * 2);
       this.ctx.stroke();
 
+      const facing = targetX >= startX ? 1 : -1;
       const dx = (targetX - startX);
       const dyLinear = (targetY - startY);
       const arcHeight = 220;
@@ -15412,8 +15993,8 @@ export class GameEngine {
       const endAngle = Math.PI * 0.65;
       const scytheAngle = startAngle + (endAngle - startAngle) * tEase;
 
-      // Blade offset calculation so the crescent blade edge (not handle) lands directly on targetX, targetY at impact!
-      const bladeOffsetX = (55 * Math.cos(scytheAngle) - (-45) * Math.sin(scytheAngle)) * tEase;
+      // Blade offset calculation so the crescent blade edge lands directly on targetX, targetY at impact
+      const bladeOffsetX = facing * (55 * Math.cos(scytheAngle) - (-45) * Math.sin(scytheAngle)) * tEase;
       const bladeOffsetY = (55 * Math.sin(scytheAngle) + (-45) * Math.cos(scytheAngle)) * tEase;
       const renderX = currX - bladeOffsetX;
       const renderY = currY - bladeOffsetY;
@@ -15444,8 +16025,8 @@ export class GameEngine {
 
       this.ctx.save();
       this.ctx.translate(renderX, renderY);
+      this.ctx.scale(facing * scytheScale, scytheScale);
       this.ctx.rotate(scytheAngle);
-      this.ctx.scale(scytheScale, scytheScale);
 
       this.ctx.shadowColor = '#c084fc';
       this.ctx.shadowBlur = 35;
@@ -15483,6 +16064,99 @@ export class GameEngine {
       this.ctx.shadowBlur = 0;
       this.ctx.restore();
       this.ctx.restore();
+    }
+
+    // Mikomon Sacred Fate Ambient Field & Overhead Seals
+    if (this.selectedDraco === 'Mikomon') {
+      const hasMarked = this.enemies.some(e => e.hp > 0 && (e as any).fateMarked);
+      if (this.mikomonUltActiveTimer > 0 || hasMarked) {
+        if (this.mikomonUltActiveTimer > 0) this.mikomonUltActiveTimer--;
+
+        this.ctx.save();
+        const camX = this.cameraX;
+        const camY = this.cameraY;
+        const cw = this.canvas.width;
+        const ch = this.canvas.height;
+
+        const shrineGrad = this.ctx.createRadialGradient(camX + cw / 2, camY + ch / 2, cw * 0.3, camX + cw / 2, camY + ch / 2, cw * 0.75);
+        shrineGrad.addColorStop(0, 'rgba(225, 29, 72, 0)');
+        shrineGrad.addColorStop(0.7, 'rgba(225, 29, 72, 0.12)');
+        shrineGrad.addColorStop(1, 'rgba(251, 191, 36, 0.22)');
+        this.ctx.fillStyle = shrineGrad;
+        this.ctx.fillRect(camX, camY, cw, ch);
+
+        const playerCx = this.px + this.pWidth / 2;
+        const playerCy = this.py + this.pHeight / 2;
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0 || !(enemy as any).fateMarked) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+
+          this.ctx.save();
+          this.ctx.strokeStyle = 'rgba(225, 29, 72, 0.65)';
+          this.ctx.lineWidth = 2;
+          this.ctx.setLineDash([8, 4]);
+          this.ctx.beginPath();
+          this.ctx.moveTo(playerCx, playerCy);
+          this.ctx.quadraticCurveTo((playerCx + ex) / 2, Math.min(playerCy, ey) - 50, ex, ey - 20);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+
+          const nodePos = (this.frameCount % 40) / 40;
+          const nodeX = playerCx + (ex - playerCx) * nodePos;
+          const nodeY = (playerCy + (ey - 20 - playerCy) * nodePos) - Math.sin(nodePos * Math.PI) * 30;
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.beginPath();
+          this.ctx.arc(nodeX, nodeY, 3, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.restore();
+
+          const beamGrad = this.ctx.createLinearGradient(ex, ey - 180, ex, ey);
+          beamGrad.addColorStop(0, 'rgba(251, 191, 36, 0)');
+          beamGrad.addColorStop(0.5, 'rgba(244, 114, 182, 0.35)');
+          beamGrad.addColorStop(1, 'rgba(225, 29, 72, 0)');
+          this.ctx.fillStyle = beamGrad;
+          this.ctx.fillRect(ex - 15, ey - 180, 30, 180);
+
+          const sealY = ey - 32 + Math.sin(this.frameCount * 0.1) * 4;
+          const spin = this.frameCount * 0.06;
+
+          this.ctx.save();
+          this.ctx.translate(ex, sealY);
+
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 18, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          this.ctx.strokeStyle = '#f472b6';
+          this.ctx.lineWidth = 1.5;
+          for (let s = 0; s < 8; s++) {
+            const sang = spin + (s * Math.PI) / 4;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(Math.cos(sang) * 16, Math.sin(sang) * 16);
+            this.ctx.stroke();
+          }
+
+          this.ctx.strokeStyle = '#e11d48';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(-10, -5);
+          this.ctx.lineTo(10, -5);
+          this.ctx.moveTo(-6, -5);
+          this.ctx.lineTo(-6, 6);
+          this.ctx.moveTo(6, -5);
+          this.ctx.lineTo(6, 6);
+          this.ctx.stroke();
+
+          this.ctx.restore();
+        });
+
+        this.ctx.restore();
+      }
     }
 
     if (this.lunarmonSkillActive && this.lunarmonSkillTimer > 0) {
@@ -16618,9 +17292,10 @@ export class GameEngine {
       this.ctx.fillStyle = `rgba(168, 85, 247, ${0.3 * alpha})`;
       this.ctx.fillRect(this.cameraX, this.cameraY, cw, ch);
 
-      const p1x = tx - 340;
+      const facing = this.pFacing || 1;
+      const p1x = tx - (facing * 340);
       const p1y = ty - 240;
-      const p2x = tx + 340;
+      const p2x = tx + (facing * 340);
       const p2y = ty + 240;
 
       this.ctx.shadowColor = '#c084fc';

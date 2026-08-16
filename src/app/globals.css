@@ -122,21 +122,31 @@ body {
   animation: glow-pulse 3s infinite;
 }
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #27272a #09090b;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 4px;
+  background: #09090b;
+  border-radius: 9999px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 4px;
+  background: #27272a;
+  border-radius: 9999px;
+  border: 1px solid #18181b;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+  background: #3f3f46;
+}
+
+::-webkit-scrollbar-corner {
+  background: #09090b;
 }

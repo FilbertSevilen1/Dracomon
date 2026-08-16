@@ -1045,6 +1045,50 @@ class SoundService {
     osc.stop(now + 0.55);
   }
 
+  public playAntimatterDeath() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    const filter = this.ctx.createBiquadFilter();
+
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1600, now);
+    osc.frequency.exponentialRampToValueAtTime(40, now + 1.2);
+
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(3200, now);
+    filter.frequency.exponentialRampToValueAtTime(120, now + 1.2);
+    filter.Q.value = 4.0;
+
+    gain.gain.setValueAtTime(this.sfxVolume * 0.85, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 1.2);
+
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 1.2);
+
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(120, now);
+    subOsc.frequency.exponentialRampToValueAtTime(30, now + 1.4);
+    subGain.gain.setValueAtTime(this.sfxVolume * 0.9, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 1.4);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.ctx.destination);
+    subOsc.start(now);
+    subOsc.stop(now + 1.4);
+  }
+
+
+
+
   public stopBGM() {
     if (this.musicInterval) {
       clearInterval(this.musicInterval);

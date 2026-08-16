@@ -602,6 +602,37 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Mikomon',
+      title: 'Sacred Miko Fortune Master',
+      cost: 500,
+      role: 'Miko Draco / Sacred Fortune Master',
+      lore: 'A divine Japanese miko draco hailing from sacred shrines. Mikomon throws Omikuji fortune cards at enemies up to 800px away, unleashes Fortune Blast homing slips that inflict 3s DoT ending in mini explosions, and casts The Fate of the World to mark visible foes and trigger 12 clock-direction fortune slip bursts. Possesses a 1% Supernova Insta-Kill gimmick on all attacks!',
+      signatureSkill: 'Fortune Blast (5 Homing Fortune Slips • 3s DoT • Mini Explosions)',
+      ultimateSkill: 'The Fate of the World (100 Energy • Marks Visible Foes • Mini Explosions & 12 Clock-Direction Slips Blocked by Terrain • 1% Supernova Insta-Kill Gimmick)',
+      color: 'rose',
+      tagColor: 'bg-rose-950 text-rose-300 border-rose-700 font-mono',
+      attackType: 'Omikuji Card Slip Ranged Attack (800px Range)',
+      hp: saveData.dracos['Mikomon']?.hp || 22,
+      atk: saveData.dracos['Mikomon']?.attack || 9,
+      def: saveData.dracos['Mikomon']?.defense || 3.5,
+      spd: saveData.dracos['Mikomon']?.speed || 7.5,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="85" rx="24" ry="5" fill="rgba(0,0,0,0.35)" />
+          <path d="M 28 20 L 72 20 M 34 20 L 34 38 M 66 20 L 66 38 M 24 25 L 76 25" stroke="#e11d48" strokeWidth="2.5" strokeLinecap="round" />
+          <rect x="20" y="40" width="8" height="13" rx="1" fill="#f8fafc" stroke="#fbbf24" strokeWidth="1" transform="rotate(-15 24 46)" />
+          <rect x="72" y="38" width="8" height="13" rx="1" fill="#f8fafc" stroke="#fbbf24" strokeWidth="1" transform="rotate(20 76 44)" />
+          <path d="M 32 46 L 22 76 L 40 76 L 50 56 L 60 76 L 78 76 L 68 46 Z" fill="#e11d48" stroke="#9f1239" strokeWidth="2" />
+          <rect x="36" y="52" width="28" height="6" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <circle cx="50" cy="36" r="14" fill="#e11d48" stroke="#9f1239" strokeWidth="2" />
+          <circle cx="45" cy="36" r="2" fill="#000000" />
+          <circle cx="55" cy="36" r="2" fill="#000000" />
+          <circle cx="72" cy="56" r="4" fill="#fbbf24" />
+        </svg>
+      ),
+    },
   ];
 
 

@@ -1,5 +1,18 @@
 [
   {
+    "version": "0.3.4",
+    "date": "August 16, 2026",
+    "tag": "New Hero Mikomon - Sacred Fortune Miko Draco",
+    "badgeColor": "bg-rose-600 text-white font-black shadow-sm",
+    "summary": "Introduces Mikomon, a divine Japanese miko draco wielding sacred Omikuji fortune slip basic attacks (800px range), Fortune Blast homing skill with 3s DoT and mini explosions, The Fate of the World ultimate marking visible enemies and triggering 12 clock-direction slips, and a 1% Supernova Insta-Kill gimmick across all attacks.",
+    "highlights": [
+      "New Hero - Mikomon: Japanese Miko Draco throwing Omikuji fortune card basic attacks in an 800px range with sakura trail VFX.",
+      "Mikomon Skill - Fortune Blast: Launches 5 homing fortune slips that track enemies, inflict 3-second Damage-Over-Time (DoT), and detonate mini explosions upon expiration.",
+      "Mikomon Ultimate - The Fate of the World (100 Energy): Marks all visible enemies on screen. Hitting any marked enemy triggers a mini explosion and releases 12 fortune slips in 360° clock directions (blocked by ground).",
+      "Mikomon Gimmick - Supernova Insta-Kill (1% Chance): Every attack hit from Mikomon (Basic attack cards, Fortune Blast slips, DoT ticks, mini explosions, clock slips) has a 1% chance to trigger a celestial Supernova explosion, instantly defeating the target enemy!"
+    ]
+  },
+  {
     "version": "0.3.3",
     "date": "August 16, 2026",
     "tag": "Magemon Grand Overhaul & Animation Polish",
