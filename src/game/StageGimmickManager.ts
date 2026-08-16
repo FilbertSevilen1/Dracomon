@@ -19,6 +19,8 @@ import {
 
 const BOSS_TYPES = new Set([
   'miniboss',
+  'sentinel_archdemon',
+  'dracoguard_fire_lord',
   'king_slime',
   'frost_wyvern',
   'shadow_overlord',

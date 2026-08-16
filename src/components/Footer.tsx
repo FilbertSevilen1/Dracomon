@@ -78,7 +78,7 @@ export const Footer: React.FC = () => {
             <ScrollText className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
             <div>
               <span className="text-[10px] font-mono text-stone-500 uppercase block leading-none">Current Build</span>
-              <span className="text-xs font-mono font-bold text-amber-300">v0.3.2</span>
+              <span className="text-xs font-mono font-bold text-amber-300">v0.3.3</span>
             </div>
           </Link>
         </div>

@@ -1801,7 +1801,7 @@
           ],
           "entities": [
             {
-              "type": "miniboss",
+              "type": "blockman",
               "x": 152,
               "y": 11
             }

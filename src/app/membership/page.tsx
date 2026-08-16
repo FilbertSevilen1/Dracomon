@@ -60,10 +60,10 @@ export default function MembershipPage() {
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          className="text-center md:text-left border-b border-stone-800 pb-8 space-y-2"
+          className="space-y-3 text-center md:text-left border-b border-stone-800 pb-8"
         >
-          <h1 className="text-3xl md:text-5xl font-black text-white tracking-tight font-display uppercase">
-            Membership <span className="text-purple-400">& Power Perks</span>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white font-display uppercase">
+            Membership <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">&amp; Power Perks</span>
           </h1>
           <p className="text-xs md:text-sm text-stone-400 max-w-2xl leading-relaxed font-mono">
             Choose your membership tier to instantly unlock dragon guardians, boost starting levels, and gain permanent stats bonuses!

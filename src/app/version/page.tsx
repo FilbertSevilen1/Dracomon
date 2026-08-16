@@ -53,8 +53,8 @@ export default function VersionPage() {
           transition={{ duration: 0.5 }}
           className="space-y-3 text-center md:text-left border-b border-stone-800 pb-8"
         >
-          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white font-display">
-            Patch Notes <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">& Updates</span>
+          <h1 className="text-3xl md:text-5xl font-black tracking-tight text-white font-display uppercase">
+            Patch Notes <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">&amp; Updates</span>
           </h1>
           <p className="text-xs md:text-sm text-stone-400 max-w-2xl leading-relaxed font-mono">
             Detailed logs for every major expansion, hero release, and system update in Dracoman RPG.

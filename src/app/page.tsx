@@ -172,15 +172,18 @@ export default function Home() {
       jump: 11,
       svg: (
         <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
-          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
-          <circle cx="50" cy="52" r="24" fill="#fbbf24" stroke="#b45309" strokeWidth="2.5" />
-          <path d="M 36 30 Q 30 14 42 22 Z" fill="#b45309" />
-          <path d="M 64 30 Q 70 14 58 22 Z" fill="#b45309" />
-          <rect x="42" y="44" width="6" height="8" fill="#fff" />
-          <rect x="52" y="44" width="6" height="8" fill="#fff" />
-          <rect x="45" y="46" width="3" height="4" fill="#000" />
-          <rect x="53" y="46" width="3" height="4" fill="#000" />
-          <rect x="68" y="42" width="16" height="4" rx="1" fill="#f59e0b" stroke="#b45309" strokeWidth="1" />
+          <ellipse cx="50" cy="85" rx="28" ry="6" fill="rgba(0,0,0,0.2)" />
+          <path d="M 36 32 Q 22 4 34 8 Q 40 18 42 24 Z" fill="#f59e0b" stroke="#d97706" strokeWidth="1.8" />
+          <path d="M 64 32 Q 78 4 66 8 Q 60 18 58 24 Z" fill="#f59e0b" stroke="#d97706" strokeWidth="1.8" />
+          <circle cx="50" cy="52" r="24" fill="#fbbf24" stroke="#d97706" strokeWidth="3" />
+          <circle cx="50" cy="58" r="14" fill="#fef08a" />
+          <circle cx="43" cy="46" r="3" fill="#000000" />
+          <circle cx="57" cy="46" r="3" fill="#000000" />
+          <circle cx="38" cy="52" r="2.5" fill="#f87171" />
+          <circle cx="62" cy="52" r="2.5" fill="#f87171" />
+          <polygon points="50,53 52,58 57,58 53,61 55,66 50,63 45,66 47,61 43,58 48,58" fill="#f59e0b" />
+          <rect x="30" y="72" width="14" height="8" rx="3" fill="#d97706" stroke="#b45309" strokeWidth="1.5" />
+          <rect x="56" y="72" width="14" height="8" rx="3" fill="#d97706" stroke="#b45309" strokeWidth="1.5" />
         </svg>
       ),
     },
@@ -231,13 +234,20 @@ export default function Home() {
       jump: 10,
       svg: (
         <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-fast">
-          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
-          <rect x="32" y="34" width="36" height="44" rx="14" fill="#3b82f6" stroke="#1e3a8a" strokeWidth="2.5" />
-          <rect x="42" y="42" width="5" height="7" fill="#fff" />
-          <rect x="53" y="42" width="5" height="7" fill="#fff" />
-          <rect x="44" y="44" width="3" height="3" fill="#000" />
-          <rect x="54" y="44" width="3" height="3" fill="#000" />
-          <rect x="66" y="40" width="14" height="34" rx="3" fill="#475569" stroke="#1e293b" strokeWidth="2" />
+          <ellipse cx="50" cy="85" rx="26" ry="6" fill="rgba(0,0,0,0.25)" />
+          <path d="M 28 42 Q 10 24 32 32 Z" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.5" />
+          <path d="M 72 42 Q 90 24 68 32 Z" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.5" />
+          <path d="M 36 32 L 28 14 L 40 24 Z" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="1.5" />
+          <path d="M 64 32 L 72 14 L 60 24 Z" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="1.5" />
+          <rect x="32" y="30" width="36" height="46" rx="14" fill="#3b82f6" stroke="#1e3a8a" strokeWidth="2.8" />
+          <rect x="40" y="40" width="6" height="5" rx="1" fill="#60a5fa" />
+          <rect x="54" y="40" width="6" height="5" rx="1" fill="#60a5fa" />
+          <rect x="42" y="41" width="2" height="3" fill="#ffffff" />
+          <rect x="56" y="41" width="2" height="3" fill="#ffffff" />
+          <path d="M 60 36 L 82 36 L 86 76 L 71 86 L 56 76 Z" fill="#1e293b" stroke="#60a5fa" strokeWidth="2" />
+          <line x1="71" y1="42" x2="71" y2="78" stroke="#60a5fa" strokeWidth="2.5" />
+          <line x1="63" y1="56" x2="79" y2="56" stroke="#60a5fa" strokeWidth="2.5" />
+          <circle cx="71" cy="56" r="3.5" fill="#ffffff" />
         </svg>
       ),
     },
@@ -287,14 +297,17 @@ export default function Home() {
       jump: 14,
       svg: (
         <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-medium">
-          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
-          <path d="M 34 50 Q 14 26 36 38 Z" fill="#fda4af" opacity="0.85" />
-          <path d="M 66 50 Q 86 26 64 38 Z" fill="#fda4af" opacity="0.85" />
-          <rect x="36" y="36" width="28" height="40" rx="8" fill="#e11d48" stroke="#881337" strokeWidth="2" />
-          <rect x="36" y="46" width="28" height="4" fill="#fb7185" />
-          <rect x="36" y="56" width="28" height="4" fill="#fb7185" />
-          <circle cx="44" cy="44" r="3.5" fill="#facc15" />
-          <circle cx="56" cy="44" r="3.5" fill="#facc15" />
+          <ellipse cx="50" cy="85" rx="26" ry="6" fill="rgba(0,0,0,0.25)" />
+          <path d="M 32 44 Q -6 12 24 26 Q 12 46 32 58 Z" fill="rgba(56, 189, 248, 0.65)" stroke="#38bdf8" strokeWidth="1.5" />
+          <path d="M 68 44 Q 106 12 76 26 Q 88 46 68 58 Z" fill="rgba(56, 189, 248, 0.65)" stroke="#38bdf8" strokeWidth="1.5" />
+          <path d="M 36 32 Q 22 10 18 4 Q 30 14 40 22 Z" fill="#e11d48" stroke="#facc15" strokeWidth="1.2" />
+          <path d="M 64 32 Q 78 10 82 4 Q 70 14 60 22 Z" fill="#e11d48" stroke="#facc15" strokeWidth="1.2" />
+          <rect x="34" y="30" width="32" height="46" rx="12" fill="#e11d48" stroke="#881337" strokeWidth="2.5" />
+          <rect x="34" y="44" width="32" height="4" fill="#facc15" />
+          <rect x="34" y="54" width="32" height="4" fill="#facc15" />
+          <circle cx="44" cy="40" r="3.5" fill="#facc15" />
+          <circle cx="56" cy="40" r="3.5" fill="#facc15" />
+          <polygon points="50,76 44,92 56,92" fill="#facc15" stroke="#881337" strokeWidth="1" />
         </svg>
       ),
     },
@@ -316,12 +329,18 @@ export default function Home() {
       jump: 11,
       svg: (
         <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
-          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.15)" />
-          <path d="M 32 48 Q 10 24 34 36 Z" fill="#e2e8f0" opacity="0.9" />
-          <path d="M 68 48 Q 90 24 66 36 Z" fill="#e2e8f0" opacity="0.9" />
-          <rect x="36" y="36" width="28" height="40" rx="10" fill="#f8fafc" stroke="#64748b" strokeWidth="2" />
-          <circle cx="24" cy="30" r="5" fill="#38bdf8" />
-          <path d="M 68 44 L 80 32 L 76 52 Z" fill="#94a3b8" stroke="#475569" strokeWidth="1.5" />
+          <ellipse cx="50" cy="85" rx="26" ry="6" fill="rgba(0,0,0,0.25)" />
+          <path d="M 32 44 Q -4 10 26 24 Q 14 44 32 58 Z" fill="#f8fafc" stroke="#38bdf8" strokeWidth="1.8" />
+          <path d="M 68 44 Q 104 10 74 24 Q 86 44 68 58 Z" fill="#f8fafc" stroke="#38bdf8" strokeWidth="1.8" />
+          <path d="M 34 32 Q 50 14 66 32 Z" fill="#38bdf8" stroke="#0284c7" strokeWidth="1.5" />
+          <rect x="36" y="32" width="28" height="44" rx="10" fill="#f8fafc" stroke="#64748b" strokeWidth="2.5" />
+          <circle cx="44" cy="42" r="3.5" fill="#0284c7" />
+          <circle cx="56" cy="42" r="3.5" fill="#0284c7" />
+          <circle cx="50" cy="58" r="8" fill="#38bdf8" stroke="#0284c7" strokeWidth="1.5" />
+          <g transform="translate(74, 22)">
+            <ellipse cx="10" cy="10" rx="8" ry="5" fill="#38bdf8" stroke="#0284c7" strokeWidth="1" />
+            <polygon points="18,10 24,8 19,13" fill="#fbbf24" />
+          </g>
         </svg>
       ),
     },
@@ -464,14 +483,24 @@ export default function Home() {
       jump: 11,
       svg: (
         <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
-          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
-          <path d="M 26 44 Q 4 14 28 26 Z" fill="#581c87" stroke="#c084fc" strokeWidth="1.5" />
-          <path d="M 74 44 Q 96 14 72 26 Z" fill="#581c87" stroke="#c084fc" strokeWidth="1.5" />
-          <rect x="34" y="34" width="32" height="42" rx="10" fill="#3b0764" stroke="#c084fc" strokeWidth="2.5" />
-          <circle cx="42" cy="44" r="3" fill="#e879f9" />
-          <circle cx="58" cy="44" r="3" fill="#e879f9" />
-          <ellipse cx="50" cy="62" rx="8" ry="5" fill="#000000" stroke="#e879f9" strokeWidth="1.5" />
-          <circle cx="50" cy="62" r="3" fill="#c084fc" />
+          <ellipse cx="50" cy="85" rx="26" ry="6" fill="rgba(0,0,0,0.4)" />
+          <ellipse cx="50" cy="52" rx="44" ry="16" fill="none" stroke="#e879f9" strokeWidth="1.5" strokeDasharray="6 3" opacity="0.85" />
+          <ellipse cx="50" cy="52" rx="36" ry="10" fill="none" stroke="#c084fc" strokeWidth="1.2" strokeDasharray="3 3" opacity="0.65" />
+          <circle cx="8" cy="52" r="3" fill="#e879f9" stroke="#ffffff" strokeWidth="1" />
+          <circle cx="92" cy="52" r="3" fill="#e879f9" stroke="#ffffff" strokeWidth="1" />
+          <path d="M 28 42 Q -6 6 24 24 Q 14 44 32 58 Z" fill="#3b0764" stroke="#e879f9" strokeWidth="2" />
+          <path d="M 72 42 Q 106 6 76 24 Q 86 44 68 58 Z" fill="#3b0764" stroke="#e879f9" strokeWidth="2" />
+          <path d="M 34 32 L 20 10 L 38 20 Z" fill="#581c87" stroke="#e879f9" strokeWidth="1.5" />
+          <path d="M 66 32 L 80 10 L 62 20 Z" fill="#581c87" stroke="#e879f9" strokeWidth="1.5" />
+          <rect x="34" y="30" width="32" height="46" rx="12" fill="#090514" stroke="#a855f7" strokeWidth="2.5" />
+          <circle cx="44" cy="42" r="3.5" fill="#e879f9" />
+          <circle cx="56" cy="42" r="3.5" fill="#e879f9" />
+          <circle cx="44" cy="42" r="1.2" fill="#ffffff" />
+          <circle cx="56" cy="42" r="1.2" fill="#ffffff" />
+          <circle cx="50" cy="58" r="11" fill="rgba(232, 121, 249, 0.2)" />
+          <circle cx="50" cy="58" r="8" fill="#000000" stroke="#e879f9" strokeWidth="2" />
+          <circle cx="50" cy="58" r="4" fill="#7e22ce" stroke="#ffffff" strokeWidth="1" />
+          <circle cx="50" cy="58" r="1.8" fill="#ffffff" />
         </svg>
       ),
     },
@@ -493,13 +522,21 @@ export default function Home() {
       jump: 11,
       svg: (
         <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
-          <ellipse cx="50" cy="85" rx="30" ry="6" fill="rgba(0,0,0,0.2)" />
-          <path d="M 28 44 Q 6 18 30 30 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="1.5" />
-          <path d="M 72 44 Q 94 18 70 30 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="1.5" />
-          <rect x="34" y="34" width="32" height="42" rx="10" fill="#1e1b4b" stroke="#818cf8" strokeWidth="2.5" />
-          <circle cx="44" cy="46" r="3" fill="#e0e7ff" />
-          <circle cx="56" cy="46" r="3" fill="#e0e7ff" />
-          <path d="M 50 55 A 7 7 0 1 1 50 69 A 4 4 0 1 0 50 55 Z" fill="#c7d2fe" />
+          <ellipse cx="50" cy="85" rx="26" ry="6" fill="rgba(0,0,0,0.3)" />
+          <path d="M 50 12 A 22 22 0 1 1 50 56 A 15 15 0 1 0 50 12 Z" fill="#c7d2fe" stroke="#93c5fd" strokeWidth="1.5" opacity="0.9" />
+          <circle cx="28" cy="22" r="1.5" fill="#ffffff" />
+          <circle cx="72" cy="22" r="1.5" fill="#ffffff" />
+          <path d="M 28 42 Q -2 10 26 24 Q 14 44 32 58 Z" fill="#1e3a8a" stroke="#e0f2fe" strokeWidth="1.8" />
+          <path d="M 72 42 Q 102 10 74 24 Q 86 44 68 58 Z" fill="#1e3a8a" stroke="#e0f2fe" strokeWidth="1.8" />
+          <path d="M 36 32 L 26 12 L 40 22 Z" fill="#4f46e5" stroke="#e0e7ff" strokeWidth="1.5" />
+          <path d="M 64 32 L 74 12 L 60 22 Z" fill="#4f46e5" stroke="#e0e7ff" strokeWidth="1.5" />
+          <rect x="34" y="30" width="32" height="46" rx="12" fill="#1e1b4b" stroke="#818cf8" strokeWidth="2.5" />
+          <circle cx="44" cy="42" r="3.5" fill="#e0e7ff" />
+          <circle cx="56" cy="42" r="3.5" fill="#e0e7ff" />
+          <circle cx="44" cy="42" r="1.5" fill="#6366f1" />
+          <circle cx="56" cy="42" r="1.5" fill="#6366f1" />
+          <circle cx="50" cy="58" r="10" fill="#312e81" stroke="#818cf8" strokeWidth="1.8" />
+          <path d="M 50 51 A 7 7 0 1 1 50 65 A 4.5 4.5 0 1 0 50 51 Z" fill="#c7d2fe" />
         </svg>
       ),
     },
@@ -530,8 +567,8 @@ export default function Home() {
           <rect x="58" y="44" width="2" height="2" fill="#ffffff" />
           <rect x="30" y="22" width="6" height="8" fill="#f43f5e" />
           <rect x="64" y="22" width="6" height="8" fill="#f43f5e" />
-          <rect x="44" y="54" width="12" height="4" fill="#eab308" />
-          <rect x="48" y="58" width="4" height="8" fill="#eab308" />
+          <rect x="44" y="54" width="12" height="4" fill="#c084fc" />
+          <rect x="48" y="58" width="4" height="8" fill="#c084fc" />
         </svg>
       ),
     },

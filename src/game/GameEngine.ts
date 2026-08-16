@@ -218,7 +218,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess' | 'ghost' | 'reaper';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'sentinel_archdemon' | 'dracoguard_fire_lord' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess' | 'ghost' | 'reaper';
   hp: number;
   maxHp: number;
   attack: number;
@@ -423,6 +423,7 @@ export class GameEngine {
   private isClimbing = false;
   private playerRootedTimer = 0;
   private skeletonDeathTimer = 0;
+  private skeletonDeathType: 'lava' | 'swamp' = 'lava';
   private frozenDeathTimer = 0;
   private electrocutionDeathTimer = 0;
   private reaperDeathTimer = 0;
@@ -884,8 +885,7 @@ export class GameEngine {
         animFrame: 0,
         name: 'King Slime Lord'
       });
-    } else if (type === 'miniboss') {
-      const isStage2 = this.level.name.includes('Stage 2');
+    } else if (type === 'sentinel_archdemon') {
       this.enemies.push({
         id: this.enemyIdCounter++,
         x: ex + 2,
@@ -894,7 +894,48 @@ export class GameEngine {
         vy: 0,
         width: 56,
         height: 64,
-        type: 'miniboss',
+        type: 'sentinel_archdemon',
+        hp: 350,
+        maxHp: 350,
+        attack: 8,
+        defense: 6,
+        facing: -1,
+        shootCooldown: 100,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Sentinel Archdemon'
+      });
+    } else if (type === 'dracoguard_fire_lord') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 64,
+        vx: -0.5,
+        vy: 0,
+        width: 56,
+        height: 64,
+        type: 'dracoguard_fire_lord',
+        hp: 500,
+        maxHp: 500,
+        attack: 17,
+        defense: 9,
+        facing: -1,
+        shootCooldown: 100,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Dracoguard Fire Lord'
+      });
+    } else if (type === 'miniboss') {
+      const isStage2 = this.level.name.includes('Stage 2') || this.level.theme?.type === 'ruins';
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 64,
+        vx: -0.5,
+        vy: 0,
+        width: 56,
+        height: 64,
+        type: isStage2 ? 'sentinel_archdemon' : 'dracoguard_fire_lord',
         hp: isStage2 ? 350 : 500,
         maxHp: isStage2 ? 350 : 500,
         attack: isStage2 ? 8 : 17,
@@ -1275,7 +1316,9 @@ export class GameEngine {
         } else if (char === 'S') {
           this.spawnEntityFromType('king_slime', c, r, preservePlayerPos, grid);
         } else if (char === 'B') {
-          this.spawnEntityFromType('miniboss', c, r, preservePlayerPos, grid);
+          this.spawnEntityFromType('sentinel_archdemon', c, r, preservePlayerPos, grid);
+        } else if (char === 'J') {
+          this.spawnEntityFromType('dracoguard_fire_lord', c, r, preservePlayerPos, grid);
         } else if (char === 'W') {
           this.spawnEntityFromType('frost_wyvern', c, r, preservePlayerPos, grid);
         } else if (char === 'O') {
@@ -2798,6 +2841,35 @@ export class GameEngine {
     this.addFloatingText(targetX - 20, (targetY || this.py) - 15, FT_SUN_STRIKE.text, FT_SUN_STRIKE.color);
   }
 
+  private drawMagemonOrb(ox: number, oy: number, orb: { name: string; main: string; outer: string; core: string }) {
+    this.ctx.save();
+    // Radial glow halo
+    const orbGrad = this.ctx.createRadialGradient(ox, oy, 1, ox, oy, 10);
+    orbGrad.addColorStop(0, orb.core);
+    orbGrad.addColorStop(0.4, orb.main);
+    orbGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    this.ctx.fillStyle = orbGrad;
+    this.ctx.beginPath();
+    this.ctx.arc(ox, oy, 10, 0, Math.PI * 2);
+    this.ctx.fill();
+
+    // Main Orb Body
+    this.ctx.fillStyle = orb.main;
+    this.ctx.strokeStyle = orb.core;
+    this.ctx.lineWidth = 1.5;
+    this.ctx.beginPath();
+    this.ctx.arc(ox, oy, 4.5, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.stroke();
+
+    // White Specular Highlight
+    this.ctx.fillStyle = '#ffffff';
+    this.ctx.beginPath();
+    this.ctx.arc(ox - 1.2, oy - 1.2, 1.2, 0, Math.PI * 2);
+    this.ctx.fill();
+    this.ctx.restore();
+  }
+
   private checkMeleeHit(x: number, y: number, w: number, h: number, damage: number, stopOnFirstHit = false) {
     if (stopOnFirstHit) {
       for (const enemy of this.enemies) {
@@ -3858,6 +3930,30 @@ export class GameEngine {
       this.ctx.fillStyle = '#fef08a';
       this.ctx.fillRect(enemy.facing === 1 ? enemy.x + 36 : enemy.x + 8, enemy.y + 12, 8, 8);
       this.ctx.restore();
+    } else if (enemy.type === 'sentinel_archdemon') {
+      expReward = 80;
+      coinReward = 120;
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 10,
+        y: enemy.y + enemy.height / 2 - 10,
+        width: 20,
+        height: 20,
+        type: 'upgrade_stone',
+        amount: 1,
+        collected: false
+      });
+    } else if (enemy.type === 'dracoguard_fire_lord') {
+      expReward = 120;
+      coinReward = 180;
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 10,
+        y: enemy.y + enemy.height / 2 - 10,
+        width: 20,
+        height: 20,
+        type: 'upgrade_stone',
+        amount: 2,
+        collected: false
+      });
     } else if (enemy.type === 'miniboss') {
       expReward = 80;
       coinReward = 120;
@@ -4152,7 +4248,7 @@ export class GameEngine {
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp', 'lunar_goddess'].includes(type);
+    return ['king_slime', 'miniboss', 'sentinel_archdemon', 'dracoguard_fire_lord', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp', 'lunar_goddess', 'blockman'].includes(type);
   }
 
   private distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
@@ -4249,10 +4345,11 @@ export class GameEngine {
               else if (rand < 0.5) mobType = 'bomb_thrower';
               else if (rand < 0.7) mobType = 'fire_golem';
               else if (rand < 0.88) mobType = 'flying_wyvern';
-              else mobType = 'miniboss';
-              baseHp = mobType === 'miniboss' ? 120 : 35;
-              mobAtk = mobType === 'miniboss' ? 8 : 6;
-              if (mobType === 'miniboss') { mobWidth = 56; mobHeight = 56; }
+              else if (rand < 0.88) mobType = 'flying_wyvern';
+              else mobType = Math.random() < 0.5 ? 'sentinel_archdemon' : 'dracoguard_fire_lord';
+              baseHp = (mobType === 'sentinel_archdemon' || mobType === 'dracoguard_fire_lord' || mobType === 'miniboss') ? 120 : 35;
+              mobAtk = (mobType === 'sentinel_archdemon' || mobType === 'dracoguard_fire_lord' || mobType === 'miniboss') ? 8 : 6;
+              if (mobType === 'sentinel_archdemon' || mobType === 'dracoguard_fire_lord' || mobType === 'miniboss') { mobWidth = 56; mobHeight = 56; }
               else if (mobType === 'skeleton_archer') { mobWidth = 32; mobHeight = 38; }
             } else if (secondsLeft > 30) {
               if (rand < 0.25) mobType = 'bomb_thrower';
@@ -5423,6 +5520,7 @@ export class GameEngine {
     if (touchedSwamp && this.pHP > 0) {
       this.pHP = 0;
       this.skeletonDeathTimer = 90;
+      this.skeletonDeathType = 'swamp';
       soundService.playLavaDeath();
       this.callbacks.onHpChange?.(0, this.pMaxHP);
       this.addFloatingText(pxMid, this.py - 20, FT_TOXIC_SWAMP.text, FT_TOXIC_SWAMP.color);
@@ -5587,6 +5685,7 @@ export class GameEngine {
         } else {
           soundService.playLavaDeath();
           this.skeletonDeathTimer = 90;
+          this.skeletonDeathType = 'lava';
           this.addFloatingText(pxMid, this.py - 20, FT_MOLTEN_LAVA_MELTED.text, FT_MOLTEN_LAVA_MELTED.color);
 
           for (let i = 0; i < 25; i++) {
@@ -7154,6 +7253,8 @@ export class GameEngine {
         enemy.type === 'slime' ||
         enemy.type === 'fire_golem' ||
         enemy.type === 'miniboss' ||
+        enemy.type === 'sentinel_archdemon' ||
+        enemy.type === 'dracoguard_fire_lord' ||
         enemy.type === 'king_slime' ||
         enemy.type === 'frost_wyvern' ||
         enemy.type === 'shadow_overlord' ||
@@ -7323,6 +7424,8 @@ export class GameEngine {
       if (
         enemy.type === 'goblin_archer' ||
         enemy.type === 'miniboss' ||
+        enemy.type === 'sentinel_archdemon' ||
+        enemy.type === 'dracoguard_fire_lord' ||
         enemy.type === 'king_slime' ||
         enemy.type === 'frost_wyvern' ||
         enemy.type === 'shadow_overlord' ||
@@ -7400,6 +7503,36 @@ export class GameEngine {
                 isEnemy: true,
                 damage: enemy.attack,
                 color: '#10b981',
+                type: 'fireball'
+              });
+            } else if (enemy.type === 'sentinel_archdemon') {
+              enemy.shootCooldown = 65;
+              [-0.1, 0.1].forEach(angle => {
+                this.projectiles.push({
+                  x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 14,
+                  y: enemy.y + enemy.height / 2,
+                  vx: enemy.facing * 4.5 * Math.cos(angle),
+                  vy: 4.5 * Math.sin(angle),
+                  width: 14,
+                  height: 14,
+                  isEnemy: true,
+                  damage: enemy.attack,
+                  color: '#a855f7',
+                  type: 'fireball'
+                });
+              });
+            } else if (enemy.type === 'dracoguard_fire_lord') {
+              enemy.shootCooldown = 55;
+              this.projectiles.push({
+                x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 14,
+                y: enemy.y + enemy.height / 2,
+                vx: enemy.facing * 5.5,
+                vy: -1,
+                width: 16,
+                height: 16,
+                isEnemy: true,
+                damage: enemy.attack,
+                color: '#ea580c',
                 type: 'fireball'
               });
             } else if (enemy.type === 'miniboss') {
@@ -8946,8 +9079,8 @@ export class GameEngine {
   }
 
   private drawAzuremonWings(px: number, py: number, pw: number, ph: number, bodyY: number) {
-    if (this.azuremonWingScale <= 0) return;
-    const scale = this.azuremonWingScale;
+    const scale = this.selectedDraco === 'Azuremon' ? Math.max(0.85, this.azuremonWingScale) : this.azuremonWingScale;
+    if (scale <= 0) return;
     const wingBaseX = px + pw / 2;
     const wingBaseY = bodyY + 12;
     const wingFlap = Math.sin(this.frameCount * 0.18) * 5;
@@ -10002,105 +10135,240 @@ export class GameEngine {
 
         const topY = -1000;
         const beamHeight = this.levelHeight + 2000;
+        const groundY = this.py + this.pHeight - 5;
 
         if (channelTimer > 0) {
           const chargeProgress = 1 - (channelTimer / 102);
 
-          this.ctx.fillStyle = `rgba(253, 224, 71, ${0.2 + chargeProgress * 0.35})`;
-          this.ctx.fillRect(tx - 24, topY, 48, beamHeight);
+          // Converging Outer Warning Haze
+          this.ctx.fillStyle = `rgba(253, 224, 71, ${0.15 + chargeProgress * 0.3})`;
+          this.ctx.fillRect(tx - 32, topY, 64, beamHeight);
 
-          this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.5 + chargeProgress * 0.5})`;
-          this.ctx.lineWidth = 4 + chargeProgress * 6;
+          // Central Descending Light Pillar
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.4 + chargeProgress * 0.6})`;
+          this.ctx.lineWidth = 6 + chargeProgress * 10;
           this.ctx.beginPath();
           this.ctx.moveTo(tx, topY);
           this.ctx.lineTo(tx, topY + beamHeight);
           this.ctx.stroke();
 
-          const ringRadius = 28 * chargeProgress + 8;
+          // Target Ground Sigil Ring
+          const ringRadius = 36 * chargeProgress + 10;
           this.ctx.strokeStyle = '#f59e0b';
-          this.ctx.lineWidth = 3;
+          this.ctx.lineWidth = 3.5;
           this.ctx.beginPath();
-          this.ctx.arc(tx, this.py + this.pHeight - 5, ringRadius, 0, Math.PI * 2);
+          this.ctx.arc(tx, groundY, ringRadius, 0, Math.PI * 2);
           this.ctx.stroke();
 
-          this.ctx.fillStyle = '#fef08a';
+          // Rotating Inner Solar Runes
+          this.ctx.strokeStyle = '#fef08a';
+          this.ctx.lineWidth = 1.8;
+          this.ctx.save();
+          this.ctx.translate(tx, groundY);
+          this.ctx.rotate(this.frameCount * 0.08);
+          for (let r = 0; r < 4; r++) {
+            const ang = (r * Math.PI) / 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(Math.cos(ang) * (ringRadius - 8), Math.sin(ang) * (ringRadius - 8));
+            this.ctx.lineTo(Math.cos(ang) * (ringRadius + 4), Math.sin(ang) * (ringRadius + 4));
+            this.ctx.stroke();
+          }
+          this.ctx.restore();
+
+          this.ctx.fillStyle = '#ffffff';
           this.ctx.beginPath();
-          this.ctx.arc(tx, this.py + this.pHeight - 5, 6, 0, Math.PI * 2);
+          this.ctx.arc(tx, groundY, 7, 0, Math.PI * 2);
           this.ctx.fill();
         } else if (isExploding) {
           const expTimer = (proj as any).explosionTimer || 20;
           const alpha = expTimer / 20;
 
+          // Layer 1: Outer Solar Plasma Sheath (90px)
+          this.ctx.fillStyle = `rgba(245, 158, 11, ${alpha * 0.45})`;
+          this.ctx.fillRect(tx - 45, topY, 90, beamHeight);
+
+          // Layer 2: Radiant Golden Beam (56px)
+          this.ctx.fillStyle = `rgba(254, 240, 138, ${alpha * 0.85})`;
+          this.ctx.fillRect(tx - 28, topY, 56, beamHeight);
+
+          // Layer 3: Blinding White Core Line (16px)
           this.ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
-          this.ctx.fillRect(tx - 22, topY, 44, beamHeight);
+          this.ctx.fillRect(tx - 8, topY, 16, beamHeight);
 
-          this.ctx.fillStyle = `rgba(254, 240, 138, ${alpha})`;
-          this.ctx.fillRect(tx - 38, topY, 76, beamHeight);
+          // Solar Flare Rings along the Beam Shaft
+          for (let r = 0; r < 4; r++) {
+            const ry = (this.frameCount * 25 + r * 150) % 600;
+            const rRadius = (35 + Math.sin(this.frameCount * 0.3 + r) * 6) * alpha;
+            this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.ellipse(tx, groundY - ry, rRadius, rRadius * 0.3, 0, 0, Math.PI * 2);
+            this.ctx.stroke();
+          }
 
-          this.ctx.fillStyle = `rgba(245, 158, 11, ${alpha * 0.7})`;
-          this.ctx.fillRect(tx - 56, topY, 18, beamHeight);
-          this.ctx.fillRect(tx + 38, topY, 18, beamHeight);
-
-          const shockRadius = (20 - expTimer) * 5 + 12;
-          this.ctx.strokeStyle = `rgba(239, 68, 68, ${alpha})`;
-          this.ctx.lineWidth = 5;
+          // Ground Explosive Solar Shockwave Ring
+          const shockRadius = (20 - expTimer) * 7 + 16;
+          const shockGrad = this.ctx.createRadialGradient(tx, groundY, 4, tx, groundY, shockRadius);
+          shockGrad.addColorStop(0, `rgba(255, 255, 255, ${alpha})`);
+          shockGrad.addColorStop(0.4, `rgba(245, 158, 11, ${alpha * 0.8})`);
+          shockGrad.addColorStop(0.8, `rgba(239, 68, 68, ${alpha * 0.4})`);
+          shockGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          this.ctx.fillStyle = shockGrad;
           this.ctx.beginPath();
-          this.ctx.arc(tx, this.py + this.pHeight - 5, shockRadius, 0, Math.PI * 2);
-          this.ctx.stroke();
+          this.ctx.arc(tx, groundY, shockRadius, 0, Math.PI * 2);
+          this.ctx.fill();
         }
         this.ctx.restore();
       } else if (proj.type === 'meteor') {
         this.ctx.save();
         const cx = proj.x + proj.width / 2;
         const cy = proj.y + proj.height / 2;
+        const radius = proj.width / 2;
 
+        // 1. Fiery Flame Aura Corona
+        const flamePulse = Math.sin(this.frameCount * 0.3) * 4;
+        const auraGrad = this.ctx.createRadialGradient(cx, cy, radius * 0.4, cx, cy, radius * 1.6 + flamePulse);
+        auraGrad.addColorStop(0, 'rgba(254, 240, 138, 0.9)');
+        auraGrad.addColorStop(0.35, 'rgba(249, 115, 22, 0.7)');
+        auraGrad.addColorStop(0.75, 'rgba(239, 68, 68, 0.35)');
+        auraGrad.addColorStop(1, 'rgba(120, 20, 0, 0)');
+        this.ctx.fillStyle = auraGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, radius * 1.6 + flamePulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 2. Trailing Fire & Ember Streaks behind motion
+        const moveAngle = Math.atan2(proj.vy, proj.vx);
+        for (let t = 1; t <= 5; t++) {
+          const tx = cx - Math.cos(moveAngle) * (t * 8);
+          const ty = cy - Math.sin(moveAngle) * (t * 8);
+          const tr = radius * (1 - t * 0.16);
+          this.ctx.fillStyle = t % 2 === 0 ? 'rgba(249, 115, 22, 0.6)' : 'rgba(239, 68, 68, 0.4)';
+          this.ctx.beginPath();
+          this.ctx.arc(tx, ty, tr, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        // 3. Rotating Molten Rock Core with Cracks
         this.ctx.translate(cx, cy);
         this.ctx.rotate(this.frameCount * 0.15);
 
-        const grad = this.ctx.createRadialGradient(0, 0, 3, 0, 0, proj.width / 2 + 4);
+        const grad = this.ctx.createRadialGradient(0, 0, 3, 0, 0, radius);
         grad.addColorStop(0, '#fef08a');
         grad.addColorStop(0.35, '#f97316');
         grad.addColorStop(0.75, '#dc2626');
         grad.addColorStop(1, '#451a03');
 
         this.ctx.fillStyle = grad;
-        this.ctx.beginPath();
-        this.ctx.arc(0, 0, proj.width / 2, 0, Math.PI * 2);
-        this.ctx.fill();
-
         this.ctx.strokeStyle = '#78350f';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, radius, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Glowing Surface Lava Fissures
+        this.ctx.strokeStyle = '#fef08a';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.moveTo(-10, -6);
-        this.ctx.lineTo(4, -10);
-        this.ctx.lineTo(8, 6);
+        this.ctx.moveTo(-radius * 0.6, -radius * 0.3);
+        this.ctx.lineTo(0, 0);
+        this.ctx.lineTo(radius * 0.5, -radius * 0.5);
+        this.ctx.moveTo(0, 0);
+        this.ctx.lineTo(radius * 0.3, radius * 0.6);
         this.ctx.stroke();
 
         this.ctx.restore();
       } else if (proj.type === 'tornado') {
         this.ctx.save();
         const cx = proj.x + proj.width / 2;
+        const layers = 14;
 
-        for (let i = 0; i < 6; i++) {
-          const yOff = (i * 10 + (this.frameCount * 3)) % proj.height;
+        // Swirling 3D Wind Cyclone Funnel
+        for (let i = 0; i < layers; i++) {
+          const progress = i / layers;
+          const yOff = proj.height * (1 - progress);
+          const currentY = proj.y + yOff;
 
-          const progress = yOff / proj.height;
+          const widthAtY = 14 + progress * (proj.width - 6);
+          const rotAngle = Math.sin(this.frameCount * 0.2 + i * 0.4) * 0.4;
+          const alpha = 0.5 + progress * 0.45;
 
-          const w = 12 + (1 - progress) * 34;
-          const rotAngle = Math.sin(this.frameCount * 0.25 + i * 0.5) * 0.35;
-
-          this.ctx.strokeStyle = i % 2 === 0 ? '#06b6d4' : '#38bdf8';
-          this.ctx.lineWidth = 1.5 + (1 - progress) * 2.2;
+          // Outer Sky-Blue Wind Layer
+          this.ctx.strokeStyle = i % 2 === 0 ? `rgba(6, 182, 212, ${alpha})` : `rgba(56, 189, 248, ${alpha})`;
+          this.ctx.lineWidth = 2 + progress * 2.5;
           this.ctx.beginPath();
-          this.ctx.ellipse(cx, proj.y + yOff, w / 2, 5, rotAngle, 0, Math.PI * 2);
+          this.ctx.ellipse(cx, currentY, widthAtY / 2, 6, rotAngle, 0, Math.PI * 2);
           this.ctx.stroke();
 
-          this.ctx.strokeStyle = '#e0f2fe';
-          this.ctx.lineWidth = 1;
+          // Inner White Air Current Ring
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.85})`;
+          this.ctx.lineWidth = 1.5;
           this.ctx.beginPath();
-          this.ctx.ellipse(cx + Math.cos(this.frameCount * 0.3 + i) * 3, proj.y + yOff, (w / 2) * 0.7, 3, -rotAngle, 0, Math.PI * 2);
+          this.ctx.ellipse(cx + Math.cos(this.frameCount * 0.25 + i) * 4, currentY, (widthAtY / 2) * 0.65, 3.5, -rotAngle, 0, Math.PI * 2);
           this.ctx.stroke();
         }
+
+        // Inner Vertical Core Spiral Lightning Tendril
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        for (let s = 0; s <= 10; s++) {
+          const sp = s / 10;
+          const sy = proj.y + proj.height * (1 - sp);
+          const sRad = (14 + sp * (proj.width - 6)) * 0.4;
+          const sAng = this.frameCount * 0.3 + sp * Math.PI * 4;
+          const sx = cx + Math.cos(sAng) * sRad;
+          if (s === 0) this.ctx.moveTo(sx, sy);
+          else this.ctx.lineTo(sx, sy);
+        }
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      } else if (proj.type === 'arcane_orb') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const r = proj.width / 2;
+
+        // Layer 1: Outer cosmic nebula glow
+        const orbGrad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, r * 1.8);
+        orbGrad.addColorStop(0, '#ffffff');
+        orbGrad.addColorStop(0.35, '#c084fc');
+        orbGrad.addColorStop(0.7, '#6d28d9');
+        orbGrad.addColorStop(1, 'rgba(76, 29, 149, 0)');
+        this.ctx.fillStyle = orbGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, r * 1.8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Layer 2: Rotating Arcane Ring
+        this.ctx.strokeStyle = '#f59e0b';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.save();
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(this.frameCount * 0.2);
+        this.ctx.scale(1.0, 0.4);
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, r * 1.3, 0, Math.PI * 2);
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // Layer 3: Solid Pulsing Core
+        this.ctx.fillStyle = '#a855f7';
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Specular Center
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(cx - r * 0.25, cy - r * 0.25, r * 0.3, 0, Math.PI * 2);
+        this.ctx.fill();
+
         this.ctx.restore();
       } else if (proj.type === 'giant_cleave') {
         this.ctx.save();
@@ -10758,7 +11026,7 @@ export class GameEngine {
         this.ctx.lineTo(scytheHandX, enemy.y + enemy.height);
         this.ctx.stroke();
 
-        this.ctx.fillStyle = '#10b981';
+        this.ctx.fillStyle = '#a855f7';
         this.ctx.beginPath();
         this.ctx.arc(scytheHandX + enemy.facing * 8, enemy.y - 2, 8, 0, Math.PI);
         this.ctx.fill();
@@ -10790,10 +11058,128 @@ export class GameEngine {
 
         this.ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
 
-        this.ctx.fillStyle = '#facc15';
+        this.ctx.fillStyle = '#c2410c';
         this.ctx.fillRect(enemy.x + 8, enemy.y + 12, 4, 18);
         this.ctx.fillRect(enemy.x + 22, enemy.y + 15, 6, 4);
 
+      } else if (enemy.type === 'sentinel_archdemon') {
+        this.ctx.save();
+        this.ctx.fillStyle = '#1e1b4b';
+        this.ctx.strokeStyle = '#e11d48';
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 14;
+        this.ctx.shadowColor = '#e11d48';
+
+        // Body (Demon Core Circle)
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+
+        // Void Crimson Wings
+        const wingFlap = Math.sin(this.frameCount * 0.15) * 4;
+        this.ctx.fillStyle = '#f43f5e';
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x, enemy.y + 10);
+        this.ctx.lineTo(enemy.x - 18, enemy.y - 14 + wingFlap);
+        this.ctx.lineTo(enemy.x + 10, enemy.y + 22);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width, enemy.y + 10);
+        this.ctx.lineTo(enemy.x + enemy.width + 18, enemy.y - 14 + wingFlap);
+        this.ctx.lineTo(enemy.x + enemy.width - 10, enemy.y + 22);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Demonic Horns
+        this.ctx.fillStyle = '#f43f5e';
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + 10, enemy.y + 2);
+        this.ctx.lineTo(enemy.x + 18, enemy.y - 14);
+        this.ctx.lineTo(enemy.x + 26, enemy.y - 4);
+        this.ctx.lineTo(enemy.x + 34, enemy.y - 14);
+        this.ctx.lineTo(enemy.x + 42, enemy.y + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Glowing Crimson Visor Eye
+        this.ctx.fillStyle = '#ef4444';
+        const eyeX = enemy.facing === 1 ? enemy.x + enemy.width * 0.55 : enemy.x + enemy.width * 0.25;
+        this.ctx.fillRect(eyeX, enemy.y + enemy.height * 0.35, enemy.width * 0.2, enemy.height * 0.15);
+        this.ctx.restore();
+
+        const hbW = enemy.width + 16;
+        const hbX = enemy.x - 8;
+        const hbY = enemy.y - 20;
+        this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        this.ctx.fillRect(hbX, hbY, hbW, 6);
+        this.ctx.fillStyle = '#f43f5e';
+        this.ctx.fillRect(hbX, hbY, hbW * (enemy.hp / enemy.maxHp), 6);
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(hbX, hbY, hbW, 6);
+      } else if (enemy.type === 'dracoguard_fire_lord') {
+        this.ctx.save();
+        this.ctx.fillStyle = '#7c2d12';
+        this.ctx.strokeStyle = '#f97316';
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowBlur = 16;
+        this.ctx.shadowColor = '#f97316';
+
+        // Volcanic Core Body
+        this.ctx.beginPath();
+        this.ctx.arc(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, enemy.width / 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+
+        // Blazing Flame Wings
+        const fireWingPulse = Math.sin(this.frameCount * 0.2) * 5;
+        this.ctx.fillStyle = '#ea580c';
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + 4, enemy.y + 12);
+        this.ctx.lineTo(enemy.x - 22, enemy.y - 18 + fireWingPulse);
+        this.ctx.lineTo(enemy.x + 14, enemy.y + 24);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + enemy.width - 4, enemy.y + 12);
+        this.ctx.lineTo(enemy.x + enemy.width + 22, enemy.y - 18 + fireWingPulse);
+        this.ctx.lineTo(enemy.x + enemy.width - 14, enemy.y + 24);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Flaming Crown Spikes
+        this.ctx.fillStyle = '#ea580c';
+        this.ctx.beginPath();
+        this.ctx.moveTo(enemy.x + 8, enemy.y);
+        this.ctx.lineTo(enemy.x + 16, enemy.y - 16);
+        this.ctx.lineTo(enemy.x + 28, enemy.y - 4);
+        this.ctx.lineTo(enemy.x + 40, enemy.y - 16);
+        this.ctx.lineTo(enemy.x + 48, enemy.y);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Lava Flame Eye Core
+        this.ctx.fillStyle = '#fef08a';
+        const eyeX = enemy.facing === 1 ? enemy.x + enemy.width * 0.55 : enemy.x + enemy.width * 0.25;
+        this.ctx.fillRect(eyeX, enemy.y + enemy.height * 0.32, enemy.width * 0.22, enemy.height * 0.18);
+        this.ctx.restore();
+
+        const hbW = enemy.width + 16;
+        const hbX = enemy.x - 8;
+        const hbY = enemy.y - 20;
+        this.ctx.fillStyle = 'rgba(0,0,0,0.6)';
+        this.ctx.fillRect(hbX, hbY, hbW, 6);
+        this.ctx.fillStyle = '#ea580c';
+        this.ctx.fillRect(hbX, hbY, hbW * (enemy.hp / enemy.maxHp), 6);
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.strokeRect(hbX, hbY, hbW, 6);
       } else if (enemy.type === 'miniboss') {
         this.ctx.save();
         this.ctx.fillStyle = '#1e1b4b';
@@ -10825,7 +11211,7 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
 
-        this.ctx.fillStyle = '#eab308';
+        this.ctx.fillStyle = '#f43f5e';
         this.ctx.beginPath();
         this.ctx.moveTo(enemy.x + 12, enemy.y);
         this.ctx.lineTo(enemy.x + 20, enemy.y - 12);
@@ -11611,7 +11997,7 @@ export class GameEngine {
           this.ctx.strokeRect(bx - 8, by - 8, bw + 16, bh + 16);
         }
 
-        this.ctx.fillStyle = '#fef08a';
+        this.ctx.fillStyle = '#f43f5e';
         this.ctx.beginPath();
         this.ctx.moveTo(bx + 12, by);
         this.ctx.lineTo(bx + 4, by - 16);
@@ -11704,7 +12090,7 @@ export class GameEngine {
         this.ctx.fill();
 
         // Head / Face
-        this.ctx.fillStyle = '#fef08a';
+        this.ctx.fillStyle = '#e0f2fe';
         this.ctx.beginPath();
         this.ctx.arc(cx, by + 10, 10, 0, Math.PI * 2);
         this.ctx.fill();
@@ -11808,6 +12194,8 @@ export class GameEngine {
       if (
         enemy.hp < enemy.maxHp &&
         enemy.type !== 'miniboss' &&
+        enemy.type !== 'sentinel_archdemon' &&
+        enemy.type !== 'dracoguard_fire_lord' &&
         enemy.type !== 'king_slime' &&
         enemy.type !== 'frost_wyvern' &&
         enemy.type !== 'shadow_overlord' &&
@@ -12496,7 +12884,7 @@ export class GameEngine {
         this.ctx.fillRect(this.pFacing === 1 ? eyeX2 + 3 : eyeX2 + 1, bodyY + 11, 2, 2);
 
         // 8-bit Tetris Chest Core
-        this.ctx.fillStyle = '#eab308';
+        this.ctx.fillStyle = '#c084fc';
         const coreX = px + pw / 2 - 4;
         this.ctx.fillRect(coreX - 2, bodyY + 20, 12, 4);
         this.ctx.fillRect(coreX + 2, bodyY + 24, 4, 6);
@@ -12908,6 +13296,413 @@ export class GameEngine {
 
           this.ctx.restore();
         }
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Enigmon') {
+        this.ctx.save();
+        const wingFlap = Math.sin(this.frameCount * 0.15) * 4;
+
+        // Ethereal Void Dragon Wings with Glowing Magenta Lining
+        this.ctx.fillStyle = '#3b0764';
+        this.ctx.strokeStyle = '#e879f9';
+        this.ctx.lineWidth = 2;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 6, bodyY + 14);
+        this.ctx.quadraticCurveTo(px - 22 + wingFlap, bodyY - 10, px - 18 + wingFlap, bodyY + ph / 2);
+        this.ctx.quadraticCurveTo(px - 10, bodyY + ph - 4, px + 10, bodyY + ph - 8);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 6, bodyY + 14);
+        this.ctx.quadraticCurveTo(px + pw + 22 - wingFlap, bodyY - 10, px + pw + 18 - wingFlap, bodyY + ph / 2);
+        this.ctx.quadraticCurveTo(px + pw + 10, bodyY + ph - 4, px + pw - 10, bodyY + ph - 8);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Main Void Body
+        this.ctx.fillStyle = '#090514';
+        this.ctx.strokeStyle = '#a855f7';
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Void Demon Crest Horns
+        this.ctx.fillStyle = '#581c87';
+        this.ctx.strokeStyle = '#e879f9';
+        this.ctx.lineWidth = 1.5;
+
+        const hX1 = this.pFacing === 1 ? px + 6 : px + pw - 14;
+        const hX2 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(hX1, bodyY + 4);
+        this.ctx.lineTo(hX1 - 8 * this.pFacing, bodyY - 14);
+        this.ctx.lineTo(hX1 + 6 * this.pFacing, bodyY - 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(hX2, bodyY + 4);
+        this.ctx.lineTo(hX2 + 8 * this.pFacing, bodyY - 14);
+        this.ctx.lineTo(hX2 - 6 * this.pFacing, bodyY - 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Void Glowing Magenta Eyes
+        const eyeW = 7;
+        const eyeH = 7;
+        const eyeY = bodyY + 8;
+        const eyeX1 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = this.pFacing === 1 ? px + 8 : px + pw - 12;
+
+        this.ctx.fillStyle = '#e879f9';
+        this.ctx.fillRect(eyeX1, eyeY, eyeW, eyeH);
+        this.ctx.fillRect(eyeX2, eyeY, eyeW, eyeH);
+
+        this.ctx.fillStyle = '#ffffff';
+        const pupilOffset = this.pFacing === 1 ? 2 : 0;
+        this.ctx.fillRect(eyeX1 + pupilOffset, eyeY + 1, 3, 4);
+        this.ctx.fillRect(eyeX2 + pupilOffset, eyeY + 1, 3, 4);
+
+        // Event Horizon Singularity Chest Core
+        const coreX = px + pw / 2;
+        const coreY = bodyY + ph / 2 + 5;
+        this.ctx.fillStyle = 'rgba(232, 121, 249, 0.3)';
+        this.ctx.beginPath();
+        this.ctx.arc(coreX, coreY, 11, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#000000';
+        this.ctx.strokeStyle = '#e879f9';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(coreX, coreY, 7, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(coreX, coreY, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Lunarmon') {
+        this.ctx.save();
+        const cx = px + pw / 2;
+
+        // Glowing Silver Crescent Moon Halo Behind Head
+        this.ctx.fillStyle = 'rgba(199, 210, 254, 0.25)';
+        this.ctx.strokeStyle = '#93c5fd';
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowColor = '#e0f2fe';
+        this.ctx.shadowBlur = 12;
+
+        this.ctx.beginPath();
+        this.ctx.arc(cx, bodyY + 6, 20, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.shadowBlur = 0;
+
+        // Moonlight Feathered Wings
+        const wingFlap = Math.sin(this.frameCount * 0.16) * 4;
+        this.ctx.fillStyle = '#1e3a8a';
+        this.ctx.strokeStyle = '#e0f2fe';
+        this.ctx.lineWidth = 1.8;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 6, bodyY + 14);
+        this.ctx.quadraticCurveTo(px - 22 + wingFlap, bodyY - 12, px - 16 + wingFlap, bodyY + ph / 2);
+        this.ctx.quadraticCurveTo(px - 8, bodyY + ph - 4, px + 8, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 6, bodyY + 14);
+        this.ctx.quadraticCurveTo(px + pw + 22 - wingFlap, bodyY - 12, px + pw + 16 - wingFlap, bodyY + ph / 2);
+        this.ctx.quadraticCurveTo(px + pw + 8, bodyY + ph - 4, px + pw - 8, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Main Deep Indigo Body
+        this.ctx.fillStyle = '#1e1b4b';
+        this.ctx.strokeStyle = '#818cf8';
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(cx, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Moonlight Tiara Crest
+        this.ctx.fillStyle = '#4f46e5';
+        this.ctx.strokeStyle = '#e0e7ff';
+        this.ctx.lineWidth = 1.5;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx - 8, bodyY + 2);
+        this.ctx.lineTo(cx - 14, bodyY - 12);
+        this.ctx.lineTo(cx - 2, bodyY - 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx + 8, bodyY + 2);
+        this.ctx.lineTo(cx + 14, bodyY - 12);
+        this.ctx.lineTo(cx + 2, bodyY - 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Glowing Silver Eyes
+        const eyeW = 7;
+        const eyeH = 7;
+        const eyeY = bodyY + 8;
+        const eyeX1 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = this.pFacing === 1 ? px + 8 : px + pw - 12;
+
+        this.ctx.fillStyle = '#e0e7ff';
+        this.ctx.fillRect(eyeX1, eyeY, eyeW, eyeH);
+        this.ctx.fillRect(eyeX2, eyeY, eyeW, eyeH);
+
+        this.ctx.fillStyle = '#6366f1';
+        const pupilOffset = this.pFacing === 1 ? 2 : 0;
+        this.ctx.fillRect(eyeX1 + pupilOffset, eyeY + 1, 3, 4);
+        this.ctx.fillRect(eyeX2 + pupilOffset, eyeY + 1, 3, 4);
+
+        // Crescent Moon Chest Emblem
+        const emblemX = cx;
+        const emblemY = bodyY + ph / 2 + 5;
+        this.ctx.fillStyle = '#312e81';
+        this.ctx.strokeStyle = '#818cf8';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.arc(emblemX, emblemY, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#c7d2fe';
+        this.ctx.beginPath();
+        this.ctx.arc(emblemX, emblemY, 6, -Math.PI / 2, Math.PI / 2, false);
+        this.ctx.arc(emblemX + 2, emblemY, 4, Math.PI / 2, -Math.PI / 2, true);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Magemon') {
+        this.ctx.save();
+        const cx = px + pw / 2;
+        const isUlt = this.magemonUltActive;
+
+        // 1. Ultimate Mode Ground Arcane Sigil & Levitation Glow
+        if (isUlt) {
+          const ultPulse = Math.sin(this.frameCount * 0.2) * 6;
+          const sigilGrad = this.ctx.createRadialGradient(cx, py + ph, 4, cx, py + ph, pw + 18 + ultPulse);
+          sigilGrad.addColorStop(0, 'rgba(192, 132, 252, 0.6)');
+          sigilGrad.addColorStop(0.5, 'rgba(109, 40, 217, 0.35)');
+          sigilGrad.addColorStop(1, 'rgba(49, 46, 129, 0)');
+          this.ctx.fillStyle = sigilGrad;
+          this.ctx.beginPath();
+          this.ctx.ellipse(cx, py + ph + 2, pw + 18 + ultPulse, 8 + ultPulse * 0.3, 0, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#f59e0b';
+          this.ctx.lineWidth = 1.8;
+          this.ctx.setLineDash([6, 4]);
+          this.ctx.beginPath();
+          this.ctx.ellipse(cx, py + ph + 2, pw + 14, 6, this.frameCount * 0.05, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+        }
+
+        // 2. 3D Floating & Orbiting Quas, Wex, Exort Orbs above Magemon's head
+        const orbSpeed = isUlt ? 0.25 : 0.09;
+        const orbRadiusX = pw / 2 + 16;
+        const orbRadiusY = 10;
+        const orbYCenter = bodyY - 4;
+
+        const orbConfigs = [
+          { name: 'Exort', main: '#ef4444', outer: 'rgba(239, 68, 68, 0.7)', core: '#fef08a' },
+          { name: 'Quas', main: '#06b6d4', outer: 'rgba(6, 182, 212, 0.7)', core: '#e0f2fe' },
+          { name: 'Wex', main: '#f59e0b', outer: 'rgba(245, 158, 11, 0.7)', core: '#fef08a' },
+        ];
+
+        // Draw back-layer orbiting orbs
+        orbConfigs.forEach((orb, i) => {
+          const ang = (this.frameCount * orbSpeed) + (i * Math.PI * 2) / 3;
+          const sinA = Math.sin(ang);
+          if (sinA < 0) {
+            const ox = cx + Math.cos(ang) * orbRadiusX;
+            const oy = orbYCenter + sinA * orbRadiusY;
+            this.drawMagemonOrb(ox, oy, orb);
+          }
+        });
+
+        // 3. Flowing Magus Cape / Cloak
+        const capeWave = Math.sin(this.frameCount * 0.14) * 4;
+        this.ctx.fillStyle = '#312e81';
+        this.ctx.strokeStyle = '#4c1d95';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 6, bodyY + 12);
+        this.ctx.quadraticCurveTo(px - 14 + capeWave, bodyY + ph / 2, px - 18 + capeWave, bodyY + ph + 2);
+        this.ctx.quadraticCurveTo(cx, bodyY + ph + 6, px + pw + 18 - capeWave, bodyY + ph + 2);
+        this.ctx.quadraticCurveTo(px + pw + 14 - capeWave, bodyY + ph / 2, px + pw - 6, bodyY + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 4. Magus Wizard Body & Robe
+        this.ctx.fillStyle = mainColor;
+        this.ctx.strokeStyle = '#4c1d95';
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        this.ctx.arc(cx, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        this.ctx.lineTo(px + pw, bodyY + ph - 6);
+        this.ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        this.ctx.lineTo(px + 6, bodyY + ph - 2);
+        this.ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Gold Trimmed Robe Mantle Front
+        this.ctx.fillStyle = bellyColor;
+        this.ctx.beginPath();
+        this.ctx.ellipse(cx, bodyY + ph / 2 + 5, 7, 10, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#f59e0b';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, bodyY + 14);
+        this.ctx.lineTo(cx, bodyY + ph - 4);
+        this.ctx.stroke();
+
+        // Glowing Arcane Runes on Cloak
+        const runePulse = Math.sin(this.frameCount * 0.12) * 0.3 + 0.7;
+        this.ctx.fillStyle = `rgba(245, 158, 11, ${runePulse})`;
+        this.ctx.fillRect(cx - 4, bodyY + 22, 2, 2);
+        this.ctx.fillRect(cx + 2, bodyY + 26, 2, 2);
+        this.ctx.fillRect(cx - 3, bodyY + 30, 2, 2);
+
+        // 5. Arcane Wizard Hat
+        const hatX = cx;
+        const hatY = bodyY + 6;
+
+        // Hat Brim
+        this.ctx.fillStyle = '#312e81';
+        this.ctx.strokeStyle = '#f59e0b';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.ellipse(hatX, hatY, 18, 6, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Hat Cone Base to Pointed Tip
+        const tipX = hatX - this.pFacing * 6;
+        const tipY = hatY - 20;
+        this.ctx.fillStyle = '#6d28d9';
+        this.ctx.strokeStyle = '#4c1d95';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(hatX - 12, hatY - 2);
+        this.ctx.quadraticCurveTo(hatX - 4, hatY - 12, tipX, tipY);
+        this.ctx.quadraticCurveTo(hatX + 6, hatY - 10, hatX + 12, hatY - 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Gold Star/Gem on Hat Tip
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.beginPath();
+        this.ctx.arc(tipX, tipY, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 6. Glowing Magus Eyes
+        const eyeW = 7;
+        const eyeH = 7;
+        const eyeY = bodyY + 8;
+        const eyeX1 = this.pFacing === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = this.pFacing === 1 ? px + 8 : px + pw - 12;
+
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.fillRect(eyeX1, eyeY, eyeW, eyeH);
+        this.ctx.fillRect(eyeX2, eyeY, eyeW, eyeH);
+
+        this.ctx.fillStyle = '#f59e0b';
+        const pupilOffset = this.pFacing === 1 ? 2 : 0;
+        this.ctx.fillRect(eyeX1 + pupilOffset, eyeY + 1, 3, 4);
+        this.ctx.fillRect(eyeX2 + pupilOffset, eyeY + 1, 3, 4);
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(eyeX1 + pupilOffset + 1, eyeY + 1, 1.5, 1.5);
+        this.ctx.fillRect(eyeX2 + pupilOffset + 1, eyeY + 1, 1.5, 1.5);
+
+        // 7. Grand Archon Staff in Hand
+        const staffHandX = this.pFacing === 1 ? px + pw - 2 : px - 18;
+        const staffHandY = bodyY + 8;
+
+        // Staff Shaft
+        this.ctx.strokeStyle = '#78350f';
+        this.ctx.lineWidth = 3.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(staffHandX, staffHandY - 22);
+        this.ctx.lineTo(staffHandX, staffHandY + 28);
+        this.ctx.stroke();
+
+        // Triple-Prong Golden Socket Top
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.strokeStyle = '#b45309';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(staffHandX, staffHandY - 22, 6, Math.PI, 0);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Pulsating Arcane Crystal Gem
+        const gemPulse = Math.sin(this.frameCount * 0.2) * 2;
+        const gemGrad = this.ctx.createRadialGradient(staffHandX, staffHandY - 26, 1, staffHandX, staffHandY - 26, 6 + gemPulse);
+        gemGrad.addColorStop(0, '#ffffff');
+        gemGrad.addColorStop(0.4, '#c084fc');
+        gemGrad.addColorStop(1, '#6d28d9');
+        this.ctx.fillStyle = gemGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(staffHandX, staffHandY - 26, 6 + gemPulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 8. Draw front-layer orbiting orbs
+        orbConfigs.forEach((orb, i) => {
+          const ang = (this.frameCount * orbSpeed) + (i * Math.PI * 2) / 3;
+          const sinA = Math.sin(ang);
+          if (sinA >= 0) {
+            const ox = cx + Math.cos(ang) * orbRadiusX;
+            const oy = orbYCenter + sinA * orbRadiusY;
+            this.drawMagemonOrb(ox, oy, orb);
+          }
+        });
 
         this.ctx.restore();
       } else {
@@ -13426,6 +14221,53 @@ export class GameEngine {
           this.ctx.lineTo(0, 0);
           this.ctx.closePath();
           this.ctx.fill();
+        } else if (this.selectedDraco === 'Shadowmon') {
+          // Dark Energy Cast Wave & Crimson Shadow Burst
+          const burstRad = 16 + progress * 24;
+          const energyAlpha = Math.max(0, 1 - progress * 0.8);
+
+          // Outer Crimson Shadow Flare Arc
+          const auraGrad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, burstRad + 12);
+          auraGrad.addColorStop(0, `rgba(239, 68, 68, ${energyAlpha * 0.9})`);
+          auraGrad.addColorStop(0.5, `rgba(136, 19, 55, ${energyAlpha * 0.6})`);
+          auraGrad.addColorStop(1, 'rgba(24, 24, 27, 0)');
+
+          this.ctx.fillStyle = auraGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, burstRad + 12, -Math.PI / 3, Math.PI / 3);
+          this.ctx.lineTo(0, 0);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          // Inner Pulsing Dark Core
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.arc(8 + progress * 10, 0, 6, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Forward Shadow Tendril Arcs
+          this.ctx.strokeStyle = `rgba(239, 68, 68, ${energyAlpha})`;
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, burstRad + 4, -0.6, 0.6);
+          this.ctx.stroke();
+        } else if (
+          this.selectedDraco === 'Magemon' ||
+          this.selectedDraco === 'Whitemon' ||
+          this.selectedDraco === 'Bombamon' ||
+          this.selectedDraco === 'Thundermon' ||
+          this.selectedDraco === 'Enigmon' ||
+          this.selectedDraco === 'Lunarmon' ||
+          this.selectedDraco === 'Azuremon' ||
+          this.selectedDraco === 'Pixelmon' ||
+          this.selectedDraco === 'Krakenmon' ||
+          this.selectedDraco === 'Butchermon' ||
+          this.selectedDraco === 'Reapermon'
+        ) {
+          // Custom Dracos render their own dedicated weapons & spell effects
         } else {
           this.ctx.fillStyle = '#78350f';
           this.ctx.fillRect(0, -3, 8, 6);
@@ -13548,11 +14390,26 @@ export class GameEngine {
           this.ctx.closePath();
           this.ctx.fill();
           this.ctx.stroke();
+        } else if (
+          this.selectedDraco === 'Shadowmon' ||
+          this.selectedDraco === 'Magemon' ||
+          this.selectedDraco === 'Whitemon' ||
+          this.selectedDraco === 'Bombamon' ||
+          this.selectedDraco === 'Thundermon' ||
+          this.selectedDraco === 'Enigmon' ||
+          this.selectedDraco === 'Lunarmon' ||
+          this.selectedDraco === 'Azuremon' ||
+          this.selectedDraco === 'Pixelmon' ||
+          this.selectedDraco === 'Krakenmon' ||
+          this.selectedDraco === 'Butchermon' ||
+          this.selectedDraco === 'Reapermon'
+        ) {
+          // Custom Dracos render their own staff, cleaver, scythe, anchor, or dark energy hands
         } else {
           this.ctx.fillStyle = '#f59e0b';
-          this.ctx.strokeStyle = '#b45309';
-          this.ctx.lineWidth = 1.5;
-          this.ctx.fillRect(2, -2, 14, 4);
+          this.ctx.beginPath();
+          this.ctx.arc(3, 0, 3, 0, Math.PI * 2);
+          this.ctx.fill();
         }
 
         this.ctx.restore();
@@ -14603,10 +15460,10 @@ export class GameEngine {
       const bladeGrad = this.ctx.createLinearGradient(0, -65, 80, -20);
       bladeGrad.addColorStop(0, '#c084fc');
       bladeGrad.addColorStop(0.5, '#10b981');
-      bladeGrad.addColorStop(1, '#ffffff');
+      bladeGrad.addColorStop(1, '#a855f7');
 
       this.ctx.fillStyle = bladeGrad;
-      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.strokeStyle = '#a855f7';
       this.ctx.lineWidth = 3.5;
       this.ctx.beginPath();
       this.ctx.moveTo(0, -65);
@@ -14616,7 +15473,7 @@ export class GameEngine {
       this.ctx.fill();
       this.ctx.stroke();
 
-      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.strokeStyle = '#10b981';
       this.ctx.lineWidth = 2.5;
       this.ctx.beginPath();
       this.ctx.moveTo(0, -65);
@@ -15026,7 +15883,9 @@ export class GameEngine {
       this.ctx.fill();
       this.ctx.stroke();
 
-      this.ctx.fillStyle = '#22c55e';
+      const isSwamp = this.skeletonDeathType === 'swamp';
+
+      this.ctx.fillStyle = isSwamp ? '#22c55e' : '#ef4444';
       this.ctx.fillRect(sx - 5, sy - 21 + sink, 4, 4);
       this.ctx.fillRect(sx + 1, sy - 21 + sink, 4, 4);
 
@@ -15034,12 +15893,16 @@ export class GameEngine {
       this.ctx.fillRect(sx - 14, sy - 8 + sink, 28, 4);
       this.ctx.fillRect(sx - 10, sy - 2 + sink, 20, 4);
 
-      for (let b = 0; b < 6; b++) {
-        this.ctx.fillStyle = b % 2 === 0 ? '#86efac' : '#22c55e';
+      const ashColors = isSwamp
+        ? ['#22c55e', '#86efac', '#15803d', '#4ade80']
+        : ['#6b7280', '#f97316', '#ef4444', '#374151', '#fef08a', '#9ca3af'];
+
+      for (let b = 0; b < 8; b++) {
+        this.ctx.fillStyle = ashColors[b % ashColors.length];
         this.ctx.beginPath();
         this.ctx.arc(
           sx + Math.sin(this.frameCount * 0.2 + b) * 18,
-          sy - (b * 5) - (this.frameCount % 15),
+          sy - (b * 5) - (this.frameCount % 18),
           Math.random() * 4 + 2,
           0,
           Math.PI * 2
@@ -15749,11 +16612,10 @@ export class GameEngine {
       const alpha = Math.min(1.0, this.reapermonSlashImpactTimer / 18);
       const tx = this.reapermonSlashImpactX;
       const ty = this.reapermonSlashImpactY;
-      const isWhiteFlash = this.frameCount % 2 === 0;
 
       const cw = this.canvas.width || 800;
       const ch = this.canvas.height || 600;
-      this.ctx.fillStyle = isWhiteFlash ? `rgba(255, 255, 255, ${0.45 * alpha})` : `rgba(168, 85, 247, ${0.35 * alpha})`;
+      this.ctx.fillStyle = `rgba(168, 85, 247, ${0.3 * alpha})`;
       this.ctx.fillRect(this.cameraX, this.cameraY, cw, ch);
 
       const p1x = tx - 340;
@@ -15777,27 +16639,16 @@ export class GameEngine {
       this.ctx.lineTo(p2x, p2y);
       this.ctx.stroke();
 
-      this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      this.ctx.strokeStyle = `rgba(192, 132, 252, ${alpha})`;
       this.ctx.lineWidth = 6 * alpha;
       this.ctx.beginPath();
       this.ctx.moveTo(p1x, p1y);
       this.ctx.lineTo(p2x, p2y);
       this.ctx.stroke();
 
-      this.ctx.strokeStyle = isWhiteFlash ? `rgba(255, 255, 255, ${0.8 * alpha})` : `rgba(232, 121, 249, ${0.8 * alpha})`;
-      this.ctx.lineWidth = 3.5 * alpha;
-      for (let ray = -3; ray <= 3; ray++) {
-        if (ray === 0) continue;
-        const offset = ray * 40;
-        this.ctx.beginPath();
-        this.ctx.moveTo(p1x + offset, p1y - offset * 0.5);
-        this.ctx.lineTo(p2x + offset, p2y - offset * 0.5);
-        this.ctx.stroke();
-      }
-
       this.ctx.shadowBlur = 0;
       this.ctx.font = `bold ${Math.floor(32 * alpha)}px monospace`;
-      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillStyle = '#c084fc';
       this.ctx.textAlign = 'center';
       this.ctx.fillText('💀', tx, ty - 10);
 

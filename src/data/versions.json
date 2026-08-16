@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.3.3",
+    "date": "August 16, 2026",
+    "tag": "Magemon Grand Overhaul & Animation Polish",
+    "badgeColor": "bg-purple-600 text-white font-black shadow-sm",
+    "summary": "Features the complete Grand Magus sprite & spell animation overhaul for Magemon, 3D floating Quas/Wex/Exort elemental orbs, upgraded Chaos Meteor, Sun Strike, Tornado, and Arcane Orb VFX, splitting Enemy Mini Boss entities logic, character rendering bug fixes, and Shadowmon Dark Energy Cast surge animation.",
+    "highlights": [
+      "Magemon Grand Overhaul: Full custom Grand Magus character sprite with wizard robe, gold-trimmed mantle, wave-animated cape, Arcane Wizard Hat, and Grand Archon Staff with pulsating Arcane Crystal Core.",
+      "3D Orbiting Elemental Orbs: Magemon now features 3D depth-sorted Quas (Cyan Ice), Wex (Gold Lightning), and Exort (Crimson Fire) orbs hovering and orbiting around its head with radial glow halos.",
+      "Spell Visual Effects Upgrade: Reimagined visual effects for Arcane Orb (rotating arcane rings), Chaos Meteor (molten lava fissures & infernal flame tail), Sun Strike (converging solar sigil with rotating runes & 8-layer vertical solar laser), and Tornado (3D cyclone funnel with 16 wind rings & inner lightning arcs).",
+      "Shadowmon Energy Attack Fix: Replaced Shadowmon's basic attack fallback physical sword swing with a dedicated Dark Energy Cast Surge, firing crimson/rose shadow flare waves.",
+      "Player Character Render Polish: Filtered out generic fallback yellow lines and swords across all custom Dracos (Magemon, Shadowmon, Whitemon, Bombamon, Thundermon, Enigmon, Lunarmon, Azuremon, Pixelmon, Krakenmon, Butchermon, Reapermon)."
+    ]
+  },
+  {
     "version": "0.3.2",
     "date": "August 15, 2026",
     "tag": "New Hero Reapermon & Shadow Realm Entities",

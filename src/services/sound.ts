@@ -296,27 +296,77 @@ class SoundService {
     if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
     const now = this.ctx.currentTime;
-    const osc = this.ctx.createOscillator();
-    const gain = this.ctx.createGain();
+    const duration = 0.85;
 
-    osc.type = 'sawtooth';
-    osc.frequency.setValueAtTime(360, now);
-    osc.frequency.exponentialRampToValueAtTime(50, now + 0.6);
+    // 1. High-frequency Steam Sizzle & Vapor Hiss Noise Layer (TSHHH-FZZZ!)
+    const bufferSize = Math.floor(this.ctx.sampleRate * duration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (Math.random() > 0.94 ? 1.4 : 0.7);
+    }
 
-    const filter = this.ctx.createBiquadFilter();
-    filter.type = 'lowpass';
-    filter.frequency.setValueAtTime(800, now);
-    filter.frequency.linearRampToValueAtTime(150, now + 0.6);
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
 
-    gain.gain.setValueAtTime(this.sfxVolume * 0.8, now);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+    const sizzleFilter = this.ctx.createBiquadFilter();
+    sizzleFilter.type = 'bandpass';
+    sizzleFilter.frequency.setValueAtTime(4500, now);
+    sizzleFilter.frequency.exponentialRampToValueAtTime(800, now + duration);
+    sizzleFilter.Q.setValueAtTime(1.8, now);
 
-    osc.connect(filter);
-    filter.connect(gain);
-    gain.connect(this.ctx.destination);
+    const sizzleGain = this.ctx.createGain();
+    sizzleGain.gain.setValueAtTime(0.01, now);
+    sizzleGain.gain.linearRampToValueAtTime(this.sfxVolume * 0.9, now + 0.03);
+    sizzleGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
 
-    osc.start(now);
-    osc.stop(now + 0.6);
+    noise.connect(sizzleFilter);
+    sizzleFilter.connect(sizzleGain);
+    sizzleGain.connect(this.ctx.destination);
+
+    // 2. Highpass Steam Puff Layer (shhh sizzle)
+    const noise2 = this.ctx.createBufferSource();
+    noise2.buffer = buffer;
+
+    const hpFilter = this.ctx.createBiquadFilter();
+    hpFilter.type = 'highpass';
+    hpFilter.frequency.setValueAtTime(2500, now);
+    hpFilter.frequency.linearRampToValueAtTime(1200, now + duration * 0.6);
+
+    const hpGain = this.ctx.createGain();
+    hpGain.gain.setValueAtTime(this.sfxVolume * 0.6, now);
+    hpGain.gain.exponentialRampToValueAtTime(0.001, now + duration * 0.7);
+
+    noise2.connect(hpFilter);
+    hpFilter.connect(hpGain);
+    hpGain.connect(this.ctx.destination);
+
+    // 3. Low Sub-Molten Boiling Bubble Rumble Layer
+    const subOsc = this.ctx.createOscillator();
+    subOsc.type = 'sawtooth';
+    subOsc.frequency.setValueAtTime(160, now);
+    subOsc.frequency.exponentialRampToValueAtTime(40, now + duration);
+
+    const subFilter = this.ctx.createBiquadFilter();
+    subFilter.type = 'lowpass';
+    subFilter.frequency.setValueAtTime(300, now);
+    subFilter.frequency.linearRampToValueAtTime(80, now + duration);
+
+    const subGain = this.ctx.createGain();
+    subGain.gain.setValueAtTime(this.sfxVolume * 0.5, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+    subOsc.connect(subFilter);
+    subFilter.connect(subGain);
+    subGain.connect(this.ctx.destination);
+
+    noise.start(now);
+    noise2.start(now);
+    subOsc.start(now);
+
+    noise.stop(now + duration);
+    noise2.stop(now + duration);
+    subOsc.stop(now + duration);
   }
 
   public playIceDeath(isDemo = false) {

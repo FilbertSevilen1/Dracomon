@@ -1087,6 +1087,182 @@ export const FullScreenShowcaseCanvas: React.FC = () => {
         ctx.fill();
 
         ctx.restore();
+      } else if (draco.name === 'Magemon') {
+        ctx.save();
+        const cx = px + pw / 2;
+
+        // 3D Floating & Orbiting Quas, Wex, Exort Orbs
+        const orbSpeed = 0.09;
+        const orbRadiusX = pw / 2 + 16;
+        const orbRadiusY = 10;
+        const orbYCenter = bodyY - 4;
+
+        const orbConfigs = [
+          { name: 'Exort', main: '#ef4444', core: '#fef08a' },
+          { name: 'Quas', main: '#06b6d4', core: '#e0f2fe' },
+          { name: 'Wex', main: '#f59e0b', core: '#fef08a' },
+        ];
+
+        const drawOrb = (ox: number, oy: number, orb: any) => {
+          ctx.save();
+          const orbGrad = ctx.createRadialGradient(ox, oy, 1, ox, oy, 10);
+          orbGrad.addColorStop(0, orb.core);
+          orbGrad.addColorStop(0.4, orb.main);
+          orbGrad.addColorStop(1, 'rgba(0,0,0,0)');
+          ctx.fillStyle = orbGrad;
+          ctx.beginPath();
+          ctx.arc(ox, oy, 10, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.fillStyle = orb.main;
+          ctx.strokeStyle = orb.core;
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.arc(ox, oy, 4.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          ctx.restore();
+        };
+
+        // Back-layer orbs
+        orbConfigs.forEach((orb, i) => {
+          const ang = (frameCount * orbSpeed) + (i * Math.PI * 2) / 3;
+          const sinA = Math.sin(ang);
+          if (sinA < 0) {
+            const ox = cx + Math.cos(ang) * orbRadiusX;
+            const oy = orbYCenter + sinA * orbRadiusY;
+            drawOrb(ox, oy, orb);
+          }
+        });
+
+        // Flowing Cloak
+        const capeWave = Math.sin(frameCount * 0.14) * 4;
+        ctx.fillStyle = '#312e81';
+        ctx.strokeStyle = '#4c1d95';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(px + 6, bodyY + 12);
+        ctx.quadraticCurveTo(px - 14 + capeWave, bodyY + ph / 2, px - 18 + capeWave, bodyY + ph + 2);
+        ctx.quadraticCurveTo(cx, bodyY + ph + 6, px + pw + 18 - capeWave, bodyY + ph + 2);
+        ctx.quadraticCurveTo(px + pw + 14 - capeWave, bodyY + ph / 2, px + pw - 6, bodyY + 12);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Magus Body & Robe
+        ctx.fillStyle = draco.mainColor;
+        ctx.strokeStyle = '#4c1d95';
+        ctx.lineWidth = 2.5;
+
+        ctx.beginPath();
+        ctx.arc(cx, bodyY + pw / 2, pw / 2, Math.PI, 0, false);
+        ctx.lineTo(px + pw, bodyY + ph - 6);
+        ctx.quadraticCurveTo(px + pw, bodyY + ph - 2, px + pw - 6, bodyY + ph - 2);
+        ctx.lineTo(px + 6, bodyY + ph - 2);
+        ctx.quadraticCurveTo(px, bodyY + ph - 2, px, bodyY + ph - 6);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        // Robe Mantle
+        ctx.fillStyle = draco.bellyColor;
+        ctx.beginPath();
+        ctx.ellipse(cx, bodyY + ph / 2 + 5, 7, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(cx, bodyY + 14);
+        ctx.lineTo(cx, bodyY + ph - 4);
+        ctx.stroke();
+
+        // Wizard Hat
+        const hatX = cx;
+        const hatY = bodyY + 6;
+        ctx.fillStyle = '#312e81';
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.ellipse(hatX, hatY, 18, 6, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        const tipX = hatX - face * 6;
+        const tipY = hatY - 20;
+        ctx.fillStyle = '#6d28d9';
+        ctx.strokeStyle = '#4c1d95';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.moveTo(hatX - 12, hatY - 2);
+        ctx.quadraticCurveTo(hatX - 4, hatY - 12, tipX, tipY);
+        ctx.quadraticCurveTo(hatX + 6, hatY - 10, hatX + 12, hatY - 2);
+        ctx.closePath();
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.beginPath();
+        ctx.arc(tipX, tipY, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Eyes
+        const eyeW = 7;
+        const eyeH = 7;
+        const eyeY = bodyY + 8;
+        const eyeX1 = face === 1 ? px + pw - 14 : px + 6;
+        const eyeX2 = face === 1 ? px + 8 : px + pw - 12;
+
+        ctx.fillStyle = '#fef08a';
+        ctx.fillRect(eyeX1, eyeY, eyeW, eyeH);
+        ctx.fillRect(eyeX2, eyeY, eyeW, eyeH);
+
+        ctx.fillStyle = '#f59e0b';
+        const pupilOffset = face === 1 ? 2 : 0;
+        ctx.fillRect(eyeX1 + pupilOffset, eyeY + 1, 3, 4);
+        ctx.fillRect(eyeX2 + pupilOffset, eyeY + 1, 3, 4);
+
+        // Archon Staff
+        const staffHandX = face === 1 ? px + pw - 2 : px - 18;
+        const staffHandY = bodyY + 8;
+
+        ctx.strokeStyle = '#78350f';
+        ctx.lineWidth = 3.5;
+        ctx.beginPath();
+        ctx.moveTo(staffHandX, staffHandY - 22);
+        ctx.lineTo(staffHandX, staffHandY + 28);
+        ctx.stroke();
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.strokeStyle = '#b45309';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(staffHandX, staffHandY - 22, 6, Math.PI, 0);
+        ctx.fill();
+        ctx.stroke();
+
+        const gemPulse = Math.sin(frameCount * 0.2) * 2;
+        const gemGrad = ctx.createRadialGradient(staffHandX, staffHandY - 26, 1, staffHandX, staffHandY - 26, 6 + gemPulse);
+        gemGrad.addColorStop(0, '#ffffff');
+        gemGrad.addColorStop(0.4, '#c084fc');
+        gemGrad.addColorStop(1, '#6d28d9');
+        ctx.fillStyle = gemGrad;
+        ctx.beginPath();
+        ctx.arc(staffHandX, staffHandY - 26, 6 + gemPulse, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Front-layer orbs
+        orbConfigs.forEach((orb, i) => {
+          const ang = (frameCount * orbSpeed) + (i * Math.PI * 2) / 3;
+          const sinA = Math.sin(ang);
+          if (sinA >= 0) {
+            const ox = cx + Math.cos(ang) * orbRadiusX;
+            const oy = orbYCenter + sinA * orbRadiusY;
+            drawOrb(ox, oy, orb);
+          }
+        });
+
+        ctx.restore();
       } else {
         ctx.fillStyle = draco.mainColor;
         ctx.strokeStyle = draco.accentColor;

@@ -85,7 +85,9 @@ const TILE_PALETTE: PaletteItem[] = [
 
   // BOSSES
   { id: 'king_slime', entityType: 'king_slime', label: 'King Slime Boss', category: 'Bosses', color: 'bg-lime-600 border-lime-700 text-white font-black shadow-xs', icon: '👑', isEntity: true, symbol: 'S' },
-  { id: 'miniboss', entityType: 'miniboss', label: 'Miniboss Sentinel', category: 'Bosses', color: 'bg-purple-800 border-purple-900 text-white font-black shadow-xs', icon: '👾', isEntity: true, symbol: 'B' },
+  { id: 'sentinel_archdemon', entityType: 'sentinel_archdemon', label: 'Sentinel Archdemon', category: 'Bosses', color: 'bg-purple-800 border-purple-900 text-white font-black shadow-xs', icon: '👾', isEntity: true, symbol: 'B' },
+  { id: 'dracoguard_fire_lord', entityType: 'dracoguard_fire_lord', label: 'Dracoguard Fire Lord', category: 'Bosses', color: 'bg-orange-700 border-orange-900 text-white font-black shadow-xs', icon: '🔥', isEntity: true, symbol: 'J' },
+  { id: 'miniboss', entityType: 'miniboss', label: 'Legacy Miniboss', category: 'Bosses', color: 'bg-purple-900 border-purple-950 text-purple-200 font-black shadow-xs', icon: '👾', isEntity: true, symbol: 'B' },
   { id: 'frost_wyvern', entityType: 'frost_wyvern', label: 'Frost Wyvern Boss', category: 'Bosses', color: 'bg-cyan-600 border-cyan-700 text-white font-black shadow-xs', icon: '🐉', isEntity: true, symbol: 'W' },
   { id: 'shadow_overlord', entityType: 'shadow_overlord', label: 'Shadow Overlord', category: 'Bosses', color: 'bg-indigo-950 border-purple-900 text-purple-200 font-black shadow-xs', icon: '👁️', isEntity: true, symbol: 'O' },
   { id: 'dragon_king', entityType: 'dragon_king', label: 'Dragon King Boss', category: 'Bosses', color: 'bg-red-900 border-red-950 text-red-100 font-black shadow-xs', icon: '🐲', isEntity: true, symbol: 'D' },
@@ -630,7 +632,7 @@ export default function AdminPage() {
             >
               <Home className="w-3.5 h-3.5" /> Back to Game
             </button>
-            <span className="font-mono text-[10px] text-amber-400 font-bold">v0.3.2 Dark Admin Suite</span>
+            <span className="font-mono text-[10px] text-amber-400 font-bold">v0.3.3 Dark Admin Suite</span>
           </div>
         </motion.div>
       </div>
