@@ -19,6 +19,7 @@ import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
 import { Footer } from '../../components/Footer';
 import { WORLDS, parseWorlds, WorldData } from '../../game/LevelManager';
+import { GameDifficulty, DIFFICULTY_CONFIG, DIFFICULTY_ORDER, getDifficultyConfig } from '../../data/difficulty';
 
 const WORLD_BG_THEMES: Record<number, { bg: string; border: string; glow: string; text: string }> = {
   1: { bg: 'from-emerald-950/60 via-stone-900/90 to-stone-950', border: 'border-emerald-500/50 hover:border-emerald-400', glow: 'bg-emerald-500/10', text: 'text-emerald-400' },
@@ -42,6 +43,7 @@ export default function MapsPage() {
     saveData,
     setCurrentStage,
     setLastWorldId,
+    setDifficulty,
   } = useGameState();
 
   const [mounted, setMounted] = useState<boolean>(false);
@@ -124,6 +126,91 @@ export default function MapsPage() {
                 <span className="text-xs font-black text-cyan-400 font-display">5.0x Drops</span>
               </div>
             </div>
+          </div>
+        </motion.div>
+
+        {/* ══════════════════════════════════════════════════════════════ */}
+        {/* TOP DIFFICULTY SELECTOR BAR                                    */}
+        {/* ══════════════════════════════════════════════════════════════ */}
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.1 }}
+          className="p-4 sm:p-5 bg-stone-900/80 border border-stone-800/90 rounded-3xl backdrop-blur-xl shadow-2xl space-y-3.5 relative overflow-hidden"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-stone-800/70 pb-3">
+            <div className="flex items-center gap-2.5">
+              <span className="w-8 h-8 rounded-xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 text-sm">
+                ⚔️
+              </span>
+              <div>
+                <h3 className="text-sm font-black uppercase tracking-wider text-white font-display flex items-center gap-2">
+                  Battlefield Difficulty Selector
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase ${getDifficultyConfig(saveData.difficulty).badgeBg} ${getDifficultyConfig(saveData.difficulty).badgeText} border border-current`}>
+                    Active: {getDifficultyConfig(saveData.difficulty).name} ({getDifficultyConfig(saveData.difficulty).shortLabel})
+                  </span>
+                </h3>
+                <p className="text-xs text-stone-400 font-mono">
+                  Scale monster health &amp; attack alongside gold and EXP battle rewards.
+                </p>
+              </div>
+            </div>
+            <div className="text-xs font-mono text-stone-400 flex items-center gap-2">
+              <span className="text-amber-400 font-bold">Reward Multiplier:</span>
+              <span className="px-2 py-0.5 bg-stone-950 border border-stone-800 rounded-lg text-amber-300 font-bold">
+                {getDifficultyConfig(saveData.difficulty).multiplier}x Gold &amp; EXP
+              </span>
+            </div>
+          </div>
+
+          {/* 6 Difficulty Option Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5">
+            {DIFFICULTY_ORDER.map(diffKey => {
+              const cfg = DIFFICULTY_CONFIG[diffKey];
+              const isSelected = (saveData.difficulty || 'normal') === diffKey;
+              return (
+                <button
+                  key={diffKey}
+                  onClick={() => setDifficulty(diffKey)}
+                  className={`p-3 rounded-2xl border text-left transition-all duration-200 flex flex-col justify-between relative group ${
+                    isSelected
+                      ? `${cfg.badgeBg} ${cfg.border} ring-2 ring-amber-400/40 shadow-lg scale-[1.02]`
+                      : 'bg-stone-950/60 border-stone-800/80 hover:bg-stone-900/90 hover:border-stone-700'
+                  }`}
+                >
+                  <div className="flex items-center justify-between w-full">
+                    <span className="text-2xl">{cfg.icon}</span>
+                    <span
+                      className={`text-[10px] px-1.5 py-0.5 rounded font-mono font-bold uppercase ${
+                        isSelected
+                          ? `${cfg.badgeText} bg-stone-950/80 border border-current`
+                          : 'text-stone-500 bg-stone-900 border border-stone-800'
+                      }`}
+                    >
+                      {cfg.shortLabel}
+                    </span>
+                  </div>
+
+                  <div className="mt-2.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className={`text-xs font-black font-display uppercase tracking-wide ${isSelected ? 'text-white' : 'text-stone-300 group-hover:text-white'}`}>
+                        {cfg.name}
+                      </span>
+                    </div>
+                    <p className="text-[10px] text-stone-400 font-mono line-clamp-1 mt-0.5">
+                      {cfg.label}
+                    </p>
+                  </div>
+
+                  {isSelected && (
+                    <motion.div
+                      layoutId="activeDiffGlow"
+                      className="absolute -bottom-1 left-3 right-3 h-0.5 bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 rounded-full"
+                    />
+                  )}
+                </button>
+              );
+            })}
           </div>
         </motion.div>
 

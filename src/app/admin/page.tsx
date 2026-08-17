@@ -25,11 +25,13 @@ import {
   AlertTriangle,
   Maximize2,
   Upload,
-  Download
+  Download,
+  Hammer
 } from 'lucide-react';
 import { levelStorageService } from '../../services/levelStorage';
 import levelsData from '../../game/levels.json';
 import { LevelEntity } from '../../game/LevelManager';
+import { EquipmentAdminManager } from '../../components/admin/EquipmentAdminManager';
 
 const THEMES_LIST = Object.keys(levelsData.themes);
 
@@ -128,8 +130,8 @@ export default function AdminPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [authError, setAuthError] = useState('');
 
-  // Active View Tab: 'worlds' | 'editor'
-  const [activeTab, setActiveTab] = useState<'worlds' | 'editor'>('worlds');
+  // Active View Tab: 'worlds' | 'editor' | 'equipment'
+  const [activeTab, setActiveTab] = useState<'worlds' | 'editor' | 'equipment'>('worlds');
 
   // Worlds & Stages State
   const [worldsRaw, setWorldsRaw] = useState<any[]>([]);
@@ -728,6 +730,17 @@ export default function AdminPage() {
             >
               <Grid className="w-4 h-4" /> Stage Grid Editor
             </button>
+
+            <button
+              onClick={() => setActiveTab('equipment')}
+              className={`w-full px-3 py-2.5 rounded-xl border text-xs font-bold transition-all flex items-center gap-2.5 ${
+                activeTab === 'equipment'
+                  ? 'bg-amber-500 text-stone-950 border-amber-400 shadow-sm font-black'
+                  : 'bg-stone-50 text-stone-600 border-stone-200 hover:bg-stone-100 hover:text-stone-900'
+              }`}
+            >
+              <Hammer className="w-4 h-4" /> ⚔️ Equipment Forge
+            </button>
           </div>
 
           <div className="p-2.5 bg-stone-50 border border-stone-200 rounded-xl text-[10px] text-stone-500 font-mono space-y-0.5">
@@ -737,7 +750,7 @@ export default function AdminPage() {
         </aside>
 
         {/* MAIN CONTENT AREA */}
-        <main className="flex-1 overflow-y-auto p-4 bg-stone-50 h-full min-h-0">
+        <main className={`flex-1 overflow-y-auto ${activeTab === 'equipment' ? 'p-0' : 'p-4'} bg-stone-50 h-full min-h-0 flex flex-col`}>
           {activeTab === 'worlds' && (
             <div className="space-y-6 max-w-7xl mx-auto">
               {/* WORLDS SECTION */}
@@ -1141,6 +1154,8 @@ export default function AdminPage() {
               </div>
             </div>
           )}
+
+          {activeTab === 'equipment' && <EquipmentAdminManager />}
         </main>
       </div>
 

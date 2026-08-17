@@ -65,6 +65,12 @@ export default function Home() {
     pendingLevelUps,
     useUpgradeStone,
     buyItem,
+    equipItem,
+    unequipItem,
+    unequipAllItems,
+    autoEquipOptimal,
+    sellEquipment,
+    dismantleEquipment,
     handleEnemyDefeated,
     applyLevelUpBonus,
     levelUpDracoWithCoins,
@@ -922,6 +928,7 @@ export default function Home() {
                             <h3 className="text-2xl font-black text-white font-display">Basic Tier</h3>
                             <div className="text-3xl font-black text-emerald-400 font-mono">Level 5 <span className="text-sm text-stone-400 font-sans">All Unlocked</span></div>
                             <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Starts with 5,000 Gold Coins 🪙</li>
                               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Every Character Unlocked Immediately!</li>
                               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Instant Level 5 starting level</li>
                               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> +1 Bonus splitted to ALL attributes per level up</li>
@@ -962,6 +969,7 @@ export default function Home() {
                             <h3 className="text-2xl font-black text-white font-display">Premium Tier</h3>
                             <div className="text-3xl font-black text-purple-400 font-mono">Max Boost <span className="text-sm text-stone-400 font-sans">Full Roster</span></div>
                             <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
+                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Starts with 25,000 Gold Coins 🪙</li>
                               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Every Character Unlocked immediately</li>
                               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> High starting level (Level 10)</li>
                               <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Maximized +1 bonus to ALL stats per level</li>
@@ -1703,6 +1711,12 @@ export default function Home() {
             onUsePotion={usePotion}
             onUseUpgradeStone={useUpgradeStone}
             onBuyItem={buyItem}
+            onEquipItem={equipItem}
+            onUnequipItem={unequipItem}
+            onUnequipAll={unequipAllItems}
+            onAutoEquip={autoEquipOptimal}
+            onSellItem={sellEquipment}
+            onDismantleItem={dismantleEquipment}
             onClose={() => setShowInventory(false)}
           />
         )}

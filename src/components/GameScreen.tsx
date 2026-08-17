@@ -4,6 +4,8 @@ import { GameEngine } from '../game/GameEngine';
 import { SaveData, PlayerStats } from '../types/game';
 import { Pause, RotateCcw, Home, Settings, Briefcase, Zap, Heart, Sword, Shield, Play, Maximize, Minimize } from 'lucide-react';
 import { soundService } from '../services/sound';
+import { getEffectiveDracoStats } from '../data/equipment';
+import { getDifficultyConfig } from '../data/difficulty';
 
 interface GameScreenProps {
   saveData: SaveData;
@@ -38,15 +40,18 @@ export const GameScreen: React.FC<GameScreenProps> = ({
   const containerRef = useRef<HTMLDivElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
 
-  const [hp, setHp] = useState(10);
-  const [maxHp, setMaxHp] = useState(10);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [energy, setEnergy] = useState(() => GameEngine.getMaxEnergyForDraco(saveData.selectedDraco));
-  const [maxEnergy, setMaxEnergy] = useState(() => GameEngine.getMaxEnergyForDraco(saveData.selectedDraco));
   const [gameState, setGameState] = useState<'playing' | 'paused' | 'gameover' | 'victory'>('playing');
+  const [isFullscreen, setIsFullscreen] = useState(false);
 
   const selectedDraco = saveData.selectedDraco;
   const dracoStats = saveData.dracos[selectedDraco];
+
+  const effectiveStats = getEffectiveDracoStats(dracoStats, dracoStats?.equipped || []);
+
+  const [hp, setHp] = useState(effectiveStats.hp);
+  const [maxHp, setMaxHp] = useState(effectiveStats.hp);
+  const [energy, setEnergy] = useState(() => GameEngine.getMaxEnergyForDraco(saveData.selectedDraco));
+  const [maxEnergy, setMaxEnergy] = useState(() => GameEngine.getMaxEnergyForDraco(saveData.selectedDraco));
 
   const level = dracoStats?.level || 1;
   const exp = dracoStats?.exp || 0;
@@ -65,22 +70,13 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
     soundService.setStageMusic(stageNum);
 
-    const stats: PlayerStats = {
-      hp: dracoStats?.hp || 18,
-      attack: dracoStats?.attack || 4,
-      defense: dracoStats?.defense || 3,
-      speed: dracoStats?.speed || 7,
-      jump: dracoStats?.jump || 10,
-      range: dracoStats?.range || 1,
-      energyRegen: (dracoStats as any)?.energyRegen || 1.0,
-      level: dracoStats?.level || 1,
-    } as any;
+    const stats = getEffectiveDracoStats(dracoStats, dracoStats?.equipped || []);
 
     const engine = new GameEngine(
       canvasRef.current,
       stageNum,
       selectedDraco,
-      stats,
+      stats as any,
       {
         onCoinCollect: (amount) => callbacksRef.current.onCoinCollect(amount),
         onItemCollect: (itemId) => callbacksRef.current.onItemCollect(itemId),
@@ -102,7 +98,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
           setGameState('gameover');
           engine.pause();
         },
-      }
+      },
+      false,
+      saveData.difficulty || 'normal'
     );
 
     engineRef.current = engine;
@@ -111,7 +109,7 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       engine.destroy();
       soundService.stopBGM();
     };
-  }, [stageNum, selectedDraco]);
+  }, [stageNum, selectedDraco, saveData.difficulty]);
 
   useEffect(() => {
     setGameState('playing');
@@ -120,17 +118,8 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
   useEffect(() => {
     if (engineRef.current && dracoStats) {
-      const stats: PlayerStats = {
-        hp: dracoStats.hp || 18,
-        attack: dracoStats.attack || 4,
-        defense: dracoStats.defense || 3,
-        speed: dracoStats.speed || 7,
-        jump: dracoStats.jump || 10,
-        range: dracoStats.range || 1,
-        energyRegen: (dracoStats as any).energyRegen || 1.0,
-        level: dracoStats.level || 1,
-      } as any;
-      engineRef.current.triggerStatUpdate(stats);
+      const stats = getEffectiveDracoStats(dracoStats, dracoStats?.equipped || []);
+      engineRef.current.triggerStatUpdate(stats as any);
     }
   }, [dracoStats]);
 
@@ -155,23 +144,14 @@ export const GameScreen: React.FC<GameScreenProps> = ({
       engineRef.current.destroy();
     }
 
-    const stats: PlayerStats = {
-      hp: dracoStats?.hp || 18,
-      attack: dracoStats?.attack || 4,
-      defense: dracoStats?.defense || 3,
-      speed: dracoStats?.speed || 7,
-      jump: dracoStats?.jump || 10,
-      range: dracoStats?.range || 1,
-      energyRegen: (dracoStats as any)?.energyRegen || 1.0,
-      level: dracoStats?.level || 1,
-    } as any;
+    const stats = getEffectiveDracoStats(dracoStats, dracoStats?.equipped || []);
 
     if (canvasRef.current) {
       engineRef.current = new GameEngine(
         canvasRef.current,
         stageNum,
         selectedDraco,
-        stats,
+        stats as any,
         {
           onCoinCollect,
           onItemCollect,
@@ -193,7 +173,9 @@ export const GameScreen: React.FC<GameScreenProps> = ({
             setGameState('gameover');
             engineRef.current?.pause();
           },
-        }
+        },
+        false,
+        saveData.difficulty || 'normal'
       );
     }
   };
@@ -455,6 +437,21 @@ export const GameScreen: React.FC<GameScreenProps> = ({
 
         {/* TOP UTILITIES & HOTKEY BADGES */}
         <div className="flex items-center gap-0.5 sm:gap-1.5 pointer-events-auto bg-stone-950/80 backdrop-blur-md p-1 sm:p-2 rounded-xl sm:rounded-2xl border border-stone-800/80 shadow-xl shrink-0">
+
+          {/* Difficulty Badge */}
+          {(() => {
+            const diffCfg = getDifficultyConfig(saveData.difficulty);
+            return (
+              <div
+                className={`flex items-center gap-1 px-1.5 py-0.5 sm:px-2 sm:py-1 rounded-lg sm:rounded-xl border text-[8px] sm:text-xs font-mono font-bold ${diffCfg.badgeBg} ${diffCfg.badgeText} ${diffCfg.border} shadow-sm`}
+                title={`Difficulty: ${diffCfg.name} (${diffCfg.label})`}
+              >
+                <span>{diffCfg.icon}</span>
+                <span className="hidden min-[480px]:inline">{diffCfg.name}</span>
+                <span className="opacity-90 text-[7px] sm:text-[10px]">({diffCfg.shortLabel})</span>
+              </div>
+            );
+          })()}
 
           <div className="flex items-center gap-0.5 px-1.5 py-0.5 sm:px-2.5 sm:py-1 bg-amber-500/20 border border-amber-500/40 rounded-full text-[9px] sm:text-xs font-mono font-bold text-amber-400 shadow-sm">
             🪙 <span>{saveData.player.coins}</span>

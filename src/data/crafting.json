@@ -1,0 +1,443 @@
+[
+  {
+    "id": "craft_steel_broadsword",
+    "name": "Forge Steel Broadsword",
+    "category": "weapon",
+    "resultItemId": "steel_broadsword",
+    "resultQuantity": 1,
+    "requiredCoins": 40,
+    "rarity": "rare",
+    "icon": "⚔️",
+    "description": "Smelt two Iron Longswords with tempered coal to forge a heavier steel blade (+4 ATK, +6 HP).",
+    "ingredients": [
+      {
+        "itemId": "iron_sword",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_flamefang_blade",
+    "name": "Forge Flamefang Blade",
+    "category": "weapon",
+    "resultItemId": "flamefang_blade",
+    "resultQuantity": 1,
+    "requiredCoins": 100,
+    "rarity": "epic",
+    "icon": "🔥",
+    "description": "Imbue a Steel Broadsword with an Upgrade Stone to kindle eternal dragon flames (+8 ATK, +12 HP, +0.5 SPD).",
+    "ingredients": [
+      {
+        "itemId": "steel_broadsword",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "craft_thunder_staff",
+    "name": "Forge Thunderstrike Staff",
+    "category": "weapon",
+    "resultItemId": "thunder_staff",
+    "resultQuantity": 1,
+    "requiredCoins": 120,
+    "rarity": "epic",
+    "icon": "⚡",
+    "description": "Infuse a Hunter Recurve bow with mana crystals to create an electrified spellcaster rod (+7 ATK, +2 RNG, +0.2 NRG).",
+    "ingredients": [
+      {
+        "itemId": "hunter_bow",
+        "quantity": 1
+      },
+      {
+        "itemId": "mana_crystal",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "craft_excalibur",
+    "name": "Forge Excalibur Holy Sword",
+    "category": "weapon",
+    "resultItemId": "excalibur",
+    "resultQuantity": 1,
+    "requiredCoins": 250,
+    "rarity": "legendary",
+    "icon": "✨",
+    "description": "Fuse the Flamefang Blade and Vorpal Dagger with 2 Upgrade Stones to birth the sacred Holy Blade (+14 ATK, +25 HP, +2 DEF, +0.3 NRG).",
+    "ingredients": [
+      {
+        "itemId": "flamefang_blade",
+        "quantity": 1
+      },
+      {
+        "itemId": "vorpal_dagger",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_world_slayer_scythe",
+    "name": "Forge World Slayer Scythe",
+    "category": "weapon",
+    "resultItemId": "world_slayer_scythe",
+    "resultQuantity": 1,
+    "requiredCoins": 500,
+    "rarity": "mythic",
+    "icon": "☠️",
+    "description": "Combine Excalibur, Thunderstrike Staff, and 3 Upgrade Stones into an apocalyptic reaper scythe (+22 ATK, +40 HP, +2 RNG, +0.5 NRG).",
+    "ingredients": [
+      {
+        "itemId": "excalibur",
+        "quantity": 1
+      },
+      {
+        "itemId": "thunder_staff",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "id": "craft_iron_breastplate",
+    "name": "Forge Iron Breastplate",
+    "category": "armor",
+    "resultItemId": "iron_breastplate",
+    "resultQuantity": 1,
+    "requiredCoins": 25,
+    "rarity": "common",
+    "icon": "🛡️",
+    "description": "Reinforce 2 Leather Tunics with hammered iron plating (+2 DEF, +10 HP).",
+    "ingredients": [
+      {
+        "itemId": "leather_tunic",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_knights_plate",
+    "name": "Forge Knight's Heavy Mail",
+    "category": "armor",
+    "resultItemId": "knights_plate",
+    "resultQuantity": 1,
+    "requiredCoins": 50,
+    "rarity": "rare",
+    "icon": "🛡️",
+    "description": "Forge 2 Iron Breastplates together with paladin rivets (+4 DEF, +18 HP).",
+    "ingredients": [
+      {
+        "itemId": "iron_breastplate",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_dragonscale_vest",
+    "name": "Forge Dragonscale Vest",
+    "category": "armor",
+    "resultItemId": "dragonscale_vest",
+    "resultQuantity": 1,
+    "requiredCoins": 110,
+    "rarity": "epic",
+    "icon": "🐉",
+    "description": "Layer Knight's Mail with dragon embers and an Upgrade Stone (+7 DEF, +35 HP, +1 ATK).",
+    "ingredients": [
+      {
+        "itemId": "knights_plate",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "craft_aegis_of_ancients",
+    "name": "Forge Aegis of the Ancients",
+    "category": "armor",
+    "resultItemId": "aegis_of_ancients",
+    "resultQuantity": 1,
+    "requiredCoins": 280,
+    "rarity": "legendary",
+    "icon": "🔰",
+    "description": "Enchant the Dragonscale Vest and Shadow Stalker Vest with ancient protective wards (+12 DEF, +65 HP, +2 ATK).",
+    "ingredients": [
+      {
+        "itemId": "dragonscale_vest",
+        "quantity": 1
+      },
+      {
+        "itemId": "shadow_cowl",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_celestial_dragonplate",
+    "name": "Forge Celestial Dragonplate",
+    "category": "armor",
+    "resultItemId": "celestial_dragonplate",
+    "resultQuantity": 1,
+    "requiredCoins": 600,
+    "rarity": "mythic",
+    "icon": "🌌",
+    "description": "Synthesize the Aegis of the Ancients with 3 Upgrade Stones into invincible cosmic dragon armor (+18 DEF, +110 HP, +4 ATK, +0.4 NRG).",
+    "ingredients": [
+      {
+        "itemId": "aegis_of_ancients",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "id": "craft_bronze_greaves",
+    "name": "Forge Bronze Greaves",
+    "category": "boots",
+    "resultItemId": "bronze_greaves",
+    "resultQuantity": 1,
+    "requiredCoins": 20,
+    "rarity": "common",
+    "icon": "👢",
+    "description": "Reinforce Strider Shoes with bronze plating (+1 DEF, +0.3 SPD, +0.4 JUMP).",
+    "ingredients": [
+      {
+        "itemId": "cloth_shoes",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_windrunner_boots",
+    "name": "Forge Windrunner Treads",
+    "category": "boots",
+    "resultItemId": "windrunner_boots",
+    "resultQuantity": 1,
+    "requiredCoins": 45,
+    "rarity": "rare",
+    "icon": "🥾",
+    "description": "Enchant Bronze Greaves with gale momentum (+0.8 SPD, +0.8 JUMP, +6 HP).",
+    "ingredients": [
+      {
+        "itemId": "bronze_greaves",
+        "quantity": 1
+      },
+      {
+        "itemId": "cloth_shoes",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "craft_hermes_wingboots",
+    "name": "Forge Hermes Wingboots",
+    "category": "boots",
+    "resultItemId": "hermes_wingboots",
+    "resultQuantity": 1,
+    "requiredCoins": 110,
+    "rarity": "epic",
+    "icon": "🪶",
+    "description": "Attach celestial wings to Windrunner Treads with an Upgrade Stone (+1.4 SPD, +1.2 JUMP, +12 HP).",
+    "ingredients": [
+      {
+        "itemId": "windrunner_boots",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "craft_boots_of_wind_god",
+    "name": "Forge Boots of the Wind God",
+    "category": "boots",
+    "resultItemId": "boots_of_wind_god",
+    "resultQuantity": 1,
+    "requiredCoins": 260,
+    "rarity": "legendary",
+    "icon": "🌪️",
+    "description": "Infuse Hermes Wingboots with 2 Upgrade Stones for godly aerial agility (+2.0 SPD, +1.8 JUMP, +20 HP, +1 DEF).",
+    "ingredients": [
+      {
+        "itemId": "hermes_wingboots",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_chrono_striders",
+    "name": "Forge Chrono Striders",
+    "category": "boots",
+    "resultItemId": "chrono_striders",
+    "resultQuantity": 1,
+    "requiredCoins": 550,
+    "rarity": "mythic",
+    "icon": "⏳",
+    "description": "Transmute Boots of the Wind God with 3 Upgrade Stones to bend space-time (+2.8 SPD, +2.2 JUMP, +30 HP, +0.3 NRG).",
+    "ingredients": [
+      {
+        "itemId": "boots_of_wind_god",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "id": "craft_ruby_ring",
+    "name": "Forge Crimson Ruby Ring",
+    "category": "accessory",
+    "resultItemId": "ruby_ring",
+    "resultQuantity": 1,
+    "requiredCoins": 40,
+    "rarity": "rare",
+    "icon": "🔴",
+    "description": "Alchemize 2 Copper Bands with fire crystals into a vibrant ruby ring (+2 ATK, +12 HP).",
+    "ingredients": [
+      {
+        "itemId": "copper_ring",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_void_ring",
+    "name": "Forge Void Ring of Power",
+    "category": "accessory",
+    "resultItemId": "void_ring",
+    "resultQuantity": 1,
+    "requiredCoins": 120,
+    "rarity": "epic",
+    "icon": "🟣",
+    "description": "Fuse a Crimson Ruby Ring and Sapphire Ward Ring with an Upgrade Stone (+5 ATK, +2 DEF, +18 HP).",
+    "ingredients": [
+      {
+        "itemId": "ruby_ring",
+        "quantity": 1
+      },
+      {
+        "itemId": "sapphire_band",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 1
+      }
+    ]
+  },
+  {
+    "id": "craft_ring_of_primordial",
+    "name": "Forge Ring of the Primordial",
+    "category": "accessory",
+    "resultItemId": "ring_of_primordial",
+    "resultQuantity": 1,
+    "requiredCoins": 280,
+    "rarity": "legendary",
+    "icon": "👑",
+    "description": "Concentrate the Void Ring with 2 Upgrade Stones to awaken primeval power (+9 ATK, +5 DEF, +40 HP, +0.3 NRG).",
+    "ingredients": [
+      {
+        "itemId": "void_ring",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 2
+      }
+    ]
+  },
+  {
+    "id": "craft_heart_of_sun",
+    "name": "Forge Heart of the Sun Ring",
+    "category": "accessory",
+    "resultItemId": "heart_of_sun",
+    "resultQuantity": 1,
+    "requiredCoins": 600,
+    "rarity": "mythic",
+    "icon": "☀️",
+    "description": "Catalyze the Ring of the Primordial and Phoenix Feather into a solar flare (+15 ATK, +8 DEF, +70 HP, +0.5 NRG).",
+    "ingredients": [
+      {
+        "itemId": "ring_of_primordial",
+        "quantity": 1
+      },
+      {
+        "itemId": "phoenix_feather",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "id": "craft_infinity_core",
+    "name": "Forge Cosmic Infinity Core",
+    "category": "relic",
+    "resultItemId": "infinity_core",
+    "resultQuantity": 1,
+    "requiredCoins": 700,
+    "rarity": "mythic",
+    "icon": "🔮",
+    "description": "Synthesize the Eye of the Void with 3 Upgrade Stones into the cosmic source of all matter (+12 ATK, +10 DEF, +60 HP, +1 RNG, +0.6 NRG).",
+    "ingredients": [
+      {
+        "itemId": "eye_of_void",
+        "quantity": 1
+      },
+      {
+        "itemId": "upgrade_stone",
+        "quantity": 3
+      }
+    ]
+  },
+  {
+    "id": "craft_upgrade_stone_from_potions",
+    "name": "Distill Upgrade Stone",
+    "category": "consumable",
+    "resultItemId": "upgrade_stone",
+    "resultQuantity": 1,
+    "requiredCoins": 30,
+    "rarity": "rare",
+    "icon": "🔮",
+    "description": "Compress 4 Healing Potions with alchemical catalysts to crystalize an Upgrade Stone (+0.1 stat synthesis).",
+    "ingredients": [
+      {
+        "itemId": "potion",
+        "quantity": 4
+      }
+    ]
+  }
+]

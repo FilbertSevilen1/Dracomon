@@ -1,4 +1,5 @@
 import { SaveData, InventoryItem } from '../types/game';
+import { normalizeDracoEquipped } from '../data/equipment';
 
 export const STORAGE_KEY = 'Dracoman_save_v1';
 
@@ -17,6 +18,30 @@ export const DEFAULT_ITEMS: InventoryItem[] = [
     description: 'Permanently increases any single stat of your selected Draco by +0.1.',
     quantity: 1,
   },
+  {
+    id: 'iron_sword',
+    name: 'Iron Longsword',
+    type: 'equipment',
+    slot: 'weapon',
+    rarity: 'common',
+    description: 'A reliable forged blade that increases direct physical damage (+2 ATK).',
+    quantity: 1,
+    icon: '🗡️',
+    stats: { attack: 2 },
+    cost: 35
+  },
+  {
+    id: 'leather_tunic',
+    name: 'Leather Tunic',
+    type: 'equipment',
+    slot: 'armor',
+    rarity: 'common',
+    description: 'Flexible leather armor cushioning light monster attacks (+1 DEF, +6 HP).',
+    quantity: 1,
+    icon: '🥋',
+    stats: { defense: 1, hp: 6 },
+    cost: 30
+  }
 ];
 
 export const DEFAULT_SAVE_DATA: SaveData = {
@@ -39,6 +64,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       range: 1,
       unlocked: true,
       energyRegen: 1.0,
+      equipped: ['iron_sword'],
     },
     Archermon: {
       level: 1,
@@ -246,6 +272,7 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     },
   },
   tier: 'Free',
+  difficulty: 'normal',
   inventory: DEFAULT_ITEMS,
   settings: {
     volume: 80,
@@ -272,7 +299,12 @@ export const storageService = {
         if (!parsed.inventory) parsed.inventory = [];
         if (!parsed.settings.sfxVolume) parsed.settings.sfxVolume = 80;
         if (!parsed.tier) parsed.tier = 'Free';
+        if (!parsed.difficulty) parsed.difficulty = 'normal';
         if (!parsed.lastWorldId) parsed.lastWorldId = 1;
+
+        if (parsed.player.coins === undefined || isNaN(parsed.player.coins)) {
+          parsed.player.coins = parsed.tier === 'Basic' ? 5000 : parsed.tier === 'Premium' ? 25000 : 50;
+        }
 
         if (!parsed.unlockedDraco) parsed.unlockedDraco = ['Jumpmon', 'Archermon', 'Shieldmon'];
         if (!parsed.unlockedDraco.includes('Jumpmon')) parsed.unlockedDraco.push('Jumpmon');
@@ -519,6 +551,11 @@ export const storageService = {
         Object.keys(parsed.dracos).forEach(key => {
           const d = parsed.dracos[key] as any;
           if (d) {
+            if (!Array.isArray(d.equipped)) {
+              d.equipped = key === 'Jumpmon' ? normalizeDracoEquipped(['iron_sword']) : ['', '', '', '', ''];
+            } else {
+              d.equipped = normalizeDracoEquipped(d.equipped);
+            }
             const meleeBase = MELEE_BASE_STATS[key];
             if (meleeBase) {
               const curLvl = d.level || 1;

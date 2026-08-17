@@ -1,0 +1,189 @@
+================================================================================
+                    DRACOMAN RPG - EQUIPMENT & ITEM SYSTEM GUIDE
+                                 VERSION 0.4.0
+================================================================================
+
+1. SYSTEM OVERVIEW & ARCHITECTURE
+--------------------------------------------------------------------------------
+- Each Character / Draco Companion possesses 5 Equipment Slots (flexible across
+  Weapons, Armor, Boots, Accessories, and Relics).
+- Equipment is stored in a Shared Inventory Bag. Any unlocked character can equip
+  any available equipment piece from the bag as long as there are unequipped
+  copies in reserve.
+- Each character maintains its own independent equipment loadout.
+- Equipment stat enhancements are dynamically added to the character's base stats
+  and applied in real-time during campaign combat and hero preview arenas.
+
+2. EQUIPMENT RARITY TIERS
+--------------------------------------------------------------------------------
+- [COMMON]    (Slate): Entry-level gear dropped in early worlds (W1-W3) or bought
+                       cheaply in the Mystic Shop. (Cost: 25 - 45 Coins)
+- [RARE]      (Sky):   Substantial stat upgrades with secondary bonuses.
+                       (Cost: 80 - 110 Coins)
+- [EPIC]      (Purple): Potent mid-to-late game equipment with multi-attribute
+                       amplification and energy regen. (Cost: 210 - 250 Coins)
+- [LEGENDARY] (Gold):  High-tier relics and armament dropped by late-game bosses
+                       and elite encounters. (Cost: 500 - 580 Coins)
+- [MYTHIC]    (Rose):  End-game godlike artifacts featuring monumental combat
+                       stats and unmatched energy replenishment. (Cost: 1100 - 1400 Coins)
+
+3. FULL EQUIPMENT REGISTRY & STATS
+--------------------------------------------------------------------------------
+
+[WEAPONS - ⚔️]
+- Iron Longsword (Common, W1+, 35c): +2 ATK
+- Hunter Recurve (Common, W1+, 40c): +1 ATK, +1 RNG
+- Steel Broadsword (Rare, W2+, 90c): +4 ATK, +6 HP
+- Vorpal Dagger (Rare, W3+, 110c): +5 ATK, +0.5 SPD
+- Flamefang Blade (Epic, W6+, 220c): +8 ATK, +12 HP, +0.5 SPD
+- Thunderstrike Staff (Epic, W7+, 240c): +7 ATK, +2 RNG, +0.2 Energy Regen
+- Excalibur Holy Sword (Legendary, W9+, 550c): +14 ATK, +25 HP, +2 DEF, +0.3 Energy Regen
+- World Slayer Scythe (Mythic, W11+, 1200c): +22 ATK, +40 HP, +2 RNG, +0.5 Energy Regen
+
+[ARMOR - 🛡️]
+- Leather Tunic (Common, W1+, 30c): +1 DEF, +6 HP
+- Iron Breastplate (Common, W1+, 45c): +2 DEF, +10 HP
+- Knight's Heavy Mail (Rare, W2+, 95c): +4 DEF, +18 HP
+- Shadow Stalker Vest (Rare, W3+, 100c): +3 DEF, +12 HP, +0.5 SPD
+- Dragonscale Vest (Epic, W6+, 250c): +7 DEF, +35 HP, +1 ATK
+- Aegis of the Ancients (Legendary, W9+, 580c): +12 DEF, +65 HP, +2 ATK
+- Celestial Dragonplate (Mythic, W11+, 1300c): +18 DEF, +110 HP, +4 ATK, +0.4 Energy Regen
+
+[BOOTS - 👢]
+- Light Strider Shoes (Common, W1+, 25c): +0.4 SPD, +0.3 JUMP
+- Bronze Greaves (Common, W1+, 40c): +1 DEF, +0.3 SPD, +0.4 JUMP
+- Windrunner Treads (Rare, W2+, 85c): +0.8 SPD, +0.8 JUMP, +6 HP
+- Hermes Wingboots (Epic, W6+, 210c): +1.4 SPD, +1.2 JUMP, +12 HP
+- Boots of the Wind God (Legendary, W9+, 500c): +2.0 SPD, +1.8 JUMP, +20 HP, +1 DEF
+- Chrono Striders (Mythic, W11+, 1100c): +2.8 SPD, +2.2 JUMP, +30 HP, +0.3 Energy Regen
+
+[ACCESSORIES / RINGS - 💍]
+- Copper Band (Common, W1+, 30c): +4 HP, +1 ATK
+- Crimson Ruby Ring (Rare, W2+, 80c): +2 ATK, +12 HP
+- Sapphire Ward Ring (Rare, W3+, 85c): +1 DEF, +8 HP, +0.2 Energy Regen
+- Void Ring of Power (Epic, W6+, 230c): +5 ATK, +2 DEF, +18 HP
+- Ring of the Primordial (Legendary, W9+, 560c): +9 ATK, +5 DEF, +40 HP, +0.3 Energy Regen
+- Heart of the Sun Ring (Mythic, W11+, 1250c): +15 ATK, +8 DEF, +70 HP, +0.5 Energy Regen
+
+[RELICS / ARTIFACTS - 🔮]
+- Forest Talisman (Common, W1+, 30c): +5 HP, +0.1 Energy Regen
+- Arcane Mana Crystal (Rare, W2+, 90c): +1 ATK, +1 DEF, +0.2 Energy Regen
+- Phoenix Feather (Epic, W6+, 240c): +3 ATK, +22 HP, +0.3 Energy Regen
+- Eye of the Void (Legendary, W9+, 540c): +7 ATK, +35 HP, +2 RNG, +0.4 Energy Regen
+- Cosmic Infinity Core (Mythic, W11+, 1400c): +12 ATK, +10 DEF, +60 HP, +1 RNG, +0.6 Energy Regen
+
+4. OPTIMAL 5-ITEM LOADOUT RECOMMENDATIONS PER HERO ARCHETYPE
+--------------------------------------------------------------------------------
+A. MELEE TANK ARCHETYPE (Shieldmon, Krakenmon, Butchermon):
+   - Focus on maximum Damage Reduction, massive Health pool, and sustain.
+   - Recommended 5-Slot Build:
+     1. Celestial Dragonplate / Aegis of the Ancients (Armor)
+     2. Heart of the Sun Ring / Ring of the Primordial (Accessory)
+     3. Cosmic Infinity Core / Eye of the Void (Relic)
+     4. Excalibur Holy Sword / World Slayer Scythe (Weapon)
+     5. Boots of the Wind God (Boots)
+   - Total Net Gains: +80 to +180 HP, +20 to +38 DEF, +25 to +40 ATK.
+
+B. MELEE ASSASSIN ARCHETYPE (Assassinmon, Reapermon, Jumpmon):
+   - Focus on Burst ATK, Mobility (Speed/Jump), and rapid Energy Regen.
+   - Recommended 5-Slot Build:
+     1. World Slayer Scythe / Excalibur (Weapon)
+     2. Chrono Striders / Hermes Wingboots (Boots)
+     3. Heart of the Sun Ring / Void Ring (Accessory)
+     4. Cosmic Infinity Core / Phoenix Feather (Relic)
+     5. Dragonscale Vest / Shadow Stalker Vest (Armor)
+   - Total Net Gains: +40 to +60 ATK, +2.5 to +4.5 SPD, +2.0 to +3.5 JUMP, +1.0 NRG Regen.
+
+C. RANGED SNIPER ARCHETYPE (Archermon, Mikomon, Azuremon):
+   - Focus on Extended Range, High Attack Power, and Spacing Mobility.
+   - Recommended 5-Slot Build:
+     1. World Slayer Scythe / Thunderstrike Staff (Weapon)
+     2. Eye of the Void / Cosmic Infinity Core (Relic)
+     3. Chrono Striders / Boots of the Wind God (Boots)
+     4. Heart of the Sun Ring / Void Ring (Accessory)
+     5. Dragonscale Vest / Celestial Dragonplate (Armor)
+   - Total Net Gains: +4 to +6 RNG, +35 to +55 ATK, +100+ HP, +2.0 SPD.
+
+D. SPELLCASTER / CASTER ARCHETYPE (Magemon, Enigmon, Shadowmon, Lunarmon, Bombamon, Thundermon):
+   - Focus on Energy Regen rate (frequent Ultimates), Spell ATK, and Defensive Shielding.
+   - Recommended 5-Slot Build:
+     1. Thunderstrike Staff / World Slayer Scythe (Weapon)
+     2. Cosmic Infinity Core / Eye of the Void (Relic)
+     3. Heart of the Sun Ring / Ring of the Primordial (Accessory)
+     4. Celestial Dragonplate / Aegis of the Ancients (Armor)
+     5. Chrono Striders / Hermes Wingboots (Boots)
+   - Total Net Gains: +1.5 to +2.3 Energy Regen / sec, +45 ATK, +20 DEF, +120 HP.
+
+5. IN-GAME DROP BALANCING & MULTIPLIERS
+--------------------------------------------------------------------------------
+- Normal Minions: 8% base drop chance (rolls Common/Rare items).
+- Elite Minions:  22% base drop chance (rolls Common/Rare/Epic items).
+- Stage Minibosses (Blockman, Living Pyramid, etc.): 55% drop chance (guarantees Rare or Epic).
+- World Bosses (King Slime, Frost Wyvern, Dragon King, Giant Wisp, etc.):
+  100% Guaranteed drop of 1-2 Epic, Legendary, or Mythic items.
+- Reward Multiplier scaling across Worlds (1.0x in World 1 up to 5.0x in World 13)
+  also increases coin drops and potion/stone rewards alongside equipment drops.
+
+6. MYSTIC SHOP BALANCING
+--------------------------------------------------------------------------------
+- Consumables:
+  * Healing Potion: 15 Coins (Restores 15 HP)
+  * Upgrade Stone:  50 Coins (+0.1 permanent stat synthesis)
+- Equipment Armory:
+  * Common Gear:    25 - 45 Coins
+  * Rare Gear:      80 - 110 Coins
+  * Epic Gear:      210 - 250 Coins
+  * Legendary Gear: 500 - 580 Coins
+  * Mythic Gear:    1100 - 1400 Coins
+- Selling / Discard: Inventory items can be retained across play sessions or equipped
+  to any companion without degradation or durability loss.
+
+7. FORGE & CRAFTING RECIPES WORKSHOP (/inventory?tab=craft)
+--------------------------------------------------------------------------------
+Players can visit the dedicated Workshop at /inventory to forge higher-tier equipment
+by combining lower-tier items, Upgrade Stones, and Coins.
+
+A. WEAPONS FORGING:
+   * Steel Broadsword (Rare): 2x Iron Longsword + 40 Coins
+   * Flamefang Blade (Epic): 1x Steel Broadsword + 1x Upgrade Stone + 100 Coins
+   * Thunderstrike Staff (Epic): 1x Hunter Recurve + 1x Mana Crystal + 1x Upgrade Stone + 120 Coins
+   * Excalibur Holy Sword (Legendary): 1x Flamefang Blade + 1x Vorpal Dagger + 2x Upgrade Stone + 250 Coins
+   * World Slayer Scythe (Mythic): 1x Excalibur + 1x Thunderstrike Staff + 3x Upgrade Stone + 500 Coins
+
+B. ARMOR FORGING:
+   * Iron Breastplate (Common): 2x Leather Tunic + 25 Coins
+   * Knight's Heavy Mail (Rare): 2x Iron Breastplate + 50 Coins
+   * Dragonscale Vest (Epic): 1x Knight's Mail + 1x Upgrade Stone + 110 Coins
+   * Aegis of the Ancients (Legendary): 1x Dragonscale Vest + 1x Shadow Stalker Vest + 2x Upgrade Stone + 280 Coins
+   * Celestial Dragonplate (Mythic): 1x Aegis of the Ancients + 3x Upgrade Stone + 600 Coins
+
+C. BOOTS FORGING:
+   * Bronze Greaves (Common): 2x Light Strider Shoes + 20 Coins
+   * Windrunner Treads (Rare): 1x Bronze Greaves + 1x Light Strider Shoes + 45 Coins
+   * Hermes Wingboots (Epic): 1x Windrunner Treads + 1x Upgrade Stone + 110 Coins
+   * Boots of the Wind God (Legendary): 1x Hermes Wingboots + 2x Upgrade Stone + 260 Coins
+   * Chrono Striders (Mythic): 1x Boots of the Wind God + 3x Upgrade Stone + 550 Coins
+
+D. ACCESSORIES & RELICS FORGING:
+   * Crimson Ruby Ring (Rare): 2x Copper Band + 40 Coins
+   * Void Ring of Power (Epic): 1x Ruby Ring + 1x Sapphire Band + 1x Upgrade Stone + 120 Coins
+   * Ring of the Primordial (Legendary): 1x Void Ring + 2x Upgrade Stone + 280 Coins
+   * Heart of the Sun Ring (Mythic): 1x Ring of the Primordial + 1x Phoenix Feather + 3x Upgrade Stone + 600 Coins
+   * Cosmic Infinity Core (Mythic): 1x Eye of the Void + 3x Upgrade Stone + 700 Coins
+
+E. ALCHEMY:
+   * Distill Upgrade Stone: 4x Healing Potion + 30 Coins
+
+F. DISMANTLING & SALVAGE:
+   * Any unequipped equipment item can be dismantled in the Bag for 45% coin recovery
+     plus a 35% chance to extract an intact Upgrade Stone!
+
+G. DIRECT BUYING & AUTO-FORGING:
+   * Players can forge or buy crafted equipment directly in 1 click!
+   * If base ingredients are already owned in the bag, the game automatically uses them
+     and discounts the price by only purchasing the missing ingredients + recipe fee.
+   * If no base ingredients are owned, it purchases all base ingredients + recipe fee
+     and immediately synthesizes the crafted item.
+================================================================================
+
+

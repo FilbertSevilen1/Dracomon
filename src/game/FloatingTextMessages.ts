@@ -196,6 +196,9 @@ export function FT_COIN_PICKUP(amount: number): FloatingTextEntry {
 }
 export const FT_POTION_PICKUP: FloatingTextEntry       = { text: '+1 Potion',        color: '#10b981' };
 export const FT_UPGRADE_STONE_PICKUP: FloatingTextEntry = { text: '+1 Upgrade Stone', color: '#a855f7' };
+export function FT_EQUIPMENT_PICKUP(name: string, rarityColor: string = '#fbbf24'): FloatingTextEntry {
+  return { text: `+1 ${name} ⚔️`, color: rarityColor };
+}
 
 // ---------------------------------------------------------------------------
 // Player HP changes (damage/heal injected at runtime)

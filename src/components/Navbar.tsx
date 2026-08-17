@@ -31,14 +31,26 @@ interface NavbarProps {
 
 /** Primary nav links always visible (desktop full, mobile icon-only) */
 const PRIMARY_NAV = [
-  { label: 'Home',   href: '/',       Icon: Home   },
-  { label: 'Heroes', href: '/heroes', Icon: Swords },
-  { label: 'Maps',   href: '/maps',   Icon: Map    },
+  { label: 'Home',      href: '/',          Icon: Home      },
+  { label: 'Heroes',    href: '/heroes',    Icon: Swords    },
+  { label: 'Maps',      href: '/maps',      Icon: Map       },
+  { label: 'Inventory', href: '/inventory', Icon: Briefcase },
 ];
 
 export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
   const pathname = usePathname();
-  const { saveData, usePotion, useUpgradeStone, buyItem } = useGameState();
+  const {
+    saveData,
+    usePotion,
+    useUpgradeStone,
+    buyItem,
+    equipItem,
+    unequipItem,
+    unequipAllItems,
+    autoEquipOptimal,
+    sellEquipment,
+    dismantleEquipment,
+  } = useGameState();
   const [liveSaveData, setLiveSaveData] = useState<SaveData>(saveData);
   const [showSettings, setShowSettings] = useState(false);
   const [showInventory, setShowInventory] = useState(false);
@@ -284,19 +296,22 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
                   </Link>
 
                   {/* Inventory (if available) */}
-                  <button
-                    onClick={() => { soundService.playClick(); setShowInventory(true); setShowDropdown(false); }}
-                    className="w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-stone-800/80 hover:bg-stone-900 group text-left"
+                  <Link
+                    href="/inventory"
+                    onClick={() => { soundService.playClick(); setShowDropdown(false); }}
+                    className={`w-full flex items-center gap-3 px-4 py-3 transition-colors border-b border-stone-800/80 hover:bg-stone-900 group text-left ${
+                      pathname === '/inventory' ? 'bg-amber-500/10' : ''
+                    }`}
                   >
                     <div className="p-1.5 rounded-full border shrink-0 bg-stone-900 border-stone-800 text-stone-300">
                       <Briefcase className="w-3.5 h-3.5 text-amber-400" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11px] font-mono font-black text-stone-100">Inventory</p>
-                      <p className="text-[9px] font-mono text-stone-400">Bag &amp; Items</p>
+                      <p className="text-[11px] font-mono font-black text-stone-100">Inventory &amp; Workshop</p>
+                      <p className="text-[9px] font-mono text-stone-400">Bag, Gear &amp; Crafting</p>
                     </div>
                     <ChevronRight className="w-3.5 h-3.5 transition-colors shrink-0 text-stone-500 group-hover:text-amber-400" />
-                  </button>
+                  </Link>
 
                   {/* Settings */}
                   <button
@@ -347,15 +362,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
             <span>{coins}</span>
           </div>
 
-          {/* Inventory */}
-          <button
-            onClick={() => { soundService.playClick(); setShowInventory(true); }}
-            className="p-1.5 border border-stone-800 bg-stone-900 hover:bg-stone-800 text-amber-400 rounded-xl shadow-sm transition-all active:scale-95"
-            title="Open Inventory"
-          >
-            <Briefcase className="w-4 h-4 text-amber-400" />
-          </button>
-
           {/* Settings */}
           <button
             onClick={() => { soundService.playClick(); setShowSettings(true); }}
@@ -386,6 +392,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenInventory }) => {
           onUsePotion={usePotion}
           onUseUpgradeStone={useUpgradeStone}
           onBuyItem={buyItem}
+          onEquipItem={equipItem}
+          onUnequipItem={unequipItem}
+          onUnequipAll={unequipAllItems}
+          onAutoEquip={autoEquipOptimal}
+          onSellItem={sellEquipment}
+          onDismantleItem={dismantleEquipment}
           onClose={() => setShowInventory(false)}
         />
       )}

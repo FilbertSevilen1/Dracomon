@@ -1,5 +1,22 @@
 [
   {
+    "version": "0.4.0",
+    "date": "August 17, 2026",
+    "tag": "Equipment System, Dedicated /inventory Hub & Crafting Workshop",
+    "badgeColor": "bg-gradient-to-r from-amber-500 to-orange-600 text-stone-950 font-black shadow-sm",
+    "summary": "Version 0.4.0 introduces the complete Equipment, Armory & Crafting System! Features a dedicated full-page workshop at /inventory with 4 hubs (Bag, Equipment, Forge & Crafting, Mystic Shop), 5 equipment slots per companion, 20+ crafting recipes, item salvage/dismantling, and real-time combat stat scaling.",
+    "highlights": [
+      "Dedicated /inventory Workshop Hub: Full-page RPG management screen featuring 4 specialized tabs (🎒 Bag, ⚔️ Equipment, 🔨 Forge & Craft, ✨ Mystic Shop) accessible directly from the Navbar.",
+      "Forge & Crafting Workshop: 20+ recipes allowing players to forge Common/Rare gear and Upgrade Stones into Legendary and Mythic weapons, armor, boots, accessories, and relics.",
+      "Gear Salvage & Dismantling: Dismantle unequipped gear in your bag to reclaim 45% coins plus a 35% chance to extract intact Upgrade Stones.",
+      "5 Equipment Slots per Hero: Dedicated loadouts per hero with real-time base + bonus combat stat scaling in levels and arenas.",
+      "30 Thematic Equipment Items: Comprehensive catalogue across 5 rarity tiers (Common, Rare, Epic, Legendary, Mythic) across all 5 gear categories.",
+      "In-Game Equipment Drops: Minions, minibosses, and bosses dynamically drop equipment pickups with glowing rarity halos and celebratory sound effects.",
+      "Direct Purchase & Auto-Buy Crafting: Purchase crafted gear directly in 1 click; the system automatically consumes any owned base ingredients and only buys the missing recipe materials!",
+      "Item Recommendation Guide (item-recommendation.txt): Added comprehensive equipment guide, build recommendations for all 18 heroes, and drop rate tables."
+    ]
+  },
+  {
     "version": "0.3.5",
     "date": "August 17, 2026",
     "tag": "World 13 Desert Oasis - Sandstorm & Living Pyramid",

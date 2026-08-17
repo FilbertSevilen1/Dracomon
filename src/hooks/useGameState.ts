@@ -1,7 +1,24 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { SaveData, DracoData, PlayerStats, InventoryItem, TierType } from '../types/game';
+import { SaveData, DracoData, PlayerStats, InventoryItem, TierType, GameDifficulty } from '../types/game';
 import { storageService, DEFAULT_SAVE_DATA } from '../services/storage';
 import { soundService } from '../services/sound';
+import {
+  EQUIPMENT_REGISTRY,
+  getEquipmentById,
+  ALL_EQUIPMENT,
+  EQUIPMENT_SLOTS_ORDER,
+  getSlotIndexByType,
+  normalizeDracoEquipped,
+  getEquipmentSellPrice,
+  getEquipmentDismantleYield
+} from '../data/equipment';
+import {
+  CRAFTING_RECIPES,
+  RECIPE_REGISTRY,
+  canCraftRecipe,
+  calculateRecipeAutoBuy,
+  getRecipeByResultId
+} from '../data/crafting';
 import confetti from 'canvas-confetti';
 
 export function useGameState() {
@@ -134,11 +151,27 @@ export function useGameState() {
           i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i
         );
       } else {
-        const itemDetails =
-          itemId === 'potion'
-            ? { id: 'potion', name: 'Healing Potion', type: 'potion' as const, description: 'Restores 15 HP immediately.', quantity: 1 }
-            : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +0.1.', quantity: 1 };
-        newInventory.push(itemDetails);
+        const eqData = EQUIPMENT_REGISTRY[itemId];
+        if (eqData) {
+          newInventory.push({
+            id: eqData.id,
+            name: eqData.name,
+            type: 'equipment',
+            slot: eqData.slot,
+            rarity: eqData.rarity,
+            description: eqData.description,
+            icon: eqData.icon,
+            stats: eqData.stats,
+            cost: eqData.cost,
+            quantity: 1
+          });
+        } else {
+          const itemDetails: InventoryItem =
+            itemId === 'potion'
+              ? { id: 'potion', name: 'Healing Potion', type: 'potion', description: 'Restores 15 HP immediately.', quantity: 1 }
+              : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone', description: 'Permanently increases any stat by +0.1.', quantity: 1 };
+          newInventory.push(itemDetails);
+        }
       }
 
       return {
@@ -148,7 +181,7 @@ export function useGameState() {
     });
   }, [updateSaveState]);
 
-  const usePotion = useCallback((dracoName: string, activeEngineRef?: any) => {
+  const usePotion = useCallback((dracoName?: string, activeEngineRef?: any) => {
     let used = false;
     const potion = saveData.inventory.find(i => i.id === 'potion');
     if (potion && potion.quantity > 0) {
@@ -206,11 +239,25 @@ export function useGameState() {
     return success;
   }, [updateSaveState]);
 
-  const buyItem = useCallback((itemId: 'potion' | 'upgrade_stone', cost: number) => {
+  const buyItem = useCallback((itemId: string, cost?: number) => {
     let success = false;
     updateSaveState(prev => {
-      if (prev.player.coins >= cost) {
-        soundService.playCoin();
+      const eqData = EQUIPMENT_REGISTRY[itemId];
+      const actualCost =
+        cost !== undefined
+          ? cost
+          : eqData
+          ? eqData.cost
+          : itemId === 'potion'
+          ? 15
+          : itemId === 'upgrade_stone'
+          ? 80
+          : 0;
+
+      if (prev.player.coins >= actualCost) {
+        try {
+          soundService.playCoin();
+        } catch {}
         success = true;
 
         const existingItem = prev.inventory.find(i => i.id === itemId);
@@ -220,11 +267,24 @@ export function useGameState() {
           newInventory = newInventory.map(i =>
             i.id === itemId ? { ...i, quantity: i.quantity + 1 } : i
           );
+        } else if (eqData) {
+          newInventory.push({
+            id: eqData.id,
+            name: eqData.name,
+            type: 'equipment',
+            slot: eqData.slot,
+            rarity: eqData.rarity,
+            description: eqData.description,
+            icon: eqData.icon,
+            stats: eqData.stats,
+            cost: eqData.cost,
+            quantity: 1
+          });
         } else {
-          const itemDetails =
+          const itemDetails: InventoryItem =
             itemId === 'potion'
-              ? { id: 'potion', name: 'Healing Potion', type: 'potion' as const, description: 'Restores 15 HP immediately.', quantity: 1 }
-              : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone' as const, description: 'Permanently increases any stat by +0.1.', quantity: 1 };
+              ? { id: 'potion', name: 'Healing Potion', type: 'potion', description: 'Restores 15 HP immediately.', quantity: 1 }
+              : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone', description: 'Permanently increases any stat by +0.1.', quantity: 1 };
           newInventory.push(itemDetails);
         }
 
@@ -232,7 +292,7 @@ export function useGameState() {
           ...prev,
           player: {
             ...prev.player,
-            coins: prev.player.coins - cost
+            coins: prev.player.coins - actualCost
           },
           inventory: newInventory
         };
@@ -240,6 +300,461 @@ export function useGameState() {
       return prev;
     });
     return success;
+  }, [updateSaveState]);
+
+  const equipItem = useCallback((dracoName: string, itemId: string, targetSlotIndex?: number) => {
+    let success = false;
+    updateSaveState(prev => {
+      const draco = prev.dracos[dracoName];
+      if (!draco || !draco.unlocked) return prev;
+
+      const itemInBag = prev.inventory.find(i => i.id === itemId);
+      if (!itemInBag || itemInBag.quantity <= 0) return prev;
+
+      const eqData = EQUIPMENT_REGISTRY[itemId];
+      if (!eqData) return prev;
+
+      // Each slot must be equipped strictly by an item of that type:
+      // slot 0 = weapon, slot 1 = armor, slot 2 = boots, slot 3 = accessory, slot 4 = relic
+      const correctSlotIndex = getSlotIndexByType(eqData.slot);
+
+      // If a targetSlotIndex was passed and does not match the item's slot type, reject
+      if (targetSlotIndex !== undefined && targetSlotIndex !== correctSlotIndex) {
+        return prev;
+      }
+
+      const resolvedSlotIndex = correctSlotIndex;
+      const currentDracoEquipped = normalizeDracoEquipped(draco.equipped || []);
+
+      // If this Draco already has this exact item in the slot, no-op
+      if (currentDracoEquipped[resolvedSlotIndex] === itemId) {
+        return prev;
+      }
+
+      // Count copies of itemId equipped on OTHER dracos
+      let usedByOtherDracos = 0;
+      Object.keys(prev.dracos).forEach(k => {
+        if (k !== dracoName) {
+          const d = prev.dracos[k];
+          if (d && Array.isArray(d.equipped)) {
+            d.equipped.forEach(eqId => {
+              if (eqId === itemId) usedByOtherDracos++;
+            });
+          }
+        }
+      });
+
+      const totalUsedElsewhere = usedByOtherDracos;
+      const availableToEquip = itemInBag.quantity - totalUsedElsewhere;
+
+      if (availableToEquip <= 0) {
+        return prev;
+      }
+
+      const newEquipped = [...currentDracoEquipped];
+      newEquipped[resolvedSlotIndex] = itemId;
+
+      const updatedDracos = { ...prev.dracos };
+      updatedDracos[dracoName] = {
+        ...draco,
+        equipped: newEquipped
+      };
+
+      try {
+        soundService.playClick();
+      } catch {}
+      success = true;
+
+      return {
+        ...prev,
+        dracos: updatedDracos
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const unequipItem = useCallback((dracoName: string, slotIndex: number) => {
+    let success = false;
+    updateSaveState(prev => {
+      const draco = prev.dracos[dracoName];
+      if (!draco || !Array.isArray(draco.equipped)) return prev;
+
+      const currentEquipped = normalizeDracoEquipped(draco.equipped);
+      if (slotIndex < 0 || slotIndex >= 5) return prev;
+      if (!currentEquipped[slotIndex]) return prev;
+
+      const newEquipped = [...currentEquipped];
+      newEquipped[slotIndex] = '';
+
+      const updatedDracos = { ...prev.dracos };
+      updatedDracos[dracoName] = {
+        ...draco,
+        equipped: newEquipped
+      };
+
+      soundService.playClick();
+      success = true;
+
+      return {
+        ...prev,
+        dracos: updatedDracos
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const unequipAllItems = useCallback((dracoName: string) => {
+    let success = false;
+    updateSaveState(prev => {
+      const draco = prev.dracos[dracoName];
+      if (!draco || !Array.isArray(draco.equipped)) return prev;
+
+      const updatedDracos = { ...prev.dracos };
+      updatedDracos[dracoName] = {
+        ...draco,
+        equipped: ['', '', '', '', '']
+      };
+
+      soundService.playClick();
+      success = true;
+
+      return {
+        ...prev,
+        dracos: updatedDracos
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const autoEquipOptimal = useCallback((dracoName: string) => {
+    let success = false;
+    updateSaveState(prev => {
+      const draco = prev.dracos[dracoName];
+      if (!draco || !draco.unlocked) return prev;
+
+      // Count equipped items across other dracos
+      const equippedCounts: Record<string, number> = {};
+      Object.keys(prev.dracos).forEach(k => {
+        if (k === dracoName) return; // ignore current draco
+        const d = prev.dracos[k];
+        if (d && Array.isArray(d.equipped)) {
+          d.equipped.forEach(eqId => {
+            if (eqId) {
+              equippedCounts[eqId] = (equippedCounts[eqId] || 0) + 1;
+            }
+          });
+        }
+      });
+
+      const newEquipped: string[] = ['', '', '', '', ''];
+      let anyEquipped = false;
+
+      // For each slot type in order [weapon, armor, boots, accessory, relic]
+      EQUIPMENT_SLOTS_ORDER.forEach((slotType, slotIdx) => {
+        const candidates: { id: string; power: number }[] = [];
+
+        prev.inventory.forEach(invItem => {
+          if (invItem.type === 'equipment' || EQUIPMENT_REGISTRY[invItem.id]) {
+            const eq = EQUIPMENT_REGISTRY[invItem.id] || invItem;
+            if (eq.slot === slotType) {
+              const usedElsewhere = equippedCounts[invItem.id] || 0;
+              const remaining = invItem.quantity - usedElsewhere;
+              if (remaining > 0) {
+                const stats = eq.stats || {};
+                const power =
+                  (stats.attack || 0) * 3 +
+                  (stats.defense || 0) * 3 +
+                  (stats.hp || 0) * 0.5 +
+                  (stats.speed || 0) * 4 +
+                  (stats.jump || 0) * 4 +
+                  (stats.range || 0) * 3 +
+                  (stats.energyRegen || 0) * 15;
+
+                candidates.push({ id: invItem.id, power });
+              }
+            }
+          }
+        });
+
+        if (candidates.length > 0) {
+          candidates.sort((a, b) => b.power - a.power);
+          const best = candidates[0];
+          newEquipped[slotIdx] = best.id;
+          equippedCounts[best.id] = (equippedCounts[best.id] || 0) + 1;
+          anyEquipped = true;
+        }
+      });
+
+      if (!anyEquipped) return prev;
+
+      const updatedDracos = { ...prev.dracos };
+      updatedDracos[dracoName] = {
+        ...draco,
+        equipped: newEquipped
+      };
+
+      soundService.playLevelUp();
+      success = true;
+
+      return {
+        ...prev,
+        dracos: updatedDracos
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const craftItem = useCallback((recipeId: string, autoBuyMissing: boolean = true) => {
+    let success = false;
+    updateSaveState(prev => {
+      const recipe = RECIPE_REGISTRY[recipeId];
+      if (!recipe) return prev;
+
+      // Count equipped items across all dracos
+      const equippedCounts: Record<string, number> = {};
+      Object.keys(prev.dracos).forEach(k => {
+        const d = prev.dracos[k];
+        if (d && Array.isArray(d.equipped)) {
+          d.equipped.forEach(eqId => {
+            equippedCounts[eqId] = (equippedCounts[eqId] || 0) + 1;
+          });
+        }
+      });
+
+      const calc = calculateRecipeAutoBuy(recipe, prev.inventory, prev.player.coins, equippedCounts);
+
+      // If autoBuyMissing is false, require owning all ingredients
+      if (!autoBuyMissing && !calc.allIngredientsOwned) {
+        return prev;
+      }
+
+      if (!calc.canAfford) {
+        return prev;
+      }
+
+      // Deduct only owned available ingredients from inventory
+      let newInventory = [...prev.inventory];
+      recipe.ingredients.forEach(ing => {
+        const invItem = newInventory.find(i => i.id === ing.itemId);
+        if (invItem) {
+          const equipped = equippedCounts[ing.itemId] || 0;
+          const available = Math.max(0, invItem.quantity - equipped);
+          const toDeduct = Math.min(ing.quantity, available);
+          if (toDeduct > 0) {
+            const newQty = invItem.quantity - toDeduct;
+            const idx = newInventory.findIndex(i => i.id === ing.itemId);
+            if (newQty <= 0) {
+              newInventory.splice(idx, 1);
+            } else {
+              newInventory[idx] = { ...invItem, quantity: newQty };
+            }
+          }
+        }
+      });
+
+      // Add crafted item
+      const resultId = recipe.resultItemId;
+      const resultQty = recipe.resultQuantity || 1;
+      const existingResult = newInventory.find(i => i.id === resultId);
+
+      if (existingResult) {
+        newInventory = newInventory.map(i =>
+          i.id === resultId ? { ...i, quantity: i.quantity + resultQty } : i
+        );
+      } else {
+        const eqData = EQUIPMENT_REGISTRY[resultId];
+        if (eqData) {
+          newInventory.push({
+            id: eqData.id,
+            name: eqData.name,
+            type: 'equipment',
+            slot: eqData.slot,
+            rarity: eqData.rarity,
+            description: eqData.description,
+            icon: eqData.icon,
+            stats: eqData.stats,
+            cost: eqData.cost,
+            quantity: resultQty
+          });
+        } else {
+          const itemDetails: InventoryItem =
+            resultId === 'potion'
+              ? { id: 'potion', name: 'Healing Potion', type: 'potion', description: 'Restores 15 HP immediately.', quantity: resultQty }
+              : { id: 'upgrade_stone', name: 'Upgrade Stone', type: 'upgrade_stone', description: 'Permanently increases any stat by +0.1.', quantity: resultQty };
+          newInventory.push(itemDetails);
+        }
+      }
+
+      try {
+        soundService.playLevelUp();
+        confetti({ particleCount: 40, spread: 60, origin: { y: 0.6 } });
+      } catch {}
+      success = true;
+
+      return {
+        ...prev,
+        player: {
+          ...prev.player,
+          coins: prev.player.coins - calc.totalCost
+        },
+        inventory: newInventory
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const sellEquipment = useCallback((itemId: string, quantity = 1) => {
+    let success = false;
+    updateSaveState(prev => {
+      const invItem = prev.inventory.find(i => i.id === itemId);
+      if (!invItem || invItem.quantity <= 0) return prev;
+
+      // Count equipped copies across all heroes
+      let equippedCount = 0;
+      Object.keys(prev.dracos).forEach(k => {
+        const d = prev.dracos[k];
+        if (d && Array.isArray(d.equipped)) {
+          d.equipped.forEach(eqId => {
+            if (eqId === itemId) equippedCount++;
+          });
+        }
+      });
+
+      const availableToSell = invItem.quantity - equippedCount;
+      const countToSell = Math.min(availableToSell, Math.max(1, quantity));
+      if (countToSell <= 0) return prev;
+
+      const unitPrice = getEquipmentSellPrice(itemId);
+      const totalEarned = unitPrice * countToSell;
+
+      let newInventory = [...prev.inventory];
+      const newQty = invItem.quantity - countToSell;
+      if (newQty <= 0) {
+        newInventory = newInventory.filter(i => i.id !== itemId);
+      } else {
+        newInventory = newInventory.map(i => (i.id === itemId ? { ...i, quantity: newQty } : i));
+      }
+
+      soundService.playCoin();
+      success = true;
+
+      return {
+        ...prev,
+        player: {
+          ...prev.player,
+          coins: prev.player.coins + totalEarned
+        },
+        inventory: newInventory
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const dismantleEquipment = useCallback((itemId: string, quantity = 1) => {
+    let success = false;
+    updateSaveState(prev => {
+      const invItem = prev.inventory.find(i => i.id === itemId);
+      if (!invItem || invItem.quantity <= 0) return prev;
+
+      let equippedCount = 0;
+      Object.keys(prev.dracos).forEach(k => {
+        const d = prev.dracos[k];
+        if (d && Array.isArray(d.equipped)) {
+          d.equipped.forEach(eqId => {
+            if (eqId === itemId) equippedCount++;
+          });
+        }
+      });
+
+      const availableToDismantle = invItem.quantity - equippedCount;
+      const countToDismantle = Math.min(availableToDismantle, Math.max(1, quantity));
+      if (countToDismantle <= 0) return prev;
+
+      const recipe = getRecipeByResultId(itemId);
+      const yieldInfo = getEquipmentDismantleYield(itemId);
+      const totalScrapCoins = yieldInfo.scrapCoins * countToDismantle;
+      let totalStonesGained = 0;
+
+      for (let i = 0; i < countToDismantle; i++) {
+        if (Math.random() < yieldInfo.stoneChance) {
+          totalStonesGained += yieldInfo.stoneCount;
+        }
+      }
+
+      let newInventory = [...prev.inventory];
+      const newQty = invItem.quantity - countToDismantle;
+      if (newQty <= 0) {
+        newInventory = newInventory.filter(i => i.id !== itemId);
+      } else {
+        newInventory = newInventory.map(i => (i.id === itemId ? { ...i, quantity: newQty } : i));
+      }
+
+      // Refund ingredients if recipe exists
+      if (recipe && recipe.ingredients && recipe.ingredients.length > 0) {
+        recipe.ingredients.forEach(ing => {
+          const refundQty = Math.max(1, Math.floor(ing.quantity * 0.6)) * countToDismantle;
+          const existing = newInventory.find(i => i.id === ing.itemId);
+          if (existing) {
+            newInventory = newInventory.map(i => i.id === ing.itemId ? { ...i, quantity: i.quantity + refundQty } : i);
+          } else {
+            const ingEq = EQUIPMENT_REGISTRY[ing.itemId];
+            if (ingEq) {
+              newInventory.push({
+                id: ingEq.id,
+                name: ingEq.name,
+                type: 'equipment',
+                slot: ingEq.slot,
+                rarity: ingEq.rarity,
+                description: ingEq.description,
+                icon: ingEq.icon,
+                stats: ingEq.stats,
+                cost: ingEq.cost,
+                quantity: refundQty
+              });
+            }
+          }
+        });
+      }
+
+      if (totalStonesGained > 0) {
+        const stoneItem = newInventory.find(i => i.id === 'upgrade_stone');
+        if (stoneItem) {
+          newInventory = newInventory.map(i => (i.id === 'upgrade_stone' ? { ...i, quantity: i.quantity + totalStonesGained } : i));
+        } else {
+          newInventory.push({
+            id: 'upgrade_stone',
+            name: 'Upgrade Stone',
+            type: 'upgrade_stone',
+            description: 'Permanently increases any stat by +0.1.',
+            quantity: totalStonesGained
+          });
+        }
+      }
+
+      try {
+        soundService.playLevelUp();
+        confetti({ particleCount: 30, spread: 50, origin: { y: 0.6 } });
+      } catch {}
+
+      success = true;
+      return {
+        ...prev,
+        player: {
+          ...prev.player,
+          coins: prev.player.coins + totalScrapCoins
+        },
+        inventory: newInventory
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const setDifficulty = useCallback((difficulty: GameDifficulty) => {
+    soundService.playClick();
+    updateSaveState(prev => ({
+      ...prev,
+      difficulty
+    }));
   }, [updateSaveState]);
 
   const [pendingLevelUps, setPendingLevelUps] = useState<{
@@ -533,9 +1048,20 @@ export function useGameState() {
 
       const unlockedList = newTier !== 'Free' ? allNames : prev.unlockedDraco;
 
+      const startingCoins =
+        newTier === 'Basic'
+          ? Math.max(prev.player.coins || 0, 5000)
+          : newTier === 'Premium'
+          ? Math.max(prev.player.coins || 0, 25000)
+          : prev.player.coins;
+
       return {
         ...prev,
         tier: newTier,
+        player: {
+          ...prev.player,
+          coins: startingCoins,
+        },
         unlockedDraco: unlockedList,
         dracos: updatedDracos,
       };
@@ -609,6 +1135,14 @@ export function useGameState() {
     usePotion,
     useUpgradeStone,
     buyItem,
+    equipItem,
+    unequipItem,
+    unequipAllItems,
+    autoEquipOptimal,
+    craftItem,
+    sellEquipment,
+    dismantleEquipment,
+    setDifficulty,
     handleEnemyDefeated,
     applyLevelUpBonus,
     levelUpDracoWithCoins,

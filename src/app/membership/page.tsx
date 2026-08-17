@@ -153,6 +153,7 @@ export default function MembershipPage() {
               <h3 className="text-2xl font-black text-white font-display uppercase">Basic Tier</h3>
               <div className="text-3xl font-black text-emerald-400 font-mono">Starter Boost</div>
               <ul className="space-y-2.5 text-xs text-stone-300 pt-4 border-t border-stone-800/80 font-mono">
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Starts with 5,000 Gold Coins 🪙</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> All Heroes unlocked @ Level 5</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> +1 Bonus to ALL attributes</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> All Campaign Stages unlocked</li>
@@ -202,6 +203,7 @@ export default function MembershipPage() {
               <h3 className="text-2xl font-black text-white font-display uppercase">Premium Tier</h3>
               <div className="text-3xl font-black text-purple-400 font-mono">Max Roster Boost</div>
               <ul className="space-y-2.5 text-xs text-stone-300 pt-4 border-t border-stone-800/80 font-mono">
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Starts with 25,000 Gold Coins 🪙</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> All Heroes unlocked @ Level 10</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Maximized +2 to ALL attributes</li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Full Energy &amp; Ultimate Perks</li>

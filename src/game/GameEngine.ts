@@ -2,6 +2,9 @@ import { PlayerStats, InventoryItem } from '../types/game';
 import { LevelData, LevelEntity, getLevel } from './LevelManager';
 import { soundService } from '../services/sound';
 import { stageGimmickManager } from './StageGimmickManager';
+import { rollEquipmentDrop, EQUIPMENT_REGISTRY, RARITY_CONFIG, EquipmentRarity } from '../data/equipment';
+import { GameDifficulty, getDifficultyMultiplier } from '../data/difficulty';
+import { FT_EQUIPMENT_PICKUP } from './FloatingTextMessages';
 
 const HERO_PREVIEW_LEVEL: LevelData = {
   name: "Hero Preview Arena",
@@ -205,9 +208,13 @@ interface Pickup {
   y: number;
   width: number;
   height: number;
-  type: 'coin' | 'potion' | 'upgrade_stone' | 'heart';
+  type: 'coin' | 'potion' | 'upgrade_stone' | 'heart' | 'equipment';
   amount: number;
   collected: boolean;
+  equipmentId?: string;
+  rarity?: string;
+  equipmentName?: string;
+  equipmentIcon?: string;
 }
 
 interface GroundBurnZone {
@@ -552,6 +559,8 @@ export class GameEngine {
 
   private stageNum: number;
   private isDemoMode: boolean = false;
+  public difficulty: GameDifficulty = 'normal';
+  public difficultyMultiplier: number = 1.0;
 
   constructor(
     canvas: HTMLCanvasElement,
@@ -568,7 +577,8 @@ export class GameEngine {
       onStageClear: () => void;
       onPlayerDeath: () => void;
     },
-    isDemoMode = false
+    isDemoMode = false,
+    difficulty: GameDifficulty = 'normal'
   ) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
@@ -576,6 +586,8 @@ export class GameEngine {
     this.ctx = context;
 
     this.isDemoMode = isDemoMode;
+    this.difficulty = difficulty;
+    this.difficultyMultiplier = getDifficultyMultiplier(difficulty);
     this.stageNum = stageNum;
     this.level = getLevel(stageNum);
     if (this.stageNum === 13) {
@@ -645,7 +657,8 @@ export class GameEngine {
     } else if (type === 'exit_portal') {
       this.exitPortalPos = { x: ex + ts / 2, y: ey + ts / 2 };
     } else if (type === 'coin') {
-      this.pickups.push({ x: ex + 12, y: ey + 12, width: 16, height: 16, type: 'coin', amount: 5, collected: false });
+      const coinAmount = Math.max(1, Math.round(5 * (this.difficultyMultiplier || 1.0)));
+      this.pickups.push({ x: ex + 12, y: ey + 12, width: 16, height: 16, type: 'coin', amount: coinAmount, collected: false });
     } else if (type === 'potion') {
       this.pickups.push({ x: ex + 10, y: ey + 10, width: 20, height: 20, type: 'potion', amount: 1, collected: false });
     } else if (type === 'heart') {
@@ -1493,6 +1506,15 @@ export class GameEngine {
     const isFinalStage = this.level.stageInWorld === this.level.totalStagesInWorld;
     if (!isFinalStage) {
       this.enemies = this.enemies.filter(e => !this.isBossType(e.type));
+    }
+
+    // Scale enemy HP and Attack by difficulty multiplier (non-demo mode)
+    if (!this.isDemoMode && this.difficultyMultiplier !== 1.0) {
+      this.enemies.forEach(e => {
+        e.maxHp = Math.max(1, Math.round(e.maxHp * this.difficultyMultiplier));
+        e.hp = e.maxHp;
+        e.attack = Math.max(1, Math.round(e.attack * this.difficultyMultiplier));
+      });
     }
 
     // Ensure exitPortalPos is always set even if not specified in entities or grid
@@ -4402,13 +4424,42 @@ export class GameEngine {
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_LIVING_PYRAMID_SLAIN.text, FT_LIVING_PYRAMID_SLAIN.color);
     }
 
-    const rewardMult = (this.level as any)?.rewardMultiplier || 1.0;
+    const rewardMult = ((this.level as any)?.rewardMultiplier || 1.0) * (this.difficultyMultiplier || 1.0);
     expReward = Math.floor(expReward * 0.2 * rewardMult);
     coinReward = Math.floor(coinReward * 0.2 * rewardMult);
 
     this.callbacks.onEnemyDefeat(expReward, coinReward);
     const _ftExp = FT_EXP_REWARD(expReward); this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, _ftExp.text, _ftExp.color);
     const _ftCoinR = FT_COIN_REWARD(coinReward); this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 30, _ftCoinR.text, _ftCoinR.color);
+
+    const isBoss = [
+      'king_slime', 'fire_golem', 'frost_wyvern', 'shadow_overlord', 'dragon_king',
+      'killer_whale', 'king_kong', 'giant_wisp', 'lunar_goddess', 'living_pyramid', 'immortal_gladiator'
+    ].includes(enemy.type);
+
+    const isMiniboss = [
+      'miniboss', 'blockman', 'sentinel_archdemon', 'dracoguard_fire_lord', 'alien', 'reaper', 'cactus_turret', 'pokey'
+    ].includes(enemy.type);
+
+    const enemyTier: 'boss' | 'miniboss' | 'normal' = isBoss ? 'boss' : isMiniboss ? 'miniboss' : 'normal';
+    const worldId = (this.level as any)?.worldId || 1;
+    const droppedEq = rollEquipmentDrop(worldId, enemyTier);
+
+    if (droppedEq) {
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 11,
+        y: enemy.y + enemy.height / 2 - 11,
+        width: 22,
+        height: 22,
+        type: 'equipment',
+        amount: 1,
+        collected: false,
+        equipmentId: droppedEq.id,
+        rarity: droppedEq.rarity,
+        equipmentName: droppedEq.name,
+        equipmentIcon: droppedEq.icon
+      });
+    }
 
     if (!this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
       this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + 15);
@@ -6510,6 +6561,13 @@ export class GameEngine {
         } else if (pickup.type === 'upgrade_stone') {
           this.callbacks.onItemCollect('upgrade_stone');
           this.addFloatingText(pickup.x, pickup.y, FT_UPGRADE_STONE_PICKUP.text, FT_UPGRADE_STONE_PICKUP.color);
+        } else if (pickup.type === 'equipment' && pickup.equipmentId) {
+          this.callbacks.onItemCollect(pickup.equipmentId);
+          const rarityKey: EquipmentRarity = (pickup.rarity as EquipmentRarity) || 'common';
+          const rarityCfg = RARITY_CONFIG[rarityKey] || RARITY_CONFIG.common;
+          const _ftEq = FT_EQUIPMENT_PICKUP(pickup.equipmentName || 'Equipment', rarityCfg.color);
+          this.addFloatingText(pickup.x, pickup.y, _ftEq.text, _ftEq.color);
+          soundService.playLevelUp();
         }
       }
     });
@@ -11106,6 +11164,44 @@ export class GameEngine {
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
+      } else if (pickup.type === 'equipment') {
+        const cx = pickup.x + pickup.width / 2;
+        const cy = pickup.y + pickup.height / 2 + bounce;
+        const rarityKey: EquipmentRarity = (pickup.rarity as EquipmentRarity) || 'common';
+        const rarityCfg = RARITY_CONFIG[rarityKey] || RARITY_CONFIG.common;
+
+        // Glowing radial halo
+        this.ctx.save();
+        const haloGrad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, 14);
+        haloGrad.addColorStop(0, rarityCfg.color);
+        haloGrad.addColorStop(1, 'transparent');
+        this.ctx.fillStyle = haloGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, 14, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Item pedestal box with rarity border
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.fillRect(cx - 9, cy - 9, 18, 18);
+        this.ctx.strokeStyle = rarityCfg.color;
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(cx - 9, cy - 9, 18, 18);
+
+        // Icon
+        this.ctx.font = '11px sans-serif';
+        this.ctx.textAlign = 'center';
+        this.ctx.textBaseline = 'middle';
+        this.ctx.fillText(pickup.equipmentIcon || '⚔️', cx, cy + 1);
+
+        // Sparkle shimmer for legendary/mythic
+        if (pickup.rarity === 'legendary' || pickup.rarity === 'mythic') {
+          const sparkAngle = this.frameCount * 0.1;
+          const sx = cx + Math.cos(sparkAngle) * 11;
+          const sy = cy + Math.sin(sparkAngle) * 11;
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.fillRect(sx - 1, sy - 1, 2, 2);
+        }
+        this.ctx.restore();
       }
     });
 

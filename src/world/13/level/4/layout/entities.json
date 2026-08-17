@@ -1,11 +1,47 @@
 [
-  { "type": "player_spawn", "x": 4, "y": 11 },
-  { "type": "melee_skeleton", "x": 22, "y": 11 },
-  { "type": "boomerang_skeleton", "x": 38, "y": 11 },
-  { "type": "cactus_turret", "x": 58, "y": 11 },
-  { "type": "pokey", "x": 78, "y": 11 },
-  { "type": "melee_skeleton", "x": 98, "y": 11 },
-  { "type": "boomerang_skeleton", "x": 120, "y": 11 },
-  { "type": "cactus_turret", "x": 138, "y": 11 },
-  { "type": "exit_portal", "x": 154, "y": 11 }
+  {
+    "type": "player_spawn",
+    "x": 4,
+    "y": 11
+  },
+  {
+    "type": "melee_skeleton",
+    "x": 22,
+    "y": 11
+  },
+  {
+    "type": "boomerang_skeleton",
+    "x": 38,
+    "y": 11
+  },
+  {
+    "type": "cactus_turret",
+    "x": 58,
+    "y": 11
+  },
+  {
+    "type": "pokey",
+    "x": 78,
+    "y": 11
+  },
+  {
+    "type": "melee_skeleton",
+    "x": 98,
+    "y": 11
+  },
+  {
+    "type": "boomerang_skeleton",
+    "x": 120,
+    "y": 11
+  },
+  {
+    "type": "cactus_turret",
+    "x": 138,
+    "y": 11
+  },
+  {
+    "type": "exit_portal",
+    "x": 154,
+    "y": 11
+  }
 ]

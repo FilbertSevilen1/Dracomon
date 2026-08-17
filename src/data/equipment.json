@@ -1,0 +1,512 @@
+[
+  {
+    "id": "iron_sword",
+    "name": "Iron Longsword",
+    "slot": "weapon",
+    "rarity": "common",
+    "description": "A reliable forged blade that increases direct physical damage.",
+    "icon": "🗡️",
+    "cost": 35,
+    "minWorld": 1,
+    "dropWeight": 40,
+    "stats": {
+      "attack": 2
+    }
+  },
+  {
+    "id": "hunter_bow",
+    "name": "Hunter Recurve",
+    "slot": "weapon",
+    "rarity": "common",
+    "description": "Lightweight bow extending basic attack range and arrow velocity.",
+    "icon": "🏹",
+    "cost": 40,
+    "minWorld": 1,
+    "dropWeight": 35,
+    "stats": {
+      "attack": 1,
+      "range": 1
+    }
+  },
+  {
+    "id": "steel_broadsword",
+    "name": "Steel Broadsword",
+    "slot": "weapon",
+    "rarity": "rare",
+    "description": "Tempered steel weapon providing substantial damage and fortitude.",
+    "icon": "⚔️",
+    "cost": 90,
+    "minWorld": 2,
+    "dropWeight": 25,
+    "stats": {
+      "attack": 4,
+      "hp": 6
+    }
+  },
+  {
+    "id": "vorpal_dagger",
+    "name": "Vorpal Dagger",
+    "slot": "weapon",
+    "rarity": "rare",
+    "description": "Lightweight assassin blade enhancing rapid strikes and footwork.",
+    "icon": "🗡️",
+    "cost": 110,
+    "minWorld": 3,
+    "dropWeight": 20,
+    "stats": {
+      "attack": 5,
+      "speed": 0.5
+    }
+  },
+  {
+    "id": "flamefang_blade",
+    "name": "Flamefang Blade",
+    "slot": "weapon",
+    "rarity": "epic",
+    "description": "Imbued with dragonfire, cutting through enemy armor with scorching vigor.",
+    "icon": "🔥",
+    "cost": 220,
+    "minWorld": 6,
+    "dropWeight": 12,
+    "stats": {
+      "attack": 8,
+      "hp": 12,
+      "speed": 0.5
+    }
+  },
+  {
+    "id": "thunder_staff",
+    "name": "Thunderstrike Staff",
+    "slot": "weapon",
+    "rarity": "epic",
+    "description": "Conducts lightning currents, boosting projectile range and mana regeneration.",
+    "icon": "⚡",
+    "cost": 240,
+    "minWorld": 7,
+    "dropWeight": 10,
+    "stats": {
+      "attack": 7,
+      "range": 2,
+      "energyRegen": 0.2
+    }
+  },
+  {
+    "id": "excalibur",
+    "name": "Excalibur Holy Sword",
+    "slot": "weapon",
+    "rarity": "legendary",
+    "description": "Legendary sacred blade radiant with divine power, granting massive damage and health.",
+    "icon": "✨",
+    "cost": 550,
+    "minWorld": 9,
+    "dropWeight": 5,
+    "stats": {
+      "attack": 14,
+      "hp": 25,
+      "defense": 2,
+      "energyRegen": 0.3
+    }
+  },
+  {
+    "id": "world_slayer_scythe",
+    "name": "World Slayer Scythe",
+    "slot": "weapon",
+    "rarity": "mythic",
+    "description": "Cosmic apocalyptic scythe cleaving through dimensions with supreme destructive force.",
+    "icon": "☠️",
+    "cost": 1200,
+    "minWorld": 11,
+    "dropWeight": 2,
+    "stats": {
+      "attack": 22,
+      "hp": 40,
+      "range": 2,
+      "energyRegen": 0.5
+    }
+  },
+  {
+    "id": "leather_tunic",
+    "name": "Leather Tunic",
+    "slot": "armor",
+    "rarity": "common",
+    "description": "Flexible leather armor cushioning light monster attacks.",
+    "icon": "🥋",
+    "cost": 30,
+    "minWorld": 1,
+    "dropWeight": 40,
+    "stats": {
+      "defense": 1,
+      "hp": 6
+    }
+  },
+  {
+    "id": "iron_breastplate",
+    "name": "Iron Breastplate",
+    "slot": "armor",
+    "rarity": "common",
+    "description": "Solid iron cuirass shielding vitals against lethal impact.",
+    "icon": "🛡️",
+    "cost": 45,
+    "minWorld": 1,
+    "dropWeight": 35,
+    "stats": {
+      "defense": 2,
+      "hp": 10
+    }
+  },
+  {
+    "id": "knights_plate",
+    "name": "Knight's Heavy Mail",
+    "slot": "armor",
+    "rarity": "rare",
+    "description": "Sturdy steel chainmail forged for elite vanguard paladins.",
+    "icon": "🛡️",
+    "cost": 95,
+    "minWorld": 2,
+    "dropWeight": 25,
+    "stats": {
+      "defense": 4,
+      "hp": 18
+    }
+  },
+  {
+    "id": "shadow_cowl",
+    "name": "Shadow Stalker Vest",
+    "slot": "armor",
+    "rarity": "rare",
+    "description": "Silken dark garment enabling swift evasion while providing sound defense.",
+    "icon": "🧥",
+    "cost": 100,
+    "minWorld": 3,
+    "dropWeight": 22,
+    "stats": {
+      "defense": 3,
+      "hp": 12,
+      "speed": 0.5
+    }
+  },
+  {
+    "id": "dragonscale_vest",
+    "name": "Dragonscale Vest",
+    "slot": "armor",
+    "rarity": "epic",
+    "description": "Hardened scales shed by ancient fire drakes, absorbing violent concussive forces.",
+    "icon": "🐉",
+    "cost": 250,
+    "minWorld": 6,
+    "dropWeight": 12,
+    "stats": {
+      "defense": 7,
+      "hp": 35,
+      "attack": 1
+    }
+  },
+  {
+    "id": "aegis_of_ancients",
+    "name": "Aegis of the Ancients",
+    "slot": "armor",
+    "rarity": "legendary",
+    "description": "Impenetrable ancient bulwark radiating indestructible protective wards.",
+    "icon": "🔰",
+    "cost": 580,
+    "minWorld": 9,
+    "dropWeight": 5,
+    "stats": {
+      "defense": 12,
+      "hp": 65,
+      "attack": 2
+    }
+  },
+  {
+    "id": "celestial_dragonplate",
+    "name": "Celestial Dragonplate",
+    "slot": "armor",
+    "rarity": "mythic",
+    "description": "Forged from celestial star-ore and primeval dragonbone, maximizing survivability.",
+    "icon": "🌌",
+    "cost": 1300,
+    "minWorld": 11,
+    "dropWeight": 2,
+    "stats": {
+      "defense": 18,
+      "hp": 110,
+      "attack": 4,
+      "energyRegen": 0.4
+    }
+  },
+  {
+    "id": "cloth_shoes",
+    "name": "Light Strider Shoes",
+    "slot": "boots",
+    "rarity": "common",
+    "description": "Soft padded shoes providing nimbler traversal over platforms.",
+    "icon": "👟",
+    "cost": 25,
+    "minWorld": 1,
+    "dropWeight": 40,
+    "stats": {
+      "speed": 0.4,
+      "jump": 0.3
+    }
+  },
+  {
+    "id": "bronze_greaves",
+    "name": "Bronze Greaves",
+    "slot": "boots",
+    "rarity": "common",
+    "description": "Reinforced bronze shinguards providing both mobility and protection.",
+    "icon": "👢",
+    "cost": 40,
+    "minWorld": 1,
+    "dropWeight": 35,
+    "stats": {
+      "defense": 1,
+      "speed": 0.3,
+      "jump": 0.4
+    }
+  },
+  {
+    "id": "windrunner_boots",
+    "name": "Windrunner Treads",
+    "slot": "boots",
+    "rarity": "rare",
+    "description": "Infused with gale spirits, allowing higher leaps and faster sprint speeds.",
+    "icon": "🥾",
+    "cost": 85,
+    "minWorld": 2,
+    "dropWeight": 25,
+    "stats": {
+      "speed": 0.8,
+      "jump": 0.8,
+      "hp": 6
+    }
+  },
+  {
+    "id": "hermes_wingboots",
+    "name": "Hermes Wingboots",
+    "slot": "boots",
+    "rarity": "epic",
+    "description": "Winged boots that drastically increase vertical jumps and horizontal dash momentum.",
+    "icon": "🪶",
+    "cost": 210,
+    "minWorld": 6,
+    "dropWeight": 12,
+    "stats": {
+      "speed": 1.4,
+      "jump": 1.2,
+      "hp": 12
+    }
+  },
+  {
+    "id": "boots_of_wind_god",
+    "name": "Boots of the Wind God",
+    "slot": "boots",
+    "rarity": "legendary",
+    "description": "Divine boots that grant near-frictionless gliding and extraordinary leap altitude.",
+    "icon": "🌪️",
+    "cost": 500,
+    "minWorld": 9,
+    "dropWeight": 5,
+    "stats": {
+      "speed": 2,
+      "jump": 1.8,
+      "hp": 20,
+      "defense": 1
+    }
+  },
+  {
+    "id": "chrono_striders",
+    "name": "Chrono Striders",
+    "slot": "boots",
+    "rarity": "mythic",
+    "description": "Warps local spacetime around footfalls, achieving supreme speed and energy gain.",
+    "icon": "⏳",
+    "cost": 1100,
+    "minWorld": 11,
+    "dropWeight": 2,
+    "stats": {
+      "speed": 2.8,
+      "jump": 2.2,
+      "hp": 30,
+      "energyRegen": 0.3
+    }
+  },
+  {
+    "id": "copper_ring",
+    "name": "Copper Band",
+    "slot": "accessory",
+    "rarity": "common",
+    "description": "A polished metal band offering modest vitality and strike force.",
+    "icon": "💍",
+    "cost": 30,
+    "minWorld": 1,
+    "dropWeight": 40,
+    "stats": {
+      "hp": 4,
+      "attack": 1
+    }
+  },
+  {
+    "id": "ruby_ring",
+    "name": "Crimson Ruby Ring",
+    "slot": "accessory",
+    "rarity": "rare",
+    "description": "Glows with a warm crimson ember, amplifying attack damage and vital heartiness.",
+    "icon": "🔴",
+    "cost": 80,
+    "minWorld": 2,
+    "dropWeight": 25,
+    "stats": {
+      "attack": 2,
+      "hp": 12
+    }
+  },
+  {
+    "id": "sapphire_band",
+    "name": "Sapphire Ward Ring",
+    "slot": "accessory",
+    "rarity": "rare",
+    "description": "Imbued with cool azure resonance, bolstering defense and energy replenishment.",
+    "icon": "🔷",
+    "cost": 85,
+    "minWorld": 3,
+    "dropWeight": 22,
+    "stats": {
+      "defense": 1,
+      "hp": 8,
+      "energyRegen": 0.2
+    }
+  },
+  {
+    "id": "void_ring",
+    "name": "Void Ring of Power",
+    "slot": "accessory",
+    "rarity": "epic",
+    "description": "Extracts astral energy from the Nether void to strengthen all offensive abilities.",
+    "icon": "🟣",
+    "cost": 230,
+    "minWorld": 6,
+    "dropWeight": 12,
+    "stats": {
+      "attack": 5,
+      "defense": 2,
+      "hp": 18
+    }
+  },
+  {
+    "id": "ring_of_primordial",
+    "name": "Ring of the Primordial",
+    "slot": "accessory",
+    "rarity": "legendary",
+    "description": "Channeling ancient elemental power, massively empowering attack, defense, and stamina.",
+    "icon": "👑",
+    "cost": 560,
+    "minWorld": 9,
+    "dropWeight": 5,
+    "stats": {
+      "attack": 9,
+      "defense": 5,
+      "hp": 40,
+      "energyRegen": 0.3
+    }
+  },
+  {
+    "id": "heart_of_sun",
+    "name": "Heart of the Sun Ring",
+    "slot": "accessory",
+    "rarity": "mythic",
+    "description": "Pulsating miniature solar flare granting monumental combat attributes across the board.",
+    "icon": "☀️",
+    "cost": 1250,
+    "minWorld": 11,
+    "dropWeight": 2,
+    "stats": {
+      "attack": 15,
+      "defense": 8,
+      "hp": 70,
+      "energyRegen": 0.5
+    }
+  },
+  {
+    "id": "wooden_talisman",
+    "name": "Forest Talisman",
+    "slot": "relic",
+    "rarity": "common",
+    "description": "Simple druidic talisman restoring mana flow and fortifying vitality.",
+    "icon": "🪵",
+    "cost": 30,
+    "minWorld": 1,
+    "dropWeight": 40,
+    "stats": {
+      "hp": 5,
+      "energyRegen": 0.1
+    }
+  },
+  {
+    "id": "mana_crystal",
+    "name": "Arcane Mana Crystal",
+    "slot": "relic",
+    "rarity": "rare",
+    "description": "Refined magical quartz humming with raw power, increasing energy recharge rate.",
+    "icon": "💎",
+    "cost": 90,
+    "minWorld": 2,
+    "dropWeight": 25,
+    "stats": {
+      "attack": 1,
+      "defense": 1,
+      "energyRegen": 0.2
+    }
+  },
+  {
+    "id": "phoenix_feather",
+    "name": "Phoenix Feather",
+    "slot": "relic",
+    "rarity": "epic",
+    "description": "Ever-burning feather of the eternal bird, boosting health and special energy build-up.",
+    "icon": "🪶",
+    "cost": 240,
+    "minWorld": 6,
+    "dropWeight": 12,
+    "stats": {
+      "attack": 3,
+      "hp": 22,
+      "energyRegen": 0.3
+    }
+  },
+  {
+    "id": "eye_of_void",
+    "name": "Eye of the Void",
+    "slot": "relic",
+    "rarity": "legendary",
+    "description": "Gazing into celestial infinity, extending attack reach and spell destruction.",
+    "icon": "👁️",
+    "cost": 540,
+    "minWorld": 9,
+    "dropWeight": 5,
+    "stats": {
+      "attack": 7,
+      "hp": 35,
+      "range": 2,
+      "energyRegen": 0.4
+    }
+  },
+  {
+    "id": "infinity_core",
+    "name": "Cosmic Infinity Core",
+    "slot": "relic",
+    "rarity": "mythic",
+    "description": "The primordial heart of creation, elevating every aspect of combat potential to godlike heights.",
+    "icon": "🔮",
+    "cost": 1400,
+    "minWorld": 11,
+    "dropWeight": 2,
+    "stats": {
+      "attack": 12,
+      "defense": 10,
+      "hp": 60,
+      "range": 1,
+      "energyRegen": 0.6
+    }
+  }
+]

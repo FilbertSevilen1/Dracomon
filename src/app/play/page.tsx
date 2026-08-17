@@ -25,6 +25,12 @@ function PlayContent() {
     usePotion,
     useUpgradeStone,
     buyItem,
+    equipItem,
+    unequipItem,
+    unequipAllItems,
+    autoEquipOptimal,
+    sellEquipment,
+    dismantleEquipment,
     updateSettings,
     resetGameSave,
     exportSave,
@@ -91,6 +97,12 @@ function PlayContent() {
           onUsePotion={usePotion}
           onUseUpgradeStone={useUpgradeStone}
           onBuyItem={buyItem}
+          onEquipItem={equipItem}
+          onUnequipItem={unequipItem}
+          onUnequipAll={unequipAllItems}
+          onAutoEquip={autoEquipOptimal}
+          onSellItem={sellEquipment}
+          onDismantleItem={dismantleEquipment}
           onClose={() => setShowInventory(false)}
         />
       )}

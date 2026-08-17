@@ -6,6 +6,7 @@ export interface PlayerStats {
   jump: number;
   range: number;
   energyRegen?: number;
+  level?: number;
 }
 
 export interface DracoData {
@@ -19,6 +20,7 @@ export interface DracoData {
   range: number;
   unlocked?: boolean;
   energyRegen?: number;
+  equipped?: string[];
 }
 
 export interface PlayerState {
@@ -34,15 +36,23 @@ export interface GameSettings {
   fullscreen: boolean;
 }
 
+export type InventoryItemType = 'potion' | 'upgrade_stone' | 'equipment';
+
 export interface InventoryItem {
   id: string;
   name: string;
-  type: 'potion' | 'upgrade_stone';
+  type: InventoryItemType;
   description: string;
   quantity: number;
+  slot?: 'weapon' | 'armor' | 'boots' | 'accessory' | 'relic';
+  rarity?: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
+  icon?: string;
+  stats?: Partial<PlayerStats>;
+  cost?: number;
 }
 
 export type TierType = 'Free' | 'Basic' | 'Premium';
+export type GameDifficulty = 'easy' | 'normal' | 'hard' | 'expert' | 'master' | 'asian';
 
 export interface SaveData {
   player: PlayerState;
@@ -54,6 +64,7 @@ export interface SaveData {
   inventory: InventoryItem[];
   settings: GameSettings;
   tier?: TierType;
+  difficulty?: GameDifficulty;
   completedStages?: number[];
   lastWorldId?: number;
 }
