@@ -273,10 +273,12 @@ export function useGameState() {
       let currentLevel = draco.level || 1;
       let requiredExp = currentLevel * 30;
 
+      const isMelee = ['Jumpmon', 'Shieldmon', 'Assassinmon', 'Krakenmon', 'Butchermon', 'Reapermon'].includes(activeName);
+
       const baseIncrease: Partial<PlayerStats> = {
-        hp: 4,
+        hp: isMelee ? 8 : 4,
         attack: 1,
-        defense: 1,
+        defense: isMelee ? 2 : 1,
         speed: 1,
       };
 
@@ -290,10 +292,10 @@ export function useGameState() {
 
       const updatedDracos = { ...prev.dracos };
 
-      while (currentLevel < 15 && currentExp >= requiredExp) {
+      while (currentLevel < 25 && currentExp >= requiredExp) {
         currentExp -= requiredExp;
         const oldLvl = currentLevel;
-        currentLevel = Math.min(15, currentLevel + 1);
+        currentLevel = Math.min(25, currentLevel + 1);
         requiredExp = currentLevel * 30;
 
         const roll = Math.round(((Math.floor(Math.random() * 10) + 1) * 0.1) * 10) / 10;
@@ -323,7 +325,7 @@ export function useGameState() {
       updatedDracos[activeName] = {
         ...updatedDracos[activeName],
         level: currentLevel,
-        exp: currentLevel >= 15 ? 0 : currentExp,
+        exp: currentLevel >= 25 ? 0 : currentExp,
       };
 
       return {
@@ -393,17 +395,21 @@ export function useGameState() {
       const draco = prev.dracos[name];
       if (!draco) return prev;
       const currentLvl = draco.level || 1;
-      if (currentLvl >= 15) return prev;
+      if (currentLvl >= 25) return prev;
       const cost = currentLvl * 100;
       if (prev.player.coins >= cost) {
         soundService.playLevelUp();
         const updatedDracos = { ...prev.dracos };
         const d = updatedDracos[name];
         if (d) {
+          const isMelee = ['Jumpmon', 'Shieldmon', 'Assassinmon', 'Krakenmon', 'Butchermon', 'Reapermon'].includes(name);
+          const hpGain = isMelee ? 8 : 4;
+          const defGain = isMelee ? 2 : 1;
+
           d.level = currentLvl + 1;
-          d.hp = (d.hp || 10) + 4;
+          d.hp = (d.hp || 10) + hpGain;
           d.attack = (d.attack || 1) + 1;
-          d.defense = (d.defense || 1) + 1;
+          d.defense = (d.defense || 1) + defGain;
           d.speed = Math.min(20, (d.speed || 1) + 1);
           d.jump = Math.min(14, (d.jump || 10) + 1);
 
@@ -417,7 +423,7 @@ export function useGameState() {
             dracoName: name,
             oldLevel: currentLvl,
             newLevel: currentLvl + 1,
-            baseIncrease: { hp: 4, attack: 1, defense: 1, speed: 1 },
+            baseIncrease: { hp: hpGain, attack: 1, defense: defGain, speed: 1 },
             bonusRoll
           };
           setPendingLevelUps(prevList => {

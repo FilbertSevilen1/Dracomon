@@ -21,6 +21,33 @@ export const levelStorageService = {
       if (dataStr) {
         const parsed = JSON.parse(dataStr);
         if (parsed && parsed.worlds && Array.isArray(parsed.worlds)) {
+          const existingWorldIds = new Set(parsed.worlds.map((w: any) => w.id));
+          const missingWorlds = levelsData.worlds.filter((w: any) => !existingWorldIds.has(w.id));
+          let changed = false;
+          if (missingWorlds.length > 0) {
+            parsed.worlds = [...parsed.worlds, ...missingWorlds];
+            parsed.themes = { ...levelsData.themes, ...parsed.themes };
+            changed = true;
+          }
+          const world13InCustom = parsed.worlds.find((w: any) => w.id === 13);
+          const world13InDefault = levelsData.worlds.find((w: any) => w.id === 13);
+          const stg5 = world13InCustom?.stages?.[4];
+          const hasPyramid = stg5?.entities?.some((e: any) => e.type === 'living_pyramid') || stg5?.grid?.some((r: string) => r.includes('Y'));
+          if (world13InDefault && (!world13InCustom || !world13InCustom.stages || world13InCustom.stages.length < 5 || !hasPyramid)) {
+            parsed.worlds = parsed.worlds.map((w: any) => w.id === 13 ? world13InDefault : w);
+            if (!parsed.worlds.some((w: any) => w.id === 13)) {
+              parsed.worlds.push(world13InDefault);
+            }
+            parsed.themes = { ...levelsData.themes, ...parsed.themes };
+            changed = true;
+          }
+          if (changed) {
+            try {
+              localStorage.setItem(CUSTOM_LEVELS_KEY, JSON.stringify(parsed));
+            } catch (err) {
+              console.error('Failed to sync worlds into localStorage:', err);
+            }
+          }
           return parsed;
         }
       }

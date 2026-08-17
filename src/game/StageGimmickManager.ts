@@ -15,6 +15,9 @@ import {
   FT_DISSOLVED_ANTIMATTER,
   FT_ANTIMATTER_DISINTEGRATED,
   FT_COMET_BULLET_IMPACT,
+  FT_SANDSTORM_DAMAGE,
+  FT_QUICKSAND_SINK,
+  FT_QUICKSAND_INSTAKILL,
 } from './FloatingTextMessages';
 
 const BOSS_TYPES = new Set([
@@ -27,7 +30,8 @@ const BOSS_TYPES = new Set([
   'dragon_king',
   'king_kong',
   'immortal_gladiator',
-  'giant_wisp'
+  'giant_wisp',
+  'living_pyramid'
 ]);
 
 export interface LavaFireball {
@@ -171,6 +175,7 @@ export class StageGimmickManager {
   public playerLavaBurnTimer: number = 0;
   public playerSlowTimer: number = 0;
   public playerPoisonBlindTimer: number = 0;
+  public quicksandSinkTimer: number = 0;
 
   private timerCount: number = 0;
   private nextEntityId: number = 1;
@@ -191,6 +196,7 @@ export class StageGimmickManager {
     this.playerLavaBurnTimer = 0;
     this.playerSlowTimer = 0;
     this.playerPoisonBlindTimer = 0;
+    this.quicksandSinkTimer = 0;
     this.timerCount = 0;
   }
 
@@ -243,6 +249,55 @@ export class StageGimmickManager {
 
     if (this.playerPoisonBlindTimer > 0) {
       this.playerPoisonBlindTimer--;
+    }
+
+    if (themeType === 'desert') {
+      // Sandstorm periodic damage: 1% max HP every 3 seconds (180 frames)
+      if (this.timerCount % 180 === 0 && pHP > 0) {
+        const sandstormDmg = Math.max(1, Math.floor(pMaxHP * 0.01));
+        callbacks.onDamagePlayer(sandstormDmg, 'Sandstorm Damage');
+        const ft = FT_SANDSTORM_DAMAGE(sandstormDmg);
+        callbacks.addFloatingText(pxMid, py - 20, ft.text, ft.color);
+        callbacks.spawnParticles(pxMid, pyMid, '#fbbf24', 8);
+      }
+
+      // Quicksand collision & instant kill suction logic
+      const ts = tileSize || 40;
+      const leftCol = Math.floor((px + 6) / ts);
+      const rightCol = Math.floor((px + pWidth - 6) / ts);
+      const bottomRow = Math.floor((py + pHeight - 2) / ts);
+      let inQuicksand = false;
+
+      if (grid && grid.length > 0 && bottomRow >= 0 && bottomRow < grid.length) {
+        for (let c = leftCol; c <= rightCol; c++) {
+          if (c >= 0 && c < (grid[bottomRow]?.length || 0)) {
+            if (grid[bottomRow][c] === 'Q') {
+              inQuicksand = true;
+              break;
+            }
+          }
+        }
+      }
+
+      if (inQuicksand) {
+        this.quicksandSinkTimer++;
+        this.playerSlowTimer = Math.max(this.playerSlowTimer, 15);
+        if (callbacks.onPullPlayer) {
+          callbacks.onPullPlayer(0, 1.4);
+        }
+        if (this.quicksandSinkTimer % 20 === 0) {
+          callbacks.spawnParticles(pxMid, py + pHeight - 4, '#d97706', 6);
+        }
+        // Submerged into quicksand (40 frames of sinking) -> Insta-Kill!
+        if (this.quicksandSinkTimer >= 40 && pHP > 0) {
+          soundService.playQuicksandDeath();
+          callbacks.onInstaKillPlayer('Swallowed by Quicksand');
+          callbacks.addFloatingText(pxMid, py - 25, FT_QUICKSAND_INSTAKILL.text, FT_QUICKSAND_INSTAKILL.color);
+          callbacks.spawnParticles(pxMid, pyMid, '#d97706', 25);
+        }
+      } else {
+        this.quicksandSinkTimer = Math.max(0, this.quicksandSinkTimer - 2);
+      }
     }
 
     if (themeType === 'pixel') {
@@ -1357,9 +1412,7 @@ export class StageGimmickManager {
         ctx.moveTo(60, -28);
         ctx.lineTo(85, -48);
         ctx.lineTo(72, -26);
-        ctx.fill();
-
-        ctx.fillStyle = eyeColor;
+             ctx.fillStyle = eyeColor;
         ctx.beginPath();
         ctx.arc(75, -18, 4, 0, Math.PI * 2);
         ctx.fill();
@@ -1451,6 +1504,110 @@ export class StageGimmickManager {
         ctx.fillRect(block.x + 6, block.y + 6, 8, 8);
         ctx.restore();
       });
+    }
+
+    if (themeType === 'desert') {
+      const ts = tileSize || 40;
+      const activeGrid = grid || [];
+
+      // 1. Draw animated Quicksand pits
+      for (let r = 0; r < activeGrid.length; r++) {
+        for (let c = 0; c < (activeGrid[r]?.length || 0); c++) {
+          if (activeGrid[r][c] === 'Q') {
+            const qx = c * ts;
+            const qy = r * ts;
+
+            // Only draw if within visible screen bounds
+            if (qx + ts >= cameraX - 50 && qx <= cameraX + canvasWidth + 50) {
+              ctx.save();
+
+              // Base quicksand mud pit
+              ctx.fillStyle = '#78350f';
+              ctx.fillRect(qx, qy, ts, ts);
+
+              // Liquid sinking sand gradient
+              const sandGrad = ctx.createLinearGradient(qx, qy, qx, qy + ts);
+              sandGrad.addColorStop(0, '#d97706');
+              sandGrad.addColorStop(0.5, '#b45309');
+              sandGrad.addColorStop(1, '#78350f');
+              ctx.fillStyle = sandGrad;
+              ctx.fillRect(qx, qy + 2, ts, ts - 2);
+
+              // Undulating sand wave vortex
+              const waveOffset = Math.sin(this.timerCount * 0.08 + c * 0.7) * 4;
+              ctx.fillStyle = '#f59e0b';
+              ctx.beginPath();
+              ctx.moveTo(qx, qy + 4);
+              ctx.quadraticCurveTo(qx + ts / 2, qy + 4 + waveOffset, qx + ts, qy + 4);
+              ctx.lineTo(qx + ts, qy + 12);
+              ctx.quadraticCurveTo(qx + ts / 2, qy + 12 + waveOffset, qx, qy + 12);
+              ctx.closePath();
+              ctx.fill();
+
+              // Swirling vortex circles
+              const vAngle = this.timerCount * 0.06 + c;
+              const vx = qx + ts / 2 + Math.cos(vAngle) * 6;
+              const vy = qy + ts / 2 + Math.sin(vAngle) * 4;
+              ctx.strokeStyle = 'rgba(254, 240, 138, 0.7)';
+              ctx.lineWidth = 1.5;
+              ctx.beginPath();
+              ctx.arc(vx, vy, 6, 0, Math.PI * 1.5);
+              ctx.stroke();
+
+              // Sinking bubbling dust
+              if ((this.timerCount + c * 5) % 30 < 15) {
+                ctx.fillStyle = '#fde047';
+                ctx.beginPath();
+                ctx.arc(qx + ((this.timerCount * 3 + c * 11) % ts), qy + 6, 2, 0, Math.PI * 2);
+                ctx.fill();
+              }
+
+              ctx.restore();
+            }
+          }
+        }
+      }
+
+      // 2. Dynamic Sandstorm particle wind streams across screen
+      ctx.save();
+      const numParticles = 70;
+      for (let i = 0; i < numParticles; i++) {
+        const speed = 6.0 + (i % 5) * 2.5;
+        const seedX = (i * 137.5 + this.timerCount * speed) % (canvasWidth + 200) - 100;
+        const seedY = (i * 89.3 + Math.sin(this.timerCount * 0.05 + i) * 25) % (canvasHeight + 100) - 50;
+
+        const sandX = cameraX + seedX;
+        const sandY = cameraY + seedY;
+
+        ctx.fillStyle = i % 3 === 0 ? 'rgba(254, 240, 138, 0.85)' : i % 2 === 0 ? 'rgba(245, 158, 11, 0.65)' : 'rgba(217, 119, 6, 0.5)';
+        ctx.beginPath();
+        const streakLen = 6 + (i % 4) * 4;
+        ctx.fillRect(sandX, sandY, streakLen, 2);
+      }
+
+      // 3. Sandstorm Atmospheric Blurry Veil & 50% Reduced Player Visibility (Radial Spotlight)
+      const visionRadius = 180;
+      const sandGrad = ctx.createRadialGradient(
+        pxMid,
+        pyMid,
+        visionRadius * 0.35,
+        pxMid,
+        pyMid,
+        visionRadius
+      );
+      sandGrad.addColorStop(0, 'rgba(245, 158, 11, 0.06)');
+      sandGrad.addColorStop(0.5, 'rgba(217, 119, 6, 0.42)');
+      sandGrad.addColorStop(0.85, 'rgba(180, 83, 9, 0.72)');
+      sandGrad.addColorStop(1, 'rgba(120, 53, 15, 0.88)');
+
+      ctx.fillStyle = sandGrad;
+      ctx.fillRect(cameraX - 100, cameraY - 100, canvasWidth + 200, canvasHeight + 200);
+
+      // Blurry wind gusts layer
+      ctx.fillStyle = 'rgba(251, 191, 36, 0.12)';
+      ctx.fillRect(cameraX - 100, cameraY - 100, canvasWidth + 200, canvasHeight + 200);
+
+      ctx.restore();
     }
   }
 }

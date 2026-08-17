@@ -1504,11 +1504,11 @@ export default function Home() {
               initial={{ scale: 0.95, y: 15 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 15 }}
-              className="w-full max-w-3xl overflow-hidden border bg-stone-900/95 border-stone-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-stone-100"
+              className="w-full max-w-5xl overflow-hidden border bg-stone-900/95 border-stone-800 rounded-3xl p-8 shadow-2xl backdrop-blur-xl text-stone-100"
             >
               <h2 className="text-2xl font-black uppercase tracking-wider text-white font-display">Select Campaign Map</h2>
               <p className="text-xs text-stone-400 font-mono mt-1">Deploy your companion into custom platform realms.</p>
-              <div className="grid md:grid-cols-2 gap-4 mt-6 min-h-[310px] p-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6 min-h-[310px] p-1">
                 {currentStages.map((stage) => {
                   const unlocked = isStageUnlocked(stage.num);
                   return (

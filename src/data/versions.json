@@ -1,5 +1,21 @@
 [
   {
+    "version": "0.3.5",
+    "date": "August 17, 2026",
+    "tag": "World 13 Desert Oasis - Sandstorm & Living Pyramid",
+    "badgeColor": "bg-amber-600 text-white font-black shadow-sm",
+    "summary": "Introduces World 13 Desert Oasis featuring the atmospheric Sandstorm gimmick with 50% visibility reduction, ambient sandstorm erosion damage, fatal sinking Quicksand traps, 4 new desert minions (Melee Skeleton, Boomerang Skeleton, Cactus Turret, Pokey), and the formidable Living Pyramid miniboss wielding sci-fi lasers, hyper thruster rushes, and gravitational sand vortex suction.",
+    "highlights": [
+      "New Theme - Desert Oasis (World 13): 5 brand new stages (13-1 to 13-5) featuring ancient sandstone pyramids, dunes, and Egyptian oasis scale music (BGM Profile 13).",
+      "Map Gimmick - Sandstorm Atmospheric Veil: Player visibility is reduced by 50% through a swirling atmospheric sandstorm overlay and ambient sand erosion inflicts 1% Max HP damage every 3 seconds.",
+      "Insta-Kill Hazard - Sinking Quicksand: Dynamic quicksand pits ('Q') that suck players downward, heavily restrict movement, and trigger an instant kill upon full submersion.",
+      "New Minions: Melee Skeleton ('k' - leaping scimitar slashes), Boomerang Skeleton ('b' - returning curved bone projectiles), Cactus Turret ('t' - 3-way needle bursts), and Pokey ('y' - segmented hopping cactus with explosive spine pops on damage).",
+      "Miniboss - Living Pyramid ('Y'): 3 attack styles cycling between Forgotten Sci-Fi Lasers (sweeping cyan beam bursts), Hyper-Charge (booster rush across the arena), and Sand Vortex (gravitational whirlpool suction pulling player and launching sand debris).",
+      "Level Cap Expansion (Lv. 25): Hero level cap raised from 15 to 25 with full EXP progression and Coin upgrade scaling.",
+      "Melee Hero Balance Overhaul: Doubled base HP and Defense, as well as per-level stat gains (+8 HP, +2 DEF per level) across all 6 melee heroes (Jumpmon, Shieldmon, Assassinmon, Krakenmon, Butchermon, Reapermon)."
+    ]
+  },
+  {
     "version": "0.3.4",
     "date": "August 16, 2026",
     "tag": "New Hero Mikomon - Sacred Fortune Miko Draco",

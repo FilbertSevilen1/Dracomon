@@ -85,6 +85,13 @@ import {
   FT_SKELETON_DESTROYED,
   FT_KING_KONG_SLAIN,
   FT_GIANT_WISP_SLAIN,
+  FT_LIVING_PYRAMID_SLAIN,
+  FT_PYRAMID_SCI_FI_LASER,
+  FT_PYRAMID_HYPER_CHARGE,
+  FT_PYRAMID_SAND_SUCK,
+  FT_BOOMERANG_THROW,
+  FT_CACTUS_SPINE_BURST,
+  FT_POKEY_POP,
   FT_ULTIMATE_CINEMATIC,
   FT_AREA_KATANA_SLASH,
   FT_DIMENSIONAL_SHATTER,
@@ -181,13 +188,16 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock' | 'boomerang' | 'cactus_needle' | 'sci_fi_laser';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
   hitEnemyIds?: number[];
   isHoming?: boolean;
   groundBurnOnImpact?: boolean;
+  boomerangOwnerId?: number;
+  boomerangReturning?: boolean;
+  boomerangTraveled?: number;
 }
 
 interface Pickup {
@@ -218,7 +228,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'sentinel_archdemon' | 'dracoguard_fire_lord' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess' | 'ghost' | 'reaper';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'sentinel_archdemon' | 'dracoguard_fire_lord' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess' | 'ghost' | 'reaper' | 'melee_skeleton' | 'boomerang_skeleton' | 'cactus_turret' | 'pokey' | 'living_pyramid';
   hp: number;
   maxHp: number;
   attack: number;
@@ -260,6 +270,14 @@ interface Enemy {
   wispDetonating?: boolean;
   wispDetonationTimer?: number;
   slowTimer?: number;
+  segments?: number;
+  pyramidPhase?: 'lasers' | 'charge' | 'vortex';
+  pyramidPhaseTimer?: number;
+  pyramidChargeVx?: number;
+  pyramidLaserAngle?: number;
+  pyramidLaserTimer?: number;
+  pyramidVortexTimer?: number;
+  slashAnimTimer?: number;
 }
 
 export class GameEngine {
@@ -1099,6 +1117,113 @@ export class GameEngine {
         beamEndY: 0,
         beamBarrageActive: false
       });
+    } else if (type === 'melee_skeleton') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 38,
+        vx: -1.6,
+        vy: 0,
+        width: 32,
+        height: 38,
+        type: 'melee_skeleton',
+        hp: 75 + (grid.length * 3),
+        maxHp: 75 + (grid.length * 3),
+        attack: 16,
+        defense: 8,
+        facing: -1,
+        shootCooldown: 60,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Melee Skeleton',
+        slashAnimTimer: 0
+      });
+    } else if (type === 'boomerang_skeleton') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 38,
+        vx: -1.0,
+        vy: 0,
+        width: 32,
+        height: 38,
+        type: 'boomerang_skeleton',
+        hp: 85 + (grid.length * 3),
+        maxHp: 85 + (grid.length * 3),
+        attack: 18,
+        defense: 7,
+        facing: -1,
+        shootCooldown: 90,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Boomerang Skeleton'
+      });
+    } else if (type === 'cactus_turret') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 2,
+        y: ey + ts - 36,
+        vx: 0,
+        vy: 0,
+        width: 36,
+        height: 36,
+        type: 'cactus_turret',
+        hp: 95 + (grid.length * 4),
+        maxHp: 95 + (grid.length * 4),
+        attack: 14,
+        defense: 10,
+        facing: -1,
+        shootCooldown: 80,
+        state: 'idle',
+        animFrame: 0,
+        name: 'Cactus Turret'
+      });
+    } else if (type === 'pokey') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex + 4,
+        y: ey + ts - 64,
+        vx: -0.8,
+        vy: 0,
+        width: 32,
+        height: 64,
+        type: 'pokey',
+        hp: 150 + (grid.length * 5),
+        maxHp: 150 + (grid.length * 5),
+        attack: 20,
+        defense: 8,
+        facing: -1,
+        shootCooldown: 100,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Pokey',
+        segments: 4
+      });
+    } else if (type === 'living_pyramid') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey + ts - 96,
+        vx: -0.6,
+        vy: 0,
+        width: 100,
+        height: 96,
+        type: 'living_pyramid',
+        hp: 3400,
+        maxHp: 3400,
+        attack: 45,
+        defense: 26,
+        facing: -1,
+        shootCooldown: 60,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'LIVING PYRAMID',
+        pyramidPhase: 'lasers',
+        pyramidPhaseTimer: 0,
+        pyramidLaserTimer: 0,
+        pyramidChargeVx: 0,
+        pyramidVortexTimer: 0
+      });
     }
   }
 
@@ -1334,6 +1459,16 @@ export class GameEngine {
           this.spawnEntityFromType('giant_wisp', c, r, preservePlayerPos, grid);
         } else if (char === 'L') {
           this.spawnEntityFromType('lunar_goddess', c, r, preservePlayerPos, grid);
+        } else if (char === 'k') {
+          this.spawnEntityFromType('melee_skeleton', c, r, preservePlayerPos, grid);
+        } else if (char === 'b') {
+          this.spawnEntityFromType('boomerang_skeleton', c, r, preservePlayerPos, grid);
+        } else if (char === 't') {
+          this.spawnEntityFromType('cactus_turret', c, r, preservePlayerPos, grid);
+        } else if (char === 'y') {
+          this.spawnEntityFromType('pokey', c, r, preservePlayerPos, grid);
+        } else if (char === 'Y') {
+          this.spawnEntityFromType('living_pyramid', c, r, preservePlayerPos, grid);
         }
       }
     }
@@ -4252,6 +4387,19 @@ export class GameEngine {
         collected: false
       });
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_GIANT_WISP_SLAIN.text, FT_GIANT_WISP_SLAIN.color);
+    } else if (enemy.type === 'living_pyramid') {
+      expReward = 700;
+      coinReward = 1200;
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 10,
+        y: enemy.y + enemy.height / 2 - 10,
+        width: 20,
+        height: 20,
+        type: 'upgrade_stone',
+        amount: 4,
+        collected: false
+      });
+      this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_LIVING_PYRAMID_SLAIN.text, FT_LIVING_PYRAMID_SLAIN.color);
     }
 
     const rewardMult = (this.level as any)?.rewardMultiplier || 1.0;
@@ -4405,6 +4553,20 @@ export class GameEngine {
     return null;
   }
 
+  private isQuicksand(x: number, y: number): boolean {
+    const grid = this.getActiveGrid();
+    if (grid.length === 0) return false;
+    const ts = this.level.tileSize;
+    const col = Math.floor(x / ts);
+    const row = Math.floor(y / ts);
+
+    if (col < 0 || col >= grid[0].length || row < 0 || row >= grid.length) {
+      return false;
+    }
+
+    return grid[row][col] === 'Q';
+  }
+
   private isPortal(x: number, y: number): boolean {
     const grid = this.getActiveGrid();
     if (grid.length === 0) return false;
@@ -4448,7 +4610,7 @@ export class GameEngine {
   }
 
   private isBossType(type: string): boolean {
-    return ['king_slime', 'miniboss', 'sentinel_archdemon', 'dracoguard_fire_lord', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp', 'lunar_goddess', 'blockman'].includes(type);
+    return ['king_slime', 'miniboss', 'sentinel_archdemon', 'dracoguard_fire_lord', 'frost_wyvern', 'shadow_overlord', 'dragon_king', 'killer_whale', 'king_kong', 'immortal_gladiator', 'giant_wisp', 'lunar_goddess', 'blockman', 'living_pyramid'].includes(type);
   }
 
   private distToSegment(px: number, py: number, x1: number, y1: number, x2: number, y2: number) {
@@ -6648,6 +6810,137 @@ export class GameEngine {
         }
       }
 
+      if ((proj as any).type === 'boomerang') {
+        proj.boomerangTraveled = ((proj as any).boomerangTraveled || 0) + Math.hypot(proj.vx, proj.vy);
+        if ((proj.boomerangTraveled || 0) >= 350) {
+          proj.boomerangReturning = true;
+        }
+
+        if (proj.boomerangReturning) {
+          const owner = this.enemies.find(e => e.id === proj.boomerangOwnerId);
+          const targetX = owner ? owner.x + owner.width / 2 : (proj.targetX || proj.x);
+          const targetY = owner ? owner.y + owner.height / 2 : (proj.targetY || proj.y);
+          const dx = targetX - (proj.x + proj.width / 2);
+          const dy = targetY - (proj.y + proj.height / 2);
+          const dist = Math.hypot(dx, dy) || 1;
+
+          if (dist < 28) {
+            this.projectiles.splice(index, 1);
+            return;
+          }
+
+          const spd = 7.5;
+          proj.vx = (dx / dist) * spd;
+          proj.vy = (dy / dist) * spd;
+        } else {
+          proj.vy += 0.05;
+        }
+
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: Math.random() * 3 + 1,
+            color: '#e2e8f0',
+            life: 8,
+            maxLife: 8
+          });
+        }
+
+        if (
+          this.px < proj.x + proj.width &&
+          this.px + this.pWidth > proj.x &&
+          this.py < proj.y + proj.height &&
+          this.py + this.pHeight > proj.y &&
+          this.pInvulnerableFrames <= 0
+        ) {
+          this.handlePlayerHit(proj.damage, proj.x);
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 6, '#e2e8f0');
+        }
+        return;
+      }
+
+      if ((proj as any).type === 'cactus_needle') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: Math.random() * 3 + 1,
+            color: '#84cc16',
+            life: 6,
+            maxLife: 6
+          });
+        }
+
+        if (this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2) || proj.x < 0 || proj.x > this.levelWidth || proj.y < 0 || proj.y > this.levelHeight) {
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 4, '#84cc16');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+
+        if (
+          this.px < proj.x + proj.width &&
+          this.px + this.pWidth > proj.x &&
+          this.py < proj.y + proj.height &&
+          this.py + this.pHeight > proj.y &&
+          this.pInvulnerableFrames <= 0
+        ) {
+          this.handlePlayerHit(proj.damage, proj.x);
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 6, '#84cc16');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+        return;
+      }
+
+      if ((proj as any).type === 'sci_fi_laser') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: -proj.vx * 0.2 + (Math.random() - 0.5) * 2,
+            vy: -proj.vy * 0.2 + (Math.random() - 0.5) * 2,
+            size: Math.random() * 4 + 2,
+            color: '#06b6d4',
+            life: 10,
+            maxLife: 10
+          });
+        }
+
+        if (this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2) || proj.x < 0 || proj.x > this.levelWidth || proj.y < 0 || proj.y > this.levelHeight) {
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, '#06b6d4');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+
+        if (
+          this.px < proj.x + proj.width &&
+          this.px + this.pWidth > proj.x &&
+          this.py < proj.y + proj.height &&
+          this.py + this.pHeight > proj.y &&
+          this.pInvulnerableFrames <= 0
+        ) {
+          this.handlePlayerHit(proj.damage, proj.x);
+          this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 10, '#06b6d4');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+        return;
+      }
+
       if ((proj as any).type === 'homing_bomb') {
         let nearestEnemy: Enemy | null = null;
         let minDistance = 1000;
@@ -7560,39 +7853,66 @@ export class GameEngine {
           }
         }
       } else {
-        enemy.vy += this.gravity;
-        enemy.y += enemy.vy;
-
         const left = enemy.x;
         const right = enemy.x + enemy.width;
         const bottom = enemy.y + enemy.height;
         const oldBottom = bottom - enemy.vy;
 
-        const collidesSolidBottom = this.isSolid(left + 2, bottom) || this.isSolid(right - 2, bottom);
+        // Quicksand interaction for enemies: fall through and sink before dying
+        const inQuicksand = this.isQuicksand(enemy.x + enemy.width / 2, bottom - 4) ||
+                            this.isQuicksand(left + 4, bottom - 4) ||
+                            this.isQuicksand(right - 4, bottom - 4);
 
-        let onOneWayPlatform = false;
-        let platformTopY = 0;
+        if (inQuicksand) {
+          (enemy as any).quicksandSinkTimer = ((enemy as any).quicksandSinkTimer || 0) + 1;
+          enemy.vx *= 0.35;
+          enemy.vy = 1.3; // Sinks slowly downwards through the quicksand pit
+          enemy.y += enemy.vy;
+          grounded = false;
 
-        if (!collidesSolidBottom && enemy.vy >= 0) {
-          const platformLeft = this.checkPlatformOneWay(left + 2, bottom);
-          const platformRight = this.checkPlatformOneWay(right - 2, bottom);
-          if (platformLeft || platformRight) {
-            const tileRow = Math.floor(bottom / ts);
-            platformTopY = tileRow * ts;
-            if (oldBottom <= platformTopY + 12) {
-              onOneWayPlatform = true;
+          // Sand bubbling particles (no floating text!)
+          if (this.frameCount % 8 === 0) {
+            this.spawnDustParticles(enemy.x + enemy.width / 2, bottom - 4, 3, '#d97706');
+          }
+
+          // Submerged in quicksand -> counted as death!
+          if ((enemy as any).quicksandSinkTimer >= 32) {
+            enemy.hp = 0;
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 16, '#d97706');
+            this.defeatEnemy(enemy);
+            return;
+          }
+        } else {
+          (enemy as any).quicksandSinkTimer = Math.max(0, ((enemy as any).quicksandSinkTimer || 0) - 1);
+          enemy.vy += this.gravity;
+          enemy.y += enemy.vy;
+
+          const collidesSolidBottom = this.isSolid(left + 2, bottom) || this.isSolid(right - 2, bottom);
+
+          let onOneWayPlatform = false;
+          let platformTopY = 0;
+
+          if (!collidesSolidBottom && enemy.vy >= 0) {
+            const platformLeft = this.checkPlatformOneWay(left + 2, bottom);
+            const platformRight = this.checkPlatformOneWay(right - 2, bottom);
+            if (platformLeft || platformRight) {
+              const tileRow = Math.floor(bottom / ts);
+              platformTopY = tileRow * ts;
+              if (oldBottom <= platformTopY + 12) {
+                onOneWayPlatform = true;
+              }
             }
           }
-        }
 
-        if (collidesSolidBottom) {
-          enemy.y = Math.floor(bottom / ts) * ts - enemy.height;
-          enemy.vy = 0;
-          grounded = true;
-        } else if (onOneWayPlatform) {
-          enemy.y = platformTopY - enemy.height;
-          enemy.vy = 0;
-          grounded = true;
+          if (collidesSolidBottom) {
+            enemy.y = Math.floor(bottom / ts) * ts - enemy.height;
+            enemy.vy = 0;
+            grounded = true;
+          } else if (onOneWayPlatform) {
+            enemy.y = platformTopY - enemy.height;
+            enemy.vy = 0;
+            grounded = true;
+          }
         }
         (enemy as any).isGrounded = grounded;
       }
@@ -7613,7 +7933,7 @@ export class GameEngine {
         enemy.x += enemy.vx;
 
         const nextX = enemy.vx > 0 ? enemy.x + enemy.width + 4 : enemy.x - 4;
-        const groundAhead = this.isSolid(nextX, enemy.y + enemy.height + 4) || this.checkPlatformOneWay(nextX, enemy.y + enemy.height + 4);
+        const groundAhead = this.isSolid(nextX, enemy.y + enemy.height + 4) || this.checkPlatformOneWay(nextX, enemy.y + enemy.height + 4) || this.isQuicksand(nextX, enemy.y + enemy.height + 4);
         const wallAhead = this.isSolid(nextX, enemy.y + 4) || this.isSolid(nextX, enemy.y + enemy.height - 4);
 
         if (wallAhead || (grounded && !groundAhead)) {
@@ -8079,6 +8399,315 @@ export class GameEngine {
             enemy.x -= enemy.vx;
           }
         }
+      } else if (enemy.type === 'melee_skeleton') {
+        const dx = this.px - enemy.x;
+        const dy = this.py - enemy.y;
+        const dist = Math.hypot(dx, dy);
+        enemy.facing = dx > 0 ? 1 : -1;
+
+        if (enemy.slashAnimTimer && enemy.slashAnimTimer > 0) {
+          enemy.slashAnimTimer--;
+        }
+
+        if (dist < 120 && grounded && (!enemy.jumpCooldown || enemy.jumpCooldown <= 0)) {
+          // Leap slash towards player!
+          enemy.vy = -6.5;
+          enemy.vx = enemy.facing * 4.5;
+          enemy.jumpCooldown = 90;
+          enemy.slashAnimTimer = 25;
+          soundService.playJump();
+        } else if (grounded) {
+          enemy.vx = enemy.facing * 1.8;
+        }
+
+        if (enemy.jumpCooldown && enemy.jumpCooldown > 0) enemy.jumpCooldown--;
+
+        enemy.x += enemy.vx;
+        const nextX = enemy.vx > 0 ? enemy.x + enemy.width + 4 : enemy.x - 4;
+        const groundAhead = this.isSolid(nextX, enemy.y + enemy.height + 4) || this.checkPlatformOneWay(nextX, enemy.y + enemy.height + 4) || this.isQuicksand(nextX, enemy.y + enemy.height + 4);
+        const wallAhead = this.isSolid(nextX, enemy.y + 4) || this.isSolid(nextX, enemy.y + enemy.height - 4);
+        if (wallAhead || (grounded && !groundAhead)) {
+          enemy.vx = -enemy.vx;
+          enemy.facing = enemy.vx > 0 ? 1 : -1;
+        }
+
+        // Melee slash hit check during attack
+        if (enemy.slashAnimTimer && enemy.slashAnimTimer > 0) {
+          const slashX = enemy.facing === 1 ? enemy.x + enemy.width / 2 : enemy.x - 20;
+          if (
+            this.px < slashX + 40 &&
+            this.px + this.pWidth > slashX &&
+            this.py < enemy.y + enemy.height &&
+            this.py + this.pHeight > enemy.y &&
+            this.pInvulnerableFrames <= 0
+          ) {
+            this.handlePlayerHit(enemy.attack, enemy.x + enemy.width / 2);
+          }
+        }
+      } else if (enemy.type === 'boomerang_skeleton') {
+        const dx = this.px - enemy.x;
+        const dy = this.py - enemy.y;
+        const dist = Math.hypot(dx, dy);
+        enemy.facing = dx > 0 ? 1 : -1;
+
+        if (grounded) {
+          if (dist < 180) {
+            enemy.vx = -enemy.facing * 1.5;
+          } else if (dist > 350) {
+            enemy.vx = enemy.facing * 1.2;
+          } else {
+            enemy.vx = 0;
+          }
+        }
+
+        enemy.x += enemy.vx;
+        const nextX = enemy.vx > 0 ? enemy.x + enemy.width + 4 : enemy.x - 4;
+        const groundAhead = this.isSolid(nextX, enemy.y + enemy.height + 4) || this.checkPlatformOneWay(nextX, enemy.y + enemy.height + 4) || this.isQuicksand(nextX, enemy.y + enemy.height + 4);
+        const wallAhead = this.isSolid(nextX, enemy.y + 4) || this.isSolid(nextX, enemy.y + enemy.height - 4);
+        if (wallAhead || (grounded && !groundAhead)) {
+          enemy.vx = 0;
+        }
+
+        enemy.shootCooldown--;
+        if (enemy.shootCooldown <= 0 && dist < 500) {
+          enemy.shootCooldown = 110;
+          soundService.playShoot();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, FT_BOOMERANG_THROW.text, FT_BOOMERANG_THROW.color);
+
+          this.projectiles.push({
+            x: enemy.facing === 1 ? enemy.x + enemy.width : enemy.x - 18,
+            y: enemy.y + enemy.height / 2 - 8,
+            vx: enemy.facing * 6.5,
+            vy: -1.2,
+            width: 18,
+            height: 18,
+            isEnemy: true,
+            damage: enemy.attack,
+            color: '#e2e8f0',
+            type: 'boomerang' as any,
+            boomerangOwnerId: enemy.id,
+            boomerangReturning: false,
+            boomerangTraveled: 0,
+            targetX: enemy.x + enemy.width / 2,
+            targetY: enemy.y + enemy.height / 2
+          } as any);
+        }
+      } else if (enemy.type === 'cactus_turret') {
+        const dx = this.px - enemy.x;
+        const dy = this.py - enemy.y;
+        const dist = Math.hypot(dx, dy);
+        enemy.facing = dx > 0 ? 1 : -1;
+        enemy.vx = 0;
+
+        enemy.shootCooldown--;
+        if (enemy.shootCooldown <= 0 && dist < 550) {
+          enemy.shootCooldown = 85;
+          soundService.playShoot();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, FT_CACTUS_SPINE_BURST.text, FT_CACTUS_SPINE_BURST.color);
+
+          const baseAngle = Math.atan2(dy, dx);
+          const angles = [baseAngle - 0.22, baseAngle, baseAngle + 0.22];
+          angles.forEach(ang => {
+            this.projectiles.push({
+              x: enemy.x + enemy.width / 2 - 6,
+              y: enemy.y + enemy.height / 2 - 6,
+              vx: Math.cos(ang) * 5.8,
+              vy: Math.sin(ang) * 5.8,
+              width: 12,
+              height: 12,
+              isEnemy: true,
+              damage: enemy.attack,
+              color: '#84cc16',
+              type: 'cactus_needle' as any,
+              life: 75
+            } as any);
+          });
+        }
+      } else if (enemy.type === 'pokey') {
+        const dx = this.px - enemy.x;
+        enemy.facing = dx > 0 ? 1 : -1;
+
+        if (grounded) {
+          if (this.frameCount % 50 === 0) {
+            enemy.vy = -4.5;
+            enemy.vx = enemy.facing * 1.6;
+          } else {
+            enemy.vx = enemy.facing * 0.8;
+          }
+        }
+
+        enemy.x += enemy.vx;
+        const nextX = enemy.vx > 0 ? enemy.x + enemy.width + 4 : enemy.x - 4;
+        const groundAhead = this.isSolid(nextX, enemy.y + enemy.height + 4) || this.checkPlatformOneWay(nextX, enemy.y + enemy.height + 4) || this.isQuicksand(nextX, enemy.y + enemy.height + 4);
+        const wallAhead = this.isSolid(nextX, enemy.y + 4) || this.isSolid(nextX, enemy.y + enemy.height - 4);
+        if (wallAhead || (grounded && !groundAhead)) {
+          enemy.vx = -enemy.vx;
+          enemy.facing = enemy.vx > 0 ? 1 : -1;
+        }
+
+        // Segment pop triggers if damaged
+        const currentSegments = enemy.segments || 4;
+        const targetSegments = Math.max(1, Math.ceil((enemy.hp / enemy.maxHp) * 4));
+        if (targetSegments < currentSegments) {
+          enemy.segments = targetSegments;
+          enemy.height = Math.max(28, targetSegments * 16);
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, FT_POKEY_POP.text, FT_POKEY_POP.color);
+          soundService.playHit();
+
+          // Burst 4 needle spikes in diagonal directions
+          [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4].forEach(ang => {
+            this.projectiles.push({
+              x: enemy.x + enemy.width / 2,
+              y: enemy.y + enemy.height / 2,
+              vx: Math.cos(ang) * 5.0,
+              vy: Math.sin(ang) * 5.0,
+              width: 10,
+              height: 10,
+              isEnemy: true,
+              damage: Math.floor(enemy.attack * 0.7),
+              color: '#eab308',
+              type: 'cactus_needle' as any,
+              life: 50
+            } as any);
+          });
+        }
+      } else if (enemy.type === 'living_pyramid') {
+        const cx = enemy.x + enemy.width / 2;
+        const cy = enemy.y + enemy.height / 2;
+        const dx = this.px + this.pWidth / 2 - cx;
+        const dy = this.py + this.pHeight / 2 - cy;
+        const dist = Math.hypot(dx, dy) || 1;
+
+        enemy.pyramidPhaseTimer = ((enemy.pyramidPhaseTimer || 0) + 1);
+        if (enemy.pyramidPhaseTimer >= 260) {
+          enemy.pyramidPhaseTimer = 0;
+          const phases: ('lasers' | 'charge' | 'vortex')[] = ['lasers', 'charge', 'vortex'];
+          const curIdx = phases.indexOf(enemy.pyramidPhase || 'lasers');
+          enemy.pyramidPhase = phases[(curIdx + 1) % 3];
+          enemy.shootCooldown = 40;
+          enemy.isCharging = false;
+        }
+
+        const phase = enemy.pyramidPhase || 'lasers';
+
+        if (phase === 'lasers') {
+          // Hover and fire high-tech sci-fi rotating lasers & bursts
+          enemy.y += Math.sin(this.frameCount * 0.05) * 1.0;
+          enemy.vx = (dx > 0 ? 1 : -1) * 0.8;
+          enemy.x += enemy.vx;
+          enemy.facing = dx > 0 ? 1 : -1;
+
+          enemy.shootCooldown--;
+          if (enemy.shootCooldown <= 0) {
+            enemy.shootCooldown = 55;
+            soundService.playSciFiLaser();
+            this.addFloatingText(cx, enemy.y - 25, FT_PYRAMID_SCI_FI_LASER.text, FT_PYRAMID_SCI_FI_LASER.color);
+
+            // 3-way cyan high-tech laser pulses
+            const baseAngle = Math.atan2(dy, dx);
+            [-0.2, 0, 0.2].forEach(angOff => {
+              const ang = baseAngle + angOff;
+              this.projectiles.push({
+                x: cx - 8,
+                y: cy - 8,
+                vx: Math.cos(ang) * 7.5,
+                vy: Math.sin(ang) * 7.5,
+                width: 16,
+                height: 8,
+                isEnemy: true,
+                damage: enemy.attack,
+                color: '#06b6d4',
+                type: 'sci_fi_laser' as any,
+                life: 70
+              } as any);
+            });
+          }
+        } else if (phase === 'charge') {
+          // Hyper charge across the arena towards player
+          if (!enemy.isCharging) {
+            enemy.facing = dx > 0 ? 1 : -1;
+            enemy.pyramidChargeVx = enemy.facing * 9.0;
+            enemy.isCharging = true;
+            soundService.playPyramidCharge();
+            this.addFloatingText(cx, enemy.y - 25, FT_PYRAMID_HYPER_CHARGE.text, FT_PYRAMID_HYPER_CHARGE.color);
+          }
+
+          enemy.vx = enemy.pyramidChargeVx || enemy.facing * 9.0;
+          enemy.x += enemy.vx;
+
+          if (this.frameCount % 3 === 0) {
+            this.particles.push({
+              x: cx - enemy.facing * 35,
+              y: cy + (Math.random() - 0.5) * 30,
+              vx: -enemy.facing * (Math.random() * 5 + 3),
+              vy: (Math.random() - 0.5) * 3,
+              size: Math.random() * 8 + 3,
+              color: Math.random() > 0.5 ? '#f97316' : '#06b6d4',
+              life: 16,
+              maxLife: 16
+            });
+          }
+
+          const hitBoundary = (enemy.vx > 0 && enemy.x > this.levelWidth - 140) ||
+                             (enemy.vx < 0 && enemy.x < 30) ||
+                             this.isSolid(enemy.vx > 0 ? enemy.x + enemy.width + 6 : enemy.x - 6, cy);
+          if (hitBoundary) {
+            this.screenShake = 24;
+            soundService.playHit();
+            enemy.pyramidChargeVx = -(enemy.pyramidChargeVx || 0) * 0.8;
+            this.spawnDustParticles(cx, cy, 20, '#f59e0b');
+          }
+        } else if (phase === 'vortex') {
+          // Sucking sand vortex: pulls player and sand debris toward pyramid
+          enemy.vx = 0;
+          enemy.y += Math.sin(this.frameCount * 0.08) * 0.5;
+
+          if (this.frameCount % 60 === 0) {
+            soundService.playSandVortex();
+            this.addFloatingText(cx, enemy.y - 25, FT_PYRAMID_SAND_SUCK.text, FT_PYRAMID_SAND_SUCK.color);
+          }
+
+          const suckRadius = 450;
+          if (dist < suckRadius && this.pHP > 0) {
+            const pullPower = (1 - dist / suckRadius) * 3.6;
+            this.pvx -= (dx / dist) * pullPower;
+            this.pvy -= (dy / dist) * pullPower;
+          }
+
+          // Whirling sand debris spawned every 20 frames
+          if (this.frameCount % 20 === 0) {
+            const rAng = Math.random() * Math.PI * 2;
+            const rSpd = Math.random() * 4 + 2;
+            this.projectiles.push({
+              x: cx + Math.cos(rAng) * 40,
+              y: cy + Math.sin(rAng) * 40,
+              vx: Math.cos(rAng) * rSpd,
+              vy: Math.sin(rAng) * rSpd,
+              width: 14,
+              height: 14,
+              isEnemy: true,
+              damage: Math.floor(enemy.attack * 0.6),
+              color: '#d97706',
+              type: 'fireball' as any,
+              life: 45
+            } as any);
+          }
+
+          if (this.frameCount % 2 === 0) {
+            const sAng = Math.random() * Math.PI * 2;
+            const sDist = Math.random() * 180 + 40;
+            this.particles.push({
+              x: cx + Math.cos(sAng) * sDist,
+              y: cy + Math.sin(sAng) * sDist,
+              vx: -Math.cos(sAng) * 6,
+              vy: -Math.sin(sAng) * 6,
+              size: Math.random() * 6 + 2,
+              color: Math.random() > 0.5 ? '#fbbf24' : '#d97706',
+              life: 18,
+              maxLife: 18
+            });
+          }
+        }
       } else if (enemy.type === 'king_kong') {
         const dx = this.px - enemy.x;
         enemy.facing = dx > 0 ? 1 : -1;
@@ -8181,6 +8810,12 @@ export class GameEngine {
             soundService.playHit();
           }
         }
+      }
+
+      if (enemy.y > this.levelHeight + 60) {
+        enemy.hp = 0;
+        this.defeatEnemy(enemy);
+        return;
       }
     });
 
@@ -10167,6 +10802,45 @@ export class GameEngine {
             this.ctx.arc(ex + 28, ey + 16, 3, 0, Math.PI * 2);
             this.ctx.fill();
           }
+        } else if (char === 'Q') {
+          this.ctx.save();
+          this.ctx.fillStyle = '#78350f';
+          this.ctx.fillRect(ex, ey, ts, ts);
+
+          const sandGrad = this.ctx.createLinearGradient(ex, ey, ex, ey + ts);
+          sandGrad.addColorStop(0, '#d97706');
+          sandGrad.addColorStop(0.5, '#b45309');
+          sandGrad.addColorStop(1, '#78350f');
+          this.ctx.fillStyle = sandGrad;
+          this.ctx.fillRect(ex, ey + 2, ts, ts - 2);
+
+          const waveOffset = Math.sin(this.frameCount * 0.08 + c * 0.7) * 4;
+          this.ctx.fillStyle = '#f59e0b';
+          this.ctx.beginPath();
+          this.ctx.moveTo(ex, ey + 4);
+          this.ctx.quadraticCurveTo(ex + ts / 2, ey + 4 + waveOffset, ex + ts, ey + 4);
+          this.ctx.lineTo(ex + ts, ey + 12);
+          this.ctx.quadraticCurveTo(ex + ts / 2, ey + 12 + waveOffset, ex, ey + 12);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          const vAngle = this.frameCount * 0.06 + c;
+          const vx = ex + ts / 2 + Math.cos(vAngle) * 6;
+          const vy = ey + ts / 2 + Math.sin(vAngle) * 4;
+          this.ctx.strokeStyle = 'rgba(254, 240, 138, 0.7)';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.arc(vx, vy, 6, 0, Math.PI * 1.5);
+          this.ctx.stroke();
+
+          if ((this.frameCount + c * 5) % 30 < 15) {
+            this.ctx.fillStyle = '#fde047';
+            this.ctx.beginPath();
+            this.ctx.arc(ex + ((this.frameCount * 3 + c * 11) % ts), ey + 6, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+
+          this.ctx.restore();
         } else if (char === 'R') {
           this.ctx.fillStyle = '#14532d';
           this.ctx.fillRect(ex + 2, ey + ts - 10, ts - 4, 10);
@@ -12566,6 +13240,312 @@ export class GameEngine {
         this.ctx.strokeStyle = '#ffffff';
         this.ctx.lineWidth = 1;
         this.ctx.strokeRect(hbX, hbY, hbW, 9);
+      } else if (enemy.type === 'melee_skeleton') {
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+
+        this.ctx.save();
+        // Desert Nomad Mantle / Rags
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.fillRect(bx + 4, by + 12, bw - 8, bh - 16);
+
+        // Bone Ribcage
+        this.ctx.fillStyle = '#e2e8f0';
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(bx + bw / 2, by + 10, 8, 0, Math.PI * 2); // Skull
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Glowing Amber Eye Sockets
+        this.ctx.fillStyle = '#f59e0b';
+        const eyeX = enemy.facing === 1 ? bx + bw / 2 + 2 : bx + bw / 2 - 4;
+        this.ctx.fillRect(eyeX, by + 8, 3, 3);
+
+        // Legs / Bones
+        this.ctx.fillStyle = '#cbd5e1';
+        this.ctx.fillRect(bx + 8, by + bh - 8, 4, 8);
+        this.ctx.fillRect(bx + bw - 12, by + bh - 8, 4, 8);
+
+        // Bone Scimitar Blade
+        const swordX = enemy.facing === 1 ? bx + bw + 2 : bx - 14;
+        this.ctx.strokeStyle = '#f8fafc';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bx + bw / 2, by + 16);
+        this.ctx.quadraticCurveTo(swordX + (enemy.facing * 6), by + 8, swordX, by + 28);
+        this.ctx.stroke();
+
+        // Slash Trail Effect
+        if (enemy.slashAnimTimer && enemy.slashAnimTimer > 0) {
+          this.ctx.strokeStyle = 'rgba(251, 191, 36, 0.85)';
+          this.ctx.lineWidth = 3;
+          this.ctx.beginPath();
+          this.ctx.arc(bx + bw / 2, by + 16, 26, enemy.facing === 1 ? -Math.PI / 3 : Math.PI * 0.7, enemy.facing === 1 ? Math.PI / 3 : Math.PI * 1.3);
+          this.ctx.stroke();
+        }
+        this.ctx.restore();
+      } else if (enemy.type === 'boomerang_skeleton') {
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+
+        this.ctx.save();
+        // Desert Scout Tunic
+        this.ctx.fillStyle = '#78350f';
+        this.ctx.fillRect(bx + 4, by + 12, bw - 8, bh - 16);
+
+        // Bone Skull
+        this.ctx.fillStyle = '#e2e8f0';
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(bx + bw / 2, by + 10, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Eye Sockets
+        this.ctx.fillStyle = '#ef4444';
+        const eyeX = enemy.facing === 1 ? bx + bw / 2 + 2 : bx + bw / 2 - 4;
+        this.ctx.fillRect(eyeX, by + 8, 3, 3);
+
+        // Curved Bone Boomerang in hand
+        this.ctx.strokeStyle = '#f8fafc';
+        this.ctx.lineWidth = 2.5;
+        const bHandX = enemy.facing === 1 ? bx + bw + 2 : bx - 6;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bHandX, by + 8);
+        this.ctx.lineTo(bHandX + enemy.facing * 8, by + 16);
+        this.ctx.lineTo(bHandX, by + 24);
+        this.ctx.stroke();
+        this.ctx.restore();
+      } else if (enemy.type === 'cactus_turret') {
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+
+        this.ctx.save();
+        // Cactus green main body
+        this.ctx.fillStyle = '#15803d';
+        this.ctx.strokeStyle = '#14532d';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.roundRect(bx + 4, by + 4, bw - 8, bh - 4, 8);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Cactus side arms
+        this.ctx.fillStyle = '#16a34a';
+        this.ctx.fillRect(bx - 2, by + 12, 6, 12);
+        this.ctx.fillRect(bx + bw - 4, by + 8, 6, 12);
+
+        // Sharp Spines radiating
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 1.5;
+        for (let s = 0; s < 6; s++) {
+          const sy = by + 8 + s * 4;
+          this.ctx.beginPath();
+          this.ctx.moveTo(bx + 2, sy);
+          this.ctx.lineTo(bx - 3, sy - 2);
+          this.ctx.moveTo(bx + bw - 2, sy);
+          this.ctx.lineTo(bx + bw + 3, sy - 2);
+          this.ctx.stroke();
+        }
+
+        // Glowing Turret Eye Lens
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.shadowColor = '#ef4444';
+        this.ctx.shadowBlur = 8;
+        this.ctx.beginPath();
+        this.ctx.arc(bx + bw / 2, by + 14, 4, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+      } else if (enemy.type === 'pokey') {
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+        const segCount = enemy.segments || 4;
+
+        this.ctx.save();
+        const segHeight = bh / segCount;
+        const wiggle = Math.sin(this.frameCount * 0.15 + enemy.id) * 3;
+
+        for (let i = 0; i < segCount; i++) {
+          const segY = by + (segCount - 1 - i) * segHeight;
+          const segWiggle = (i / segCount) * wiggle;
+          const segX = bx + bw / 2 + segWiggle;
+
+          // Cactus segment sphere
+          this.ctx.fillStyle = i === segCount - 1 ? '#84cc16' : '#65a30d';
+          this.ctx.strokeStyle = '#3f6212';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.arc(segX, segY + segHeight / 2, segHeight / 2 - 1, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Spines on segment
+          this.ctx.strokeStyle = '#fef08a';
+          this.ctx.lineWidth = 1.2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(segX - segHeight / 2 + 1, segY + segHeight / 2);
+          this.ctx.lineTo(segX - segHeight / 2 - 3, segY + segHeight / 2 - 2);
+          this.ctx.moveTo(segX + segHeight / 2 - 1, segY + segHeight / 2);
+          this.ctx.lineTo(segX + segHeight / 2 + 3, segY + segHeight / 2 - 2);
+          this.ctx.stroke();
+
+          // Top Head Features (Smile & Eyes & Flower)
+          if (i === segCount - 1) {
+            // Eyes
+            this.ctx.fillStyle = '#000000';
+            const fDir = enemy.facing || 1;
+            this.ctx.fillRect(segX + fDir * 3 - 2, segY + 4, 3, 3);
+            this.ctx.fillRect(segX + fDir * 3 + 3, segY + 4, 3, 3);
+
+            // Smile
+            this.ctx.strokeStyle = '#000000';
+            this.ctx.lineWidth = 1;
+            this.ctx.beginPath();
+            this.ctx.arc(segX + fDir * 3 + 1, segY + 8, 3, 0, Math.PI);
+            this.ctx.stroke();
+
+            // Desert Pink Bloom Flower
+            this.ctx.fillStyle = '#f43f5e';
+            this.ctx.beginPath();
+            this.ctx.arc(segX, segY - 2, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.fillStyle = '#fef08a';
+            this.ctx.beginPath();
+            this.ctx.arc(segX, segY - 2, 1.5, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        }
+        this.ctx.restore();
+      } else if (enemy.type === 'living_pyramid') {
+        const bx = enemy.x;
+        const by = enemy.y;
+        const bw = enemy.width;
+        const bh = enemy.height;
+        const cx = bx + bw / 2;
+        const cy = by + bh / 2;
+
+        this.ctx.save();
+        const floatY = Math.sin(this.frameCount * 0.05) * 4;
+
+        // Shadow below floating pyramid
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.45)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(cx, by + bh + 8, bw / 2 + 10, 10, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 1. Pyramid Sandstone Main Body
+        this.ctx.translate(0, floatY);
+        const pyrGrad = this.ctx.createLinearGradient(cx, by, cx, by + bh);
+        pyrGrad.addColorStop(0, '#fef08a');
+        pyrGrad.addColorStop(0.3, '#f59e0b');
+        pyrGrad.addColorStop(0.7, '#d97706');
+        pyrGrad.addColorStop(1, '#78350f');
+
+        this.ctx.fillStyle = pyrGrad;
+        this.ctx.strokeStyle = '#451a03';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, by);
+        this.ctx.lineTo(bx + bw, by + bh);
+        this.ctx.lineTo(bx, by + bh);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 2. Glowing Sci-Fi Circuit Runes & Hieroglyphs
+        const pulse = 0.5 + Math.sin(this.frameCount * 0.1) * 0.5;
+        this.ctx.strokeStyle = `rgba(6, 182, 212, ${0.7 + pulse * 0.3})`;
+        this.ctx.lineWidth = 2;
+        this.ctx.shadowColor = '#06b6d4';
+        this.ctx.shadowBlur = 10;
+
+        // Circuit line from apex down center
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx, by + 12);
+        this.ctx.lineTo(cx, by + bh - 10);
+        this.ctx.moveTo(cx - 24, by + bh * 0.65);
+        this.ctx.lineTo(cx + 24, by + bh * 0.65);
+        this.ctx.stroke();
+
+        // 3. Central Glowing Sci-Fi Eye of Ra / Aperture
+        const eyeRadius = 14 + pulse * 2;
+        const eyeGrad = this.ctx.createRadialGradient(cx, cy, 2, cx, cy, eyeRadius);
+        eyeGrad.addColorStop(0, '#ffffff');
+        eyeGrad.addColorStop(0.4, '#06b6d4');
+        eyeGrad.addColorStop(0.8, '#3b82f6');
+        eyeGrad.addColorStop(1, '#1e1b4b');
+
+        this.ctx.fillStyle = eyeGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, eyeRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Eye Inner Pupil Ring
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(cx, cy, 6, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // 4. Anti-Grav Booster Thruster Flames below pyramid
+        const thrusterFlameH = 8 + Math.sin(this.frameCount * 0.3) * 6;
+        this.ctx.fillStyle = '#06b6d4';
+        this.ctx.beginPath();
+        this.ctx.moveTo(cx - 15, by + bh);
+        this.ctx.lineTo(cx, by + bh + thrusterFlameH);
+        this.ctx.lineTo(cx + 15, by + bh);
+        this.ctx.fill();
+
+        // 5. Boss Phase Visual Accent
+        const phase = enemy.pyramidPhase || 'lasers';
+        if (phase === 'charge') {
+          this.ctx.strokeStyle = '#f97316';
+          this.ctx.lineWidth = 3.5;
+          this.ctx.setLineDash([8, 6]);
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, bw * 0.65, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.setLineDash([]);
+        } else if (phase === 'vortex') {
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(cx, cy, bw * 0.75, this.frameCount * 0.1, this.frameCount * 0.1 + Math.PI * 1.5);
+          this.ctx.stroke();
+        }
+
+        this.ctx.restore();
+
+        // Boss Health Bar UI
+        const hbW = bw + 50;
+        const hbX = bx - 25;
+        const hbY = by - 36;
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
+        this.ctx.fillRect(hbX, hbY, hbW, 10);
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.fillRect(hbX, hbY, hbW * Math.max(0, enemy.hp / enemy.maxHp), 10);
+        this.ctx.strokeStyle = '#06b6d4';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.strokeRect(hbX, hbY, hbW, 10);
+
+        this.ctx.font = 'bold 11px monospace';
+        this.ctx.textAlign = 'center';
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.shadowColor = '#d97706';
+        this.ctx.shadowBlur = 6;
+        this.ctx.fillText(`👑 LIVING PYRAMID [${phase.toUpperCase()}]`, cx, hbY - 6);
       }
 
       if (
@@ -12581,7 +13561,8 @@ export class GameEngine {
         enemy.type !== 'giant_wisp' &&
         enemy.type !== 'immortal_gladiator' &&
         enemy.type !== 'killer_whale' &&
-        enemy.type !== 'lunar_goddess'
+        enemy.type !== 'lunar_goddess' &&
+        enemy.type !== 'living_pyramid'
       ) {
         const hpPercent = enemy.hp / enemy.maxHp;
         this.ctx.fillStyle = '#ef4444';
@@ -12662,6 +13643,59 @@ export class GameEngine {
             this.ctx.stroke();
           }
         }
+      } else if (pType === 'boomerang') {
+        const spin = this.frameCount * 0.25;
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(spin);
+
+        this.ctx.strokeStyle = '#e2e8f0';
+        this.ctx.lineWidth = 3;
+        this.ctx.shadowColor = '#fbbf24';
+        this.ctx.shadowBlur = 6;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-8, -8);
+        this.ctx.lineTo(0, 0);
+        this.ctx.lineTo(8, -8);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#f8fafc';
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else if (pType === 'cactus_needle') {
+        const needleAngle = Math.atan2(proj.vy, proj.vx);
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(needleAngle);
+
+        this.ctx.fillStyle = '#84cc16';
+        this.ctx.strokeStyle = '#3f6212';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pw / 2, 0);
+        this.ctx.lineTo(-pw / 2, -3);
+        this.ctx.lineTo(-pw / 2, 3);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.fillRect(-pw / 2, -1, 3, 2);
+      } else if (pType === 'sci_fi_laser') {
+        const laserAngle = Math.atan2(proj.vy, proj.vx);
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(laserAngle);
+
+        // Neon Cyan Glow Halo
+        this.ctx.fillStyle = 'rgba(6, 182, 212, 0.4)';
+        this.ctx.fillRect(-pw / 2 - 4, -ph / 2 - 2, pw + 8, ph + 4);
+
+        // Outer Laser Body
+        this.ctx.fillStyle = '#06b6d4';
+        this.ctx.fillRect(-pw / 2, -ph / 2, pw, ph);
+
+        // Core White Laser Beam
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(-pw / 2 + 2, -ph / 2 + 2, pw - 4, ph - 4);
       } else {
         this.ctx.fillStyle = proj.color || '#fbbf24';
         this.ctx.fillRect(px, py, pw, ph);

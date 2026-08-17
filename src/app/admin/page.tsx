@@ -63,6 +63,7 @@ const TILE_PALETTE: PaletteItem[] = [
   { id: 'laser_cannon', entityType: 'laser_cannon', label: 'Laser Cannon Trap', category: 'Hazards', color: 'bg-red-800 border-red-900 text-red-200 font-black shadow-xs', icon: '⚡', isEntity: true, symbol: 'M' },
   { id: 'anchor', entityType: 'anchor', label: 'Heavy Anchor Trap', category: 'Hazards', color: 'bg-cyan-900 border-cyan-700 text-cyan-200 font-black shadow-xs', icon: '⚓', isEntity: true, symbol: 'A' },
   { id: 'scallop', entityType: 'scallop', label: 'Scallop Trap', category: 'Hazards', color: 'bg-teal-900 border-teal-700 text-teal-200 font-black shadow-xs', icon: '🐚', isEntity: true, symbol: 'C' },
+  { id: 'quicksand', entityType: 'quicksand', label: 'Quicksand Pit', category: 'Hazards', color: 'bg-amber-800 border-amber-950 text-amber-200 font-black shadow-xs', icon: '⏳', isEntity: true, symbol: 'Q' },
 
   // ITEMS & PICKUPS
   { id: 'coin', entityType: 'coin', label: 'Gold Coin', category: 'Items', color: 'bg-yellow-400 border-yellow-500 text-stone-950 font-black shadow-xs', icon: '🪙', isEntity: true, symbol: 'c' },
@@ -82,6 +83,10 @@ const TILE_PALETTE: PaletteItem[] = [
   { id: 'flying_wyvern', entityType: 'flying_wyvern', label: 'Flying Wyvern', category: 'Minions', color: 'bg-teal-600 border-teal-700 text-white font-black shadow-xs', icon: '🦅', isEntity: true, symbol: 'F' },
   { id: 'ghost', entityType: 'ghost', label: 'Shadow Ghost', category: 'Minions', color: 'bg-purple-900 border-purple-700 text-purple-200 font-black shadow-xs', icon: '👻', isEntity: true, symbol: 'g' },
   { id: 'reaper', entityType: 'reaper', label: 'Shadow Reaper', category: 'Minions', color: 'bg-slate-900 border-purple-800 text-red-400 font-black shadow-xs', icon: '💀', isEntity: true, symbol: 'r' },
+  { id: 'melee_skeleton', entityType: 'melee_skeleton', label: 'Melee Skeleton', category: 'Minions', color: 'bg-stone-700 border-stone-800 text-amber-300 font-black shadow-xs', icon: '⚔️', isEntity: true, symbol: 'k' },
+  { id: 'boomerang_skeleton', entityType: 'boomerang_skeleton', label: 'Boomerang Skeleton', category: 'Minions', color: 'bg-stone-700 border-stone-800 text-orange-300 font-black shadow-xs', icon: '🪃', isEntity: true, symbol: 'b' },
+  { id: 'cactus_turret', entityType: 'cactus_turret', label: 'Cactus Turret', category: 'Minions', color: 'bg-emerald-700 border-emerald-900 text-lime-200 font-black shadow-xs', icon: '🌵', isEntity: true, symbol: 't' },
+  { id: 'pokey', entityType: 'pokey', label: 'Pokey', category: 'Minions', color: 'bg-lime-700 border-lime-900 text-yellow-200 font-black shadow-xs', icon: '🎋', isEntity: true, symbol: 'y' },
 
   // BOSSES
   { id: 'king_slime', entityType: 'king_slime', label: 'King Slime Boss', category: 'Bosses', color: 'bg-lime-600 border-lime-700 text-white font-black shadow-xs', icon: '👑', isEntity: true, symbol: 'S' },
@@ -94,6 +99,7 @@ const TILE_PALETTE: PaletteItem[] = [
   { id: 'king_kong', entityType: 'king_kong', label: 'King Kong Boss', category: 'Bosses', color: 'bg-amber-900 border-amber-950 text-amber-200 font-black shadow-xs', icon: '🦍', isEntity: true, symbol: 'K' },
   { id: 'giant_wisp', entityType: 'giant_wisp', label: 'Giant Wisp Boss', category: 'Bosses', color: 'bg-fuchsia-600 border-fuchsia-700 text-white font-black shadow-xs', icon: '✨', isEntity: true, symbol: 'G' },
   { id: 'lunar_goddess', entityType: 'lunar_goddess', label: 'Lunar Goddess Boss', category: 'Bosses', color: 'bg-indigo-900 border-indigo-950 text-indigo-200 font-black shadow-xs', icon: '🌙', isEntity: true, symbol: 'L' },
+  { id: 'living_pyramid', entityType: 'living_pyramid', label: 'Living Pyramid Boss', category: 'Bosses', color: 'bg-amber-600 border-cyan-500 text-white font-black shadow-xs', icon: '🔺', isEntity: true, symbol: 'Y' },
 ];
 
 const getTileMeta = (key: string) => {

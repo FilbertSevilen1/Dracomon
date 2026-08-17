@@ -16,7 +16,7 @@ export interface SubMapData {
   entities?: LevelEntity[];
 }
 
-export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core' | 'space' | 'pixel';
+export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core' | 'space' | 'pixel' | 'desert';
 
 export interface LevelTheme {
   type: ThemeType;
@@ -105,6 +105,11 @@ export const SYMBOL_TO_ENTITY_TYPE: Record<string, string> = {
   'D': 'dragon_king',
   'G': 'giant_wisp',
   'L': 'lunar_goddess',
+  'k': 'melee_skeleton',
+  'b': 'boomerang_skeleton',
+  't': 'cactus_turret',
+  'y': 'pokey',
+  'Y': 'living_pyramid',
 };
 
 export const getEntityTypeFromSymbol = (char: string, isUnderwater = false): string | null => {
@@ -164,8 +169,8 @@ const ensureMinHeadroomWithEntities = (
   return { grid, entities };
 };
 
-export const parseWorlds = (): WorldData[] => {
-  const custom = levelStorageService.getCustomData();
+export const parseWorlds = (forceDefault = false): WorldData[] => {
+  const custom = forceDefault ? { themes: levelsData.themes, worlds: levelsData.worlds } : levelStorageService.getCustomData();
   const themes = custom.themes || DEFAULT_THEMES;
   const rawWorlds = custom.worlds || levelsData.worlds;
 
@@ -173,7 +178,7 @@ export const parseWorlds = (): WorldData[] => {
 
   return rawWorlds.map((worldRaw: any, wIndex: number) => {
     const worldId = worldRaw.id || (wIndex + 1);
-    const worldTheme = themes[worldRaw.themeName] || themes.forest || DEFAULT_THEMES.forest;
+    const worldTheme = (themes as Record<string, any>)[worldRaw.themeName] || (themes as any).forest || DEFAULT_THEMES.forest;
     const totalStagesInWorld = worldRaw.stages ? worldRaw.stages.length : 0;
 
     const stages: LevelData[] = (worldRaw.stages || []).map((stgRaw: any, sIndex: number) => {

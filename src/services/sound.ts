@@ -709,6 +709,102 @@ class SoundService {
     osc2.stop(now + 0.3);
   }
 
+  public playQuicksandDeath() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+    const now = this.ctx.currentTime;
+
+    // Deep gurgling sinking vortex noise
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(140, now);
+    osc.frequency.exponentialRampToValueAtTime(35, now + 0.8);
+    gain.gain.setValueAtTime(this.sfxVolume * 0.7, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.8);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.8);
+
+    // Sand friction noise buffer
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.8);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (bufferSize * 0.5));
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(450, now);
+    filter.frequency.exponentialRampToValueAtTime(120, now + 0.8);
+    filter.Q.setValueAtTime(2.0, now);
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(this.sfxVolume * 0.5, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.01, now + 0.8);
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start(now);
+    noise.stop(now + 0.8);
+  }
+
+  public playSciFiLaser() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(1200, now);
+    osc.frequency.exponentialRampToValueAtTime(180, now + 0.25);
+    gain.gain.setValueAtTime(this.sfxVolume * 0.6, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.25);
+  }
+
+  public playPyramidCharge() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(80, now);
+    osc.frequency.linearRampToValueAtTime(320, now + 0.4);
+    gain.gain.setValueAtTime(this.sfxVolume * 0.65, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.45);
+  }
+
+  public playSandVortex() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+    const now = this.ctx.currentTime;
+
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(220, now);
+    osc.frequency.linearRampToValueAtTime(90, now + 0.6);
+    gain.gain.setValueAtTime(this.sfxVolume * 0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + 0.6);
+  }
+
   public playBGM() {
     this.initCtx();
     if (!this.ctx || this.musicInterval || !this.isMusicEnabled || this.isMuted) return;
@@ -845,14 +941,14 @@ class SoundService {
         tempo: 95, leadWave: 'sine', bassWave: 'sine', melodyOctaveShift: 3.0, hasDrum: false, drumRate: 8, hihatRate: 4,
       },
       13: {
-        // Lunar Palace — moonlit, mysterious, high and glassy
+        // Desert Oasis — exotic Egyptian harmonic minor, dusty percussion, whirling tempo
         progressions: [
-          [277.18, 349.23, 415.30, 554.37],
-          [311.13, 392.00, 466.16, 622.25],
-          [261.63, 329.63, 392.00, 523.25],
-          [293.66, 369.99, 440.00, 587.33],
+          [220.00, 233.08, 277.18, 293.66], // A Phrygian Dominant (A, Bb, C#, D)
+          [293.66, 329.63, 349.23, 440.00], // D minor
+          [246.94, 261.63, 311.13, 370.00], // B diminished / exotic
+          [220.00, 277.18, 329.63, 440.00], // A Major
         ],
-        tempo: 112, leadWave: 'sine', bassWave: 'triangle', melodyOctaveShift: 2.5, hasDrum: false, drumRate: 8, hihatRate: 2,
+        tempo: 138, leadWave: 'sawtooth', bassWave: 'square', melodyOctaveShift: 1.75, hasDrum: true, drumRate: 2, hihatRate: 1,
       },
     };
 

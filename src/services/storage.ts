@@ -31,9 +31,9 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     Jumpmon: {
       level: 1,
       exp: 0,
-      hp: 18,
+      hp: 36,
       attack: 4,
-      defense: 3,
+      defense: 6,
       speed: 7,
       jump: 11,
       range: 1,
@@ -55,9 +55,9 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     Shieldmon: {
       level: 1,
       exp: 0,
-      hp: 26,
+      hp: 52,
       attack: 3,
-      defense: 9,
+      defense: 18,
       speed: 6,
       jump: 10,
       range: 1,
@@ -67,9 +67,9 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     Assassinmon: {
       level: 1,
       exp: 0,
-      hp: 15,
+      hp: 30,
       attack: 8,
-      defense: 2,
+      defense: 4,
       speed: 9,
       jump: 11.5,
       range: 2,
@@ -199,9 +199,9 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     Krakenmon: {
       level: 1,
       exp: 0,
-      hp: 24,
+      hp: 48,
       attack: 8,
-      defense: 4,
+      defense: 8,
       speed: 7.0,
       jump: 11,
       range: 6,
@@ -211,9 +211,9 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     Butchermon: {
       level: 1,
       exp: 0,
-      hp: 26,
+      hp: 52,
       attack: 9,
-      defense: 4,
+      defense: 8,
       speed: 6.5,
       jump: 11,
       range: 5,
@@ -223,9 +223,9 @@ export const DEFAULT_SAVE_DATA: SaveData = {
     Reapermon: {
       level: 1,
       exp: 0,
-      hp: 22,
+      hp: 44,
       attack: 9.5,
-      defense: 3.5,
+      defense: 7,
       speed: 8.0,
       jump: 11,
       range: 7,
@@ -300,9 +300,9 @@ export const storageService = {
           parsed.dracos.Assassinmon = {
             level: 1,
             exp: 0,
-            hp: 15,
+            hp: 30,
             attack: 8,
-            defense: 2,
+            defense: 4,
             speed: 9,
             jump: 11.5,
             range: 2,
@@ -454,9 +454,9 @@ export const storageService = {
           parsed.dracos.Krakenmon = {
             level: 1,
             exp: 0,
-            hp: 24,
+            hp: 48,
             attack: 8,
-            defense: 4,
+            defense: 8,
             speed: 7.0,
             jump: 11,
             range: 6,
@@ -468,9 +468,9 @@ export const storageService = {
           parsed.dracos.Butchermon = {
             level: 1,
             exp: 0,
-            hp: 26,
+            hp: 52,
             attack: 9,
-            defense: 4,
+            defense: 8,
             speed: 6.5,
             jump: 11,
             range: 5,
@@ -482,9 +482,9 @@ export const storageService = {
           parsed.dracos.Reapermon = {
             level: 1,
             exp: 0,
-            hp: 22,
+            hp: 44,
             attack: 9.5,
-            defense: 3.5,
+            defense: 7,
             speed: 8.0,
             jump: 11,
             range: 7,
@@ -507,9 +507,26 @@ export const storageService = {
           };
         }
 
+        const MELEE_BASE_STATS: Record<string, { hp: number; defense: number }> = {
+          Jumpmon: { hp: 36, defense: 6 },
+          Shieldmon: { hp: 52, defense: 18 },
+          Assassinmon: { hp: 30, defense: 4 },
+          Krakenmon: { hp: 48, defense: 8 },
+          Butchermon: { hp: 52, defense: 8 },
+          Reapermon: { hp: 44, defense: 7 }
+        };
+
         Object.keys(parsed.dracos).forEach(key => {
           const d = parsed.dracos[key] as any;
           if (d) {
+            const meleeBase = MELEE_BASE_STATS[key];
+            if (meleeBase) {
+              const curLvl = d.level || 1;
+              const minExpectedHp = meleeBase.hp + (curLvl - 1) * 8;
+              const minExpectedDef = meleeBase.defense + (curLvl - 1) * 2;
+              if (d.hp < minExpectedHp) d.hp = minExpectedHp;
+              if (d.defense < minExpectedDef) d.defense = minExpectedDef;
+            }
             if (d.energyRegen === undefined) d.energyRegen = 1.0;
             ['hp', 'attack', 'defense', 'speed', 'jump', 'range', 'energyRegen'].forEach(stat => {
               if (typeof d[stat] === 'number') {

@@ -18,7 +18,7 @@ import {
 import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
 import { Footer } from '../../components/Footer';
-import { WORLDS } from '../../game/LevelManager';
+import { WORLDS, parseWorlds, WorldData } from '../../game/LevelManager';
 
 const WORLD_BG_THEMES: Record<number, { bg: string; border: string; glow: string; text: string }> = {
   1: { bg: 'from-emerald-950/60 via-stone-900/90 to-stone-950', border: 'border-emerald-500/50 hover:border-emerald-400', glow: 'bg-emerald-500/10', text: 'text-emerald-400' },
@@ -33,6 +33,7 @@ const WORLD_BG_THEMES: Record<number, { bg: string; border: string; glow: string
   10: { bg: 'from-indigo-950/60 via-stone-900/90 to-stone-950', border: 'border-indigo-500/50 hover:border-indigo-400', glow: 'bg-indigo-500/10', text: 'text-indigo-400' },
   11: { bg: 'from-sky-950/60 via-stone-900/90 to-stone-950', border: 'border-sky-500/50 hover:border-sky-400', glow: 'bg-sky-500/10', text: 'text-sky-400' },
   12: { bg: 'from-fuchsia-950/60 via-stone-900/90 to-stone-950', border: 'border-fuchsia-500/50 hover:border-fuchsia-400', glow: 'bg-fuchsia-500/10', text: 'text-fuchsia-400' },
+  13: { bg: 'from-amber-950/60 via-stone-900/90 to-stone-950', border: 'border-amber-500/50 hover:border-amber-400', glow: 'bg-amber-500/10', text: 'text-amber-400' },
 };
 
 export default function MapsPage() {
@@ -43,28 +44,40 @@ export default function MapsPage() {
     setLastWorldId,
   } = useGameState();
 
-  const currentTier = saveData.tier || 'Free';
+  const [mounted, setMounted] = useState<boolean>(false);
+  const [worlds, setWorlds] = useState<WorldData[]>(WORLDS);
   const [activeWorldId, setActiveWorldId] = useState<number>(1);
   const [worldSearch, setWorldSearch] = useState<string>('');
 
   useEffect(() => {
+    setMounted(true);
+    setWorlds(parseWorlds());
     if (saveData && saveData.lastWorldId) {
       setActiveWorldId(saveData.lastWorldId);
     }
+
+    const handleLevelsUpdate = () => {
+      setWorlds(parseWorlds());
+    };
+    window.addEventListener('dracoman_levels_updated', handleLevelsUpdate);
+    return () => window.removeEventListener('dracoman_levels_updated', handleLevelsUpdate);
   }, [saveData.lastWorldId]);
 
-  const activeWorld = WORLDS.find(w => w.id === activeWorldId) || WORLDS[0];
-  const activeTheme = WORLD_BG_THEMES[activeWorld.id] || WORLD_BG_THEMES[1];
+  const currentTier = mounted ? (saveData.tier || 'Free') : 'Free';
+  const completedStages = mounted ? (saveData.completedStages || []) : [];
+  const effectiveActiveWorldId = mounted ? activeWorldId : 1;
+  const currentWorlds = mounted ? worlds : WORLDS;
 
-  const filteredWorlds = WORLDS.filter(w =>
+  const activeWorld = currentWorlds.find(w => w.id === effectiveActiveWorldId) || currentWorlds[0] || WORLDS[0];
+  const activeTheme = WORLD_BG_THEMES[activeWorld?.id] || WORLD_BG_THEMES[1];
+
+  const filteredWorlds = currentWorlds.filter(w =>
     w.name.toLowerCase().includes(worldSearch.toLowerCase()) ||
     w.description.toLowerCase().includes(worldSearch.toLowerCase()) ||
     w.bossName.toLowerCase().includes(worldSearch.toLowerCase()) ||
     `world ${w.id}`.toLowerCase().includes(worldSearch.toLowerCase()) ||
     `w${w.id}`.toLowerCase().includes(worldSearch.toLowerCase())
   );
-
-  const completedStages = saveData.completedStages || [];
 
   return (
     <div className="min-h-screen bg-stone-950 text-stone-100 font-display flex flex-col justify-between relative overflow-hidden select-none">
@@ -91,7 +104,7 @@ export default function MapsPage() {
               Campaign Worlds <span className="bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400 bg-clip-text text-transparent">&amp; Stages</span>
             </h1>
             <p className="text-xs md:text-sm text-stone-400 max-w-2xl leading-relaxed font-mono">
-              Explore 11 distinct elemental realms featuring progressive drop rewards (up to 5.0x in Space!). Defeat world bosses to conquer each region.
+              Explore 13 distinct elemental realms featuring progressive drop rewards (up to 5.0x in Space &amp; Desert!). Defeat world bosses to conquer each region.
             </p>
           </div>
 
@@ -101,7 +114,7 @@ export default function MapsPage() {
               <Trophy className="w-4 h-4 text-amber-400" />
               <div>
                 <span className="text-[9px] font-mono text-stone-500 uppercase block font-semibold">Cleared Stages</span>
-                <span className="text-xs font-black text-amber-400 font-display">{completedStages.length} / 33</span>
+                <span className="text-xs font-black text-amber-400 font-display">{completedStages.length} / 61</span>
               </div>
             </div>
             <div className="px-4 py-2.5 bg-stone-900/90 border border-stone-800 rounded-2xl flex items-center gap-3 backdrop-blur-md shadow-lg">
@@ -144,7 +157,7 @@ export default function MapsPage() {
           {/* UN-SQUISHED WORLD CARDS GRID (6 COLS = 2 CLEAN ROWS FOR 12 WORLDS) */}
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3.5">
             {filteredWorlds.map((world) => {
-              const isActive = world.id === activeWorldId;
+              const isActive = world.id === effectiveActiveWorldId;
               const wTheme = WORLD_BG_THEMES[world.id] || WORLD_BG_THEMES[1];
               return (
                 <button
@@ -206,7 +219,7 @@ export default function MapsPage() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
-                    WORLD {activeWorld.id} / 11
+                    WORLD {activeWorld.id} / 13
                   </span>
                   <span className="text-stone-600">•</span>
                   <span className="text-xs font-mono font-bold text-stone-400">
@@ -241,7 +254,7 @@ export default function MapsPage() {
           </div>
         </motion.div>
 
-        {/* STAGES GRID LIST (2 COLUMNS MAX) */}
+        {/* STAGES GRID LIST (3 COLUMNS) */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-xs font-mono font-bold text-stone-400 uppercase tracking-widest flex items-center gap-2">
@@ -252,7 +265,7 @@ export default function MapsPage() {
             </span>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {activeWorld.stages.map((stg, idx) => {
               const stageNum = stg.globalStageNum;
               const isUnlocked = stageNum === 1 || currentTier === 'Premium' || currentTier === 'Basic' || completedStages.includes(stageNum - 1);

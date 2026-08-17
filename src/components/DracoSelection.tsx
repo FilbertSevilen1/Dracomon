@@ -824,7 +824,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   const spd = Math.round((inspectedData.speed || 1) * 10) / 10;
 
   const levelUpCost = lvl * 100;
-  const canLevelUp = isUnlocked && lvl < 15 && coins >= levelUpCost;
+  const canLevelUp = isUnlocked && lvl < 25 && coins >= levelUpCost;
 
   const content = (
     <div className={`w-full flex flex-col ${isFullPage ? 'min-h-[550px]' : 'bg-stone-950 border border-stone-800/90 rounded-3xl shadow-2xl overflow-hidden max-h-[92vh]'}`}>
@@ -1090,12 +1090,12 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 <div className="flex items-center justify-between mb-3">
                   <div className="text-xs font-black uppercase tracking-wider text-stone-200 flex items-center gap-1.5 font-display">
                     <span>Battle Attributes</span>
-                    {isUnlocked && <span className="text-stone-400 font-mono text-[11px] font-normal">(Lv.{lvl}/15)</span>}
+                    {isUnlocked && <span className="text-stone-400 font-mono text-[11px] font-normal">(Lv.{lvl}/25)</span>}
                   </div>
 
                   {isUnlocked && (
                     <div>
-                      {lvl >= 15 ? (
+                      {lvl >= 25 ? (
                         <span className="px-2.5 py-1 text-[10px] font-black text-purple-300 bg-purple-950/80 border border-purple-800 rounded-lg">
                           MAX LEVEL
                         </span>
@@ -1133,7 +1133,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
                       <div
                         className="h-full bg-rose-500 shadow-[0_0_10px_rgba(244,63,94,0.6)] rounded-full"
-                        style={{ width: `${Math.min(100, (hp / 35) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (hp / 240) * 100)}%` }}
                       />
                     </div>
                   </div>
@@ -1146,7 +1146,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
                       <div
                         className="h-full bg-amber-500 shadow-[0_0_10px_rgba(245,158,11,0.6)] rounded-full"
-                        style={{ width: `${Math.min(100, (att / 20) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (att / 35) * 100)}%` }}
                       />
                     </div>
                   </div>
@@ -1159,7 +1159,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     <div className="h-2 bg-stone-900 rounded-full overflow-hidden border border-stone-800">
                       <div
                         className="h-full bg-blue-500 shadow-[0_0_10px_rgba(59,130,246,0.6)] rounded-full"
-                        style={{ width: `${Math.min(100, (def / 20) * 100)}%` }}
+                        style={{ width: `${Math.min(100, (def / 70) * 100)}%` }}
                       />
                     </div>
                   </div>

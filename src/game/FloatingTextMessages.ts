@@ -265,3 +265,20 @@ export function FT_SOUL_BLAST_WAVES(totalWaves: number): FloatingTextEntry {
   return { text: `SOUL BLAST`, color: '#ef4444' };
 }
 
+// ---------------------------------------------------------------------------
+// World 13: Desert Oasis & Living Pyramid Boss
+// ---------------------------------------------------------------------------
+export function FT_SANDSTORM_DAMAGE(dmg: number): FloatingTextEntry {
+  return { text: `SANDSTORM! -${dmg} HP`, color: '#f59e0b' };
+}
+export const FT_QUICKSAND_SINK: FloatingTextEntry         = { text: 'QUICKSAND SINKING!', color: '#eab308' };
+export const FT_QUICKSAND_INSTAKILL: FloatingTextEntry    = { text: 'SWALLOWED BY QUICKSAND! INSTA-KILL!', color: '#ef4444' };
+export const FT_LIVING_PYRAMID_SLAIN: FloatingTextEntry   = { text: 'LIVING PYRAMID SLAIN!', color: '#fbbf24' };
+export const FT_PYRAMID_SCI_FI_LASER: FloatingTextEntry   = { text: 'FORGOTTEN SCI-FI LASER!', color: '#06b6d4' };
+export const FT_PYRAMID_HYPER_CHARGE: FloatingTextEntry   = { text: 'PYRAMID HYPER-CHARGE!', color: '#f97316' };
+export const FT_PYRAMID_SAND_SUCK: FloatingTextEntry      = { text: 'SAND VORTEX SUCK!', color: '#eab308' };
+export const FT_BOOMERANG_THROW: FloatingTextEntry        = { text: 'BONE BOOMERANG!', color: '#e2e8f0' };
+export const FT_CACTUS_SPINE_BURST: FloatingTextEntry     = { text: 'NEEDLE BURST!', color: '#84cc16' };
+export const FT_POKEY_POP: FloatingTextEntry              = { text: 'POKEY SEGMENT POPPED!', color: '#eab308' };
+
+
