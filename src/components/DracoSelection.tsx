@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+ import React, { useState, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { SaveData, TierType, PlayerStats } from '../types/game';
@@ -234,6 +234,26 @@ const DRACO_META: {
     colorClass: 'text-rose-400 border-rose-600 bg-rose-950',
     bgGradient: 'from-rose-900 via-stone-900 to-amber-950',
   },
+  EndMon: {
+    role: 'Flame Dragon Overlord / Aerial Apocalypse',
+    abilityName: 'Dragon Rifle & Dragonic Fire Breath',
+    abilityDesc: 'Fires high-velocity rifle bullets. Skill breathes dragon flame forward, damaging foes and scorching the earth with a 3s burning ground zone.',
+    ultimateName: 'Eternal Apocalypse (100 Energy)',
+    ultimateDesc: 'Scorches the earth with a 3s burning ground zone and launches powerfully skyward into an 8s hovering flight (W / Up to ascend, S / Down to descend). Basic attack fires 2 homing bullets simultaneously. Skill unleashes a devastating homing Dragonic Flare Beam that incinerates enemies in its path, creates a 3s burning ground zone, and pulverizes 1-block radius terrain on impact! All damage dealt is boosted by +10% per level during this form.',
+    cost: 500,
+    colorClass: 'text-red-500 border-red-500 bg-red-950',
+    bgGradient: 'from-red-700 via-orange-600 to-amber-500',
+  },
+  Blastermon: {
+    role: 'Shadow Paladin Knight / Execute Bruiser',
+    abilityName: 'Forward Dash Slash & Lightning Arc',
+    abilityDesc: 'Basic attack slashes while dashing forward. Skill slams blade downwards into the ground, launching a high-damage lightning arc to the nearest enemy that chains to subsequent units when each is killed!',
+    ultimateName: 'Stroke of Bravery (100 Energy)',
+    ultimateDesc: 'Launches into the sky as his blade expands to colossal proportions, slamming down into the earth to stun all enemies in the area for 2 seconds and deal heavy execute damage scaling with missing enemy health! Blastermon then crashes down and becomes Spirited for 8 seconds: basic attack enhances to Shining Cleave (1200px range piercing wave) and skill lightning arc summons cleave bursts on hit while chaining up to 5 enemies even if they are not killed!',
+    cost: 500,
+    colorClass: 'text-purple-400 border-purple-500 bg-purple-950',
+    bgGradient: 'from-purple-950 via-zinc-900 to-amber-950',
+  },
 };
 
 export const DracoSelection: React.FC<DracoSelectionProps> = ({
@@ -413,8 +433,8 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
           <div className="p-4 bg-stone-900/40 rounded-3xl border border-stone-800/80 backdrop-blur-xl">
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 xl:grid-cols-4 gap-3.5">
               {filteredDracos.map((name) => {
-                const dData = saveData.dracos[name];
-                const meta = DRACO_META[name];
+                const dData = saveData.dracos[name] || { unlocked: false };
+                const meta = DRACO_META[name] || DRACO_META['Jumpmon'];
                 const itemUnlocked = !!dData.unlocked;
                 const itemEquipped = equippedDraco === name;
                 const isSelected = selectedName === name;
@@ -1176,3 +1196,4 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
 };
 
 export default DracoSelection;
+

@@ -270,6 +270,30 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    EndMon: {
+      level: 1,
+      exp: 0,
+      hp: 38,
+      attack: 11.0,
+      defense: 7.0,
+      speed: 8.0,
+      jump: 11,
+      range: 8,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
+    Blastermon: {
+      level: 1,
+      exp: 0,
+      hp: 46,
+      attack: 11.5,
+      defense: 8.0,
+      speed: 7.2,
+      jump: 11,
+      range: 4,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   difficulty: 'normal',
@@ -538,6 +562,34 @@ export const storageService = {
             energyRegen: 1.0,
           };
         }
+        if (!parsed.dracos.EndMon) {
+          parsed.dracos.EndMon = {
+            level: 1,
+            exp: 0,
+            hp: 38,
+            attack: 11.0,
+            defense: 7.0,
+            speed: 8.0,
+            jump: 11,
+            range: 8,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Blastermon) {
+          parsed.dracos.Blastermon = {
+            level: 1,
+            exp: 0,
+            hp: 46,
+            attack: 11.5,
+            defense: 8.0,
+            speed: 7.2,
+            jump: 11,
+            range: 4,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
 
         const MELEE_BASE_STATS: Record<string, { hp: number; defense: number }> = {
           Jumpmon: { hp: 36, defense: 6 },
@@ -545,7 +597,8 @@ export const storageService = {
           Assassinmon: { hp: 30, defense: 4 },
           Krakenmon: { hp: 48, defense: 8 },
           Butchermon: { hp: 52, defense: 8 },
-          Reapermon: { hp: 44, defense: 7 }
+          Reapermon: { hp: 44, defense: 7 },
+          Blastermon: { hp: 46, defense: 8 }
         };
 
         Object.keys(parsed.dracos).forEach(key => {

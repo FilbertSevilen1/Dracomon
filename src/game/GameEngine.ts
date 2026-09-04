@@ -159,6 +159,16 @@ import {
   FT_BURN_EXPLOSION,
   FT_PRIMORDIAL_GOD_CONQUERED,
   FT_SOUL_BLAST_WAVES,
+  FT_ENDMON_FIRE_BREATH,
+  FT_ETERNAL_APOCALYPSE,
+  FT_ENDMON_FLARE_BEAM,
+  FT_ENHANCED_FIREBALL,
+  FT_BLASTERMON_LIGHTNING_ARC,
+  FT_BLASTERMON_CHAIN_LIGHTNING,
+  FT_STROKE_OF_BRAVERY,
+  FT_BLASTERMON_GIANT_BLADE_SLAM,
+  FT_BLASTERMON_SPIRITED,
+  FT_BLASTERMON_SHINING_CLEAVE,
 } from './FloatingTextMessages';
 
 interface FloatingText {
@@ -167,6 +177,8 @@ interface FloatingText {
   text: string;
   color: string;
   life: number;
+  maxLife?: number;
+  isCinematic?: boolean;
   isUltimate?: boolean;
 }
 
@@ -179,6 +191,7 @@ interface Particle {
   size: number;
   life: number;
   maxLife: number;
+  isGhost?: boolean;
 }
 
 interface Projectile {
@@ -191,7 +204,7 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock' | 'boomerang' | 'cactus_needle' | 'sci_fi_laser';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'shining_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock' | 'boomerang' | 'cactus_needle' | 'sci_fi_laser' | 'endmon_bullet' | 'endmon_homing_bullet' | 'endmon_enhanced_fireball';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
@@ -201,6 +214,7 @@ interface Projectile {
   boomerangOwnerId?: number;
   boomerangReturning?: boolean;
   boomerangTraveled?: number;
+  targetEnemy?: Enemy | null;
 }
 
 interface Pickup {
@@ -437,6 +451,55 @@ export class GameEngine {
   private magemonSpellIndex = 0;
   private magemonUltActive = false;
   private magemonUltTimer = 0;
+
+  public endmonUltActive = false;
+  public endmonUltTimer = 0;
+  public endmonIsLaunching = false;
+  public endmonLaunchTargetY = 0;
+  public endmonFlareBeamActive = false;
+  public endmonFlareBeamTimer = 0;
+  public endmonFlareBeamAngle = 0;
+  public endmonFlareBeamTarget: Enemy | null = null;
+  public endmonFlareBeamStartX = 0;
+  public endmonFlareBeamStartY = 0;
+  public endmonFlareBeamEndX = 0;
+  public endmonFlareBeamEndY = 0;
+  public endmonFlareBeamFacing = 1;
+  public endmonFlareBeamLength = 0;
+  private endmonFlareBeamHits: Map<string, number> = new Map();
+
+  // Blastermon: Shadow Paladin Knight
+  public blastermonSpiritedActive = false;
+  public blastermonSpiritedTimer = 0;
+  public blastermonUltActive = false;
+  public blastermonUltPhase: 'none' | 'launch' | 'giant_blade' | 'hero_slam' = 'none';
+  public blastermonUltTimer = 0;
+  public blastermonGiantBladeX = 0;
+  public blastermonGiantBladeY = 0;
+  public blastermonGiantBladeTargetY = 0;
+  public blastermonHeroSlamTargetY = 0;
+  public blastermonLightningArcs: Array<{
+    x1: number;
+    y1: number;
+    x2: number;
+    y2: number;
+    timer: number;
+    maxTimer: number;
+    color: string;
+    segments?: Array<{ x: number; y: number }>;
+  }> = [];
+  public blastermonSummonedCleaves: Array<{
+    id: number;
+    x: number;
+    y: number;
+    timer: number;
+    maxTimer: number;
+    angle: number;
+    facing: number;
+  }> = [];
+  public blastermonUltImpactTimer = 0;
+  public blastermonUltImpactX = 0;
+  public blastermonUltImpactY = 0;
 
   private thundermonDashActive = false;
   private thundermonDashTimer = 0;
@@ -1605,6 +1668,7 @@ export class GameEngine {
       this.keys['d'] = true;
       this.keys['a'] = false;
     } else if (action === 'jump') {
+      this.keys['w'] = true;
       this.jump();
     } else if (action === 'attack') {
       this.performAttack();
@@ -1617,10 +1681,11 @@ export class GameEngine {
     }
   }
 
-  public stopAction(action: 'left' | 'right' | 'down') {
+  public stopAction(action: 'left' | 'right' | 'down' | 'jump') {
     if (action === 'left') this.keys['a'] = false;
     if (action === 'right') this.keys['d'] = false;
     if (action === 'down') this.keys['s'] = false;
+    if (action === 'jump') this.keys['w'] = false;
   }
 
   private jump() {
@@ -1674,6 +1739,15 @@ export class GameEngine {
     }
 
     const effectiveJump = Math.min(14, Math.max(10, this.stats.jump));
+
+    if (this.selectedDraco === 'EndMon' && this.endmonUltActive) {
+      this.pvy = -5.5;
+      this.pGrounded = false;
+      this.isPlunging = false;
+      soundService.playJump();
+      this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight, 8, '#ef4444');
+      return;
+    }
 
     if (this.pGrounded) {
       this.pvy = -Math.min(14, effectiveJump * 0.95);
@@ -2137,6 +2211,201 @@ export class GameEngine {
           life: 14,
           maxLife: 14
         });
+      }
+    } else if (this.selectedDraco === 'EndMon') {
+      soundService.playShoot();
+      this.attackCooldown = 18;
+
+      if (this.endmonUltActive) {
+        // Eternal Apocalypse: fires 2 homing bullets simultaneously
+        const playerCenterX = this.px + this.pWidth / 2;
+        const playerCenterY = this.py + this.pHeight / 2;
+
+        const candidateEnemies = this.enemies
+          .filter(e => e.hp > 0 && Math.hypot((e.x + e.width / 2) - playerCenterX, (e.y + e.height / 2) - playerCenterY) <= 900)
+          .sort((a, b) => {
+            const da = Math.hypot((a.x + a.width / 2) - playerCenterX, (a.y + a.height / 2) - playerCenterY);
+            const db = Math.hypot((b.x + b.width / 2) - playerCenterX, (b.y + b.height / 2) - playerCenterY);
+            return da - db;
+          });
+
+        let target1: Enemy | null = null;
+        let target2: Enemy | null = null;
+
+        if (candidateEnemies.length >= 2) {
+          target1 = candidateEnemies[0];
+          target2 = candidateEnemies[1];
+        } else if (candidateEnemies.length === 1) {
+          target1 = candidateEnemies[0];
+          target2 = candidateEnemies[0];
+        }
+
+        const muzzleX = this.pFacing === 1 ? this.px + this.pWidth + 8 : this.px - 16;
+        const muzzleY = this.py + this.pHeight / 2 - 4;
+
+        [-6, 6].forEach((offsetY, idx) => {
+          const designatedTarget = idx === 0 ? target1 : target2;
+          let initVx = this.pFacing * 9.5;
+          let initVy = idx === 0 ? -2.0 : 2.0;
+
+          if (designatedTarget) {
+            const ex = designatedTarget.x + designatedTarget.width / 2;
+            const ey = designatedTarget.y + designatedTarget.height / 2;
+            const ang = Math.atan2(ey - (muzzleY + offsetY), ex - muzzleX);
+            initVx = Math.cos(ang) * 9.5;
+            initVy = Math.sin(ang) * 9.5;
+          }
+
+          this.projectiles.push({
+            x: muzzleX,
+            y: muzzleY + offsetY,
+            vx: initVx,
+            vy: initVy,
+            width: 14,
+            height: 8,
+            isEnemy: false,
+            damage: Math.ceil(this.stats.attack * 1.1),
+            color: '#fbbf24',
+            type: 'endmon_homing_bullet' as any,
+            isHoming: true,
+            targetEnemy: designatedTarget,
+            rangeCap: 900,
+            startX: this.px
+          } as any);
+        });
+
+        this.screenShake = Math.max(this.screenShake, 8);
+        for (let p = 0; p < 12; p++) {
+          this.particles.push({
+            x: muzzleX,
+            y: muzzleY + (Math.random() - 0.5) * 12,
+            vx: this.pFacing * (Math.random() * 5 + 3),
+            vy: (Math.random() - 0.5) * 4,
+            size: Math.random() * 4 + 2,
+            color: p % 2 === 0 ? '#fbbf24' : '#ef4444',
+            life: 14,
+            maxLife: 14
+          });
+        }
+      } else {
+        // Normal basic attack: Fires high-velocity dragon rifle bullet forward
+        const bulletVx = this.pFacing * (this.stats.speed + 8.5);
+        const muzzleX = this.pFacing === 1 ? this.px + this.pWidth + 6 : this.px - 16;
+        const muzzleY = this.py + this.pHeight / 2 - 3;
+
+        this.projectiles.push({
+          x: muzzleX,
+          y: muzzleY,
+          vx: bulletVx,
+          vy: 0,
+          width: 16,
+          height: 6,
+          isEnemy: false,
+          damage: this.stats.attack,
+          color: '#ef4444',
+          type: 'endmon_bullet' as any,
+          rangeCap: 800,
+          startX: this.px
+        } as any);
+
+        for (let p = 0; p < 8; p++) {
+          this.particles.push({
+            x: muzzleX,
+            y: muzzleY + (Math.random() - 0.5) * 8,
+            vx: this.pFacing * (Math.random() * 4 + 2),
+            vy: (Math.random() - 0.5) * 3,
+            size: Math.random() * 4 + 2,
+            color: p % 2 === 0 ? '#ef4444' : '#fbbf24',
+            life: 12,
+            maxLife: 12
+          });
+        }
+      }
+    } else if (this.selectedDraco === 'Blastermon') {
+      this.attackDuration = 10;
+      this.attackCooldown = 16;
+      // Dash a little bit forward with slash
+      this.pvx += this.pFacing * 3.5;
+
+      const isSpirited = this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0;
+
+      if (isSpirited) {
+        // Enhanced Basic Attack: Shining Cleave (Max 1200px range forward piercing crescent wave)
+        soundService.playSciFiLaser();
+        this.screenShake = 12;
+        const cleaveW = 72;
+        const cleaveH = 110;
+        const cleaveX = this.pFacing === 1 ? this.px + this.pWidth + 4 : this.px - cleaveW - 4;
+        const cleaveY = this.py + (this.pHeight - cleaveH) / 2;
+
+        this.projectiles.push({
+          x: cleaveX,
+          y: cleaveY,
+          vx: this.pFacing * 14.5,
+          vy: 0,
+          width: cleaveW,
+          height: cleaveH,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 2.4),
+          color: '#c084fc',
+          type: 'shining_cleave' as any,
+          rangeCap: 1200,
+          startX: this.px,
+          traveledDist: 0,
+          hitEnemyIds: []
+        } as any);
+
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_BLASTERMON_SHINING_CLEAVE.text, FT_BLASTERMON_SHINING_CLEAVE.color);
+
+        // Radiant violet, gold, and white high-speed sonic launch particles
+        for (let p = 0; p < 18; p++) {
+          this.particles.push({
+            x: cleaveX + (this.pFacing === 1 ? 12 : cleaveW - 12),
+            y: cleaveY + Math.random() * cleaveH,
+            vx: this.pFacing * (Math.random() * 7 + 4),
+            vy: (Math.random() - 0.5) * 5,
+            size: Math.random() * 6 + 3,
+            color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#fef08a' : '#c084fc',
+            life: 18,
+            maxLife: 18
+          });
+        }
+      } else {
+        // Base Slash Attack: Melee slash in front with forward momentum
+        soundService.playHit();
+        const slashReach = 72;
+        const slashDmg = Math.floor(this.stats.attack * 1.35);
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dx = ex - (this.px + this.pWidth / 2);
+          const dy = ey - (this.py + this.pHeight / 2);
+
+          const inFront = (this.pFacing === 1 && dx > -10 && dx < slashReach + 15) || (this.pFacing === -1 && dx < 10 && dx > -slashReach - 15);
+          if (inFront && Math.abs(dy) < 55) {
+            this.damageEnemy(enemy, slashDmg);
+            this.spawnDustParticles(ex, ey, 8, '#7c3aed');
+            this.spawnDustParticles(ex, ey, 6, '#fbbf24');
+          }
+        });
+
+        // Dark purple energy & electric spark slash trail
+        for (let p = 0; p < 10; p++) {
+          const sparkAngle = (this.pFacing === 1 ? -0.3 : Math.PI + 0.3) + (Math.random() - 0.5) * 0.8;
+          const sparkSpeed = Math.random() * 6 + 2;
+          this.particles.push({
+            x: this.pFacing === 1 ? this.px + this.pWidth + 8 : this.px - 8,
+            y: this.py + Math.random() * this.pHeight,
+            vx: Math.cos(sparkAngle) * sparkSpeed,
+            vy: Math.sin(sparkAngle) * sparkSpeed,
+            size: Math.random() * 4 + 2,
+            color: p % 3 === 0 ? '#18181b' : p % 3 === 1 ? '#7c3aed' : '#fbbf24',
+            life: 14,
+            maxLife: 14
+          });
+        }
       }
     } else if (this.selectedDraco === 'Krakenmon') {
       soundService.playHit();
@@ -2952,6 +3221,371 @@ export class GameEngine {
           maxLife: 20
         });
       }
+    } else if (this.selectedDraco === 'EndMon') {
+      soundService.playShoot();
+      this.specialCooldown = 180;
+
+      if (this.endmonUltActive) {
+        // Dragonic Flare Beam: Homing piercing beam locked directly onto enemies!
+        // Automatically aims, homes, and tracks nearest enemy, raycasting through terrain with 3s ground burn and crater.
+        const playerCenterX = this.px + this.pWidth / 2;
+        const playerCenterY = this.py + this.pHeight / 2;
+
+        let nearestEnemy: Enemy | null = null;
+        let minDistance = 1100;
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dist = Math.hypot(ex - playerCenterX, ey - playerCenterY);
+          if (dist < minDistance) {
+            minDistance = dist;
+            nearestEnemy = enemy;
+          }
+        });
+
+        this.endmonFlareBeamTarget = nearestEnemy;
+
+        if (nearestEnemy) {
+          this.pFacing = (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2 >= playerCenterX ? 1 : -1;
+        }
+
+        const gunPivotX = this.pFacing === 1 ? this.px + this.pWidth - 2 : this.px - 14;
+        const gunPivotY = this.py + 20;
+
+        let initialAngle = this.pFacing === 1 ? 0 : Math.PI;
+        if (nearestEnemy) {
+          const ex = (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2;
+          const ey = (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2;
+          initialAngle = Math.atan2(ey - gunPivotY, ex - gunPivotX);
+        }
+        this.endmonFlareBeamAngle = initialAngle;
+
+        const muzzleX = gunPivotX + Math.cos(initialAngle) * 22;
+        const muzzleY = gunPivotY + Math.sin(initialAngle) * 22;
+
+        this.endmonFlareBeamActive = true;
+        this.endmonFlareBeamTimer = 32; // ~0.53s continuous beam at 60 FPS
+        this.endmonFlareBeamFacing = this.pFacing;
+        this.endmonFlareBeamStartX = muzzleX;
+        this.endmonFlareBeamStartY = muzzleY;
+        this.endmonFlareBeamHits.clear();
+
+        // Calculate initial raycast end point along initialAngle against solid terrain
+        const maxDist = 1100;
+        const cosA = Math.cos(initialAngle);
+        const sinA = Math.sin(initialAngle);
+        let endX = muzzleX + cosA * maxDist;
+        let endY = muzzleY + sinA * maxDist;
+        const grid = this.getActiveGrid();
+        const ts = this.level.tileSize || 40;
+        if (grid && grid.length > 0) {
+          const stepSize = 16;
+          for (let dist = 16; dist <= maxDist; dist += stepSize) {
+            const checkX = muzzleX + cosA * dist;
+            const checkY = muzzleY + sinA * dist;
+            const r = Math.floor(checkY / ts);
+            const c = Math.floor(checkX / ts);
+            if (r >= 0 && r < grid.length && c >= 0 && c < grid[r].length) {
+              const char = grid[r][c];
+              if (char === '#' || char === '=' || char === 'H' || char === '*' || char === 'b' || char === 'B') {
+                endX = checkX;
+                endY = checkY;
+                break;
+              }
+            }
+          }
+        }
+        this.endmonFlareBeamEndX = endX;
+        this.endmonFlareBeamEndY = endY;
+        this.endmonFlareBeamLength = Math.hypot(endX - muzzleX, endY - muzzleY);
+
+        soundService.playSciFiLaser();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_ENDMON_FLARE_BEAM.text, FT_ENDMON_FLARE_BEAM.color);
+        this.screenShake = Math.max(this.screenShake, 25);
+
+        // Immediate cataclysmic explosion at endpoint (crater, 3s ground burn, AoE damage)
+        const beamImpactDmg = Math.floor(this.stats.attack * 3.4);
+        this.triggerEndmonEnhancedExplosion(endX, endY, beamImpactDmg);
+
+        // Muzzle blast particles along beam angle
+        for (let p = 0; p < 24; p++) {
+          const spread = (Math.random() - 0.5) * 1.4;
+          const ang = initialAngle + spread;
+          const spd = Math.random() * 8 + 3;
+          this.particles.push({
+            x: muzzleX,
+            y: muzzleY,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: Math.random() * 7 + 3,
+            color: p % 3 === 0 ? '#fef08a' : p % 3 === 1 ? '#f97316' : '#ef4444',
+            life: 22,
+            maxLife: 22
+          });
+        }
+      } else {
+        // Normal Fire Breath: Breathes fire to the front, burns ground for 3 seconds
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_ENDMON_FIRE_BREATH.text, FT_ENDMON_FIRE_BREATH.color);
+        soundService.playShoot();
+        this.screenShake = Math.max(this.screenShake, 12);
+
+        const breathReach = 220;
+        const breathDmg = Math.floor(this.stats.attack * 2.2);
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dx = ex - (this.px + this.pWidth / 2);
+          const dy = ey - (this.py + this.pHeight / 2);
+
+          const inFront = (this.pFacing === 1 && dx > -20 && dx < breathReach) || (this.pFacing === -1 && dx < 20 && dx > -breathReach);
+          if (inFront && Math.abs(dy) < 80) {
+            this.damageEnemy(enemy, breathDmg);
+            enemy.burnTimer = 30;
+            enemy.burnLingerTimer = 180; // 3 seconds at 60 FPS
+            this.spawnDustParticles(ex, ey, 10, '#ef4444');
+            this.spawnDustParticles(ex, ey, 8, '#f97316');
+          }
+        });
+
+        // Burns the ground for 3 seconds (180 frames)
+        const burnZoneX = this.pFacing === 1 ? this.px + 10 : this.px - 150;
+        const burnZoneY = this.py + this.pHeight - 8;
+        this.groundBurnZones.push({
+          id: this.groundBurnIdCounter++,
+          x: burnZoneX,
+          y: burnZoneY,
+          width: 150,
+          height: 18,
+          timer: 180,
+          duration: 180
+        });
+
+        // Fire breath flame cone stream particles
+        for (let i = 0; i < 30; i++) {
+          const spread = (Math.random() - 0.5) * 0.5;
+          const baseAngle = this.pFacing === 1 ? 0 : Math.PI;
+          const angle = baseAngle + spread;
+          const speed = Math.random() * 8 + 4;
+          this.particles.push({
+            x: this.pFacing === 1 ? this.px + this.pWidth : this.px,
+            y: this.py + this.pHeight / 2 - 8 + (Math.random() - 0.5) * 16,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed * 0.6,
+            size: Math.random() * 8 + 4,
+            color: i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#f97316' : '#fbbf24',
+            life: 25,
+            maxLife: 25
+          });
+        }
+      }
+    } else if (this.selectedDraco === 'Blastermon') {
+      soundService.playHit();
+      this.specialCooldown = 150;
+
+      const bladeImpactX = this.pFacing === 1 ? this.px + this.pWidth + 12 : this.px - 12;
+      const bladeImpactY = this.py + this.pHeight;
+
+      // Downward blade slam ground impact shockwave & sparks
+      this.screenShake = 16;
+      for (let p = 0; p < 20; p++) {
+        const ang = (Math.random() - 0.5) * Math.PI;
+        const spd = Math.random() * 8 + 3;
+        this.particles.push({
+          x: bladeImpactX,
+          y: bladeImpactY - 4,
+          vx: Math.cos(ang) * spd,
+          vy: -Math.abs(Math.sin(ang) * spd) - 1,
+          size: Math.random() * 6 + 2,
+          color: p % 3 === 0 ? '#fbbf24' : p % 3 === 1 ? '#c084fc' : '#7c3aed',
+          life: 20,
+          maxLife: 20
+        });
+      }
+
+      const isSpirited = this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0;
+
+      if (isSpirited) {
+        // SPIRITED SKILL: Lightning arc summons a cleave when hitting enemies, and jumps to up to 5 enemies even if not killed yet!
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_BLASTERMON_LIGHTNING_ARC.text, FT_BLASTERMON_LIGHTNING_ARC.color);
+        soundService.playSciFiLaser();
+
+        const hitEnemyIds: number[] = [];
+        let currX = bladeImpactX;
+        let currY = bladeImpactY - 14;
+        const maxJumps = 5;
+
+        for (let jump = 0; jump < maxJumps; jump++) {
+          let nearestEnemy: Enemy | null = null;
+          let minDistance = 650;
+
+          for (const enemy of this.enemies) {
+            if (enemy.hp <= 0 || hitEnemyIds.includes(enemy.id)) continue;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - currX, ey - currY);
+            if (dist < minDistance) {
+              minDistance = dist;
+              nearestEnemy = enemy;
+            }
+          }
+
+          if (!nearestEnemy) break;
+
+          const targetEnemy = nearestEnemy as Enemy;
+          hitEnemyIds.push(targetEnemy.id);
+          const targetX = targetEnemy.x + targetEnemy.width / 2;
+          const targetY = targetEnemy.y + targetEnemy.height / 2;
+
+          // Add animated lightning arc to list
+          this.blastermonLightningArcs.push({
+            x1: currX,
+            y1: currY,
+            x2: targetX,
+            y2: targetY,
+            timer: 24,
+            maxTimer: 24,
+            color: '#c084fc'
+          });
+
+          // Deal heavy lightning damage
+          const arcDmg = Math.floor(this.stats.attack * 3.2);
+          this.damageEnemy(targetEnemy, arcDmg);
+
+          // Summon a Cleave at the target's position!
+          this.addFloatingText(targetX, targetY - 25, '✨ SUMMONED CLEAVE!', '#fbbf24');
+          soundService.playAzuremonImpact();
+          this.screenShake = 16;
+
+          // Register dedicated spectral blade cleave animation!
+          this.blastermonSummonedCleaves.push({
+            id: Math.random(),
+            x: targetX,
+            y: targetY,
+            timer: 24,
+            maxTimer: 24,
+            angle: (Math.random() - 0.5) * 0.3 + (this.pFacing === 1 ? -0.15 : 0.15),
+            facing: this.pFacing
+          });
+
+          // Explosive sparks & energy embers
+          for (let p = 0; p < 22; p++) {
+            const spd = Math.random() * 8 + 3;
+            const ang = (Math.random() - 0.5) * Math.PI;
+            this.particles.push({
+              x: targetX + (Math.random() - 0.5) * 20,
+              y: targetY + (Math.random() - 0.5) * 40,
+              vx: Math.cos(ang) * spd,
+              vy: -Math.abs(Math.sin(ang) * spd) - 2,
+              size: Math.random() * 6 + 3,
+              color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#fef08a' : '#c084fc',
+              life: 20,
+              maxLife: 20
+            });
+          }
+
+          // Bonus vertical cleave slash damage to this target and nearby enemies within 90px
+          this.enemies.forEach(e => {
+            if (e.hp <= 0) return;
+            const ex = e.x + e.width / 2;
+            const ey = e.y + e.height / 2;
+            if (Math.hypot(ex - targetX, ey - targetY) <= 90) {
+              this.damageEnemy(e, Math.floor(this.stats.attack * 1.5));
+            }
+          });
+
+          // Next jump originates from this enemy
+          currX = targetX;
+          currY = targetY;
+        }
+
+        if (hitEnemyIds.length === 0) {
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'NO ENEMIES IN RANGE', '#94a3b8');
+        }
+      } else {
+        // NORMAL SKILL: Slams blade downwards, creating a lightning arc towards the nearest enemy (deals heavy damage).
+        // If that unit is killed, the lightning arc continues / chains to the next unit!
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_BLASTERMON_LIGHTNING_ARC.text, FT_BLASTERMON_LIGHTNING_ARC.color);
+        soundService.playSciFiLaser();
+
+        const hitEnemyIds: number[] = [];
+        let currX = bladeImpactX;
+        let currY = bladeImpactY - 14;
+        let continueChain = true;
+
+        while (continueChain) {
+          let nearestEnemy: Enemy | null = null;
+          let minDistance = hitEnemyIds.length === 0 ? 800 : 600;
+
+          for (const enemy of this.enemies) {
+            if (enemy.hp <= 0 || hitEnemyIds.includes(enemy.id)) continue;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - currX, ey - currY);
+            if (dist < minDistance) {
+              minDistance = dist;
+              nearestEnemy = enemy;
+            }
+          }
+
+          if (!nearestEnemy) {
+            if (hitEnemyIds.length === 0) {
+              this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'NO ENEMIES IN RANGE', '#94a3b8');
+            }
+            break;
+          }
+
+          const targetEnemy = nearestEnemy as Enemy;
+          hitEnemyIds.push(targetEnemy.id);
+          const targetX = targetEnemy.x + targetEnemy.width / 2;
+          const targetY = targetEnemy.y + targetEnemy.height / 2;
+
+          // Lightning arc visual
+          this.blastermonLightningArcs.push({
+            x1: currX,
+            y1: currY,
+            x2: targetX,
+            y2: targetY,
+            timer: 22,
+            maxTimer: 22,
+            color: '#a855f7'
+          });
+
+          // Deal heavy burst damage
+          const arcDmg = Math.floor(this.stats.attack * 3.5);
+          this.damageEnemy(targetEnemy, arcDmg);
+          soundService.playHit();
+
+          // Shock sparks
+          for (let p = 0; p < 12; p++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 6 + 2;
+            this.particles.push({
+              x: targetX,
+              y: targetY,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              size: Math.random() * 5 + 2,
+              color: p % 2 === 0 ? '#c084fc' : '#fbbf24',
+              life: 16,
+              maxLife: 16
+            });
+          }
+
+          // If unit is killed, chain to the next unit!
+          if (targetEnemy.hp <= 0) {
+            this.addFloatingText(targetX, targetY - 20, FT_BLASTERMON_CHAIN_LIGHTNING.text, FT_BLASTERMON_CHAIN_LIGHTNING.color);
+            currX = targetX;
+            currY = targetY;
+            continueChain = true;
+          } else {
+            continueChain = false;
+          }
+        }
+      }
     }
   }
 
@@ -3148,6 +3782,8 @@ export class GameEngine {
       case 'Butchermon': return 80;
       case 'Reapermon': return 120;
       case 'Mikomon': return 100;
+      case 'EndMon': return 100;
+      case 'Blastermon': return 100;
       default: return 100;
     }
   }
@@ -3176,6 +3812,8 @@ export class GameEngine {
       case 'Butchermon': return 'Butcher\'s Masterpiece';
       case 'Reapermon': return 'Giant Scythe of Damnation';
       case 'Mikomon': return 'The Fate of the World';
+      case 'EndMon': return 'Eternal Apocalypse';
+      case 'Blastermon': return 'Stroke of Bravery';
       default: return 'Ultimate';
     }
   }
@@ -3200,6 +3838,8 @@ export class GameEngine {
       case 'Butchermon': return 'Fresh Meat... BUTCHER\'S MASTERPIECE!';
       case 'Reapermon': return 'FEEL THE EMBRACE OF DEATH!';
       case 'Mikomon': return 'FEEL THE SACRED FATE! THE FATE OF THE WORLD!';
+      case 'EndMon': return 'Stand up, Vanguard! ETERNAL APOCALYPSE!';
+      case 'Blastermon': return 'Determination forged in darkness! STROKE OF BRAVERY!';
       default: return 'Unleash full power!';
     }
   }
@@ -3862,6 +4502,136 @@ export class GameEngine {
       if (markedCount === 0) {
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'NO ENEMIES VISIBLE', '#f472b6');
       }
+    } else if (this.selectedDraco === 'EndMon') {
+      soundService.playLevelUp();
+      soundService.playJump();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_ETERNAL_APOCALYPSE.text, FT_ETERNAL_APOCALYPSE.color);
+      this.screenShake = 40;
+      this.endmonUltActive = true;
+      this.endmonUltTimer = 480; // 8 seconds at 60 FPS
+
+      // 1. Powerful rocket takeoff launch upward (by half a screen height)
+      const ch = this.canvas ? this.canvas.height : 600;
+      const halfScreenDist = Math.max(260, Math.min(360, ch * 0.5));
+      this.endmonLaunchTargetY = Math.max(0, this.py - halfScreenDist);
+      this.endmonIsLaunching = true;
+      this.pvy = -12;
+      this.pGrounded = false;
+      this.isPlunging = false;
+
+      // 2. Find ground directly below EndMon (on current level or raycasting down if airborne)
+      let burnY = this.py + this.pHeight;
+      const ts = this.level.tileSize || 40;
+      const grid = this.getActiveGrid();
+      if (grid && grid.length > 0) {
+        for (let yCheck = this.py + this.pHeight; yCheck < this.py + this.pHeight + 450; yCheck += 10) {
+          if (this.isSolid(this.px + this.pWidth / 2, yCheck)) {
+            burnY = Math.floor(yCheck / ts) * ts;
+            break;
+          }
+        }
+      }
+
+      // Create 3-second ground burn zone beneath EndMon
+      this.groundBurnZones.push({
+        id: this.groundBurnIdCounter++,
+        x: this.px + this.pWidth / 2 - 80,
+        y: burnY - 8,
+        width: 160,
+        height: 20,
+        timer: 180,
+        duration: 180
+      });
+
+      // Damage enemies caught in the launch ignition zone
+      const launchIgnitionDmg = Math.floor(this.stats.attack * 2.2);
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+        if (Math.abs(ex - (this.px + this.pWidth / 2)) <= 80 && Math.abs(ey - burnY) <= 40) {
+          this.damageEnemy(enemy, launchIgnitionDmg);
+          enemy.burnTimer = 30;
+          enemy.burnLingerTimer = 180;
+        }
+      });
+
+      // Downward jet thruster flames & ground scorch burst
+      for (let p = 0; p < 36; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 8 + 3;
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 40,
+          y: burnY,
+          vx: Math.cos(ang) * spd,
+          vy: -Math.random() * 6 - 2,
+          size: Math.random() * 8 + 4,
+          color: p % 3 === 0 ? '#fef08a' : p % 3 === 1 ? '#f97316' : '#ef4444',
+          life: 30,
+          maxLife: 30
+        });
+      }
+
+      // Powerful vertical exhaust plume spraying downward from EndMon during launch
+      for (let p = 0; p < 24; p++) {
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 16,
+          y: this.py + this.pHeight,
+          vx: (Math.random() - 0.5) * 5,
+          vy: Math.random() * 9 + 6,
+          size: Math.random() * 7 + 3,
+          color: p % 2 === 0 ? '#ffffff' : p % 3 === 0 ? '#fef08a' : '#f97316',
+          life: 20,
+          maxLife: 20
+        });
+      }
+    } else if (this.selectedDraco === 'Blastermon') {
+      soundService.playLevelUp();
+      soundService.playJump();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_STROKE_OF_BRAVERY.text, FT_STROKE_OF_BRAVERY.color);
+      this.screenShake = 30;
+
+      // Phase 1: Launch into the sky
+      this.blastermonUltActive = true;
+      this.blastermonUltPhase = 'launch';
+      this.blastermonUltTimer = 240;
+      this.pvy = -16;
+      this.pGrounded = false;
+      this.isPlunging = false;
+      this.pInvulnerableFrames = 240;
+
+      // Determine ground target Y directly beneath Blastermon for giant blade & hero slam
+      let groundY = this.py + this.pHeight;
+      const ts = this.level.tileSize || 40;
+      const grid = this.getActiveGrid();
+      if (grid && grid.length > 0) {
+        for (let yCheck = this.py + this.pHeight; yCheck < this.levelHeight; yCheck += 10) {
+          if (this.isSolid(this.px + this.pWidth / 2, yCheck)) {
+            groundY = Math.floor(yCheck / ts) * ts;
+            break;
+          }
+        }
+      }
+      this.blastermonGiantBladeX = this.px + this.pWidth / 2;
+      this.blastermonGiantBladeY = -200;
+      this.blastermonGiantBladeTargetY = groundY;
+      this.blastermonHeroSlamTargetY = groundY - this.pHeight;
+
+      // Sky launch dark lightning particles
+      for (let p = 0; p < 24; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 7 + 3;
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 20,
+          y: this.py + this.pHeight,
+          vx: Math.cos(ang) * spd,
+          vy: Math.random() * 8 + 4,
+          size: Math.random() * 6 + 3,
+          color: p % 3 === 0 ? '#18181b' : p % 3 === 1 ? '#7c3aed' : '#fbbf24',
+          life: 25,
+          maxLife: 25
+        });
+      }
     }
 
     this.birdX = this.px;
@@ -3885,6 +4655,10 @@ export class GameEngine {
     let finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 1 : damage;
     if (this.selectedDraco === 'Flymon' && (enemy as any).isGrounded === false) {
       finalDamage *= 2.0;
+    }
+    if (this.selectedDraco === 'EndMon' && this.endmonUltActive) {
+      const dracoLevel = (this.stats as any).level || 1;
+      finalDamage *= (1 + 0.10 * dracoLevel);
     }
     const damageDealt = Math.max(1, Math.floor(finalDamage) - Math.floor(enemy.defense / 2));
 
@@ -4007,6 +4781,77 @@ export class GameEngine {
         this.damageEnemy(enemy, explosionDmg);
       }
     });
+  }
+
+  private triggerEndmonEnhancedExplosion(impactX: number, impactY: number, projDmg: number) {
+    soundService.playHit();
+    this.screenShake = Math.max(this.screenShake, 30);
+    this.addFloatingText(impactX, impactY - 20, FT_ENHANCED_FIREBALL.text, FT_ENHANCED_FIREBALL.color);
+
+    // 1. AoE Damage to all enemies within 120px radius
+    this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      const ex = enemy.x + enemy.width / 2;
+      const ey = enemy.y + enemy.height / 2;
+      const dist = Math.hypot(ex - impactX, ey - impactY);
+      if (dist <= 120) {
+        this.damageEnemy(enemy, projDmg);
+        enemy.burnTimer = 30;
+        enemy.burnLingerTimer = 180;
+        this.spawnDustParticles(ex, ey, 8, '#ef4444');
+      }
+    });
+
+    // 2. Burns the ground for 3 seconds (180 frames)
+    this.groundBurnZones.push({
+      id: this.groundBurnIdCounter++,
+      x: impactX - 60,
+      y: impactY - 10,
+      width: 120,
+      height: 20,
+      timer: 180,
+      duration: 180
+    });
+
+    // 3. Destroy ground 1 block radius around explosion
+    const grid = this.getActiveGrid();
+    if (grid && grid.length > 0) {
+      const ts = this.level.tileSize || 40;
+      const centerR = Math.floor(impactY / ts);
+      const centerC = Math.floor(impactX / ts);
+
+      for (let r = centerR - 1; r <= centerR + 1; r++) {
+        for (let c = centerC - 1; c <= centerC + 1; c++) {
+          if (r >= 0 && r < grid.length && c >= 0 && c < grid[r].length) {
+            const char = grid[r][c];
+            if (char === '#' || char === '=' || char === 'H' || char === '*' || char === 'b') {
+              let isPortalFloor = false;
+              if (r > 0 && grid[r - 1] && grid[r - 1][c] === 'P') isPortalFloor = true;
+              if (!isPortalFloor) {
+                this.setGridTile(r, c, '.');
+                this.spawnDustParticles(c * ts + ts / 2, r * ts + ts / 2, 6, '#f97316');
+              }
+            }
+          }
+        }
+      }
+    }
+
+    // 4. Fiery shockwave particles
+    for (let p = 0; p < 36; p++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 9 + 3;
+      this.particles.push({
+        x: impactX,
+        y: impactY,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 2,
+        size: Math.random() * 8 + 4,
+        color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#f97316' : '#fbbf24',
+        life: 28,
+        maxLife: 28
+      });
+    }
   }
 
   private defeatEnemy(enemy: Enemy) {
@@ -5290,6 +6135,358 @@ export class GameEngine {
       }
     }
 
+    if (this.endmonUltActive) {
+      this.endmonUltTimer--;
+      if (this.endmonUltTimer <= 0) {
+        this.endmonUltActive = false;
+        this.endmonIsLaunching = false;
+        soundService.playHit();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'APOCALYPSE DISSIPATED', '#94a3b8');
+      }
+
+      // Ambient fiery wing embers and glowing flame particles around EndMon while in Eternal Apocalypse
+      if (this.frameCount % 3 === 0) {
+        this.particles.push({
+          x: this.px + (Math.random() - 0.5) * 44 + this.pWidth / 2,
+          y: this.py + Math.random() * this.pHeight,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 3 - 1.5,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.5 ? '#f97316' : '#fbbf24',
+          life: 18,
+          maxLife: 18
+        });
+      }
+    }
+
+    if (this.endmonFlareBeamActive) {
+      this.endmonFlareBeamTimer--;
+      if (this.endmonFlareBeamTimer <= 0) {
+        this.endmonFlareBeamActive = false;
+        this.endmonFlareBeamHits.clear();
+        this.endmonFlareBeamTarget = null;
+      } else {
+        const playerCenterX = this.px + this.pWidth / 2;
+        const playerCenterY = this.py + this.pHeight / 2;
+
+        // Dynamic target tracking / re-acquisition:
+        let target = this.endmonFlareBeamTarget;
+        if (!target || target.hp <= 0) {
+          let minDistance = 1100;
+          let nearestEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - playerCenterX, ey - playerCenterY);
+            if (dist < minDistance) {
+              minDistance = dist;
+              nearestEnemy = enemy;
+            }
+          });
+          this.endmonFlareBeamTarget = nearestEnemy;
+          target = nearestEnemy;
+        }
+
+        const gunPivotX = this.pFacing === 1 ? this.px + this.pWidth - 2 : this.px - 14;
+        const gunPivotY = this.py + 20;
+
+        // Smoothly home and track angle towards target enemy
+        if (target && target.hp > 0) {
+          const ex = target.x + target.width / 2;
+          const ey = target.y + target.height / 2;
+          const desiredAngle = Math.atan2(ey - gunPivotY, ex - gunPivotX);
+
+          // Update player facing to match target side
+          this.pFacing = ex >= playerCenterX ? 1 : -1;
+          this.endmonFlareBeamFacing = this.pFacing;
+
+          let angleDiff = desiredAngle - this.endmonFlareBeamAngle;
+          while (angleDiff < -Math.PI) angleDiff += Math.PI * 2;
+          while (angleDiff > Math.PI) angleDiff -= Math.PI * 2;
+          this.endmonFlareBeamAngle += angleDiff * 0.35;
+        }
+
+        const cosA = Math.cos(this.endmonFlareBeamAngle);
+        const sinA = Math.sin(this.endmonFlareBeamAngle);
+
+        // Muzzle position calculated from rotated gun pivot
+        const muzzleX = gunPivotX + cosA * 22;
+        const muzzleY = gunPivotY + sinA * 22;
+        this.endmonFlareBeamStartX = muzzleX;
+        this.endmonFlareBeamStartY = muzzleY;
+
+        // Dynamic raycast forward along the homing angle (up to 1100px)
+        const maxDist = 1100;
+        let endX = muzzleX + cosA * maxDist;
+        let endY = muzzleY + sinA * maxDist;
+        const grid = this.getActiveGrid();
+        const ts = this.level.tileSize || 40;
+        if (grid && grid.length > 0) {
+          const stepSize = 16;
+          for (let dist = 16; dist <= maxDist; dist += stepSize) {
+            const checkX = muzzleX + cosA * dist;
+            const checkY = muzzleY + sinA * dist;
+            const r = Math.floor(checkY / ts);
+            const c = Math.floor(checkX / ts);
+            if (r >= 0 && r < grid.length && c >= 0 && c < grid[r].length) {
+              const char = grid[r][c];
+              if (char === '#' || char === '=' || char === 'H' || char === '*' || char === 'b' || char === 'B') {
+                endX = checkX;
+                endY = checkY;
+                break;
+              }
+            }
+          }
+        }
+        this.endmonFlareBeamEndX = endX;
+        this.endmonFlareBeamEndY = endY;
+        this.endmonFlareBeamLength = Math.hypot(endX - muzzleX, endY - muzzleY);
+
+        // Recoil push away from beam direction
+        this.pvx = -cosA * 1.5;
+        if (!this.pGrounded) {
+          this.pvy = -sinA * 0.8;
+        }
+        this.screenShake = Math.max(this.screenShake, 6);
+
+        // Piercing multi-hit damage to all enemies intersecting the beam line segment
+        const segVx = endX - muzzleX;
+        const segVy = endY - muzzleY;
+        const segLenSq = segVx * segVx + segVy * segVy || 1;
+        const tickDmg = Math.max(1, Math.floor(this.stats.attack * 0.95));
+
+        this.enemies.forEach((enemy, eIdx) => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const t = Math.max(0, Math.min(1, ((ex - muzzleX) * segVx + (ey - muzzleY) * segVy) / segLenSq));
+          const closestX = muzzleX + t * segVx;
+          const closestY = muzzleY + t * segVy;
+          const distSq = (ex - closestX) * (ex - closestX) + (ey - closestY) * (ey - closestY);
+          const hitThreshold = 30 + Math.max(enemy.width, enemy.height) / 2;
+
+          if (distSq <= hitThreshold * hitThreshold) {
+            const enemyKey = (enemy as any).id || `flare_target_${eIdx}`;
+            const lastHit = this.endmonFlareBeamHits.get(enemyKey) || 0;
+            if (this.frameCount - lastHit >= 6) {
+              this.endmonFlareBeamHits.set(enemyKey, this.frameCount);
+              this.damageEnemy(enemy, tickDmg);
+              enemy.burnTimer = 30;
+              enemy.burnLingerTimer = 180;
+              enemy.vx = (enemy.vx || 0) + cosA * 4;
+              enemy.vy = (enemy.vy || 0) + sinA * 2;
+              this.spawnDustParticles(closestX, closestY, 5, '#f97316');
+            }
+          }
+        });
+
+        // Continuous sparks at muzzle & impact point
+        if (this.frameCount % 2 === 0) {
+          // Muzzle plasma sparks
+          this.particles.push({
+            x: muzzleX + (Math.random() - 0.5) * 6,
+            y: muzzleY + (Math.random() - 0.5) * 6,
+            vx: cosA * (Math.random() * 4 + 2) + (Math.random() - 0.5) * 2,
+            vy: sinA * (Math.random() * 4 + 2) + (Math.random() - 0.5) * 2,
+            size: Math.random() * 5 + 2,
+            color: Math.random() > 0.4 ? '#fef08a' : '#f97316',
+            life: 12,
+            maxLife: 12
+          });
+          // Impact point explosive embers
+          for (let p = 0; p < 3; p++) {
+            this.particles.push({
+              x: endX + (Math.random() - 0.5) * 10,
+              y: endY + (Math.random() - 0.5) * 10,
+              vx: -cosA * (Math.random() * 6 + 2) + (Math.random() - 0.5) * 4,
+              vy: -sinA * (Math.random() * 6 + 2) + (Math.random() - 0.5) * 4,
+              size: Math.random() * 6 + 3,
+              color: p % 2 === 0 ? '#f97316' : '#ef4444',
+              life: 16,
+              maxLife: 16
+            });
+          }
+        }
+      }
+    }
+
+    // Blastermon: Stroke of Bravery Ultimate Phase Progression
+    if (this.blastermonUltActive) {
+      this.blastermonUltTimer--;
+
+      if (this.blastermonUltPhase === 'launch') {
+        // Soaring into the sky
+        this.pvy = -16;
+        this.pvx = 0;
+        this.isPlunging = false;
+
+        // Particle thruster trail
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 16,
+            y: this.py + this.pHeight,
+            vx: (Math.random() - 0.5) * 3,
+            vy: Math.random() * 5 + 3,
+            size: Math.random() * 5 + 2,
+            color: Math.random() > 0.5 ? '#7c3aed' : '#fbbf24',
+            life: 16,
+            maxLife: 16
+          });
+        }
+
+        // When Blastermon rises high enough or timer advances, transition to giant blade phase
+        if (this.py <= -40 || this.blastermonUltTimer <= 210) {
+          this.blastermonUltPhase = 'giant_blade';
+          this.pvy = 0;
+          this.blastermonGiantBladeX = this.px + this.pWidth / 2;
+          this.blastermonGiantBladeY = -180;
+          this.px = this.blastermonGiantBladeX - this.pWidth / 2;
+          this.py = this.blastermonGiantBladeY - 140 - this.pHeight / 2;
+          soundService.playThunderboltDeath();
+        }
+      } else if (this.blastermonUltPhase === 'giant_blade') {
+        // Blastermon AND the colossal blade plunge and slam to the ground TOGETHER!
+        const slamSpeed = 30;
+        this.blastermonGiantBladeY += slamSpeed;
+        this.pvy = slamSpeed;
+        this.pvx = 0;
+        this.px = this.blastermonGiantBladeX - this.pWidth / 2;
+        this.py = this.blastermonGiantBladeY - 140 - this.pHeight / 2;
+
+        // Trailing lightning arcs and speed streaks around both Blastermon and the giant blade
+        for (let p = 0; p < 5; p++) {
+          this.particles.push({
+            x: this.blastermonGiantBladeX + (Math.random() - 0.5) * 44,
+            y: this.blastermonGiantBladeY - Math.random() * 160,
+            vx: (Math.random() - 0.5) * 6,
+            vy: -Math.random() * 8 - 4,
+            size: Math.random() * 6 + 3,
+            color: p % 3 === 0 ? '#fbbf24' : p % 3 === 1 ? '#c084fc' : '#ffffff',
+            life: 16,
+            maxLife: 16
+          });
+        }
+
+        // When Blastermon and the giant blade reach the ground target TOGETHER!
+        if (this.blastermonGiantBladeY >= this.blastermonGiantBladeTargetY) {
+          this.blastermonGiantBladeY = this.blastermonGiantBladeTargetY;
+          this.py = this.blastermonHeroSlamTargetY;
+          this.pvy = 0;
+          this.pvx = 0;
+          this.pGrounded = true;
+
+          // Cataclysmic combined ground slam impact
+          this.blastermonUltImpactTimer = 50;
+          this.blastermonUltImpactX = this.blastermonGiantBladeX;
+          this.blastermonUltImpactY = this.blastermonGiantBladeTargetY;
+          this.screenShake = 55;
+          soundService.playAzuremonImpact();
+          soundService.playThunderboltDeath();
+          this.addFloatingText(this.blastermonGiantBladeX, this.blastermonGiantBladeTargetY - 40, FT_BLASTERMON_GIANT_BLADE_SLAM.text, FT_BLASTERMON_GIANT_BLADE_SLAM.color);
+
+          // Massive impact shockwave particles in 380px radius
+          for (let p = 0; p < 45; p++) {
+            const ang = (Math.random() - 0.5) * Math.PI;
+            const spd = Math.random() * 14 + 4;
+            this.particles.push({
+              x: this.blastermonGiantBladeX + (Math.random() - 0.5) * 60,
+              y: this.blastermonGiantBladeTargetY,
+              vx: Math.cos(ang) * spd,
+              vy: -Math.abs(Math.sin(ang) * spd) - 3,
+              size: Math.random() * 8 + 4,
+              color: p % 3 === 0 ? '#fbbf24' : p % 3 === 1 ? '#c084fc' : '#ffffff',
+              life: 30,
+              maxLife: 30
+            });
+          }
+
+          // Stun all enemies in the area for 2 seconds (120 frames), dealing execute damage
+          const bladeRadius = 380;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - this.blastermonGiantBladeX, ey - this.blastermonGiantBladeTargetY);
+            if (dist <= bladeRadius) {
+              // 2 seconds stun = 120 frames at 60 FPS
+              enemy.stunnedTimer = 120;
+
+              // Execute damage scaling: more damage the lower enemies' health
+              const baseDmg = Math.floor(this.stats.attack * 4.5);
+              const maxHp = Math.max(1, enemy.maxHp || 100);
+              const missingHpRatio = Math.max(0, 1 - (enemy.hp / maxHp));
+              const executeMultiplier = 1.0 + 1.8 * missingHpRatio;
+              const totalDmg = Math.floor(baseDmg * executeMultiplier);
+
+              this.damageEnemy(enemy, totalDmg);
+              this.spawnDustParticles(ex, ey, 16, '#c084fc');
+              this.spawnDustParticles(ex, ey, 12, '#fbbf24');
+              this.addFloatingText(ex, ey - 25, `💫 STUNNED (2s)! -${totalDmg}`, '#fbbf24');
+            }
+          });
+
+          // Blastermon immediately becomes spirited for 8 seconds (480 frames at 60 FPS)
+          this.blastermonSpiritedActive = true;
+          this.blastermonSpiritedTimer = 480;
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_BLASTERMON_SPIRITED.text, FT_BLASTERMON_SPIRITED.color);
+
+          // Conclude ultimate sequence
+          this.blastermonUltActive = false;
+          this.blastermonUltPhase = 'none';
+        }
+      }
+    }
+
+    // Blastermon Spirited Form Timer & Ambient Aura
+    if (this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0) {
+      this.blastermonSpiritedTimer--;
+      if (this.blastermonSpiritedTimer <= 0) {
+        this.blastermonSpiritedActive = false;
+        soundService.playHit();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'SPIRITED FADED', '#94a3b8');
+      }
+
+      // Ambient violet and radiant gold lightning motes
+      if (this.frameCount % 2 === 0) {
+        this.particles.push({
+          x: this.px + Math.random() * this.pWidth,
+          y: this.py + Math.random() * this.pHeight,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 3 - 1,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.4 ? '#c084fc' : '#fbbf24',
+          life: 16,
+          maxLife: 16
+        });
+      }
+    }
+
+    // Blastermon Lightning Arcs Timer Decay
+    if (this.blastermonLightningArcs.length > 0) {
+      for (let i = this.blastermonLightningArcs.length - 1; i >= 0; i--) {
+        this.blastermonLightningArcs[i].timer--;
+        if (this.blastermonLightningArcs[i].timer <= 0) {
+          this.blastermonLightningArcs.splice(i, 1);
+        }
+      }
+    }
+
+    // Blastermon Summoned Cleaves Timer Decay
+    if (this.blastermonSummonedCleaves.length > 0) {
+      for (let i = this.blastermonSummonedCleaves.length - 1; i >= 0; i--) {
+        this.blastermonSummonedCleaves[i].timer--;
+        if (this.blastermonSummonedCleaves[i].timer <= 0) {
+          this.blastermonSummonedCleaves.splice(i, 1);
+        }
+      }
+    }
+
+    // Blastermon Ultimate Ground Cleave Impact Rift Decay
+    if (this.blastermonUltImpactTimer > 0) {
+      this.blastermonUltImpactTimer--;
+    }
+
     if (this.magemonUltActive) {
       this.magemonUltTimer--;
       this.pvx = 0;
@@ -6347,6 +7544,58 @@ export class GameEngine {
 
     if (this.shieldmonChargeActive) {
       this.pvy = 0;
+    } else if (this.selectedDraco === 'EndMon' && this.endmonUltActive) {
+      // Hovering Flight Mechanic:
+      // When pressing jump (W / ArrowUp): move upwards
+      // When pressing down (S / ArrowDown): move downwards
+      // Otherwise: zero-gravity stable hovering in mid-air
+      const isUpPressed = this.keys['w'] || this.keys['arrowup'];
+      const isDownPressed = this.keys['s'] || this.keys['arrowdown'];
+      const flySpeed = 5.5;
+
+      if (this.endmonIsLaunching) {
+        // Rocket launch upward until reaching half screen altitude
+        if (this.py <= this.endmonLaunchTargetY || isDownPressed || this.pvy >= 0) {
+          this.endmonIsLaunching = false;
+          this.pvy = 0;
+        } else {
+          const distRemaining = this.py - this.endmonLaunchTargetY;
+          if (distRemaining < 50) {
+            // Smoothly decelerate as we near the peak of half-screen launch
+            this.pvy = -Math.max(2.5, (distRemaining / 50) * 11);
+          } else {
+            this.pvy = -11;
+          }
+          this.pGrounded = false;
+
+          // Downward flame exhaust plumes
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 16,
+              y: this.py + this.pHeight,
+              vx: (Math.random() - 0.5) * 4,
+              vy: Math.random() * 8 + 4,
+              size: Math.random() * 7 + 3,
+              color: Math.random() > 0.4 ? '#fef08a' : '#f97316',
+              life: 14,
+              maxLife: 14
+            });
+          }
+        }
+      } else if (isUpPressed && !isDownPressed) {
+        this.pvy = -flySpeed;
+        this.pGrounded = false;
+        if (this.frameCount % 4 === 0) {
+          this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight, 4, '#f97316');
+        }
+      } else if (isDownPressed && !isUpPressed) {
+        this.pvy = flySpeed;
+        this.pGrounded = false;
+      } else {
+        // Zero-gravity stable hover (decelerate quickly to rest)
+        this.pvy *= 0.75;
+        if (Math.abs(this.pvy) < 0.1) this.pvy = 0;
+      }
     } else {
       this.pvy += this.gravity;
     }
@@ -7263,6 +8512,26 @@ export class GameEngine {
             return;
           }
         }
+        else if (proj.type === 'shining_cleave') {
+          proj.x += proj.vx;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
+          if (proj.x < -150 || proj.x > this.levelWidth + 150 || (proj as any).traveledDist >= 1200) {
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + (proj.vx > 0 ? 0 : proj.width),
+              y: proj.y + Math.random() * proj.height,
+              vx: -proj.vx * 0.2 + (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 3,
+              size: Math.random() * 5 + 2,
+              color: Math.random() > 0.4 ? '#c084fc' : '#fef08a',
+              life: 14,
+              maxLife: 14
+            });
+          }
+        }
         else if (proj.type === 'dark_energy') {
           proj.x += proj.vx;
           (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
@@ -7415,6 +8684,190 @@ export class GameEngine {
               (hitEnemy as any).mikomonDoTTickTimer = 30;
             }
             this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, hitSolid ? '#fbbf24' : '#f472b6');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          return;
+        }
+        else if (proj.type === 'endmon_bullet') {
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.abs(proj.vx);
+
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              size: Math.random() * 4 + 2,
+              color: Math.random() > 0.5 ? '#ef4444' : '#fbbf24',
+              life: 10,
+              maxLife: 10
+            });
+          }
+
+          let hitEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0 || hitEnemy) return;
+            if (
+              proj.x < enemy.x + enemy.width &&
+              proj.x + proj.width > enemy.x &&
+              proj.y < enemy.y + enemy.height &&
+              proj.y + proj.height > enemy.y
+            ) {
+              hitEnemy = enemy;
+            }
+          });
+
+          const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2);
+          const maxRangeReached = (proj as any).traveledDist >= ((proj as any).rangeCap || 800);
+
+          if (hitEnemy || hitSolid || maxRangeReached) {
+            if (hitEnemy) {
+              this.damageEnemy(hitEnemy, proj.damage);
+            }
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, '#ef4444');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          return;
+        }
+        else if (proj.type === 'endmon_homing_bullet') {
+          let target: Enemy | null = (proj as any).targetEnemy || null;
+          if (!target || target.hp <= 0) {
+            let minDistance = 9999;
+            const px = proj.x + proj.width / 2;
+            const py = proj.y + proj.height / 2;
+            this.enemies.forEach(enemy => {
+              if (enemy.hp <= 0) return;
+              const dist = Math.hypot(enemy.x + enemy.width / 2 - px, enemy.y + enemy.height / 2 - py);
+              if (dist < minDistance && dist <= 900) {
+                minDistance = dist;
+                target = enemy;
+              }
+            });
+          }
+
+          if (target) {
+            const px = proj.x + proj.width / 2;
+            const py = proj.y + proj.height / 2;
+            const ex = (target as Enemy).x + (target as Enemy).width / 2;
+            const ey = (target as Enemy).y + (target as Enemy).height / 2;
+            const angle = Math.atan2(ey - py, ex - px);
+            const speed = 10.0;
+            proj.vx = Math.cos(angle) * speed;
+            proj.vy = Math.sin(angle) * speed;
+          }
+
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.hypot(proj.vx, proj.vy);
+
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              size: Math.random() * 5 + 2,
+              color: Math.random() > 0.5 ? '#fbbf24' : '#ef4444',
+              life: 12,
+              maxLife: 12
+            });
+          }
+
+          let hitEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0 || hitEnemy) return;
+            if (
+              proj.x < enemy.x + enemy.width &&
+              proj.x + proj.width > enemy.x &&
+              proj.y < enemy.y + enemy.height &&
+              proj.y + proj.height > enemy.y
+            ) {
+              hitEnemy = enemy;
+            }
+          });
+
+          const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2);
+          const maxRangeReached = (proj as any).traveledDist >= ((proj as any).rangeCap || 900);
+
+          if (hitEnemy || hitSolid || maxRangeReached) {
+            if (hitEnemy) {
+              this.damageEnemy(hitEnemy, proj.damage);
+            }
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, '#fbbf24');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          return;
+        }
+        else if (proj.type === 'endmon_enhanced_fireball') {
+          let target: Enemy | null = (proj as any).targetEnemy || null;
+          if (!target || target.hp <= 0) {
+            let minDistance = 9999;
+            const px = proj.x + proj.width / 2;
+            const py = proj.y + proj.height / 2;
+            this.enemies.forEach(enemy => {
+              if (enemy.hp <= 0) return;
+              const dist = Math.hypot(enemy.x + enemy.width / 2 - px, enemy.y + enemy.height / 2 - py);
+              if (dist < minDistance && dist <= 1000) {
+                minDistance = dist;
+                target = enemy;
+              }
+            });
+          }
+
+          if (target) {
+            const px = proj.x + proj.width / 2;
+            const py = proj.y + proj.height / 2;
+            const ex = (target as Enemy).x + (target as Enemy).width / 2;
+            const ey = (target as Enemy).y + (target as Enemy).height / 2;
+            const angle = Math.atan2(ey - py, ex - px);
+            const speed = 9.5;
+            proj.vx = Math.cos(angle) * speed;
+            proj.vy = Math.sin(angle) * speed;
+          }
+
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.hypot(proj.vx, proj.vy);
+
+          // Giant flaming fireball trail
+          for (let p = 0; p < 2; p++) {
+            this.particles.push({
+              x: proj.x + Math.random() * proj.width,
+              y: proj.y + Math.random() * proj.height,
+              vx: -proj.vx * 0.2 + (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 3,
+              size: Math.random() * 7 + 3,
+              color: p % 2 === 0 ? '#f97316' : '#fbbf24',
+              life: 14,
+              maxLife: 14
+            });
+          }
+
+          let hitEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0 || hitEnemy) return;
+            if (
+              proj.x < enemy.x + enemy.width &&
+              proj.x + proj.width > enemy.x &&
+              proj.y < enemy.y + enemy.height &&
+              proj.y + proj.height > enemy.y
+            ) {
+              hitEnemy = enemy;
+            }
+          });
+
+          const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2) || this.checkPlatformOneWay(proj.x + proj.width / 2, proj.y + proj.height);
+          const maxRangeReached = (proj as any).traveledDist >= ((proj as any).rangeCap || 1100);
+
+          if (hitEnemy || hitSolid || maxRangeReached) {
+            const impactX = proj.x + proj.width / 2;
+            const impactY = proj.y + proj.height / 2;
+            this.triggerEndmonEnhancedExplosion(impactX, impactY, proj.damage);
             this.projectiles.splice(index, 1);
             return;
           }
@@ -7647,6 +9100,15 @@ export class GameEngine {
                 this.damageEnemy(enemy, proj.damage);
                 soundService.playHit();
                 this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 10, '#a855f7');
+              }
+            } else if (proj.type === 'shining_cleave') {
+              const hitSet: number[] = (proj as any).hitEnemyIds || ((proj as any).hitEnemyIds = []);
+              if (!hitSet.includes(enemy.id)) {
+                hitSet.push(enemy.id);
+                this.damageEnemy(enemy, proj.damage);
+                soundService.playHit();
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#c084fc');
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#fef08a');
               }
             } else if (proj.type === 'sun_strike') {
             } else if ((proj as any).type === 'homing_bomb') {
@@ -11530,6 +12992,112 @@ export class GameEngine {
         this.ctx.fill();
         this.ctx.stroke();
         this.ctx.restore();
+      } else if (proj.type === 'shining_cleave') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const facingDir = proj.vx >= 0 ? 1 : -1;
+        const pulse = Math.sin(this.frameCount * 0.4) * 3;
+        const waveH = 58 + pulse;
+
+        // 1. Aerodynamic Sonic Shockwave Echoes (trailing wake)
+        for (let w = 3; w >= 1; w--) {
+          const echoOffset = facingDir * -w * 16;
+          const echoAlpha = (4 - w) * 0.14;
+          const echoScale = 1 - w * 0.1;
+          this.ctx.strokeStyle = `rgba(192, 132, 252, ${echoAlpha})`;
+          this.ctx.lineWidth = 3 - w * 0.6;
+          this.ctx.beginPath();
+          if (facingDir === 1) {
+            this.ctx.arc(cx + echoOffset - 18, cy, waveH * echoScale, -Math.PI * 0.42, Math.PI * 0.42, false);
+          } else {
+            this.ctx.arc(cx + echoOffset + 18, cy, waveH * echoScale, Math.PI * 0.58, Math.PI * 1.42, false);
+          }
+          this.ctx.stroke();
+        }
+
+        // 2. Wide Outer Ethereal Violet Halo
+        this.ctx.save();
+        this.ctx.shadowColor = '#c084fc';
+        this.ctx.shadowBlur = 26;
+        this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
+        this.ctx.lineWidth = 14;
+        this.ctx.beginPath();
+        if (facingDir === 1) {
+          this.ctx.arc(cx - 16, cy, waveH + 4, -Math.PI * 0.44, Math.PI * 0.44, false);
+        } else {
+          this.ctx.arc(cx + 16, cy, waveH + 4, Math.PI * 0.56, Math.PI * 1.44, false);
+        }
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // 3. Primary Celestial Cleave Crescent Blade Body
+        const cleaveGrad = this.ctx.createLinearGradient(cx - 32 * facingDir, cy, cx + 32 * facingDir, cy);
+        cleaveGrad.addColorStop(0, 'rgba(59, 7, 100, 0.3)');
+        cleaveGrad.addColorStop(0.3, '#7c3aed');
+        cleaveGrad.addColorStop(0.65, '#c084fc');
+        cleaveGrad.addColorStop(0.88, '#fef08a');
+        cleaveGrad.addColorStop(1, '#ffffff');
+
+        this.ctx.fillStyle = cleaveGrad;
+        this.ctx.strokeStyle = '#fbbf24';
+        this.ctx.lineWidth = 2.5;
+
+        this.ctx.beginPath();
+        if (facingDir === 1) {
+          // Sharp upper wing tip
+          this.ctx.moveTo(cx - 18, cy - waveH);
+          // Outer forward-slashing cutting curve
+          this.ctx.bezierCurveTo(cx + 26, cy - waveH * 0.5, cx + 26, cy + waveH * 0.5, cx - 18, cy + waveH);
+          // Inner hollowed blade body curve
+          this.ctx.quadraticCurveTo(cx + 2, cy, cx - 18, cy - waveH);
+        } else {
+          // Sharp upper wing tip
+          this.ctx.moveTo(cx + 18, cy - waveH);
+          // Outer forward-slashing cutting curve
+          this.ctx.bezierCurveTo(cx - 26, cy - waveH * 0.5, cx - 26, cy + waveH * 0.5, cx + 18, cy + waveH);
+          // Inner hollowed blade body curve
+          this.ctx.quadraticCurveTo(cx - 2, cy, cx + 18, cy - waveH);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 4. White-Hot Luminescent Laser Cutting Edge
+        this.ctx.save();
+        this.ctx.shadowColor = '#ffffff';
+        this.ctx.shadowBlur = 18;
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 3.5;
+        this.ctx.beginPath();
+        if (facingDir === 1) {
+          this.ctx.arc(cx - 16, cy, waveH - 2, -Math.PI * 0.41, Math.PI * 0.41, false);
+        } else {
+          this.ctx.arc(cx + 16, cy, waveH - 2, Math.PI * 0.59, Math.PI * 1.41, false);
+        }
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // 5. Crackling Runic Lightning Sparks Dancing Along the Blade Face
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 2;
+        for (let j = 0; j < 3; j++) {
+          const sparkY = cy - 35 + j * 35 + Math.sin(this.frameCount * 0.6 + j * 2) * 8;
+          const sparkX = cx + facingDir * (12 + Math.cos(this.frameCount * 0.5 + j) * 6);
+          this.ctx.beginPath();
+          this.ctx.moveTo(sparkX, sparkY);
+          this.ctx.lineTo(sparkX + facingDir * 8, sparkY - 6);
+          this.ctx.lineTo(sparkX + facingDir * 4, sparkY + 8);
+          this.ctx.stroke();
+        }
+
+        // 6. Blinding Center Core Flare
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.ellipse(cx + facingDir * 6, cy, 14, 5, facingDir === 1 ? -0.2 : 0.2, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
       } else if (proj.type === 'dark_energy') {
         this.ctx.save();
         const cx = proj.x + proj.width / 2;
@@ -13672,6 +15240,30 @@ export class GameEngine {
 
     this.projectiles.forEach(proj => {
       const pType = proj.type as string;
+
+      // Skip projectiles already fully rendered in the primary projectile pass (prevents fallback fillRect square)
+      if (
+        pType === 'shining_cleave' ||
+        pType === 'giant_cleave' ||
+        pType === 'fireball' ||
+        pType === 'axe' ||
+        pType === 'shield_wave' ||
+        pType === 'bomb' ||
+        pType === 'sonar' ||
+        pType === 'meteor' ||
+        pType === 'sun_strike' ||
+        pType === 'tornado' ||
+        pType === 'arcane_orb' ||
+        pType === 'dark_energy' ||
+        pType === 'homing_bomb' ||
+        pType === 'wisp_orb' ||
+        pType === 'pixel_sword' ||
+        pType === 'boomerang' ||
+        pType === 'sci_fi_laser'
+      ) {
+        return;
+      }
+
       const px = proj.x;
       const py = proj.y;
       const pw = proj.width || 18;
@@ -13792,6 +15384,73 @@ export class GameEngine {
         // Core White Laser Beam
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(-pw / 2 + 2, -ph / 2 + 2, pw - 4, ph - 4);
+      } else if (pType === 'endmon_bullet') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(angle);
+
+        // Crimson & Amber Dragon Rifle Blast
+        const grad = this.ctx.createLinearGradient(-pw / 2, 0, pw / 2, 0);
+        grad.addColorStop(0, 'rgba(239, 68, 68, 0.2)');
+        grad.addColorStop(0.5, '#ef4444');
+        grad.addColorStop(1, '#fbbf24');
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.roundRect(-pw / 2, -ph / 2, pw, ph, 2);
+        this.ctx.fill();
+
+        // White core
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(-pw / 4, -1, pw / 2, 2);
+      } else if (pType === 'endmon_homing_bullet') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(angle);
+
+        // Golden & Crimson Homing Dragonic Blast
+        const haloGrad = this.ctx.createRadialGradient(0, 0, 1, 0, 0, pw);
+        haloGrad.addColorStop(0, '#fef08a');
+        haloGrad.addColorStop(0.5, '#f97316');
+        haloGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+        this.ctx.fillStyle = haloGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, pw, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, 0, pw / 2, ph / 2, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(2, 0, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else if (pType === 'endmon_enhanced_fireball') {
+        this.ctx.translate(cx, cy);
+        const spin = this.frameCount * 0.18;
+        this.ctx.rotate(spin);
+
+        // Giant Apocalyptic Fireball
+        const r = pw / 2;
+        const fireGrad = this.ctx.createRadialGradient(0, 0, 3, 0, 0, r + 8);
+        fireGrad.addColorStop(0, '#ffffff');
+        fireGrad.addColorStop(0.3, '#fef08a');
+        fireGrad.addColorStop(0.6, '#f97316');
+        fireGrad.addColorStop(0.85, '#dc2626');
+        fireGrad.addColorStop(1, 'rgba(127, 29, 29, 0)');
+
+        this.ctx.fillStyle = fireGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, r + 8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Inner fire ring
+        this.ctx.strokeStyle = '#fbbf24';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
+        this.ctx.stroke();
       } else {
         this.ctx.fillStyle = proj.color || '#fbbf24';
         this.ctx.fillRect(px, py, pw, ph);
@@ -14036,12 +15695,81 @@ export class GameEngine {
         accentColor = '#9f1239';
         bellyColor = '#f8fafc';
         detailColor = '#fbbf24';
+      } else if (this.selectedDraco === 'EndMon') {
+        mainColor = '#dc2626';
+        accentColor = '#450a0a';
+        bellyColor = '#ea580c';
+        detailColor = '#fbbf24';
+      } else if (this.selectedDraco === 'Blastermon') {
+        mainColor = '#18181b';
+        accentColor = '#7c3aed';
+        bellyColor = '#27272a';
+        detailColor = '#fbbf24';
       }
 
       const px = this.px;
       const py = this.py;
       const pw = this.pWidth;
       const ph = this.pHeight;
+
+      if (this.selectedDraco === 'EndMon') {
+        this.ctx.save();
+        const auraPulse = Math.sin(this.frameCount * 0.14) * (this.endmonUltActive ? 8 : 3);
+        const auraRadius = (this.endmonUltActive ? pw * 1.6 : pw * 0.8) + auraPulse;
+        const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, auraRadius);
+        grad.addColorStop(0, this.endmonUltActive ? 'rgba(254, 240, 138, 0.45)' : 'rgba(239, 68, 68, 0.25)');
+        grad.addColorStop(0.5, this.endmonUltActive ? 'rgba(249, 115, 22, 0.35)' : 'rgba(220, 38, 38, 0.15)');
+        grad.addColorStop(1, 'rgba(69, 10, 10, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, auraRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        if (this.endmonUltActive) {
+          // Additional rotating fiery dragon seals
+          for (let d = 0; d < 4; d++) {
+            const dang = this.frameCount * 0.09 + d * (Math.PI / 2);
+            const dx = px + pw / 2 + Math.cos(dang) * (pw + 10);
+            const dy = py + ph / 2 + Math.sin(dang) * (ph / 2 + 10);
+            this.ctx.fillStyle = d % 2 === 0 ? '#fbbf24' : '#ef4444';
+            this.ctx.beginPath();
+            this.ctx.arc(dx, dy, 3, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        }
+        this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Blastermon') {
+        this.ctx.save();
+        const isSpirited = this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0;
+        const auraPulse = Math.sin(this.frameCount * 0.16) * (isSpirited ? 10 : 3);
+        const auraRadius = (isSpirited ? pw * 1.6 : pw * 0.75) + auraPulse;
+        const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, auraRadius);
+        grad.addColorStop(0, isSpirited ? 'rgba(254, 240, 138, 0.5)' : 'rgba(124, 58, 237, 0.25)');
+        grad.addColorStop(0.5, isSpirited ? 'rgba(192, 132, 252, 0.4)' : 'rgba(88, 28, 135, 0.15)');
+        grad.addColorStop(1, 'rgba(24, 24, 27, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, auraRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        if (isSpirited) {
+          // Orbiting radiant lightning sparks & runic motes
+          for (let d = 0; d < 4; d++) {
+            const dang = this.frameCount * 0.12 + d * (Math.PI / 2);
+            const dx = px + pw / 2 + Math.cos(dang) * (pw + 8);
+            const dy = py + ph / 2 + Math.sin(dang) * (ph / 2 + 8);
+            this.ctx.fillStyle = d % 2 === 0 ? '#fbbf24' : '#c084fc';
+            this.ctx.beginPath();
+            this.ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        }
+        this.ctx.restore();
+      }
 
       if (this.selectedDraco === 'Mikomon') {
         this.ctx.save();
@@ -15002,6 +16730,605 @@ export class GameEngine {
           this.ctx.beginPath();
           this.ctx.arc(0, 0, burstRad, 0, Math.PI * 2);
           this.ctx.fill();
+
+          this.ctx.restore();
+        }
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'EndMon') {
+        this.ctx.save();
+
+        const isUlt = this.endmonUltActive;
+        const hoverY = isUlt ? Math.sin(this.frameCount * 0.18) * 4 : 0;
+        const cy = bodyY + hoverY;
+
+        // 1. Dragon Wings
+        if (isUlt) {
+          // "during this form, it spreads its wings"
+          // Massive spreading blazing dragon wings with flame plumes & feathers!
+          const flap = Math.sin(this.frameCount * 0.28) * 8;
+          const wingSpanBase = 52 + flap;
+          const wingSpan = this.endmonFlareBeamActive ? wingSpanBase * 1.45 : wingSpanBase;
+
+          // Left Spreading Wing
+          this.ctx.save();
+          const leftWingGrad = this.ctx.createLinearGradient(px - wingSpan, cy - 30, px + 10, cy + 30);
+          if (this.endmonFlareBeamActive) {
+            leftWingGrad.addColorStop(0, '#ffffff');
+            leftWingGrad.addColorStop(0.25, '#fef08a');
+            leftWingGrad.addColorStop(0.55, '#f97316');
+            leftWingGrad.addColorStop(1, '#dc2626');
+          } else {
+            leftWingGrad.addColorStop(0, '#fef08a');
+            leftWingGrad.addColorStop(0.3, '#fbbf24');
+            leftWingGrad.addColorStop(0.6, '#f97316');
+            leftWingGrad.addColorStop(1, '#dc2626');
+          }
+          this.ctx.fillStyle = leftWingGrad;
+          this.ctx.strokeStyle = '#450a0a';
+          this.ctx.lineWidth = 2;
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 8, cy + 18);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.6, cy - 28, px - wingSpan, cy - 20);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.7, cy + 2, px - wingSpan * 0.9, cy + 16);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.5, cy + 20, px - wingSpan * 0.65, cy + 32);
+          this.ctx.quadraticCurveTo(px - 10, cy + 36, px + 8, cy + 26);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Right Spreading Wing
+          const rightWingGrad = this.ctx.createLinearGradient(px + pw, cy - 30, px + pw + wingSpan, cy + 30);
+          if (this.endmonFlareBeamActive) {
+            rightWingGrad.addColorStop(0, '#dc2626');
+            rightWingGrad.addColorStop(0.45, '#f97316');
+            rightWingGrad.addColorStop(0.75, '#fef08a');
+            rightWingGrad.addColorStop(1, '#ffffff');
+          } else {
+            rightWingGrad.addColorStop(0, '#dc2626');
+            rightWingGrad.addColorStop(0.4, '#f97316');
+            rightWingGrad.addColorStop(0.7, '#fbbf24');
+            rightWingGrad.addColorStop(1, '#fef08a');
+          }
+          this.ctx.fillStyle = rightWingGrad;
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 8, cy + 18);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.6, cy - 28, px + pw + wingSpan, cy - 20);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.7, cy + 2, px + pw + wingSpan * 0.9, cy + 16);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.5, cy + 20, px + pw + wingSpan * 0.65, cy + 32);
+          this.ctx.quadraticCurveTo(px + pw + 10, cy + 36, px + pw - 8, cy + 26);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          if (this.endmonFlareBeamActive) {
+            // Overdrive wing flame plumes
+            this.ctx.strokeStyle = '#fef08a';
+            this.ctx.lineWidth = 2.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(px - wingSpan, cy - 20);
+            this.ctx.lineTo(px - wingSpan - 12, cy - 26);
+            this.ctx.moveTo(px - wingSpan * 0.9, cy + 16);
+            this.ctx.lineTo(px - wingSpan - 10, cy + 22);
+            this.ctx.moveTo(px + pw + wingSpan, cy - 20);
+            this.ctx.lineTo(px + pw + wingSpan + 12, cy - 26);
+            this.ctx.moveTo(px + pw + wingSpan * 0.9, cy + 16);
+            this.ctx.lineTo(px + pw + wingSpan + 10, cy + 22);
+            this.ctx.stroke();
+          }
+
+          this.ctx.restore();
+        } else {
+          // Normal Form: Folded sleek dragonic armor wings on back
+          const flap = Math.sin(this.frameCount * 0.12) * 3;
+          this.ctx.fillStyle = '#991b1b';
+          this.ctx.strokeStyle = '#450a0a';
+          this.ctx.lineWidth = 1.5;
+
+          // Back wing folded
+          const backWingX = this.pFacing === 1 ? px - 4 : px + pw + 4;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw / 2, cy + 12);
+          this.ctx.quadraticCurveTo(backWingX - 10 * this.pFacing, cy - 12 + flap, backWingX - 14 * this.pFacing, cy + 2 + flap);
+          this.ctx.quadraticCurveTo(backWingX - 4 * this.pFacing, cy + 16, px + pw / 2, cy + 24);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Gold wing tip trim
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.beginPath();
+          this.ctx.arc(backWingX - 14 * this.pFacing, cy + 2 + flap, 2.5, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        // Stabilizing Flame Thrusters on Back during Flare Beam Recoil
+        if (this.endmonFlareBeamActive) {
+          const jetX = this.pFacing === 1 ? px - 4 : px + pw + 4;
+          const jetDir = -this.pFacing;
+          const jetLen = 18 + Math.sin(this.frameCount * 1.5) * 8;
+          const jetGrad = this.ctx.createLinearGradient(jetX, cy + 18, jetX + jetDir * jetLen, cy + 18);
+          jetGrad.addColorStop(0, '#ffffff');
+          jetGrad.addColorStop(0.3, '#fef08a');
+          jetGrad.addColorStop(0.7, '#f97316');
+          jetGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          this.ctx.fillStyle = jetGrad;
+          this.ctx.beginPath();
+          this.ctx.moveTo(jetX, cy + 13);
+          this.ctx.lineTo(jetX + jetDir * jetLen, cy + 18);
+          this.ctx.lineTo(jetX, cy + 23);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
+
+        // 2. Dragon Armored Tail with Flame Tip
+        const tailX = this.pFacing === 1 ? px + 2 : px + pw - 2;
+        const tailDir = -this.pFacing;
+        const tailWag = Math.sin(this.frameCount * 0.2) * 4;
+
+        this.ctx.strokeStyle = '#450a0a';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(tailX, cy + ph - 8);
+        this.ctx.quadraticCurveTo(tailX + tailDir * 16, cy + ph + tailWag, tailX + tailDir * 26, cy + ph - 10 + tailWag);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = '#dc2626';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(tailX, cy + ph - 8);
+        this.ctx.quadraticCurveTo(tailX + tailDir * 16, cy + ph + tailWag, tailX + tailDir * 26, cy + ph - 10 + tailWag);
+        this.ctx.stroke();
+
+        // Flame tip on tail
+        const flameTipGrad = this.ctx.createRadialGradient(tailX + tailDir * 27, cy + ph - 10 + tailWag, 1, tailX + tailDir * 27, cy + ph - 10 + tailWag, 8);
+        flameTipGrad.addColorStop(0, '#fef08a');
+        flameTipGrad.addColorStop(0.5, '#f97316');
+        flameTipGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        this.ctx.fillStyle = flameTipGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(tailX + tailDir * 27, cy + ph - 10 + tailWag, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 3. Torso Armor & Abdominal Plates
+        this.ctx.fillStyle = '#7f1d1d';
+        this.ctx.strokeStyle = '#450a0a';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.fillRect(px + 4, cy + 12, pw - 8, ph - 20);
+        this.ctx.strokeRect(px + 4, cy + 12, pw - 8, ph - 20);
+
+        // Gold Chest Trim
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.strokeStyle = '#fbbf24';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2 - 10, cy + 14);
+        this.ctx.lineTo(px + pw / 2 + 10, cy + 14);
+        this.ctx.lineTo(px + pw / 2 + 7, cy + 28);
+        this.ctx.lineTo(px + pw / 2, cy + 32);
+        this.ctx.lineTo(px + pw / 2 - 7, cy + 28);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Glowing Overlord Chest Core
+        const corePulse = Math.sin(this.frameCount * 0.15) * 1.5;
+        const beamCoreBoost = this.endmonFlareBeamActive ? 4 : 0;
+        const coreRad = 6 + corePulse + beamCoreBoost;
+        const coreGrad = this.ctx.createRadialGradient(px + pw / 2, cy + 22, 1, px + pw / 2, cy + 22, coreRad);
+        coreGrad.addColorStop(0, '#ffffff');
+        coreGrad.addColorStop(0.4, '#fef08a');
+        coreGrad.addColorStop(0.8, '#f97316');
+        coreGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        this.ctx.fillStyle = coreGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, cy + 22, coreRad, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 4. Armored Dragon Pauldrons (Shoulders)
+        const pauldronColor = '#dc2626';
+        const trimColor = '#fbbf24';
+        this.ctx.fillStyle = pauldronColor;
+        this.ctx.strokeStyle = trimColor;
+        this.ctx.lineWidth = 1.2;
+
+        // Left Pauldron
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 2, cy + 8);
+        this.ctx.lineTo(px - 6, cy + 4);
+        this.ctx.lineTo(px + 2, cy + 18);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right Pauldron
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 2, cy + 8);
+        this.ctx.lineTo(px + pw + 6, cy + 4);
+        this.ctx.lineTo(px + pw - 2, cy + 18);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 5. Dragonic Helmet, Snout & Crest Horns
+        // Dragon Horns
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.strokeStyle = '#d97706';
+        this.ctx.lineWidth = 1.5;
+
+        // Left Horn
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2 - 4, cy + 4);
+        this.ctx.quadraticCurveTo(px + pw / 2 - 14, cy - 14, px + pw / 2 - 18, cy - 16);
+        this.ctx.quadraticCurveTo(px + pw / 2 - 8, cy - 8, px + pw / 2 - 2, cy + 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right Horn
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2 + 4, cy + 4);
+        this.ctx.quadraticCurveTo(px + pw / 2 + 14, cy - 14, px + pw / 2 + 18, cy - 16);
+        this.ctx.quadraticCurveTo(px + pw / 2 + 8, cy - 8, px + pw / 2 + 2, cy + 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Head Helm
+        this.ctx.fillStyle = '#991b1b';
+        this.ctx.strokeStyle = '#450a0a';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, cy + 10, 11, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Visor / Glowing Dragon Eyes
+        const eyeColor = this.endmonFlareBeamActive ? '#86efac' : '#22c55e';
+        this.ctx.fillStyle = eyeColor;
+        this.ctx.shadowColor = this.endmonFlareBeamActive ? '#22c55e' : eyeColor;
+        this.ctx.shadowBlur = this.endmonFlareBeamActive ? 10 : 4;
+        if (this.pFacing === 1) {
+          this.ctx.fillRect(px + pw / 2 + 1, cy + 8, 4, 2.5);
+          this.ctx.fillRect(px + pw / 2 + 6, cy + 8, 3, 2);
+          if (this.endmonFlareBeamActive) {
+            // Overdrive eye trail flare
+            this.ctx.strokeStyle = '#4ade80';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(px + pw / 2 + 7, cy + 9);
+            this.ctx.lineTo(px + pw / 2 + 16, cy + 8);
+            this.ctx.stroke();
+          }
+        } else {
+          this.ctx.fillRect(px + pw / 2 - 5, cy + 8, 4, 2.5);
+          this.ctx.fillRect(px + pw / 2 - 9, cy + 8, 3, 2);
+          if (this.endmonFlareBeamActive) {
+            this.ctx.strokeStyle = '#4ade80';
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(px + pw / 2 - 7, cy + 9);
+            this.ctx.lineTo(px + pw / 2 - 16, cy + 8);
+            this.ctx.stroke();
+          }
+        }
+        this.ctx.shadowBlur = 0;
+
+        // 6. Dragon Rifle / Hand Cannon
+        const recoil = this.attackDuration > 0 ? (this.attackDuration / 10) * 4 : 0;
+        const beamKick = this.endmonFlareBeamActive ? (Math.sin(this.frameCount * 1.8) * 2.5 - 2) : 0;
+        const gunX = this.pFacing === 1 ? px + pw - 2 - recoil - beamKick : px - 14 + recoil + beamKick;
+        const gunY = cy + 16;
+
+        // Energy Conduit Arc surging from chest core to rifle
+        if (this.endmonFlareBeamActive) {
+          this.ctx.save();
+          this.ctx.strokeStyle = '#fef08a';
+          this.ctx.shadowColor = '#f97316';
+          this.ctx.shadowBlur = 6;
+          this.ctx.lineWidth = 2.2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw / 2, cy + 22);
+          this.ctx.quadraticCurveTo(gunX, cy + 24, gunX, gunY);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+
+        this.ctx.save();
+        this.ctx.translate(gunX, gunY);
+        this.ctx.scale(this.pFacing, 1);
+        if (this.endmonFlareBeamActive) {
+          const localAimAngle = this.pFacing === 1 ? this.endmonFlareBeamAngle : (Math.PI - this.endmonFlareBeamAngle);
+          this.ctx.rotate(localAimAngle);
+        }
+
+        // Gun stock and body
+        this.ctx.fillStyle = '#1c1917';
+        this.ctx.strokeStyle = this.endmonFlareBeamActive ? '#fef08a' : '#fbbf24';
+        this.ctx.lineWidth = this.endmonFlareBeamActive ? 1.8 : 1.2;
+        this.ctx.fillRect(-2, -3, 18, 6);
+        this.ctx.strokeRect(-2, -3, 18, 6);
+
+        // Barrel nozzle
+        this.ctx.fillStyle = this.endmonFlareBeamActive ? '#ffffff' : '#d97706';
+        if (this.endmonFlareBeamActive) {
+          this.ctx.shadowColor = '#f97316';
+          this.ctx.shadowBlur = 8;
+        }
+        this.ctx.fillRect(16, -4, 4, 8);
+        this.ctx.shadowBlur = 0;
+
+        // Thermal vent glow
+        this.ctx.fillStyle = this.endmonFlareBeamActive
+          ? (this.frameCount % 4 < 2 ? '#ffffff' : '#fef08a')
+          : '#ef4444';
+        this.ctx.fillRect(4, -1, 8, 2);
+
+        // Muzzle Flash on attack
+        if (this.attackDuration > 6) {
+          const flashGrad = this.ctx.createRadialGradient(20, 0, 1, 20, 0, 12);
+          flashGrad.addColorStop(0, '#ffffff');
+          flashGrad.addColorStop(0.4, '#fef08a');
+          flashGrad.addColorStop(0.8, '#f97316');
+          flashGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          this.ctx.fillStyle = flashGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(20, 0, 12, 0, Math.PI * 2);
+          this.ctx.fill();
+        }
+
+        this.ctx.restore();
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Blastermon') {
+        this.ctx.save();
+        const isSpirited = this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0;
+        const cy = bodyY;
+
+        // 1. Dual-Layer Shadow Paladin Cape
+        const capeWave = Math.sin(this.frameCount * 0.18) * (this.pGrounded ? 3 : 6);
+        const capeDir = -this.pFacing;
+
+        // Cape outer dark shadow
+        this.ctx.fillStyle = '#09090b';
+        this.ctx.strokeStyle = isSpirited ? '#fbbf24' : '#581c87';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2, cy + 12);
+        this.ctx.quadraticCurveTo(px + pw / 2 + capeDir * 18 + capeWave, cy + ph / 2, px + pw / 2 + capeDir * 24 + capeWave, cy + ph + 4);
+        this.ctx.lineTo(px + pw / 2 + capeDir * 8, cy + ph + 4);
+        this.ctx.quadraticCurveTo(px + pw / 2 + capeDir * 4, cy + ph / 2, px + pw / 2 - this.pFacing * 6, cy + 14);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Cape inner violet silk lining
+        this.ctx.fillStyle = isSpirited ? '#7c3aed' : '#3b0764';
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2 + capeDir * 2, cy + 14);
+        this.ctx.quadraticCurveTo(px + pw / 2 + capeDir * 14 + capeWave, cy + ph / 2, px + pw / 2 + capeDir * 18 + capeWave, cy + ph + 2);
+        this.ctx.lineTo(px + pw / 2 + capeDir * 8, cy + ph + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 2. Armored Legs & Sabatons (Boots)
+        this.ctx.fillStyle = '#18181b';
+        this.ctx.strokeStyle = '#3f3f46';
+        this.ctx.lineWidth = 1.5;
+        // Left & right greaves
+        this.ctx.fillRect(px + 6, cy + ph - 14, 8, 14);
+        this.ctx.strokeRect(px + 6, cy + ph - 14, 8, 14);
+        this.ctx.fillRect(px + pw - 14, cy + ph - 14, 8, 14);
+        this.ctx.strokeRect(px + pw - 14, cy + ph - 14, 8, 14);
+
+        // Gold knee poleyns
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.fillRect(px + 7, cy + ph - 15, 6, 4);
+        this.ctx.fillRect(px + pw - 13, cy + ph - 15, 6, 4);
+
+        // 3. Obsidian Breastplate / Cuirass
+        this.ctx.fillStyle = '#18181b';
+        this.ctx.strokeStyle = '#3b0764';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 4, cy + 12);
+        this.ctx.lineTo(px + pw - 4, cy + 12);
+        this.ctx.lineTo(px + pw - 6, cy + ph - 12);
+        this.ctx.lineTo(px + 6, cy + ph - 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Center Gold Paladin Cross Crest
+        this.ctx.fillStyle = isSpirited ? '#fef08a' : '#fbbf24';
+        this.ctx.fillRect(px + pw / 2 - 2, cy + 16, 4, 14);
+        this.ctx.fillRect(px + pw / 2 - 6, cy + 20, 12, 3.5);
+
+        // 4. Spiked Pauldrons (Shoulders)
+        const leftShoulderX = this.pFacing === 1 ? px - 2 : px + pw - 10;
+        const rightShoulderX = this.pFacing === 1 ? px + pw - 8 : px - 4;
+        this.ctx.fillStyle = '#27272a';
+        this.ctx.strokeStyle = '#7c3aed';
+        this.ctx.lineWidth = 1.5;
+        // Left Pauldron
+        this.ctx.beginPath();
+        this.ctx.moveTo(leftShoulderX, cy + 14);
+        this.ctx.lineTo(leftShoulderX + (this.pFacing === 1 ? -4 : 4), cy + 8);
+        this.ctx.lineTo(leftShoulderX + (this.pFacing === 1 ? 8 : -8), cy + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right Pauldron
+        this.ctx.beginPath();
+        this.ctx.moveTo(rightShoulderX, cy + 14);
+        this.ctx.lineTo(rightShoulderX + (this.pFacing === 1 ? 8 : -8), cy + 8);
+        this.ctx.lineTo(rightShoulderX + (this.pFacing === 1 ? -4 : 4), cy + 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 5. Blaster Helmet (Shadow Knight Horned Crest)
+        const helmX = px + pw / 2;
+        const helmY = cy + 10;
+
+        // Helmet Dome
+        this.ctx.fillStyle = '#09090b';
+        this.ctx.strokeStyle = '#581c87';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.arc(helmX, helmY, 12, Math.PI, 0, false);
+        this.ctx.lineTo(helmX + 11, helmY + 8);
+        this.ctx.lineTo(helmX - 11, helmY + 8);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Sharp Twin Shadow Horns
+        this.ctx.fillStyle = '#18181b';
+        this.ctx.strokeStyle = '#7c3aed';
+        this.ctx.lineWidth = 1.6;
+        // Left Horn
+        this.ctx.beginPath();
+        this.ctx.moveTo(helmX - 7, helmY);
+        this.ctx.quadraticCurveTo(helmX - 18, helmY - 10, helmX - 14, helmY - 20);
+        this.ctx.quadraticCurveTo(helmX - 10, helmY - 10, helmX - 3, helmY - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right Horn
+        this.ctx.beginPath();
+        this.ctx.moveTo(helmX + 7, helmY);
+        this.ctx.quadraticCurveTo(helmX + 18, helmY - 10, helmX + 14, helmY - 20);
+        this.ctx.quadraticCurveTo(helmX + 10, helmY - 10, helmX + 3, helmY - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Glowing Eye Visor Slit (Crimson / Violet-Gold in Spirited)
+        const eyeColor = isSpirited ? '#fef08a' : '#ef4444';
+        this.ctx.save();
+        this.ctx.shadowColor = eyeColor;
+        this.ctx.shadowBlur = isSpirited ? 10 : 6;
+        this.ctx.fillStyle = eyeColor;
+        const eyeX = helmX + this.pFacing * 3 - 5;
+        this.ctx.fillRect(eyeX, helmY + 2, 10, 2.5);
+        this.ctx.restore();
+
+        // 6. Blaster Dark Broadsword (Normal) vs Plunging Colossal Grip (Ultimate Slam)
+        const isPlungingWithGiantBlade = this.blastermonUltActive && this.blastermonUltPhase === 'giant_blade';
+        if (!isPlungingWithGiantBlade) {
+          this.ctx.save();
+          const swordBaseX = this.pFacing === 1 ? px + pw - 2 : px + 2;
+          const swordBaseY = cy + 20;
+          this.ctx.translate(swordBaseX, swordBaseY);
+          this.ctx.scale(this.pFacing, 1);
+
+          const isAttacking = this.attackDuration > 0;
+          const swingAngle = isAttacking ? ((10 - this.attackDuration) / 10) * Math.PI * 0.9 - Math.PI * 0.45 : -Math.PI * 0.25;
+          this.ctx.rotate(swingAngle);
+
+          // Sword Hilt & Pommel
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.beginPath();
+          this.ctx.arc(-2, 10, 2.5, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.fillStyle = '#1c1917';
+          this.ctx.fillRect(-3, 0, 3, 10);
+
+          // Crossguard
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.strokeStyle = '#d97706';
+          this.ctx.lineWidth = 1;
+          this.ctx.fillRect(-8, -2, 14, 3.5);
+
+          // Heavy Broadsword Blade
+          this.ctx.fillStyle = '#18181b';
+          this.ctx.strokeStyle = isSpirited ? '#fbbf24' : '#7c3aed';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(-5, -2);
+          this.ctx.lineTo(-4, -34);
+          this.ctx.lineTo(0, -42); // Blade tip
+          this.ctx.lineTo(4, -34);
+          this.ctx.lineTo(5, -2);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Runic Blade Fuller Glow
+          this.ctx.strokeStyle = isSpirited ? '#fef08a' : '#c084fc';
+          this.ctx.lineWidth = 1.2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(0, -3);
+          this.ctx.lineTo(0, -35);
+          this.ctx.stroke();
+
+          // Sweeping Multi-Layer Energy Cleave Arc on Attack Swing
+          if (isAttacking) {
+            this.ctx.save();
+            const slashProgress = (10 - this.attackDuration) / 10;
+            const arcStart = -Math.PI * 0.7;
+            const arcEnd = arcStart + slashProgress * Math.PI * 1.1;
+
+            // Outer luminous haze
+            this.ctx.shadowColor = isSpirited ? '#fef08a' : '#c084fc';
+            this.ctx.shadowBlur = 18;
+            this.ctx.strokeStyle = isSpirited ? 'rgba(254, 240, 138, 0.45)' : 'rgba(124, 58, 237, 0.5)';
+            this.ctx.lineWidth = 16;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 44, arcStart, arcEnd);
+            this.ctx.stroke();
+
+            // Mid-layer intense plasma blade
+            this.ctx.strokeStyle = isSpirited ? 'rgba(251, 191, 36, 0.9)' : 'rgba(192, 132, 252, 0.85)';
+            this.ctx.lineWidth = 8;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 45, arcStart + 0.1, arcEnd);
+            this.ctx.stroke();
+
+            // Blinding white cutting edge
+            this.ctx.strokeStyle = '#ffffff';
+            this.ctx.lineWidth = 2.5;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 46, arcStart + 0.2, arcEnd);
+            this.ctx.stroke();
+
+            // Blade tip spark star
+            const tipX = Math.cos(arcEnd) * 46;
+            const tipY = Math.sin(arcEnd) * 46;
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.beginPath();
+            this.ctx.arc(tipX, tipY, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            this.ctx.restore();
+          }
+
+          this.ctx.restore();
+        } else {
+          // Blastermon gripping the colossal plunging blade with both hands as they slam together!
+          this.ctx.save();
+          this.ctx.fillStyle = '#27272a';
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 1.6;
+
+          // Left Arm extended down to sword hilt
+          this.ctx.fillRect(px + 4, cy + 16, 7, 26);
+          this.ctx.strokeRect(px + 4, cy + 16, 7, 26);
+
+          // Right Arm extended down to sword hilt
+          this.ctx.fillRect(px + pw - 11, cy + 16, 7, 26);
+          this.ctx.strokeRect(px + pw - 11, cy + 16, 7, 26);
+
+          // Gold armored gauntlets gripping the crossguard
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.fillRect(px + 3, cy + 40, 9, 6);
+          this.ctx.fillRect(px + pw - 12, cy + 40, 9, 6);
 
           this.ctx.restore();
         }
@@ -15975,7 +18302,9 @@ export class GameEngine {
           this.selectedDraco === 'Krakenmon' ||
           this.selectedDraco === 'Butchermon' ||
           this.selectedDraco === 'Reapermon' ||
-          this.selectedDraco === 'Mikomon'
+          this.selectedDraco === 'Mikomon' ||
+          this.selectedDraco === 'EndMon' ||
+          this.selectedDraco === 'Blastermon'
         ) {
           // Custom Dracos render their own dedicated weapons & spell effects
         } else {
@@ -16112,7 +18441,10 @@ export class GameEngine {
           this.selectedDraco === 'Pixelmon' ||
           this.selectedDraco === 'Krakenmon' ||
           this.selectedDraco === 'Butchermon' ||
-          this.selectedDraco === 'Reapermon'
+          this.selectedDraco === 'Reapermon' ||
+          this.selectedDraco === 'Mikomon' ||
+          this.selectedDraco === 'EndMon' ||
+          this.selectedDraco === 'Blastermon'
         ) {
           // Custom Dracos render their own staff, cleaver, scythe, anchor, or dark energy hands
         } else {
@@ -16563,6 +18895,304 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    // Blastermon Lightning Arcs Visual Rendering
+    if (this.blastermonLightningArcs.length > 0) {
+      this.ctx.save();
+      this.blastermonLightningArcs.forEach(arc => {
+        const progress = arc.timer / arc.maxTimer;
+        const alpha = Math.max(0.1, progress);
+
+        // Generate zig-zag segments if not yet stored
+        if (!arc.segments) {
+          const segs: Array<{ x: number; y: number }> = [];
+          segs.push({ x: arc.x1, y: arc.y1 });
+          const totalDist = Math.hypot(arc.x2 - arc.x1, arc.y2 - arc.y1);
+          const numSteps = Math.max(4, Math.floor(totalDist / 28));
+          const dx = (arc.x2 - arc.x1) / numSteps;
+          const dy = (arc.y2 - arc.y1) / numSteps;
+          const perpX = -dy / Math.hypot(dx, dy);
+          const perpY = dx / Math.hypot(dx, dy);
+
+          for (let s = 1; s < numSteps; s++) {
+            const jitter = (Math.random() - 0.5) * 28;
+            segs.push({
+              x: arc.x1 + dx * s + perpX * jitter,
+              y: arc.y1 + dy * s + perpY * jitter
+            });
+          }
+          segs.push({ x: arc.x2, y: arc.y2 });
+          arc.segments = segs;
+        }
+
+        // Layer 1: Wide Outer Violet Glow
+        this.ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.4})`;
+        this.ctx.lineWidth = 10;
+        this.ctx.beginPath();
+        arc.segments.forEach((pt, idx) => {
+          if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+          else this.ctx.lineTo(pt.x, pt.y);
+        });
+        this.ctx.stroke();
+
+        // Layer 2: Radiant Electric Violet Mid-tone
+        this.ctx.strokeStyle = `rgba(192, 132, 252, ${alpha * 0.85})`;
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        arc.segments.forEach((pt, idx) => {
+          if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+          else this.ctx.lineTo(pt.x, pt.y);
+        });
+        this.ctx.stroke();
+
+        // Layer 3: Pure White High-Voltage Core
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        arc.segments.forEach((pt, idx) => {
+          if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+          else this.ctx.lineTo(pt.x, pt.y);
+        });
+        this.ctx.stroke();
+      });
+      this.ctx.restore();
+    }
+
+    // Blastermon Ultimate: Stroke of Bravery Giant Blade Slam Rendering
+    if (this.blastermonUltActive && this.blastermonUltPhase === 'giant_blade') {
+      this.ctx.save();
+      const bladeX = this.blastermonGiantBladeX;
+      const bladeTipY = this.blastermonGiantBladeY;
+      const bladeH = 140;
+      const bladeW = 34;
+
+      // Dark thunder sky aura around blade
+      const auraGrad = this.ctx.createRadialGradient(bladeX, bladeTipY - bladeH / 2, 20, bladeX, bladeTipY - bladeH / 2, 120);
+      auraGrad.addColorStop(0, 'rgba(192, 132, 252, 0.4)');
+      auraGrad.addColorStop(0.5, 'rgba(124, 58, 237, 0.2)');
+      auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = auraGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(bladeX, bladeTipY - bladeH / 2, 120, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Blade downward speed trail
+      this.ctx.fillStyle = 'rgba(124, 58, 237, 0.25)';
+      this.ctx.fillRect(bladeX - bladeW / 2, bladeTipY - bladeH - 80, bladeW, 80);
+
+      // Pommel
+      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.beginPath();
+      this.ctx.arc(bladeX, bladeTipY - bladeH - 30, 8, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Grip
+      this.ctx.fillStyle = '#18181b';
+      this.ctx.fillRect(bladeX - 5, bladeTipY - bladeH - 30, 10, 30);
+
+      // Massive Crossguard
+      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.strokeStyle = '#d97706';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(bladeX - bladeW * 0.9, bladeTipY - bladeH);
+      this.ctx.lineTo(bladeX + bladeW * 0.9, bladeTipY - bladeH);
+      this.ctx.lineTo(bladeX + bladeW * 0.7, bladeTipY - bladeH + 12);
+      this.ctx.lineTo(bladeX - bladeW * 0.7, bladeTipY - bladeH + 12);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Giant Blade Body
+      const bladeGrad = this.ctx.createLinearGradient(bladeX - bladeW / 2, 0, bladeX + bladeW / 2, 0);
+      bladeGrad.addColorStop(0, '#09090b');
+      bladeGrad.addColorStop(0.4, '#18181b');
+      bladeGrad.addColorStop(0.5, '#7c3aed');
+      bladeGrad.addColorStop(0.6, '#18181b');
+      bladeGrad.addColorStop(1, '#09090b');
+
+      this.ctx.fillStyle = bladeGrad;
+      this.ctx.strokeStyle = '#c084fc';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.moveTo(bladeX - bladeW / 2, bladeTipY - bladeH + 12);
+      this.ctx.lineTo(bladeX - bladeW / 2, bladeTipY - 30);
+      this.ctx.lineTo(bladeX, bladeTipY); // Tip pointing straight down
+      this.ctx.lineTo(bladeX + bladeW / 2, bladeTipY - 30);
+      this.ctx.lineTo(bladeX + bladeW / 2, bladeTipY - bladeH + 12);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Golden Runic Center Spine
+      this.ctx.strokeStyle = '#fbbf24';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(bladeX, bladeTipY - bladeH + 16);
+      this.ctx.lineTo(bladeX, bladeTipY - 26);
+      this.ctx.stroke();
+
+      // Crackling lightning ribbons wrapping the giant blade
+      for (let r = 0; r < 4; r++) {
+        const ry = bladeTipY - bladeH + 20 + r * 28;
+        const rxOffset = Math.sin(this.frameCount * 0.5 + r) * (bladeW / 2 + 10);
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bladeX - rxOffset, ry - 6);
+        this.ctx.lineTo(bladeX + rxOffset, ry + 6);
+        this.ctx.stroke();
+      }
+
+      this.ctx.restore();
+    }
+
+    // Blastermon Summoned Energy Cleaves (Pure crescent energy slash - no physical sword model)
+    if (this.blastermonSummonedCleaves.length > 0) {
+      this.ctx.save();
+      this.blastermonSummonedCleaves.forEach(cleave => {
+        const pRaw = 1 - (cleave.timer / cleave.maxTimer);
+        const alpha = cleave.timer / cleave.maxTimer;
+        const pEase = Math.pow(pRaw, 1.4); // Accelerating slash sweep
+
+        const cx = cleave.x;
+        const cy = cleave.y;
+        const dir = cleave.facing;
+
+        // Dynamic crescent slash sweep trajectory
+        const slashLength = 110;
+        const slashAngle = -0.55 * dir + (1.1 * dir) * pEase + cleave.angle;
+
+        // 1. Broad Sweeping Energy Cleave Slash Ribbon (Curved cutting arc)
+        this.ctx.save();
+        this.ctx.shadowColor = '#c084fc';
+        this.ctx.shadowBlur = 28;
+
+        const slashGrad = this.ctx.createLinearGradient(cx - dir * 45, cy - 65, cx + dir * 45, cy + 45);
+        slashGrad.addColorStop(0, `rgba(124, 58, 237, ${alpha * 0.1})`);
+        slashGrad.addColorStop(0.35, `rgba(192, 132, 252, ${alpha * 0.8})`);
+        slashGrad.addColorStop(0.75, `rgba(254, 240, 138, ${alpha * 0.95})`);
+        slashGrad.addColorStop(1, `rgba(255, 255, 255, ${alpha})`);
+
+        this.ctx.strokeStyle = slashGrad;
+        this.ctx.lineWidth = 18;
+        this.ctx.beginPath();
+        const startX = cx - dir * 42;
+        const startY = cy - 75;
+        const endX = startX + dir * 85 * pEase;
+        const endY = startY + 115 * pEase;
+        this.ctx.moveTo(startX, startY);
+        this.ctx.quadraticCurveTo(cx + dir * 25, cy - 10, endX, endY);
+        this.ctx.stroke();
+
+        // White-hot inner cutting filament
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        this.ctx.lineWidth = 4.5;
+        this.ctx.stroke();
+        this.ctx.restore();
+
+        // 2. Crescent Energy Blade-Wave Slicing Across Target
+        this.ctx.save();
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(slashAngle);
+
+        const arcR = 55;
+        this.ctx.shadowColor = '#fef08a';
+        this.ctx.shadowBlur = 18;
+
+        // Luminous cutting crescent
+        this.ctx.strokeStyle = `rgba(254, 240, 138, ${alpha * 0.9})`;
+        this.ctx.lineWidth = 8;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, arcR, -Math.PI * 0.4, Math.PI * 0.4);
+        this.ctx.stroke();
+
+        // Pure white razor core
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, arcR, -Math.PI * 0.35, Math.PI * 0.35);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+
+        // 3. Impact Cleave Burst & Cross-Slash Flares
+        if (pRaw > 0.3) {
+          const impactProgress = (pRaw - 0.3) / 0.7;
+          const ringR = impactProgress * 70;
+          const ringAlpha = (1 - impactProgress) * 0.85;
+
+          this.ctx.save();
+          // Expanding shockwave ring
+          this.ctx.strokeStyle = `rgba(254, 240, 138, ${ringAlpha})`;
+          this.ctx.lineWidth = Math.max(0.5, 3.5 * (1 - impactProgress));
+          this.ctx.beginPath();
+          const safeRingR = Math.max(1, ringR);
+          this.ctx.ellipse(cx, cy, safeRingR, Math.max(0.5, safeRingR * 0.5), slashAngle * 0.5, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // Searing diagonal cross-cleave flare lines
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${ringAlpha})`;
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx - ringR * 0.9, cy - ringR * 0.5);
+          this.ctx.lineTo(cx + ringR * 0.9, cy + ringR * 0.5);
+          this.ctx.stroke();
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(cx + ringR * 0.7, cy - ringR * 0.4);
+          this.ctx.lineTo(cx - ringR * 0.7, cy + ringR * 0.4);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+      });
+      this.ctx.restore();
+    }
+
+    // Blastermon Ultimate: Cataclysmic Ground Cleave Rift & Light Pillar
+    if (this.blastermonUltImpactTimer > 0) {
+      this.ctx.save();
+      const riftProg = Math.max(0, Math.min(1, 1 - (this.blastermonUltImpactTimer / 50)));
+      const riftAlpha = Math.max(0, Math.min(1, this.blastermonUltImpactTimer / 50));
+      const ix = this.blastermonUltImpactX;
+      const iy = this.blastermonUltImpactY;
+
+      // 1. Vertical Heavenly Light Pillar Eruption
+      const pillarW = 120 * (1 - riftProg * 0.6);
+      const pillarGrad = this.ctx.createLinearGradient(ix - pillarW / 2, 0, ix + pillarW / 2, 0);
+      pillarGrad.addColorStop(0, `rgba(124, 58, 237, 0)`);
+      pillarGrad.addColorStop(0.3, `rgba(192, 132, 252, ${riftAlpha * 0.5})`);
+      pillarGrad.addColorStop(0.5, `rgba(255, 255, 255, ${riftAlpha * 0.9})`);
+      pillarGrad.addColorStop(0.7, `rgba(254, 240, 138, ${riftAlpha * 0.5})`);
+      pillarGrad.addColorStop(1, `rgba(124, 58, 237, 0)`);
+
+      this.ctx.fillStyle = pillarGrad;
+      this.ctx.fillRect(ix - pillarW / 2, iy - 600, pillarW, 600);
+
+      // 2. Expanding Ground Shockwave Crescents
+      const groundDist = Math.max(1, riftProg * 260);
+      this.ctx.strokeStyle = `rgba(254, 240, 138, ${riftAlpha})`;
+      this.ctx.lineWidth = Math.max(1, 5 * riftAlpha);
+      this.ctx.shadowColor = '#c084fc';
+      this.ctx.shadowBlur = 25;
+
+      this.ctx.beginPath();
+      this.ctx.ellipse(ix, iy, groundDist, Math.max(0.5, groundDist * 0.3), 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // 3. Jagged Ground Fissure Slices
+      this.ctx.strokeStyle = '#fef08a';
+      this.ctx.lineWidth = Math.max(1, 3 * riftAlpha);
+      this.ctx.beginPath();
+      this.ctx.moveTo(ix - groundDist * 0.9, iy);
+      this.ctx.lineTo(ix - groundDist * 0.4, iy + 6);
+      this.ctx.lineTo(ix, iy - 4);
+      this.ctx.lineTo(ix + groundDist * 0.4, iy + 8);
+      this.ctx.lineTo(ix + groundDist * 0.9, iy);
+      this.ctx.stroke();
+
+      this.ctx.restore();
+    }
+
     if (this.lunarmonUltActive) {
       this.ctx.save();
 
@@ -16957,6 +19587,146 @@ export class GameEngine {
         this.ctx.beginPath();
         this.ctx.arc(endX, endY, (55 + Math.sin(this.frameCount * 0.4) * 8) * fadeAlpha, 0, Math.PI * 2);
         this.ctx.fill();
+      }
+
+      this.ctx.restore();
+    }
+
+    // EndMon Ultimate Dragonic Flare Beam Visual (Homing Beam)
+    if (this.endmonFlareBeamActive) {
+      this.ctx.save();
+      const startX = this.endmonFlareBeamStartX;
+      const startY = this.endmonFlareBeamStartY;
+      const endX = this.endmonFlareBeamEndX;
+      const endY = this.endmonFlareBeamEndY;
+      const angle = this.endmonFlareBeamAngle;
+      const beamLength = this.endmonFlareBeamLength || Math.hypot(endX - startX, endY - startY);
+
+      let fadeAlpha = 1.0;
+      if (this.endmonFlareBeamTimer > 28) {
+        fadeAlpha = Math.max(0.2, (32 - this.endmonFlareBeamTimer) / 4);
+      } else if (this.endmonFlareBeamTimer < 6) {
+        fadeAlpha = Math.max(0.1, this.endmonFlareBeamTimer / 6);
+      }
+
+      // 1. World-Space Muzzle Blast Sunburst & Expanding Shock Ring
+      const muzzleGrad = this.ctx.createRadialGradient(startX, startY, 2, startX, startY, 48 * fadeAlpha);
+      muzzleGrad.addColorStop(0, '#ffffff');
+      muzzleGrad.addColorStop(0.3, 'rgba(254, 240, 138, 0.9)');
+      muzzleGrad.addColorStop(0.65, 'rgba(249, 115, 22, 0.7)');
+      muzzleGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      this.ctx.fillStyle = muzzleGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(startX, startY, 48 * fadeAlpha, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Muzzle Shock Ring
+      const mRingRadius = ((this.frameCount * 3) % 36) * fadeAlpha;
+      this.ctx.strokeStyle = `rgba(254, 240, 138, ${(1 - mRingRadius / (36 * fadeAlpha || 1)) * 0.8})`;
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(startX, startY, mRingRadius, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // 2. World-Space Cataclysmic Terminal Impact Flare
+      const impactGrad = this.ctx.createRadialGradient(endX, endY, 4 * fadeAlpha, endX, endY, 65 * fadeAlpha);
+      impactGrad.addColorStop(0, '#ffffff');
+      impactGrad.addColorStop(0.35, 'rgba(254, 240, 138, 0.9)');
+      impactGrad.addColorStop(0.7, 'rgba(249, 115, 22, 0.7)');
+      impactGrad.addColorStop(1, 'rgba(185, 28, 28, 0)');
+      this.ctx.fillStyle = impactGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(endX, endY, (60 + Math.sin(this.frameCount * 0.5) * 8) * fadeAlpha, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 3. Local-Space Beam Rendering (Oriented directly towards homing target)
+      this.ctx.translate(startX, startY);
+      this.ctx.rotate(angle);
+
+      // LAYER 1: Outer Thermal Disruption Haze (68px height)
+      const hazeGrad = this.ctx.createLinearGradient(0, -34, 0, 34);
+      hazeGrad.addColorStop(0, 'rgba(239, 68, 68, 0)');
+      hazeGrad.addColorStop(0.5, `rgba(239, 68, 68, ${0.28 * fadeAlpha})`);
+      hazeGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+      this.ctx.fillStyle = hazeGrad;
+      this.ctx.fillRect(0, -34, beamLength, 68);
+
+      // LAYER 2: Solar Corona Plasma Column (44px pulsating)
+      const coronaPulse = Math.sin(this.frameCount * 0.8) * 4;
+      const coronaH = 44 + coronaPulse;
+      const coronaGrad = this.ctx.createLinearGradient(0, -coronaH / 2, 0, coronaH / 2);
+      coronaGrad.addColorStop(0, 'rgba(249, 115, 22, 0)');
+      coronaGrad.addColorStop(0.5, `rgba(249, 115, 22, ${0.58 * fadeAlpha})`);
+      coronaGrad.addColorStop(1, 'rgba(249, 115, 22, 0)');
+      this.ctx.fillStyle = coronaGrad;
+      this.ctx.fillRect(0, -coronaH / 2, beamLength, coronaH);
+
+      // LAYER 3: Hyper-Compressed Golden Laser Stream (22px height)
+      const streamPulse = Math.sin(this.frameCount * 1.2) * 2;
+      const streamH = 22 + streamPulse;
+      const streamGrad = this.ctx.createLinearGradient(0, -streamH / 2, 0, streamH / 2);
+      streamGrad.addColorStop(0, `rgba(251, 191, 36, ${0.2 * fadeAlpha})`);
+      streamGrad.addColorStop(0.5, `rgba(251, 191, 36, ${0.85 * fadeAlpha})`);
+      streamGrad.addColorStop(1, `rgba(251, 191, 36, ${0.2 * fadeAlpha})`);
+      this.ctx.fillStyle = streamGrad;
+      this.ctx.fillRect(0, -streamH / 2, beamLength, streamH);
+
+      // LAYER 4: Curving Homing Undulating Plasma Stream (Organic curved beam)
+      this.ctx.save();
+      const waveMidY = Math.sin(this.frameCount * 0.28) * 14 * fadeAlpha;
+      const waveMidY2 = -Math.sin(this.frameCount * 0.35 + 1.2) * 12 * fadeAlpha;
+
+      // Primary curved plasma core
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${0.95 * fadeAlpha})`;
+      this.ctx.lineWidth = 7;
+      this.ctx.shadowColor = '#fef08a';
+      this.ctx.shadowBlur = 10;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.quadraticCurveTo(beamLength * 0.5, waveMidY, beamLength, 0);
+      this.ctx.stroke();
+
+      // Secondary undulating energy tendril
+      this.ctx.strokeStyle = `rgba(254, 240, 138, ${0.8 * fadeAlpha})`;
+      this.ctx.lineWidth = 3.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.quadraticCurveTo(beamLength * 0.5, waveMidY2, beamLength, 0);
+      this.ctx.stroke();
+      this.ctx.restore();
+
+      // LAYER 5: Sliding 3D Accretion Rings
+      if (beamLength > 40) {
+        for (let r = 0; r < 5; r++) {
+          const ringDist = ((this.frameCount * 24 + r * 190) % beamLength);
+          this.ctx.save();
+          this.ctx.translate(ringDist, 0);
+          this.ctx.scale(0.32, 1.0);
+          this.ctx.strokeStyle = `rgba(254, 240, 138, ${0.8 * fadeAlpha})`;
+          this.ctx.lineWidth = 2.8;
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 22 + Math.sin(this.frameCount * 0.4 + r) * 3, 0, Math.PI * 2);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+      }
+
+      // LAYER 6: Double-Helix Braided Dragon Flame Ribbons
+      if (beamLength > 30) {
+        for (let ribbon = 0; ribbon < 2; ribbon++) {
+          const phaseShift = ribbon * Math.PI;
+          this.ctx.beginPath();
+          this.ctx.strokeStyle = ribbon === 0 ? `rgba(254, 240, 138, ${0.85 * fadeAlpha})` : `rgba(239, 68, 68, ${0.85 * fadeAlpha})`;
+          this.ctx.lineWidth = 2.2;
+          const steps = Math.floor(beamLength / 18);
+          for (let i = 0; i <= steps; i++) {
+            const dist = i * 18;
+            const wave = Math.sin(this.frameCount * 0.45 + i * 0.4 + phaseShift) * 14 * fadeAlpha;
+            if (i === 0) this.ctx.moveTo(dist, wave);
+            else this.ctx.lineTo(dist, wave);
+          }
+          this.ctx.stroke();
+        }
       }
 
       this.ctx.restore();

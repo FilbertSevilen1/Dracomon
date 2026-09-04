@@ -3,6 +3,158 @@ import React from 'react';
 export const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
 
+  if (name === 'Blastermon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <defs>
+          <linearGradient id="blasterBladeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#c084fc" />
+            <stop offset="40%" stopColor="#18181b" />
+            <stop offset="100%" stopColor="#09090b" />
+          </linearGradient>
+          <linearGradient id="blasterCapeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#18181b" />
+            <stop offset="60%" stopColor="#3b0764" />
+            <stop offset="100%" stopColor="#7c3aed" />
+          </linearGradient>
+          <radialGradient id="blasterEyeGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#ef4444" />
+            <stop offset="70%" stopColor="#7c3aed" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+        </defs>
+        <ellipse cx="50" cy="88" rx="24" ry="5" fill="rgba(0,0,0,0.45)" />
+
+        {/* Shadow Paladin Ambient Lightning Aura */}
+        <circle cx="50" cy="50" r="38" fill="rgba(124, 58, 237, 0.12)" stroke="#7c3aed" strokeWidth="1" strokeDasharray="5 4" />
+
+        {/* Flowing Dark Cape with Purple Lining */}
+        <path d="M 32 44 Q 10 60 14 84 Q 28 80 36 68 Z" fill="url(#blasterCapeGrad)" stroke="#581c87" strokeWidth="1.2" />
+        <path d="M 68 44 Q 90 60 86 84 Q 72 80 64 68 Z" fill="url(#blasterCapeGrad)" stroke="#581c87" strokeWidth="1.2" />
+
+        {/* Armored Legs & Sabatons */}
+        <path d="M 38 68 L 34 84 L 44 84 L 42 68 Z" fill="#18181b" stroke="#3f3f46" strokeWidth="1.5" />
+        <path d="M 58 68 L 56 84 L 66 84 L 62 68 Z" fill="#18181b" stroke="#3f3f46" strokeWidth="1.5" />
+        <rect x="36" y="72" width="6" height="3" fill="#fbbf24" rx="1" />
+        <rect x="58" y="72" width="6" height="3" fill="#fbbf24" rx="1" />
+
+        {/* Obsidian Cuirass / Torso Armor */}
+        <path d="M 34 40 L 32 68 L 68 68 L 66 40 Z" fill="#18181b" stroke="#27272a" strokeWidth="2" />
+        <path d="M 38 42 L 36 66 L 64 66 L 62 42 Z" fill="#09090b" />
+
+        {/* Paladin Gold Cross Insignia */}
+        <rect x="48" y="44" width="4" height="18" fill="#fbbf24" />
+        <rect x="42" y="49" width="16" height="4" fill="#fbbf24" />
+        <circle cx="50" cy="51" r="2.5" fill="#fef08a" />
+
+        {/* Spiked Pauldrons */}
+        <path d="M 28 42 L 20 34 L 34 38 Z" fill="#27272a" stroke="#7c3aed" strokeWidth="1.5" />
+        <path d="M 72 42 L 80 34 L 66 38 Z" fill="#27272a" stroke="#7c3aed" strokeWidth="1.5" />
+
+        {/* Shadow Knight Helmet */}
+        <path d="M 36 34 Q 50 18 64 34 L 64 42 Q 50 46 36 42 Z" fill="#09090b" stroke="#3b0764" strokeWidth="2" />
+
+        {/* Sharp Twin Horned Crest */}
+        <path d="M 38 28 Q 24 14 26 4 Q 34 16 42 22 Z" fill="#18181b" stroke="#7c3aed" strokeWidth="1.5" />
+        <path d="M 62 28 Q 76 14 74 4 Q 66 16 58 22 Z" fill="#18181b" stroke="#7c3aed" strokeWidth="1.5" />
+
+        {/* Glowing Crimson Visor Slit */}
+        <rect x="40" y="32" width="20" height="3.5" rx="1.5" fill="#ef4444" />
+        <circle cx="50" cy="33.5" r="2" fill="#ffffff" />
+
+        {/* Blaster Dark Broadsword (Held Angled) */}
+        <g transform="rotate(25 70 50)">
+          {/* Pommel & Hilt */}
+          <circle cx="70" cy="74" r="3" fill="#fbbf24" />
+          <rect x="68.5" y="64" width="3" height="10" fill="#18181b" />
+          {/* Crossguard */}
+          <rect x="62" y="62" width="16" height="3.5" rx="1" fill="#fbbf24" stroke="#d97706" strokeWidth="0.8" />
+          {/* Blade */}
+          <path d="M 66 62 L 67 22 L 70 14 L 73 22 L 74 62 Z" fill="url(#blasterBladeGrad)" stroke="#c084fc" strokeWidth="1.2" />
+          {/* Runic Glow */}
+          <line x1="70" y1="60" x2="70" y2="24" stroke="#fbbf24" strokeWidth="1" />
+        </g>
+
+        {/* Lightning Sparks */}
+        <path d="M 74 24 L 78 28 L 75 32 L 80 36" stroke="#c084fc" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+        <path d="M 22 40 L 26 44 L 23 48 L 27 52" stroke="#fbbf24" strokeWidth="1.2" fill="none" strokeLinecap="round" />
+      </svg>
+    );
+  }
+
+  if (name === 'EndMon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <defs>
+          <linearGradient id="endmonWingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fbbf24" />
+            <stop offset="50%" stopColor="#dc2626" />
+            <stop offset="100%" stopColor="#7f1d1d" />
+          </linearGradient>
+          <radialGradient id="endmonCoreGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="60%" stopColor="#f97316" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+        </defs>
+        <ellipse cx="50" cy="88" rx="26" ry="6" fill="rgba(0,0,0,0.4)" />
+
+        {/* Dragonic Overlord Flame Aura */}
+        <circle cx="50" cy="50" r="38" fill="rgba(220, 38, 38, 0.15)" stroke="#dc2626" strokeWidth="1" strokeDasharray="6 3" />
+
+        {/* Spreading Blazing Wings (Dual-layered Overlord Wings) */}
+        {/* Left Primary Wing */}
+        <path d="M 32 46 Q 2 12 18 28 Q 6 40 22 52 Q 14 62 34 60 Z" fill="url(#endmonWingGrad)" stroke="#450a0a" strokeWidth="1.5" />
+        <path d="M 30 44 Q 8 20 20 32 Q 12 42 24 50 Z" fill="#fbbf24" opacity="0.75" />
+        {/* Right Primary Wing */}
+        <path d="M 68 46 Q 98 12 82 28 Q 94 40 78 52 Q 86 62 66 60 Z" fill="url(#endmonWingGrad)" stroke="#450a0a" strokeWidth="1.5" />
+        <path d="M 70 44 Q 92 20 80 32 Q 88 42 76 50 Z" fill="#fbbf24" opacity="0.75" />
+
+        {/* Dragon Tail with Flame Tip */}
+        <path d="M 36 72 Q 20 80 18 90 Q 24 88 32 78 Z" fill="#7f1d1d" stroke="#450a0a" strokeWidth="1.5" />
+        <circle cx="18" cy="90" r="4" fill="#fbbf24" />
+        <circle cx="18" cy="90" r="2.5" fill="#ef4444" />
+
+        {/* Armored Dragon Legs */}
+        <path d="M 38 72 L 34 84 L 44 84 L 42 72 Z" fill="#1c1917" stroke="#7f1d1d" strokeWidth="1.5" />
+        <path d="M 58 72 L 56 84 L 66 84 L 62 72 Z" fill="#1c1917" stroke="#7f1d1d" strokeWidth="1.5" />
+
+        {/* Armored Dragon Torso & Chestplate */}
+        <path d="M 34 38 L 28 68 L 72 68 L 66 38 Z" fill="#991b1b" stroke="#450a0a" strokeWidth="2" />
+        <path d="M 38 42 L 50 64 L 62 42 Z" fill="#1c1917" stroke="#dc2626" strokeWidth="1.5" />
+
+        {/* Dragon Flame Chest Core (Overlord Core) */}
+        <circle cx="50" cy="52" r="7" fill="url(#endmonCoreGlow)" />
+        <circle cx="50" cy="52" r="4" fill="#fbbf24" stroke="#ffffff" strokeWidth="1" />
+
+        {/* Armored Shoulders / Pauldrons */}
+        <path d="M 28 36 L 18 30 L 26 48 Z" fill="#dc2626" stroke="#fbbf24" strokeWidth="1.5" />
+        <path d="M 72 36 L 82 30 L 74 48 Z" fill="#dc2626" stroke="#fbbf24" strokeWidth="1.5" />
+
+        {/* Dragonic Overlord Helm & Horns */}
+        <ellipse cx="50" cy="30" rx="14" ry="12" fill="#991b1b" stroke="#450a0a" strokeWidth="2" />
+        {/* Golden Swept Crest Horns */}
+        <path d="M 40 24 Q 28 4 34 2 Q 40 10 44 20 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1.2" />
+        <path d="M 60 24 Q 72 4 66 2 Q 60 10 56 20 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1.2" />
+        <path d="M 48 20 L 50 10 L 52 20 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+
+        {/* Visor & Glowing Eyes */}
+        <polygon points="41,29 48,31 43,34" fill="#22c55e" stroke="#15803d" strokeWidth="0.8" />
+        <polygon points="59,29 52,31 57,34" fill="#22c55e" stroke="#15803d" strokeWidth="0.8" />
+
+        {/* Arm-Mounted Dragon Cannon / Rifle in Right Arm */}
+        <rect x="68" y="48" width="22" height="6" rx="2" fill="#1c1917" stroke="#fbbf24" strokeWidth="1.2" />
+        <rect x="88" y="46.5" width="4" height="9" rx="1" fill="#f59e0b" stroke="#d97706" strokeWidth="1" />
+        <circle cx="92" cy="51" r="2" fill="#ef4444" />
+
+        {/* Floating Sparks */}
+        <circle cx="22" cy="22" r="1.5" fill="#fbbf24" />
+        <circle cx="80" cy="20" r="1.5" fill="#f97316" />
+        <circle cx="50" cy="8" r="2" fill="#ef4444" />
+      </svg>
+    );
+  }
+
   if (name === 'Mikomon') {
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>

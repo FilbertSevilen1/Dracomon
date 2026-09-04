@@ -284,4 +284,23 @@ export const FT_BOOMERANG_THROW: FloatingTextEntry        = { text: 'BONE BOOMER
 export const FT_CACTUS_SPINE_BURST: FloatingTextEntry     = { text: 'NEEDLE BURST!', color: '#84cc16' };
 export const FT_POKEY_POP: FloatingTextEntry              = { text: 'POKEY SEGMENT POPPED!', color: '#eab308' };
 
+// ---------------------------------------------------------------------------
+// EndMon: Dragonic Overlord The End
+// ---------------------------------------------------------------------------
+export const FT_ENDMON_FIRE_BREATH: FloatingTextEntry = { text: '🔥 DRAGONIC FIRE BREATH!', color: '#ef4444' };
+export const FT_ETERNAL_APOCALYPSE: FloatingTextEntry = { text: '🔥 ETERNAL APOCALYPSE!', color: '#f59e0b' };
+export const FT_ENDMON_FLARE_BEAM: FloatingTextEntry  = { text: '🔥 DRAGONIC FLARE BEAM!', color: '#f97316' };
+export const FT_ENHANCED_FIREBALL: FloatingTextEntry  = { text: '💥 APOCALYPSE CRATER!', color: '#f97316' };
+
+// ---------------------------------------------------------------------------
+// Blastermon: Shadow Paladin Knight
+// ---------------------------------------------------------------------------
+export const FT_BLASTERMON_LIGHTNING_ARC: FloatingTextEntry = { text: '⚡ SHADOW LIGHTNING ARC!', color: '#c084fc' };
+export const FT_BLASTERMON_CHAIN_LIGHTNING: FloatingTextEntry = { text: '⚡ CHAIN LIGHTNING KILL!', color: '#a855f7' };
+export const FT_STROKE_OF_BRAVERY: FloatingTextEntry        = { text: '⚔️ STROKE OF BRAVERY!', color: '#a855f7' };
+export const FT_BLASTERMON_GIANT_BLADE_SLAM: FloatingTextEntry = { text: '💥 GIANT BLADE CLEAVE!', color: '#e9d5ff' };
+export const FT_BLASTERMON_SPIRITED: FloatingTextEntry      = { text: '✨ SPIRITED FORM (8s)!', color: '#fbbf24' };
+export const FT_BLASTERMON_SHINING_CLEAVE: FloatingTextEntry = { text: '✨ SHINING CLEAVE!', color: '#fef08a' };
+
+
 

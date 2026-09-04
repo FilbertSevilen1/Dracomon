@@ -1,5 +1,25 @@
 [
   {
+    "version": "0.4.1",
+    "date": "September 4, 2026",
+    "tag": "Double Vanguard Legends: Blastermon & EndMon",
+    "badgeColor": "bg-gradient-to-r from-purple-700 via-rose-600 to-amber-600 text-white font-black shadow-sm",
+    "summary": "Version 0.4.1 unleashes two legendary heroes inspired by Cardfight!! Vanguard: Blastermon (Shadow Paladin Knight) and EndMon (Dragonic Overlord The End)! Featuring chaining shadow lightning, simultaneous colossal blade slam execution, 1200px piercing Shining Cleaves, infinite zero-gravity flight, dual homing bullets, piercing Dragonic Flare Beams, and complete canvas rendering optimizations.",
+    "highlights": [
+      "New Hero - Blastermon: Shadow Paladin Knight clad in obsidian plate armor with shadow runes, horned crest bascinet helm, and two-handed dark broadsword.",
+      "Blastermon Base Attack - Forward Dash Slash: Slashes enemies with high-voltage cleaves while dashing forward with momentum.",
+      "Blastermon Skill - Downward Blade Slam & Lightning Arc: Slams blade into the ground to discharge shadow lightning. On kill, the lightning arc automatically jumps to the next nearest enemy sequentially!",
+      "Blastermon Ultimate - Stroke of Bravery (100 Energy): Launches into the clouds and summons a colossal judgment blade. Blastermon grips the crossguard and slams down simultaneously with the sword to stun all enemies in the area for 2 seconds, inflict execute damage scaling up to +180% based on missing HP, and trigger an 8-second Spirited Form.",
+      "Blastermon Spirited Form: Enhances basic attacks into 1200px piercing Shining Cleave crescent waves with sonic distortion wakes, and boosts lightning arcs to chain up to 5 times while summoning pure energy cleave waves on hit.",
+      "New Hero - EndMon: Flame Dragon Overlord wielding an arm-mounted dragon rifle with high-velocity projectile shots (800px range cap) and custom Dragonic Overlord The End armor silhouette.",
+      "EndMon Skill - Dragonic Fire Breath: Unleashes a torrent of dragon flame to the front, scorching hit enemies and creating a 3-second burning ground zone.",
+      "EndMon Ultimate - Eternal Apocalypse (100 Energy, 8s Duration): Incinerates the ground with a 3s burn zone and grants true zero-gravity hover flight — press W/Jump to ascend, press S to descend, or release to hover in place.",
+      "EndMon Dual Homing Bullets & Flare Beam: Basic attacks fire 2 seeking homing bullets simultaneously, while the skill fires a piercing terrain-obliterating Dragonic Flare Beam with overdrive sprite animations.",
+      "EndMon Level Damage Scaling: All damage dealt by EndMon is amplified by +10% per character level for the entire duration of Eternal Apocalypse.",
+      "Engine & Visual FX Overhaul: Overhauled cleave animations with multi-stop solar/amethyst gradients, laser cutting cores, eliminated projectile overlay glitches, and fortified canvas rendering math against negative radii."
+    ]
+  },
+  {
     "version": "0.4.0",
     "date": "August 17, 2026",
     "tag": "Equipment System, Dedicated /inventory Hub & Crafting Workshop",

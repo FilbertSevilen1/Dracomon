@@ -639,6 +639,93 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'EndMon',
+      title: 'Flame Dragon Overlord',
+      cost: 500,
+      role: 'Flame Dragon Overlord / Aerial Apocalypse',
+      lore: 'Inspired by the legendary Dragonic Overlord The End. Wields a high-velocity dragon rifle with an 800px range cap, unleashes Dragonic Fire Breath to burn enemies and scorch the ground for 3 seconds, and ascends into Eternal Apocalypse — gaining 8 seconds of infinite flight, spreading blazing wings, firing dual homing bullets, and launching an enhanced fireball that destroys 1-block radius ground and burns the area, with all damage boosted +10% per level!',
+      signatureSkill: 'Dragonic Fire Breath (Flamethrower Breath • 3s Burning Ground Zone)',
+      ultimateSkill: 'Eternal Apocalypse (100 Energy • 8s Infinite Flight • Spread Wings • Dual Homing Bullets • Enhanced Terrain-Crushing Fireball • +10% Dmg / Level)',
+      color: 'red',
+      tagColor: 'bg-red-950 text-red-400 border-red-700 font-mono',
+      attackType: 'Dragon Rifle Ranged Shot (800px Range / Dual Homing in Ult)',
+      hp: saveData.dracos['EndMon']?.hp || 38,
+      atk: saveData.dracos['EndMon']?.attack || 11,
+      def: saveData.dracos['EndMon']?.defense || 7,
+      spd: saveData.dracos['EndMon']?.speed || 8.0,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="86" rx="26" ry="5" fill="rgba(0,0,0,0.35)" />
+          {/* Flame Wings */}
+          <path d="M 32 46 Q 4 16 18 30 Q 8 42 24 52 Z" fill="#dc2626" stroke="#fbbf24" strokeWidth="1.2" />
+          <path d="M 68 46 Q 96 16 82 30 Q 92 42 76 52 Z" fill="#dc2626" stroke="#fbbf24" strokeWidth="1.2" />
+          {/* Dragon Armor */}
+          <path d="M 34 38 L 28 68 L 72 68 L 66 38 Z" fill="#991b1b" stroke="#450a0a" strokeWidth="2" />
+          <path d="M 38 42 L 50 64 L 62 42 Z" fill="#1c1917" stroke="#dc2626" strokeWidth="1.2" />
+          {/* Core */}
+          <circle cx="50" cy="52" r="5" fill="#f97316" stroke="#fbbf24" strokeWidth="1.5" />
+          {/* Helm & Horns */}
+          <ellipse cx="50" cy="30" rx="14" ry="12" fill="#991b1b" stroke="#450a0a" strokeWidth="2" />
+          <path d="M 40 24 Q 28 6 34 4 Q 40 12 44 20 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <path d="M 60 24 Q 72 6 66 4 Q 60 12 56 20 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          {/* Eyes */}
+          <polygon points="42,29 48,31 44,33" fill="#22c55e" />
+          <polygon points="58,29 52,31 56,33" fill="#22c55e" />
+          {/* Rifle */}
+          <rect x="68" y="48" width="20" height="6" rx="1.5" fill="#1c1917" stroke="#fbbf24" strokeWidth="1" />
+          <circle cx="90" cy="51" r="2" fill="#ef4444" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Blastermon',
+      title: 'Shadow Paladin Knight',
+      cost: 500,
+      role: 'Shadow Paladin Knight / Execute Bruiser',
+      lore: 'Inspired by Cardfight!! Vanguard\'s Blaster Dark. Clad in obsidian plate armor with shadow runes and flowing dark cape. Slashes foes while dashing forward, slams his blade into the ground to release chaining lightning arcs that continue to new targets upon every kill, and ascends into the heavens with Stroke of Bravery — summoning a colossal judgment blade that crashes down to stun all enemies in the area for 2 seconds and execute foes with massive bonus damage scaling with missing health, before entering an 8-second Spirited Form where basic attacks fire 1200px Shining Cleaves and skills summon cleaves while chaining up to 5 times!',
+      signatureSkill: 'Downward Blade Slam & Chaining Lightning Arc (Kill-Chain mechanic)',
+      ultimateSkill: 'Stroke of Bravery (100 Energy • Sky Launch • Giant Blade Slam • 2s Area Stun • Execute Scaling • Hero Slam • 8s Spirited Form • 1200px Shining Cleave • 5-Jump Cleave Summon)',
+      color: 'purple',
+      tagColor: 'bg-purple-950 text-purple-400 border-purple-700 font-mono',
+      attackType: 'Forward Dash Slash / 1200px Shining Cleave in Spirited Form',
+      hp: saveData.dracos['Blastermon']?.hp || 46,
+      atk: saveData.dracos['Blastermon']?.attack || 11.5,
+      def: saveData.dracos['Blastermon']?.defense || 8.0,
+      spd: saveData.dracos['Blastermon']?.speed || 7.2,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="86" rx="24" ry="5" fill="rgba(0,0,0,0.35)" />
+          {/* Shadow Aura */}
+          <circle cx="50" cy="50" r="36" fill="rgba(124, 58, 237, 0.12)" stroke="#7c3aed" strokeWidth="1" strokeDasharray="4 3" />
+          {/* Flowing Cape */}
+          <path d="M 32 44 Q 12 60 16 82 Q 28 78 36 68 Z" fill="#18181b" stroke="#7c3aed" strokeWidth="1.2" />
+          <path d="M 68 44 Q 88 60 84 82 Q 72 78 64 68 Z" fill="#18181b" stroke="#7c3aed" strokeWidth="1.2" />
+          {/* Armor */}
+          <path d="M 34 38 L 30 68 L 70 68 L 66 38 Z" fill="#18181b" stroke="#3f3f46" strokeWidth="2" />
+          <path d="M 38 42 L 50 64 L 62 42 Z" fill="#09090b" stroke="#7c3aed" strokeWidth="1.2" />
+          {/* Gold Cross */}
+          <rect x="48" y="44" width="4" height="16" fill="#fbbf24" />
+          <rect x="43" y="49" width="14" height="4" fill="#fbbf24" />
+          {/* Helm & Horns */}
+          <ellipse cx="50" cy="30" rx="13" ry="11" fill="#09090b" stroke="#3b0764" strokeWidth="2" />
+          <path d="M 40 24 Q 26 10 28 4 Q 36 14 42 20 Z" fill="#18181b" stroke="#7c3aed" strokeWidth="1" />
+          <path d="M 60 24 Q 74 10 72 4 Q 64 14 58 20 Z" fill="#18181b" stroke="#7c3aed" strokeWidth="1" />
+          {/* Crimson Visor */}
+          <rect x="41" y="29" width="18" height="3" rx="1" fill="#ef4444" />
+          {/* Broadsword */}
+          <g transform="rotate(25 70 50)">
+            <circle cx="70" cy="74" r="3" fill="#fbbf24" />
+            <rect x="68.5" y="64" width="3" height="10" fill="#18181b" />
+            <rect x="62" y="62" width="16" height="3" rx="1" fill="#fbbf24" stroke="#d97706" strokeWidth="0.8" />
+            <path d="M 66 62 L 67 22 L 70 14 L 73 22 L 74 62 Z" fill="#18181b" stroke="#c084fc" strokeWidth="1.2" />
+            <line x1="70" y1="60" x2="70" y2="24" stroke="#fbbf24" strokeWidth="1" />
+          </g>
+        </svg>
+      ),
+    },
   ];
 
 
