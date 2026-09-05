@@ -519,6 +519,10 @@ export class GameEngine {
   public blastermonUltImpactTimer = 0;
   public blastermonUltImpactX = 0;
   public blastermonUltImpactY = 0;
+  public blastermonSwordLandedTimer = 0;
+  public blastermonSwordLandedMaxTimer = 120;
+  public blastermonSwordLandedX = 0;
+  public blastermonSwordLandedY = 0;
 
   // Phantomon: Phantom Blaster Dragon
   public phantomonUltActive: boolean = false;
@@ -1477,6 +1481,8 @@ export class GameEngine {
         animFrame: 0,
         name: 'Siege Battering Ram'
       });
+    } else if (type === 'antimatter_vortex') {
+      // Antimatter Vortex Singularity handled dynamically across all levels via StageGimmickManager
     }
   }
 
@@ -1632,6 +1638,7 @@ export class GameEngine {
 
     this.shadowmonStacks = 0;
     this.shadowmonUltActive = false;
+    this.blastermonSwordLandedTimer = 0;
     this.exitPortalActive = false;
     this.exitPortalPos = null;
 
@@ -1767,6 +1774,8 @@ export class GameEngine {
           this.spawnEntityFromType('mortar', c, r, preservePlayerPos, grid);
         } else if (char === 'z') {
           this.spawnEntityFromType('siege_machine', c, r, preservePlayerPos, grid);
+        } else if (char === 'm') {
+          this.spawnEntityFromType('antimatter_vortex', c, r, preservePlayerPos, grid);
         }
       }
     }
@@ -6039,6 +6048,7 @@ export class GameEngine {
   }
 
   private isMapPortal(x: number, y: number): boolean {
+    if (!this.level.maps || this.level.maps.length === 0) return false;
     const grid = this.getActiveGrid();
     if (grid.length === 0) return false;
     const ts = this.level.tileSize;
@@ -6049,7 +6059,7 @@ export class GameEngine {
       return false;
     }
 
-    return grid[row][col] === 'm';
+    return grid[row][col] === 'X';
   }
 
   private getTileSymbol(x: number, y: number): string {
@@ -7161,6 +7171,12 @@ export class GameEngine {
           this.blastermonSpiritedTimer = 480;
           this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_BLASTERMON_SPIRITED.text, FT_BLASTERMON_SPIRITED.color);
 
+          // Giant Sword stays firmly planted in the ground for the duration of the 2s stun (120 frames)
+          this.blastermonSwordLandedTimer = 120;
+          this.blastermonSwordLandedMaxTimer = 120;
+          this.blastermonSwordLandedX = this.blastermonGiantBladeX;
+          this.blastermonSwordLandedY = this.blastermonGiantBladeTargetY;
+
           // Conclude ultimate sequence
           this.blastermonUltActive = false;
           this.blastermonUltPhase = 'none';
@@ -7215,6 +7231,26 @@ export class GameEngine {
     // Blastermon Ultimate Ground Cleave Impact Rift Decay
     if (this.blastermonUltImpactTimer > 0) {
       this.blastermonUltImpactTimer--;
+    }
+
+    // Blastermon Giant Sword Ground Plant Timer Decay & Electric Crackling FX
+    if (this.blastermonSwordLandedTimer > 0) {
+      this.blastermonSwordLandedTimer--;
+      // Active crackling celestial lightning sparks from the planted blade
+      if (this.frameCount % 3 === 0) {
+        const sparkAng = (Math.random() - 0.5) * Math.PI;
+        const sparkSpd = Math.random() * 4 + 1.5;
+        this.particles.push({
+          x: this.blastermonSwordLandedX + (Math.random() - 0.5) * 44,
+          y: this.blastermonSwordLandedY - Math.random() * 32,
+          vx: Math.cos(sparkAng) * sparkSpd,
+          vy: -Math.abs(Math.sin(sparkAng) * sparkSpd) - 1.5,
+          size: Math.random() * 4 + 2,
+          color: Math.random() > 0.4 ? '#00f0ff' : '#ffffff',
+          life: 18,
+          maxLife: 18
+        });
+      }
     }
 
     // Phantomon: Damned Charging Lance Empowered State Update
@@ -8390,7 +8426,8 @@ export class GameEngine {
           this.pvy += fy;
         }
       },
-      this.stageNum
+      this.stageNum,
+      this.getActiveEntities()
     );
 
     let speedMultiplier = 1.0;
@@ -13850,38 +13887,6 @@ export class GameEngine {
               });
             }
           }
-        } else if (char === 'm') {
-          const angle = (this.frameCount * 0.05) % (Math.PI * 2);
-          this.ctx.save();
-          this.ctx.translate(ex + ts / 2, ey + ts / 2);
-          this.ctx.rotate(angle);
-
-          const grad = this.ctx.createRadialGradient(0, 0, 4, 0, 0, 24);
-          grad.addColorStop(0, '#38bdf8');
-          grad.addColorStop(0.5, '#0284c7');
-          grad.addColorStop(1, 'rgba(2, 132, 199, 0)');
-
-          this.ctx.fillStyle = grad;
-          this.ctx.beginPath();
-          this.ctx.arc(0, 0, 24, 0, Math.PI * 2);
-          this.ctx.fill();
-
-          this.ctx.strokeStyle = '#ffffff';
-          this.ctx.lineWidth = 2;
-          this.ctx.beginPath();
-          this.ctx.arc(0, 0, 16, 0, Math.PI, false);
-          this.ctx.stroke();
-
-          this.ctx.restore();
-
-          this.ctx.save();
-          this.ctx.font = 'bold 11px monospace';
-          this.ctx.textAlign = 'center';
-          this.ctx.fillStyle = '#38bdf8';
-          this.ctx.shadowColor = '#0284c7';
-          this.ctx.shadowBlur = 8;
-          this.ctx.fillText('NEXT AREA 🌀', ex + ts / 2, ey - 14);
-          this.ctx.restore();
         }
       }
     }
@@ -18615,107 +18620,249 @@ export class GameEngine {
         const hoverY = isUlt ? Math.sin(this.frameCount * 0.18) * 4 : 0;
         const cy = bodyY + hoverY;
 
-        // 1. Dragon Wings
+        // 1. Dragon Wings: Base form wings are ALREADY spread; Ultimate form grows another set of wings and both sets are wider!
+        this.ctx.save();
         if (isUlt) {
-          // "during this form, it spreads its wings"
-          // Massive spreading blazing dragon wings with flame plumes & feathers!
-          const flap = Math.sin(this.frameCount * 0.28) * 8;
-          const wingSpanBase = 52 + flap;
-          const wingSpan = this.endmonFlareBeamActive ? wingSpanBase * 1.45 : wingSpanBase;
+          // ULTIMATE FORM: 4 Majestic Blazing Wings (Primary Upper Set + Secondary Lower Set), both sets significantly wider!
+          const flapUpper = Math.sin(this.frameCount * 0.28) * 9;
+          const flapLower = Math.sin(this.frameCount * 0.28 - 0.55) * 8;
+          const beamMult = this.endmonFlareBeamActive ? 1.35 : 1.0;
 
-          // Left Spreading Wing
-          this.ctx.save();
-          const leftWingGrad = this.ctx.createLinearGradient(px - wingSpan, cy - 30, px + 10, cy + 30);
-          if (this.endmonFlareBeamActive) {
-            leftWingGrad.addColorStop(0, '#ffffff');
-            leftWingGrad.addColorStop(0.25, '#fef08a');
-            leftWingGrad.addColorStop(0.55, '#f97316');
-            leftWingGrad.addColorStop(1, '#dc2626');
-          } else {
-            leftWingGrad.addColorStop(0, '#fef08a');
-            leftWingGrad.addColorStop(0.3, '#fbbf24');
-            leftWingGrad.addColorStop(0.6, '#f97316');
-            leftWingGrad.addColorStop(1, '#dc2626');
-          }
-          this.ctx.fillStyle = leftWingGrad;
+          // Both sets wider: Primary is 72 base (up from 52), Secondary is 56 base
+          const primarySpan = (72 + flapUpper) * beamMult;
+          const secondarySpan = (56 + flapLower) * beamMult;
+
+          // Helper gradient creator for wings
+          const createWingGrad = (x0: number, y0: number, x1: number, y1: number, isRight: boolean) => {
+            const grad = this.ctx.createLinearGradient(x0, y0, x1, y1);
+            if (this.endmonFlareBeamActive) {
+              if (isRight) {
+                grad.addColorStop(0, '#dc2626');
+                grad.addColorStop(0.4, '#f97316');
+                grad.addColorStop(0.7, '#fef08a');
+                grad.addColorStop(1, '#ffffff');
+              } else {
+                grad.addColorStop(0, '#ffffff');
+                grad.addColorStop(0.3, '#fef08a');
+                grad.addColorStop(0.6, '#f97316');
+                grad.addColorStop(1, '#dc2626');
+              }
+            } else {
+              if (isRight) {
+                grad.addColorStop(0, '#dc2626');
+                grad.addColorStop(0.4, '#f97316');
+                grad.addColorStop(0.75, '#fbbf24');
+                grad.addColorStop(1, '#fef08a');
+              } else {
+                grad.addColorStop(0, '#fef08a');
+                grad.addColorStop(0.25, '#fbbf24');
+                grad.addColorStop(0.6, '#f97316');
+                grad.addColorStop(1, '#dc2626');
+              }
+            }
+            return grad;
+          };
+
+          // --- LOWER / SECONDARY WINGS (Newly grown 2nd set of wings!) ---
+          // Left Lower Wing
+          this.ctx.fillStyle = createWingGrad(px - secondarySpan, cy + 10, px + 10, cy + 60, false);
           this.ctx.strokeStyle = '#450a0a';
           this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 10, cy + 24);
+          this.ctx.quadraticCurveTo(px - secondarySpan * 0.45, cy + 6, px - secondarySpan, cy + 18);
+          this.ctx.quadraticCurveTo(px - secondarySpan * 0.72, cy + 28, px - secondarySpan * 0.88, cy + 38);
+          this.ctx.quadraticCurveTo(px - secondarySpan * 0.45, cy + 42, px - secondarySpan * 0.6, cy + 52);
+          this.ctx.quadraticCurveTo(px, cy + 46, px + 10, cy + 32);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
 
+          // Left Lower Wing Golden Feather Trim
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.globalAlpha = 0.7;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 8, cy + 24);
+          this.ctx.quadraticCurveTo(px - secondarySpan * 0.4, cy + 14, px - secondarySpan * 0.75, cy + 24);
+          this.ctx.quadraticCurveTo(px - secondarySpan * 0.5, cy + 32, px - secondarySpan * 0.62, cy + 42);
+          this.ctx.quadraticCurveTo(px, cy + 40, px + 8, cy + 30);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
+
+          // Right Lower Wing
+          this.ctx.fillStyle = createWingGrad(px + pw, cy + 10, px + pw + secondarySpan, cy + 60, true);
+          this.ctx.strokeStyle = '#450a0a';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 10, cy + 24);
+          this.ctx.quadraticCurveTo(px + pw + secondarySpan * 0.45, cy + 6, px + pw + secondarySpan, cy + 18);
+          this.ctx.quadraticCurveTo(px + pw + secondarySpan * 0.72, cy + 28, px + pw + secondarySpan * 0.88, cy + 38);
+          this.ctx.quadraticCurveTo(px + pw + secondarySpan * 0.45, cy + 42, px + pw + secondarySpan * 0.6, cy + 52);
+          this.ctx.quadraticCurveTo(px + pw, cy + 46, px + pw - 10, cy + 32);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Right Lower Wing Golden Feather Trim
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.globalAlpha = 0.7;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 8, cy + 24);
+          this.ctx.quadraticCurveTo(px + pw + secondarySpan * 0.4, cy + 14, px + pw + secondarySpan * 0.75, cy + 24);
+          this.ctx.quadraticCurveTo(px + pw + secondarySpan * 0.5, cy + 32, px + pw + secondarySpan * 0.62, cy + 42);
+          this.ctx.quadraticCurveTo(px + pw, cy + 40, px + pw - 8, cy + 30);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
+
+          // --- UPPER / PRIMARY WINGS (Wider than base form!) ---
+          // Left Primary Wing
+          this.ctx.fillStyle = createWingGrad(px - primarySpan, cy - 35, px + 10, cy + 30, false);
+          this.ctx.strokeStyle = '#450a0a';
+          this.ctx.lineWidth = 2;
           this.ctx.beginPath();
           this.ctx.moveTo(px + 8, cy + 18);
-          this.ctx.quadraticCurveTo(px - wingSpan * 0.6, cy - 28, px - wingSpan, cy - 20);
-          this.ctx.quadraticCurveTo(px - wingSpan * 0.7, cy + 2, px - wingSpan * 0.9, cy + 16);
-          this.ctx.quadraticCurveTo(px - wingSpan * 0.5, cy + 20, px - wingSpan * 0.65, cy + 32);
+          this.ctx.quadraticCurveTo(px - primarySpan * 0.6, cy - 32, px - primarySpan, cy - 24);
+          this.ctx.quadraticCurveTo(px - primarySpan * 0.7, cy + 2, px - primarySpan * 0.9, cy + 16);
+          this.ctx.quadraticCurveTo(px - primarySpan * 0.5, cy + 20, px - primarySpan * 0.65, cy + 32);
           this.ctx.quadraticCurveTo(px - 10, cy + 36, px + 8, cy + 26);
           this.ctx.closePath();
           this.ctx.fill();
           this.ctx.stroke();
 
-          // Right Spreading Wing
-          const rightWingGrad = this.ctx.createLinearGradient(px + pw, cy - 30, px + pw + wingSpan, cy + 30);
-          if (this.endmonFlareBeamActive) {
-            rightWingGrad.addColorStop(0, '#dc2626');
-            rightWingGrad.addColorStop(0.45, '#f97316');
-            rightWingGrad.addColorStop(0.75, '#fef08a');
-            rightWingGrad.addColorStop(1, '#ffffff');
-          } else {
-            rightWingGrad.addColorStop(0, '#dc2626');
-            rightWingGrad.addColorStop(0.4, '#f97316');
-            rightWingGrad.addColorStop(0.7, '#fbbf24');
-            rightWingGrad.addColorStop(1, '#fef08a');
-          }
-          this.ctx.fillStyle = rightWingGrad;
+          // Left Primary Wing Golden Feather Trim
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.globalAlpha = 0.75;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 6, cy + 18);
+          this.ctx.quadraticCurveTo(px - primarySpan * 0.5, cy - 20, px - primarySpan * 0.8, cy - 14);
+          this.ctx.quadraticCurveTo(px - primarySpan * 0.6, cy + 6, px - primarySpan * 0.7, cy + 16);
+          this.ctx.quadraticCurveTo(px - 8, cy + 28, px + 6, cy + 24);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
 
+          // Right Primary Wing
+          this.ctx.fillStyle = createWingGrad(px + pw, cy - 35, px + pw + primarySpan, cy + 30, true);
+          this.ctx.strokeStyle = '#450a0a';
+          this.ctx.lineWidth = 2;
           this.ctx.beginPath();
           this.ctx.moveTo(px + pw - 8, cy + 18);
-          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.6, cy - 28, px + pw + wingSpan, cy - 20);
-          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.7, cy + 2, px + pw + wingSpan * 0.9, cy + 16);
-          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.5, cy + 20, px + pw + wingSpan * 0.65, cy + 32);
+          this.ctx.quadraticCurveTo(px + pw + primarySpan * 0.6, cy - 32, px + pw + primarySpan, cy - 24);
+          this.ctx.quadraticCurveTo(px + pw + primarySpan * 0.7, cy + 2, px + pw + primarySpan * 0.9, cy + 16);
+          this.ctx.quadraticCurveTo(px + pw + primarySpan * 0.5, cy + 20, px + pw + primarySpan * 0.65, cy + 32);
           this.ctx.quadraticCurveTo(px + pw + 10, cy + 36, px + pw - 8, cy + 26);
           this.ctx.closePath();
           this.ctx.fill();
           this.ctx.stroke();
 
+          // Right Primary Wing Golden Feather Trim
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.globalAlpha = 0.75;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 6, cy + 18);
+          this.ctx.quadraticCurveTo(px + pw + primarySpan * 0.5, cy - 20, px + pw + primarySpan * 0.8, cy - 14);
+          this.ctx.quadraticCurveTo(px + pw + primarySpan * 0.6, cy + 6, px + pw + primarySpan * 0.7, cy + 16);
+          this.ctx.quadraticCurveTo(px + pw + 8, cy + 28, px + pw - 6, cy + 24);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
+
+          // Overdrive wing flame plumes when Flare Beam is firing (on both sets of wings!)
           if (this.endmonFlareBeamActive) {
-            // Overdrive wing flame plumes
             this.ctx.strokeStyle = '#fef08a';
             this.ctx.lineWidth = 2.5;
             this.ctx.beginPath();
-            this.ctx.moveTo(px - wingSpan, cy - 20);
-            this.ctx.lineTo(px - wingSpan - 12, cy - 26);
-            this.ctx.moveTo(px - wingSpan * 0.9, cy + 16);
-            this.ctx.lineTo(px - wingSpan - 10, cy + 22);
-            this.ctx.moveTo(px + pw + wingSpan, cy - 20);
-            this.ctx.lineTo(px + pw + wingSpan + 12, cy - 26);
-            this.ctx.moveTo(px + pw + wingSpan * 0.9, cy + 16);
-            this.ctx.lineTo(px + pw + wingSpan + 10, cy + 22);
+            // Primary wingtips
+            this.ctx.moveTo(px - primarySpan, cy - 24);
+            this.ctx.lineTo(px - primarySpan - 14, cy - 30);
+            this.ctx.moveTo(px - primarySpan * 0.9, cy + 16);
+            this.ctx.lineTo(px - primarySpan - 10, cy + 22);
+            this.ctx.moveTo(px + pw + primarySpan, cy - 24);
+            this.ctx.lineTo(px + pw + primarySpan + 14, cy - 30);
+            this.ctx.moveTo(px + pw + primarySpan * 0.9, cy + 16);
+            this.ctx.lineTo(px + pw + primarySpan + 10, cy + 22);
+            // Secondary wingtips
+            this.ctx.moveTo(px - secondarySpan, cy + 18);
+            this.ctx.lineTo(px - secondarySpan - 12, cy + 24);
+            this.ctx.moveTo(px + pw + secondarySpan, cy + 18);
+            this.ctx.lineTo(px + pw + secondarySpan + 12, cy + 24);
             this.ctx.stroke();
           }
 
-          this.ctx.restore();
         } else {
-          // Normal Form: Folded sleek dragonic armor wings on back
-          const flap = Math.sin(this.frameCount * 0.12) * 3;
-          this.ctx.fillStyle = '#991b1b';
-          this.ctx.strokeStyle = '#450a0a';
-          this.ctx.lineWidth = 1.5;
+          // NORMAL / BASE FORM: Wings are ALREADY spread! (Steady breathing flap)
+          const flap = Math.sin(this.frameCount * 0.16) * 5;
+          const wingSpan = 46 + flap;
 
-          // Back wing folded
-          const backWingX = this.pFacing === 1 ? px - 4 : px + pw + 4;
+          // Left Spreading Wing
+          const leftWingGrad = this.ctx.createLinearGradient(px - wingSpan, cy - 25, px + 10, cy + 25);
+          leftWingGrad.addColorStop(0, '#fef08a');
+          leftWingGrad.addColorStop(0.3, '#fbbf24');
+          leftWingGrad.addColorStop(0.65, '#f97316');
+          leftWingGrad.addColorStop(1, '#dc2626');
+
+          this.ctx.fillStyle = leftWingGrad;
+          this.ctx.strokeStyle = '#450a0a';
+          this.ctx.lineWidth = 1.8;
+
           this.ctx.beginPath();
-          this.ctx.moveTo(px + pw / 2, cy + 12);
-          this.ctx.quadraticCurveTo(backWingX - 10 * this.pFacing, cy - 12 + flap, backWingX - 14 * this.pFacing, cy + 2 + flap);
-          this.ctx.quadraticCurveTo(backWingX - 4 * this.pFacing, cy + 16, px + pw / 2, cy + 24);
+          this.ctx.moveTo(px + 8, cy + 18);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.6, cy - 22, px - wingSpan, cy - 14);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.7, cy + 2, px - wingSpan * 0.88, cy + 14);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.5, cy + 18, px - wingSpan * 0.62, cy + 26);
+          this.ctx.quadraticCurveTo(px - 6, cy + 30, px + 8, cy + 24);
           this.ctx.closePath();
           this.ctx.fill();
           this.ctx.stroke();
 
-          // Gold wing tip trim
+          // Left Wing Gold Inner Accent
           this.ctx.fillStyle = '#fbbf24';
+          this.ctx.globalAlpha = 0.75;
           this.ctx.beginPath();
-          this.ctx.arc(backWingX - 14 * this.pFacing, cy + 2 + flap, 2.5, 0, Math.PI * 2);
+          this.ctx.moveTo(px + 6, cy + 18);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.5, cy - 14, px - wingSpan * 0.75, cy - 8);
+          this.ctx.quadraticCurveTo(px - wingSpan * 0.55, cy + 4, px - wingSpan * 0.65, cy + 12);
+          this.ctx.quadraticCurveTo(px - 4, cy + 24, px + 6, cy + 22);
+          this.ctx.closePath();
           this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
+
+          // Right Spreading Wing
+          const rightWingGrad = this.ctx.createLinearGradient(px + pw, cy - 25, px + pw + wingSpan, cy + 25);
+          rightWingGrad.addColorStop(0, '#dc2626');
+          rightWingGrad.addColorStop(0.35, '#f97316');
+          rightWingGrad.addColorStop(0.7, '#fbbf24');
+          rightWingGrad.addColorStop(1, '#fef08a');
+
+          this.ctx.fillStyle = rightWingGrad;
+          this.ctx.strokeStyle = '#450a0a';
+          this.ctx.lineWidth = 1.8;
+
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 8, cy + 18);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.6, cy - 22, px + pw + wingSpan, cy - 14);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.7, cy + 2, px + pw + wingSpan * 0.88, cy + 14);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.5, cy + 18, px + pw + wingSpan * 0.62, cy + 26);
+          this.ctx.quadraticCurveTo(px + pw + 6, cy + 30, px + pw - 8, cy + 24);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Right Wing Gold Inner Accent
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.globalAlpha = 0.75;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + pw - 6, cy + 18);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.5, cy - 14, px + pw + wingSpan * 0.75, cy - 8);
+          this.ctx.quadraticCurveTo(px + pw + wingSpan * 0.55, cy + 4, px + pw + wingSpan * 0.65, cy + 12);
+          this.ctx.quadraticCurveTo(px + pw + 4, cy + 24, px + pw - 6, cy + 22);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.globalAlpha = 1.0;
         }
+        this.ctx.restore();
 
         // Stabilizing Flame Thrusters on Back during Flare Beam Recoil
         if (this.endmonFlareBeamActive) {
@@ -21426,27 +21573,73 @@ export class GameEngine {
       this.ctx.restore();
     }
 
-    // Blastermon Ultimate: Stroke of Bravery Giant Blade Slam Rendering (Always White Holy Judgment Blade)
-    if (this.blastermonUltActive && this.blastermonUltPhase === 'giant_blade') {
+    // Blastermon Ultimate: Stroke of Bravery Giant Blade Slam & Ground-Planted Duration Rendering
+    const isGiantBladeFalling = this.blastermonUltActive && this.blastermonUltPhase === 'giant_blade';
+    const isGiantBladeLanded = this.blastermonSwordLandedTimer > 0;
+
+    if (isGiantBladeFalling || isGiantBladeLanded) {
       this.ctx.save();
-      const bladeX = this.blastermonGiantBladeX;
-      const bladeTipY = this.blastermonGiantBladeY;
+      const bladeX = isGiantBladeFalling ? this.blastermonGiantBladeX : this.blastermonSwordLandedX;
+      // When planted in the ground, embed the tip 14px into the ground for a solid impact visual
+      const bladeTipY = isGiantBladeFalling ? this.blastermonGiantBladeY : this.blastermonSwordLandedY + 14;
       const bladeH = 140;
       const bladeW = 34;
 
-      // Radiant thunder sky aura around blade
-      const auraGrad = this.ctx.createRadialGradient(bladeX, bladeTipY - bladeH / 2, 20, bladeX, bladeTipY - bladeH / 2, 120);
+      // Smooth fade-out during the final 24 frames of the stun
+      let alpha = 1.0;
+      if (isGiantBladeLanded && this.blastermonSwordLandedTimer < 24) {
+        alpha = Math.max(0, this.blastermonSwordLandedTimer / 24);
+      }
+      this.ctx.globalAlpha = alpha;
+
+      // Ground impact fissure cracks when planted in the ground during stun
+      if (isGiantBladeLanded) {
+        const crackY = this.blastermonSwordLandedY;
+        // Outer cyan glow cracks
+        this.ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.85})`;
+        this.ctx.lineWidth = 3.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bladeX - 6, crackY);
+        this.ctx.lineTo(bladeX - 32, crackY + 4);
+        this.ctx.lineTo(bladeX - 58, crackY + 1);
+        this.ctx.moveTo(bladeX - 25, crackY + 3);
+        this.ctx.lineTo(bladeX - 44, crackY + 12);
+        this.ctx.moveTo(bladeX + 6, crackY);
+        this.ctx.lineTo(bladeX + 32, crackY + 4);
+        this.ctx.lineTo(bladeX + 62, crackY + 2);
+        this.ctx.moveTo(bladeX + 26, crackY + 3);
+        this.ctx.lineTo(bladeX + 48, crackY + 13);
+        this.ctx.stroke();
+
+        // Inner white high-voltage fissure lines
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+        this.ctx.lineWidth = 1.4;
+        this.ctx.beginPath();
+        this.ctx.moveTo(bladeX - 4, crackY);
+        this.ctx.lineTo(bladeX - 30, crackY + 3);
+        this.ctx.lineTo(bladeX - 54, crackY + 1);
+        this.ctx.moveTo(bladeX + 4, crackY);
+        this.ctx.lineTo(bladeX + 30, crackY + 3);
+        this.ctx.lineTo(bladeX + 58, crackY + 2);
+        this.ctx.stroke();
+      }
+
+      // Radiant thunder sky / holy ground aura around blade
+      const auraPulse = isGiantBladeLanded ? Math.sin(this.frameCount * 0.18) * 12 : 0;
+      const auraGrad = this.ctx.createRadialGradient(bladeX, bladeTipY - bladeH / 2, 20, bladeX, bladeTipY - bladeH / 2, 120 + auraPulse);
       auraGrad.addColorStop(0, 'rgba(0, 240, 255, 0.45)');
       auraGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.25)');
       auraGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
       this.ctx.fillStyle = auraGrad;
       this.ctx.beginPath();
-      this.ctx.arc(bladeX, bladeTipY - bladeH / 2, 120, 0, Math.PI * 2);
+      this.ctx.arc(bladeX, bladeTipY - bladeH / 2, 120 + auraPulse, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Blade downward speed trail (Light celestial cyan & white)
-      this.ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
-      this.ctx.fillRect(bladeX - bladeW / 2, bladeTipY - bladeH - 80, bladeW, 80);
+      // Blade downward speed trail (only while falling)
+      if (isGiantBladeFalling) {
+        this.ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+        this.ctx.fillRect(bladeX - bladeW / 2, bladeTipY - bladeH - 80, bladeW, 80);
+      }
 
       // Pommel (Pure white / silver)
       this.ctx.fillStyle = '#ffffff';

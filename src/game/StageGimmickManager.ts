@@ -226,7 +226,8 @@ export class StageGimmickManager {
       onDestroyPickups?: (r: number, c: number) => void;
       onPullPlayer?: (forceX: number, forceY: number) => void;
     },
-    stageNum?: number
+    stageNum?: number,
+    entities?: Array<{ type: string; x: number; y: number }>
   ) {
     this.timerCount++;
     const pxMid = px + pWidth / 2;
@@ -865,24 +866,42 @@ export class StageGimmickManager {
       }
     }
 
-    if (themeType === 'space') {
-      this.stageBlackHoles = [];
-      if (grid && grid.length > 0) {
-        for (let r = 0; r < grid.length; r++) {
-          for (let c = 0; c < (grid[r]?.length || 0); c++) {
-            if (grid[r][c] === 'm') {
-              this.stageBlackHoles.push({
-                id: r * 1000 + c,
-                x: c * tileSize + tileSize / 2,
-                y: r * tileSize + tileSize / 2,
-                radius: 300
-              });
-            }
+    // Universal Antimatter Vortex Field Singularities (Available in ANY theme when 'm' is on the grid or in entities)
+    this.stageBlackHoles = [];
+    if (grid && grid.length > 0) {
+      for (let r = 0; r < grid.length; r++) {
+        for (let c = 0; c < (grid[r]?.length || 0); c++) {
+          if (grid[r][c] === 'm') {
+            this.stageBlackHoles.push({
+              id: r * 1000 + c,
+              x: c * tileSize + tileSize / 2,
+              y: r * tileSize + tileSize / 2,
+              radius: 300
+            });
           }
         }
       }
+    }
 
-      this.stageBlackHoles.forEach((bh) => {
+    if (entities && entities.length > 0) {
+      for (let i = 0; i < entities.length; i++) {
+        const ent = entities[i];
+        if (ent.type === 'antimatter_vortex') {
+          const vx = ent.x * tileSize + tileSize / 2;
+          const vy = ent.y * tileSize + tileSize / 2;
+          if (!this.stageBlackHoles.some(bh => Math.hypot(bh.x - vx, bh.y - vy) < 5)) {
+            this.stageBlackHoles.push({
+              id: 900000 + i,
+              x: vx,
+              y: vy,
+              radius: 300
+            });
+          }
+        }
+      }
+    }
+
+    this.stageBlackHoles.forEach((bh) => {
         const dist = Math.hypot(pxMid - bh.x, pyMid - bh.y);
         if (dist <= bh.radius && pHP > 0) {
           callbacks.spawnParticles(pxMid, pyMid, '#06b6d4', 2);
@@ -916,6 +935,7 @@ export class StageGimmickManager {
         });
       });
 
+    if (themeType === 'space') {
       if (stageNum !== 13 && !(callbacks as any).isDemoMode) {
         if (this.timerCount % 45 === 0 && grid.length > 0) {
           const mapWidth = (grid[0]?.length || 60) * tileSize;
@@ -1001,8 +1021,8 @@ export class StageGimmickManager {
     const pxMid = px + pWidth / 2;
     const pyMid = py + pHeight / 2;
 
-    if (themeType === 'space') {
-      // Draw Antimatter Field Singularities
+    // Draw Antimatter Vortex Field Singularities (Whenever active in the level, regardless of theme)
+    if (this.stageBlackHoles.length > 0) {
       this.stageBlackHoles.forEach((bh) => {
         ctx.save();
         const pulse = Math.sin(this.timerCount * 0.1) * 6;
@@ -1055,10 +1075,12 @@ export class StageGimmickManager {
         ctx.fillStyle = '#38bdf8';
         ctx.shadowColor = '#06b6d4';
         ctx.shadowBlur = 6;
-        ctx.fillText('⚛️ ANTIMATTER FIELD', bh.x, bh.y - 42);
+        ctx.fillText('⚛️ ANTIMATTER VORTEX', bh.x, bh.y - 42);
         ctx.restore();
       });
+    }
 
+    if (themeType === 'space') {
       // Draw Space Comets
       if (stageNum !== 13) {
         this.spaceComets.forEach((comet) => {
