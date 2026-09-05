@@ -16,7 +16,7 @@ export interface SubMapData {
   entities?: LevelEntity[];
 }
 
-export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core' | 'space' | 'pixel' | 'desert';
+export type ThemeType = 'forest' | 'ruins' | 'volcano' | 'ice' | 'shadow' | 'temple' | 'heavens' | 'core' | 'space' | 'pixel' | 'desert' | 'arena';
 
 export interface LevelTheme {
   type: ThemeType;
@@ -38,6 +38,9 @@ export interface LevelData {
   isUnderwater?: boolean;
   isSurvivalMode?: boolean;
   survivalDuration?: number;
+  isDefenseMode?: boolean;
+  defenseDuration?: number;
+  totemMaxHp?: number;
   description: string;
   difficulty: string;
   diffClass: string;
@@ -110,6 +113,12 @@ export const SYMBOL_TO_ENTITY_TYPE: Record<string, string> = {
   't': 'cactus_turret',
   'y': 'pokey',
   'Y': 'living_pyramid',
+  'o': 'totem',
+  'n': 'arena_knight',
+  'j': 'juggernaut',
+  'w': 'cannon',
+  'q': 'mortar',
+  'z': 'siege_machine',
 };
 
 export const getEntityTypeFromSymbol = (char: string, isUnderwater = false): string | null => {

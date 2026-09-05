@@ -1,5 +1,24 @@
 [
   {
+    "version": "0.4.2",
+    "date": "September 5, 2026",
+    "tag": "Arena Theme, Defense Mode, 5 New Siege Enemies, Skewer Traps & Phantomon",
+    "badgeColor": "bg-gradient-to-r from-amber-600 via-rose-600 to-indigo-700 text-white font-black shadow-sm",
+    "summary": "Version 0.4.2 transforms the Roman Colosseum into a full Arena Theme with a brand-new Defense Level Type! Defend the central Totem for 3 minutes with dynamic enemy aggro and a 600px healing aura. Survive lethal Skewer impalement hazard pits and battle 5 new siege units: Knight, Juggernaut, Cannon, Mortar, and Siege Machine. Plus, unleash Phantomon (Phantom Blaster Dragon) with Shadow Illusions and the devastating Damned Charging Lance ultimate!",
+    "highlights": [
+      "New Hero - Phantomon: Dark Dragon Knight inspired by Cardfight!! Vanguard's Phantom Blaster Dragon, wielding an obsidian scythe, dual shadow dragon wings, horned crest, and glowing blue circuit accents that turn crimson during ultimate.",
+      "Phantomon Base Attack - Melee Scythe Slash: Sweeps an obsidian scythe forward dealing high melee damage with ethereal void waves.",
+      "Phantomon Skill - Shadow Illusion (12s CD): Summons 2 dark shadow illusions of Phantomon that seek out nearby enemies and slash them with scythes for 8 seconds.",
+      "Phantomon Ultimate - Damned Charging Lance (100 Energy, 12s Duration): Instantly slashes/sacrifices all active illusions with dark burst explosions dealing AOE damage to nearby foes. Phantomon enters an empowered state (+70% all-damage bonus, body accents ignite from blue to crimson red, basic attacks enhance to 600px piercing Dash Slash, skill converts to Strike of Death on a 4s cooldown which summons fresh illusions on hit). On expiration, detonates a massive void shockwave that damages and stuns all nearby enemies!",
+      "New Level Type - Defense Mode: World 9 Gladiator's Arena is updated to a 3-minute Defense stage with a central sacred Totem (2000 HP). Defend the Totem against waves of enemies to secure victory!",
+      "Dynamic Enemy Aggro & Totem Healing: Enemies prioritize the player if within 350px, otherwise march directly on the Totem. The Totem continuously radiates a 600px healing aura that restores player HP over time.",
+      "Arena Theme & Visual Backdrop: Beautiful Roman Colosseum parallax architecture with stone pillars, spectator arches, torch braziers, stadium banners, and sanded arena floors.",
+      "Skewer Hazard & Impalement Death Animation: Replaces lava in Arena stages. Stepping on skewer pit traps triggers steel spears thrusting violently from the ground, impaling the player with blood/spark particles, screen shake, and a dedicated impalement death sequence.",
+      "5 New Arena Siege Enemies: Knight (shield-bearing sword gladiator), Juggernaut (hulking armored brute with high HP), Cannon (heavy wheeled field artillery firing cannonballs), Mortar (high-arc siege mortar firing explosive artillery shells), and Siege Machine (armored rolling battering ram).",
+      "EndMon Airborne Fire Breath Fix: EndMon's Dragonic Fire Breath now only ignites ground burn zones if EndMon is grounded, preventing burning flame boxes from floating in mid-air while preserving full aerial flame cone damage."
+    ]
+  },
+  {
     "version": "0.4.1",
     "date": "September 4, 2026",
     "tag": "Double Vanguard Legends: Blastermon & EndMon",

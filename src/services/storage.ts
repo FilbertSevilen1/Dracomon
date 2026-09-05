@@ -294,6 +294,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Phantomon: {
+      level: 1,
+      exp: 0,
+      hp: 44,
+      attack: 12.0,
+      defense: 7.5,
+      speed: 7.6,
+      jump: 11,
+      range: 5,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   difficulty: 'normal',
@@ -590,6 +602,20 @@ export const storageService = {
             energyRegen: 1.0,
           };
         }
+        if (!parsed.dracos.Phantomon) {
+          parsed.dracos.Phantomon = {
+            level: 1,
+            exp: 0,
+            hp: 44,
+            attack: 12.0,
+            defense: 7.5,
+            speed: 7.6,
+            jump: 11,
+            range: 5,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
 
         const MELEE_BASE_STATS: Record<string, { hp: number; defense: number }> = {
           Jumpmon: { hp: 36, defense: 6 },
@@ -598,7 +624,8 @@ export const storageService = {
           Krakenmon: { hp: 48, defense: 8 },
           Butchermon: { hp: 52, defense: 8 },
           Reapermon: { hp: 44, defense: 7 },
-          Blastermon: { hp: 46, defense: 8 }
+          Blastermon: { hp: 46, defense: 8 },
+          Phantomon: { hp: 44, defense: 7.5 }
         };
 
         Object.keys(parsed.dracos).forEach(key => {

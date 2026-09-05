@@ -169,6 +169,24 @@ import {
   FT_BLASTERMON_GIANT_BLADE_SLAM,
   FT_BLASTERMON_SPIRITED,
   FT_BLASTERMON_SHINING_CLEAVE,
+  FT_PHANTOMON_SCYTHE_SLASH,
+  FT_PHANTOMON_SHADOW_ILLUSION,
+  FT_PHANTOMON_SHADOW_ILLUSIONS,
+  FT_PHANTOMON_DAMNED_LANCE,
+  FT_PHANTOMON_DASH_SLASH,
+  FT_PHANTOMON_STRIKE_OF_DEATH,
+  FT_PHANTOMON_SACRIFICE_BURST,
+  FT_PHANTOMON_DETONATION,
+  FT_TOTEM_HEAL,
+  FT_TOTEM_DAMAGED,
+  FT_TOTEM_DESTROYED,
+  FT_DEFENSE_VICTORY,
+  FT_SKEWER_IMPALED,
+  FT_CANNON_FIRE,
+  FT_MORTAR_SHELL,
+  FT_RAM_SLAM,
+  FT_JUGGERNAUT_STOMP,
+  FT_KNIGHT_GUARD,
 } from './FloatingTextMessages';
 
 interface FloatingText {
@@ -204,7 +222,7 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'shining_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock' | 'boomerang' | 'cactus_needle' | 'sci_fi_laser' | 'endmon_bullet' | 'endmon_homing_bullet' | 'endmon_enhanced_fireball';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'shining_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock' | 'boomerang' | 'cactus_needle' | 'sci_fi_laser' | 'endmon_bullet' | 'endmon_homing_bullet' | 'endmon_enhanced_fireball' | 'cannonball' | 'mortar_shell' | 'phantomon_void_wave';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
@@ -249,7 +267,7 @@ interface Enemy {
   vy: number;
   width: number;
   height: number;
-  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'sentinel_archdemon' | 'dracoguard_fire_lord' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess' | 'ghost' | 'reaper' | 'melee_skeleton' | 'boomerang_skeleton' | 'cactus_turret' | 'pokey' | 'living_pyramid';
+  type: 'slime' | 'goblin_archer' | 'fire_golem' | 'miniboss' | 'sentinel_archdemon' | 'dracoguard_fire_lord' | 'king_slime' | 'frost_wyvern' | 'pixel_piranha' | 'pixel_ghost' | 'pixel_dragon' | 'blockman' | 'shadow_overlord' | 'dragon_king' | 'bomb_thrower' | 'flying_wyvern' | 'fish' | 'anchor' | 'scallop' | 'killer_whale' | 'skeleton_archer' | 'king_kong' | 'immortal_gladiator' | 'alien' | 'giant_wisp' | 'lunar_goddess' | 'ghost' | 'reaper' | 'melee_skeleton' | 'boomerang_skeleton' | 'cactus_turret' | 'pokey' | 'living_pyramid' | 'arena_knight' | 'juggernaut' | 'cannon' | 'mortar' | 'siege_machine';
   hp: number;
   maxHp: number;
   attack: number;
@@ -474,6 +492,7 @@ export class GameEngine {
   public blastermonUltActive = false;
   public blastermonUltPhase: 'none' | 'launch' | 'giant_blade' | 'hero_slam' = 'none';
   public blastermonUltTimer = 0;
+  public blastermonUltWasSpirited = false;
   public blastermonGiantBladeX = 0;
   public blastermonGiantBladeY = 0;
   public blastermonGiantBladeTargetY = 0;
@@ -501,6 +520,53 @@ export class GameEngine {
   public blastermonUltImpactX = 0;
   public blastermonUltImpactY = 0;
 
+  // Phantomon: Phantom Blaster Dragon
+  public phantomonUltActive: boolean = false;
+  public phantomonUltTimer: number = 0;
+  public phantomonShadowIllusions: Array<{
+    id: number;
+    x: number;
+    y: number;
+    vx: number;
+    vy: number;
+    facing: number;
+    timer: number;
+    maxTimer: number;
+    attackCooldown: number;
+    state: 'seek' | 'attack';
+    targetEnemyId: number | null;
+    isEmpowered?: boolean;
+  }> = [];
+  private phantomonIllusionIdCounter: number = 1;
+  public phantomonDashActive: boolean = false;
+  public phantomonDashTimer: number = 0;
+  public phantomonDashStartX: number = 0;
+  public phantomonDashStartY: number = 0;
+  public phantomonDashTargetX: number = 0;
+  public phantomonAfterimages: Array<{ x: number; y: number; facing: number; alpha: number }> = [];
+  public phantomonDashCutTimer: number = 0;
+  public phantomonDashCutStartX: number = 0;
+  public phantomonDashCutEndX: number = 0;
+  public phantomonDashCutY: number = 0;
+  public phantomonStrikeActive: boolean = false;
+  public phantomonStrikeTimer: number = 0;
+  public phantomonStrikeX: number = 0;
+  public phantomonStrikeY: number = 0;
+  public phantomonStrikeFacing: number = 1;
+
+  // Defense Level Type & Totem State
+  public isDefenseMode: boolean = false;
+  public defenseTimer: number = 0;
+  public defenseWaveTimer: number = 0;
+  public totemActive: boolean = false;
+  public totemX: number = 0;
+  public totemY: number = 0;
+  public totemWidth: number = 64;
+  public totemHeight: number = 96;
+  public totemHp: number = 2000;
+  public totemMaxHp: number = 2000;
+  public totemHealTick: number = 0;
+
   private thundermonDashActive = false;
   private thundermonDashTimer = 0;
   private thundermonChargeActive = false;
@@ -513,6 +579,9 @@ export class GameEngine {
   private playerRootedTimer = 0;
   private skeletonDeathTimer = 0;
   private skeletonDeathType: 'lava' | 'swamp' = 'lava';
+  private skewerDeathTimer = 0;
+  private skewerX = 0;
+  private skewerY = 0;
   private frozenDeathTimer = 0;
   private electrocutionDeathTimer = 0;
   private reaperDeathTimer = 0;
@@ -1300,6 +1369,114 @@ export class GameEngine {
         pyramidChargeVx: 0,
         pyramidVortexTimer: 0
       });
+    } else if (type === 'totem') {
+      this.totemActive = true;
+      this.totemWidth = 64;
+      this.totemHeight = 96;
+      this.totemX = ex + ts / 2 - this.totemWidth / 2;
+      this.totemY = ey + ts - this.totemHeight;
+      this.totemHp = (this.level as any).totemMaxHp || 2000;
+      this.totemMaxHp = this.totemHp;
+    } else if (type === 'arena_knight') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey + ts - 44,
+        vx: -1.6,
+        vy: 0,
+        width: 36,
+        height: 44,
+        type: 'arena_knight',
+        hp: 90,
+        maxHp: 90,
+        attack: 8,
+        defense: 8,
+        facing: -1,
+        shootCooldown: 30,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Colosseum Knight'
+      });
+    } else if (type === 'juggernaut') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey + ts - 60,
+        vx: -1.1,
+        vy: 0,
+        width: 56,
+        height: 60,
+        type: 'juggernaut',
+        hp: 320,
+        maxHp: 320,
+        attack: 14,
+        defense: 6,
+        facing: -1,
+        shootCooldown: 60,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Juggernaut Brute'
+      });
+    } else if (type === 'cannon') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey + ts - 32,
+        vx: -0.7,
+        vy: 0,
+        width: 44,
+        height: 32,
+        type: 'cannon',
+        hp: 120,
+        maxHp: 120,
+        attack: 12,
+        defense: 4,
+        facing: -1,
+        shootCooldown: 80,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Siege Cannon'
+      });
+    } else if (type === 'mortar') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey + ts - 36,
+        vx: -0.5,
+        vy: 0,
+        width: 38,
+        height: 36,
+        type: 'mortar',
+        hp: 100,
+        maxHp: 100,
+        attack: 10,
+        defense: 3,
+        facing: -1,
+        shootCooldown: 100,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Siege Mortar'
+      });
+    } else if (type === 'siege_machine') {
+      this.enemies.push({
+        id: this.enemyIdCounter++,
+        x: ex,
+        y: ey + ts - 50,
+        vx: -0.9,
+        vy: 0,
+        width: 68,
+        height: 50,
+        type: 'siege_machine',
+        hp: 400,
+        maxHp: 400,
+        attack: 16,
+        defense: 7,
+        facing: -1,
+        shootCooldown: 40,
+        state: 'patrol',
+        animFrame: 0,
+        name: 'Siege Battering Ram'
+      });
     }
   }
 
@@ -1469,6 +1646,39 @@ export class GameEngine {
       this.survivalWaveTimer = 0;
     }
 
+    this.isDefenseMode = !!(this.level as any).isDefenseMode;
+    this.totemActive = false;
+    if (this.isDefenseMode) {
+      const defDuration = (this.level as any).defenseDuration || 180;
+      this.defenseTimer = defDuration * 60;
+      this.defenseWaveTimer = 60;
+      this.totemHp = (this.level as any).totemMaxHp || 2000;
+      this.totemMaxHp = this.totemHp;
+    } else {
+      this.defenseTimer = 0;
+      this.defenseWaveTimer = 0;
+    }
+
+    // Reset Phantomon & Skewer state
+    this.phantomonUltActive = false;
+    this.phantomonUltTimer = 0;
+    this.phantomonShadowIllusions = [];
+    this.phantomonDashActive = false;
+    this.phantomonDashTimer = 0;
+    this.phantomonDashStartX = 0;
+    this.phantomonDashStartY = 0;
+    this.phantomonDashTargetX = 0;
+    this.phantomonAfterimages = [];
+    this.phantomonDashCutTimer = 0;
+    this.phantomonDashCutStartX = 0;
+    this.phantomonDashCutEndX = 0;
+    this.phantomonDashCutY = 0;
+    this.phantomonStrikeActive = false;
+    this.phantomonStrikeTimer = 0;
+    this.phantomonStrikeX = 0;
+    this.phantomonStrikeY = 0;
+    this.skewerDeathTimer = 0;
+
     let playerSpawnFound = false;
     const activeEntities = this.getActiveEntities();
     if (activeEntities && activeEntities.length > 0) {
@@ -1545,6 +1755,18 @@ export class GameEngine {
           this.spawnEntityFromType('pokey', c, r, preservePlayerPos, grid);
         } else if (char === 'Y') {
           this.spawnEntityFromType('living_pyramid', c, r, preservePlayerPos, grid);
+        } else if (char === 'o') {
+          this.spawnEntityFromType('totem', c, r, preservePlayerPos, grid);
+        } else if (char === 'n') {
+          this.spawnEntityFromType('arena_knight', c, r, preservePlayerPos, grid);
+        } else if (char === 'j') {
+          this.spawnEntityFromType('juggernaut', c, r, preservePlayerPos, grid);
+        } else if (char === 'w') {
+          this.spawnEntityFromType('cannon', c, r, preservePlayerPos, grid);
+        } else if (char === 'q') {
+          this.spawnEntityFromType('mortar', c, r, preservePlayerPos, grid);
+        } else if (char === 'z') {
+          this.spawnEntityFromType('siege_machine', c, r, preservePlayerPos, grid);
         }
       }
     }
@@ -2347,7 +2569,7 @@ export class GameEngine {
           height: cleaveH,
           isEnemy: false,
           damage: Math.floor(this.stats.attack * 2.4),
-          color: '#c084fc',
+          color: '#38bdf8',
           type: 'shining_cleave' as any,
           rangeCap: 1200,
           startX: this.px,
@@ -2357,7 +2579,7 @@ export class GameEngine {
 
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_BLASTERMON_SHINING_CLEAVE.text, FT_BLASTERMON_SHINING_CLEAVE.color);
 
-        // Radiant violet, gold, and white high-speed sonic launch particles
+        // Radiant electric cyan and white sonic launch particles
         for (let p = 0; p < 18; p++) {
           this.particles.push({
             x: cleaveX + (this.pFacing === 1 ? 12 : cleaveW - 12),
@@ -2365,7 +2587,7 @@ export class GameEngine {
             vx: this.pFacing * (Math.random() * 7 + 4),
             vy: (Math.random() - 0.5) * 5,
             size: Math.random() * 6 + 3,
-            color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#fef08a' : '#c084fc',
+            color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#38bdf8' : '#00f0ff',
             life: 18,
             maxLife: 18
           });
@@ -2402,6 +2624,98 @@ export class GameEngine {
             vy: Math.sin(sparkAngle) * sparkSpeed,
             size: Math.random() * 4 + 2,
             color: p % 3 === 0 ? '#18181b' : p % 3 === 1 ? '#7c3aed' : '#fbbf24',
+            life: 14,
+            maxLife: 14
+          });
+        }
+      }
+    } else if (this.selectedDraco === 'Phantomon') {
+      this.attackDuration = 12;
+      const dmgBonus = this.phantomonUltActive ? 1.7 : 1.0;
+      soundService.playHit();
+
+      if (this.phantomonUltActive) {
+        // ENHANCED BASIC ATTACK IN ULT: Empowered Oval Scythe Cleave (Strike of Death)
+        this.attackCooldown = 15;
+        this.attackDuration = 16;
+        soundService.playScytheDeath();
+        soundService.playScytheSwing();
+        this.screenShake = 18;
+
+        this.phantomonStrikeActive = true;
+        this.phantomonStrikeTimer = 18;
+        this.phantomonStrikeX = this.px + this.pWidth / 2;
+        this.phantomonStrikeY = this.py + this.pHeight / 2;
+        this.phantomonStrikeFacing = this.pFacing;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_PHANTOMON_STRIKE_OF_DEATH.text, FT_PHANTOMON_STRIKE_OF_DEATH.color);
+
+        // Massive Oval Cleave hit detection (145px horizontal, 75px vertical)
+        const strikeDmg = Math.floor(this.stats.attack * 4.2 * dmgBonus);
+        const pMidX = this.px + this.pWidth / 2;
+        const pMidY = this.py + this.pHeight / 2;
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const distOval = Math.hypot((ex - pMidX) / 1.7, ey - pMidY);
+          if (distOval <= 85) {
+            this.damageEnemy(enemy, strikeDmg);
+            this.spawnDustParticles(ex, ey, 14, '#ef4444');
+            this.spawnDustParticles(ex, ey, 10, '#00f0ff');
+          }
+        });
+
+        // Void oval cleave burst particles
+        for (let p = 0; p < 24; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spdX = (Math.random() * 8 + 4) * 1.6;
+          const spdY = Math.random() * 6 + 2;
+          this.particles.push({
+            x: pMidX,
+            y: pMidY,
+            vx: Math.cos(ang) * spdX,
+            vy: Math.sin(ang) * spdY,
+            size: Math.random() * 6 + 3,
+            color: p % 2 === 0 ? '#ef4444' : '#00f0ff',
+            life: 20,
+            maxLife: 20
+          });
+        }
+      } else {
+        // NORMAL BASIC ATTACK: Melee Scythe Slash with forward void arc
+        this.attackCooldown = 15;
+        this.pvx += this.pFacing * 3.0;
+        this.screenShake = 8;
+        const slashDmg = Math.floor(this.stats.attack * 2.5 * dmgBonus);
+        const reach = 110;
+        const pMidX = this.px + this.pWidth / 2;
+        const pMidY = this.py + this.pHeight / 2;
+
+        this.addFloatingText(pMidX, this.py - 20, FT_PHANTOMON_SCYTHE_SLASH.text, FT_PHANTOMON_SCYTHE_SLASH.color);
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dx = ex - pMidX;
+          const dy = ey - pMidY;
+          const inFront = this.pFacing === 1 ? (dx > -10 && dx < reach) : (dx < 10 && dx > -reach);
+          if (inFront && Math.abs(dy) < 60) {
+            this.damageEnemy(enemy, slashDmg);
+            this.spawnDustParticles(ex, ey, 12, '#00f0ff');
+            this.spawnDustParticles(ex, ey, 8, '#0284c7');
+          }
+        });
+
+        for (let p = 0; p < 14; p++) {
+          this.particles.push({
+            x: pMidX + this.pFacing * (Math.random() * 40 + 20),
+            y: pMidY + (Math.random() - 0.5) * 40,
+            vx: this.pFacing * (Math.random() * 5 + 3),
+            vy: (Math.random() - 0.5) * 4,
+            size: Math.random() * 5 + 2,
+            color: p % 2 === 0 ? '#00f0ff' : '#0284c7',
             life: 14,
             maxLife: 14
           });
@@ -3351,18 +3665,20 @@ export class GameEngine {
           }
         });
 
-        // Burns the ground for 3 seconds (180 frames)
-        const burnZoneX = this.pFacing === 1 ? this.px + 10 : this.px - 150;
-        const burnZoneY = this.py + this.pHeight - 8;
-        this.groundBurnZones.push({
-          id: this.groundBurnIdCounter++,
-          x: burnZoneX,
-          y: burnZoneY,
-          width: 150,
-          height: 18,
-          timer: 180,
-          duration: 180
-        });
+        // Burns the ground for 3 seconds (180 frames) ONLY if on the ground (doesn't burn the sky)
+        if (this.pGrounded) {
+          const burnZoneX = this.pFacing === 1 ? this.px + 10 : this.px - 150;
+          const burnZoneY = this.py + this.pHeight - 8;
+          this.groundBurnZones.push({
+            id: this.groundBurnIdCounter++,
+            x: burnZoneX,
+            y: burnZoneY,
+            width: 150,
+            height: 18,
+            timer: 180,
+            duration: 180
+          });
+        }
 
         // Fire breath flame cone stream particles
         for (let i = 0; i < 30; i++) {
@@ -3448,7 +3764,7 @@ export class GameEngine {
             y2: targetY,
             timer: 24,
             maxTimer: 24,
-            color: '#c084fc'
+            color: '#38bdf8'
           });
 
           // Deal heavy lightning damage
@@ -3456,7 +3772,7 @@ export class GameEngine {
           this.damageEnemy(targetEnemy, arcDmg);
 
           // Summon a Cleave at the target's position!
-          this.addFloatingText(targetX, targetY - 25, '✨ SUMMONED CLEAVE!', '#fbbf24');
+          this.addFloatingText(targetX, targetY - 25, '✨ SUMMONED CLEAVE!', '#38bdf8');
           soundService.playAzuremonImpact();
           this.screenShake = 16;
 
@@ -3481,7 +3797,7 @@ export class GameEngine {
               vx: Math.cos(ang) * spd,
               vy: -Math.abs(Math.sin(ang) * spd) - 2,
               size: Math.random() * 6 + 3,
-              color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#fef08a' : '#c084fc',
+              color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#38bdf8' : '#00f0ff',
               life: 20,
               maxLife: 20
             });
@@ -3585,6 +3901,127 @@ export class GameEngine {
             continueChain = false;
           }
         }
+      }
+    } else if (this.selectedDraco === 'Phantomon') {
+      const dmgBonus = this.phantomonUltActive ? 1.7 : 1.0;
+      soundService.playScytheDeath();
+
+      if (this.phantomonUltActive) {
+        // ENHANCED SKILL IN ULT: 400px Piercing Dash Attack & Empowered Illusion Summon
+        this.specialCooldown = 240; // 4 seconds cooldown
+        this.attackDuration = 16;
+        soundService.playSciFiLaser();
+        soundService.playScytheSwing();
+        this.screenShake = 22;
+        const dashDistance = 400;
+        const startX = this.px;
+        const targetX = this.px + this.pFacing * dashDistance;
+
+        // Activate Phantomon Dash state & velocity
+        this.phantomonDashActive = true;
+        this.phantomonDashTimer = 14;
+        this.phantomonDashStartX = startX;
+        this.phantomonDashStartY = this.py;
+        this.phantomonDashTargetX = targetX;
+        this.phantomonDashCutTimer = 22;
+        this.phantomonDashCutStartX = startX + this.pWidth / 2;
+        this.phantomonDashCutEndX = targetX + this.pWidth / 2;
+        this.phantomonDashCutY = this.py + this.pHeight / 2;
+        this.pvx = this.pFacing * 28.5;
+        this.pvy = 0;
+
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_PHANTOMON_DASH_SLASH.text, FT_PHANTOMON_DASH_SLASH.color);
+
+        // Massive Dash Damage across 400px
+        const dashDmg = Math.floor(this.stats.attack * 4.8 * dmgBonus);
+        const minX = Math.min(startX, targetX) - 30;
+        const maxX = Math.max(startX, targetX) + this.pWidth + 30;
+        const pMidY = this.py + this.pHeight / 2;
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          if (ex >= minX && ex <= maxX && Math.abs(ey - pMidY) < 80) {
+            this.damageEnemy(enemy, dashDmg);
+            this.spawnDustParticles(ex, ey, 16, '#ef4444');
+            this.spawnDustParticles(ex, ey, 12, '#00f0ff');
+          }
+        });
+
+        // Void slash trail particles along the 400px dash path
+        for (let p = 0; p < 35; p++) {
+          const t = Math.random();
+          const partX = startX + t * (targetX - startX);
+          this.particles.push({
+            x: partX,
+            y: this.py + Math.random() * this.pHeight,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            size: Math.random() * 7 + 3,
+            color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#00f0ff' : '#09090b',
+            life: 22,
+            maxLife: 22
+          });
+        }
+
+        // MAINTAIN ILLUSION SUMMON: Summon 2 empowered shadow illusions directly on pressing skill!
+        [-40, 40].forEach((offset, idx) => {
+          this.phantomonShadowIllusions.push({
+            id: this.phantomonIllusionIdCounter++,
+            x: this.px + offset,
+            y: this.py,
+            vx: 0,
+            vy: 0,
+            facing: idx === 0 ? -1 : 1,
+            timer: 480, // 8 seconds
+            maxTimer: 480,
+            attackCooldown: 10,
+            state: 'seek',
+            targetEnemyId: null,
+            isEmpowered: true
+          });
+        });
+
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 50, FT_PHANTOMON_SHADOW_ILLUSIONS.text, FT_PHANTOMON_SHADOW_ILLUSIONS.color);
+      } else {
+        // NORMAL SKILL: Shadow Illusion (12s cooldown = 720 frames)
+        this.specialCooldown = 720;
+        this.screenShake = 12;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_PHANTOMON_SHADOW_ILLUSION.text, FT_PHANTOMON_SHADOW_ILLUSION.color);
+
+        // Summons 2 dark shadow illusions that last for 8 seconds (480 frames)
+        [-36, 36].forEach((offset, idx) => {
+          this.phantomonShadowIllusions.push({
+            id: this.phantomonIllusionIdCounter++,
+            x: this.px + offset,
+            y: this.py,
+            vx: 0,
+            vy: 0,
+            facing: idx === 0 ? -1 : 1,
+            timer: 480, // 8 seconds
+            maxTimer: 480,
+            attackCooldown: 30,
+            state: 'seek',
+            targetEnemyId: null
+          });
+
+          // Void spawn cloud particles
+          for (let p = 0; p < 16; p++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 5 + 2;
+            this.particles.push({
+              x: this.px + offset + (Math.random() - 0.5) * 16,
+              y: this.py + Math.random() * this.pHeight,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd - 1,
+              size: Math.random() * 6 + 3,
+              color: p % 2 === 0 ? '#00f0ff' : '#0f172a',
+              life: 25,
+              maxLife: 25
+            });
+          }
+        });
       }
     }
   }
@@ -3784,6 +4221,7 @@ export class GameEngine {
       case 'Mikomon': return 100;
       case 'EndMon': return 100;
       case 'Blastermon': return 100;
+      case 'Phantomon': return 100;
       default: return 100;
     }
   }
@@ -3814,6 +4252,7 @@ export class GameEngine {
       case 'Mikomon': return 'The Fate of the World';
       case 'EndMon': return 'Eternal Apocalypse';
       case 'Blastermon': return 'Stroke of Bravery';
+      case 'Phantomon': return 'Damned Charging Lance';
       default: return 'Ultimate';
     }
   }
@@ -3840,6 +4279,7 @@ export class GameEngine {
       case 'Mikomon': return 'FEEL THE SACRED FATE! THE FATE OF THE WORLD!';
       case 'EndMon': return 'Stand up, Vanguard! ETERNAL APOCALYPSE!';
       case 'Blastermon': return 'Determination forged in darkness! STROKE OF BRAVERY!';
+      case 'Phantomon': return 'All illusions yield to darkness! DAMNED CHARGING LANCE!';
       default: return 'Unleash full power!';
     }
   }
@@ -4592,6 +5032,7 @@ export class GameEngine {
       this.screenShake = 30;
 
       // Phase 1: Launch into the sky
+      this.blastermonUltWasSpirited = this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0;
       this.blastermonUltActive = true;
       this.blastermonUltPhase = 'launch';
       this.blastermonUltTimer = 240;
@@ -4617,7 +5058,7 @@ export class GameEngine {
       this.blastermonGiantBladeTargetY = groundY;
       this.blastermonHeroSlamTargetY = groundY - this.pHeight;
 
-      // Sky launch dark lightning particles
+      // Sky launch particles (Light celestial palette if spirited)
       for (let p = 0; p < 24; p++) {
         const ang = Math.random() * Math.PI * 2;
         const spd = Math.random() * 7 + 3;
@@ -4627,9 +5068,73 @@ export class GameEngine {
           vx: Math.cos(ang) * spd,
           vy: Math.random() * 8 + 4,
           size: Math.random() * 6 + 3,
-          color: p % 3 === 0 ? '#18181b' : p % 3 === 1 ? '#7c3aed' : '#fbbf24',
+          color: this.blastermonUltWasSpirited
+            ? (p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#38bdf8' : '#00f0ff')
+            : (p % 3 === 0 ? '#18181b' : p % 3 === 1 ? '#7c3aed' : '#fbbf24'),
           life: 25,
           maxLife: 25
+        });
+      }
+    } else if (this.selectedDraco === 'Phantomon') {
+      soundService.playLevelUp();
+      soundService.playScytheDeath();
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_PHANTOMON_DAMNED_LANCE.text, FT_PHANTOMON_DAMNED_LANCE.color);
+      this.screenShake = 35;
+
+      // 1. Slashes / sacrifices all active illusions, dealing massive explosive dark damage to nearby foes
+      const sacrificeDmg = Math.floor(this.stats.attack * 7.5);
+      if (this.phantomonShadowIllusions.length > 0) {
+        this.phantomonShadowIllusions.forEach(ill => {
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - ill.x, ey - ill.y);
+            if (dist <= 160) {
+              this.damageEnemy(enemy, sacrificeDmg);
+              this.spawnDustParticles(ex, ey, 18, '#ef4444');
+              this.spawnDustParticles(ex, ey, 14, '#00f0ff');
+            }
+          });
+
+          // Sacrificial dark burst explosion FX
+          for (let p = 0; p < 24; p++) {
+            const ang = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 8 + 3;
+            this.particles.push({
+              x: ill.x,
+              y: ill.y,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              size: Math.random() * 7 + 3,
+              color: p % 2 === 0 ? '#ef4444' : '#00f0ff',
+              life: 24,
+              maxLife: 24
+            });
+          }
+          this.addFloatingText(ill.x, ill.y - 20, FT_PHANTOMON_SACRIFICE_BURST.text, FT_PHANTOMON_SACRIFICE_BURST.color);
+        });
+        this.phantomonShadowIllusions = [];
+      }
+
+      // 2. Activate empowered state for 12 seconds (720 frames at 60 FPS)
+      this.phantomonUltActive = true;
+      this.phantomonUltTimer = 720;
+      this.specialCooldown = 0; // ready for Strike of Death immediately!
+
+      // Ethereal red dragon ignition aura
+      for (let p = 0; p < 40; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 9 + 4;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 2,
+          size: Math.random() * 8 + 3,
+          color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#dc2626' : '#ffffff',
+          life: 30,
+          maxLife: 30
         });
       }
     }
@@ -4660,6 +5165,24 @@ export class GameEngine {
       const dracoLevel = (this.stats as any).level || 1;
       finalDamage *= (1 + 0.10 * dracoLevel);
     }
+    if (this.selectedDraco === 'Phantomon' && this.phantomonUltActive) {
+      finalDamage *= 1.7; // +70% all damage boost during ultimate
+    }
+
+    // Colosseum Arena Knight Frontal Shield Block (65% damage reduction)
+    if (enemy.type === 'arena_knight') {
+      const pMidX = this.px + this.pWidth / 2;
+      const eMidX = enemy.x + enemy.width / 2;
+      const attackingFromFront = (this.pFacing === 1 && eMidX > pMidX && enemy.facing === -1) ||
+                                 (this.pFacing === -1 && eMidX < pMidX && enemy.facing === 1);
+      if (attackingFromFront) {
+        finalDamage *= 0.35;
+        this.addFloatingText(eMidX, enemy.y - 20, FT_KNIGHT_GUARD.text, FT_KNIGHT_GUARD.color);
+        soundService.playBlock();
+        this.spawnDustParticles(eMidX, enemy.y + enemy.height / 2, 6, '#94a3b8');
+      }
+    }
+
     const damageDealt = Math.max(1, Math.floor(finalDamage) - Math.floor(enemy.defense / 2));
 
     if (enemy.isImmortal) {
@@ -4681,8 +5204,13 @@ export class GameEngine {
     this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#ef4444');
 
     if (!enemy.isImmortal || (enemy.stunTimer || 0) <= 0) {
-      enemy.vx = this.pFacing * 1.5;
-      enemy.vy = -2.5;
+      if (enemy.type === 'siege_machine') {
+        // Heavy battering ram resists knockback completely
+        enemy.vx = enemy.facing * 0.9;
+      } else {
+        enemy.vx = this.pFacing * 1.5;
+        enemy.vy = -2.5;
+      }
     }
 
     if (enemy.type !== 'skeleton_archer' && !this.ultimateCinematicActive && this.pEnergy < this.getMaxEnergy()) {
@@ -5267,6 +5795,39 @@ export class GameEngine {
         collected: false
       });
       this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 45, FT_LIVING_PYRAMID_SLAIN.text, FT_LIVING_PYRAMID_SLAIN.color);
+    } else if (enemy.type === 'arena_knight') {
+      expReward = 90;
+      coinReward = 100;
+    } else if (enemy.type === 'cannon') {
+      expReward = 100;
+      coinReward = 120;
+    } else if (enemy.type === 'mortar') {
+      expReward = 110;
+      coinReward = 130;
+    } else if (enemy.type === 'juggernaut') {
+      expReward = 260;
+      coinReward = 320;
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 8,
+        y: enemy.y + enemy.height / 2 - 8,
+        width: 16,
+        height: 16,
+        type: 'upgrade_stone',
+        amount: 1,
+        collected: false
+      });
+    } else if (enemy.type === 'siege_machine') {
+      expReward = 300;
+      coinReward = 380;
+      this.pickups.push({
+        x: enemy.x + enemy.width / 2 - 8,
+        y: enemy.y + enemy.height / 2 - 8,
+        width: 16,
+        height: 16,
+        type: 'upgrade_stone',
+        amount: 2,
+        collected: false
+      });
     }
 
     const rewardMult = ((this.level as any)?.rewardMultiplier || 1.0) * (this.difficultyMultiplier || 1.0);
@@ -5283,7 +5844,7 @@ export class GameEngine {
     ].includes(enemy.type);
 
     const isMiniboss = [
-      'miniboss', 'blockman', 'sentinel_archdemon', 'dracoguard_fire_lord', 'alien', 'reaper', 'cactus_turret', 'pokey'
+      'miniboss', 'blockman', 'sentinel_archdemon', 'dracoguard_fire_lord', 'alien', 'reaper', 'cactus_turret', 'pokey', 'juggernaut', 'siege_machine'
     ].includes(enemy.type);
 
     const enemyTier: 'boss' | 'miniboss' | 'normal' = isBoss ? 'boss' : isMiniboss ? 'miniboss' : 'normal';
@@ -5689,6 +6250,164 @@ export class GameEngine {
             }
           }
         }
+      }
+    }
+
+    // Defense Mode & Totem Physics Update
+    if (this.isDefenseMode && !this.isPaused && this.pHP > 0) {
+      if (this.totemActive && this.totemHp > 0) {
+        // Survival / Defense 3-minute Countdown
+        if (this.defenseTimer > 0) {
+          this.defenseTimer--;
+          if (this.defenseTimer === 0) {
+            this.exitPortalActive = true;
+            soundService.playLevelUp();
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 60, FT_DEFENSE_VICTORY.text, FT_DEFENSE_VICTORY.color);
+            if (this.exitPortalPos) {
+              for (let i = 0; i < 50; i++) {
+                this.particles.push({
+                  x: this.exitPortalPos.x,
+                  y: this.exitPortalPos.y,
+                  vx: (Math.random() - 0.5) * 10,
+                  vy: (Math.random() - 0.5) * 10,
+                  size: Math.random() * 7 + 3,
+                  color: i % 2 === 0 ? '#10b981' : '#fbbf24',
+                  life: 70,
+                  maxLife: 70
+                });
+              }
+            }
+          }
+        }
+
+        // Totem 600px Healing Aura for Player
+        const totemMidX = this.totemX + this.totemWidth / 2;
+        const totemMidY = this.totemY + this.totemHeight / 2;
+        const playerMidX = this.px + this.pWidth / 2;
+        const playerMidY = this.py + this.pHeight / 2;
+        const distToTotem = Math.hypot(playerMidX - totemMidX, playerMidY - totemMidY);
+
+        if (distToTotem <= 600) {
+          this.totemHealTick = (this.totemHealTick || 0) + 1;
+          if (this.totemHealTick >= 30) {
+            this.totemHealTick = 0;
+            if (this.pHP < this.pMaxHP) {
+              this.pHP = Math.min(this.pMaxHP, this.pHP + 1);
+              this.callbacks.onHpChange?.(this.pHP, this.pMaxHP);
+              this.addFloatingText(playerMidX, this.py - 15, FT_TOTEM_HEAL.text, FT_TOTEM_HEAL.color);
+            }
+          }
+
+          // Gentle emerald healing sparkles around player
+          if (Math.random() < 0.25) {
+            this.particles.push({
+              x: playerMidX + (Math.random() - 0.5) * 28,
+              y: this.py + this.pHeight - Math.random() * 15,
+              vx: (Math.random() - 0.5) * 1.2,
+              vy: -Math.random() * 2 - 1,
+              size: Math.random() * 4 + 2,
+              color: Math.random() < 0.5 ? '#10b981' : '#34d399',
+              life: 25,
+              maxLife: 25
+            });
+          }
+        }
+
+        // Periodic Wave Spawning for Defense Mode
+        this.defenseWaveTimer--;
+        if (this.defenseWaveTimer <= 0) {
+          this.defenseWaveTimer = Math.floor(Math.random() * 60) + 150;
+          if (this.enemies.length < 18) {
+            const spawnSide = Math.random() < 0.5 ? 'left' : 'right';
+            const spawnX = spawnSide === 'left' ? 60 + Math.random() * 100 : this.levelWidth - 160 - Math.random() * 100;
+            const spawnFacing = spawnSide === 'left' ? 1 : -1;
+            const spawnY = 320;
+
+            const roll = Math.random();
+            let enemyType: 'arena_knight' | 'juggernaut' | 'cannon' | 'mortar' | 'siege_machine' = 'arena_knight';
+            let eWidth = 36;
+            let eHeight = 44;
+            let eHp = 100;
+            let eAtk = 8;
+            let eDef = 8;
+            let eSpeed = 1.6;
+            let eName = 'Colosseum Knight';
+
+            if (roll < 0.35) {
+              enemyType = 'arena_knight';
+              eWidth = 36; eHeight = 44; eHp = 100; eAtk = 8; eDef = 8; eSpeed = 1.6; eName = 'Colosseum Knight';
+            } else if (roll < 0.55) {
+              enemyType = 'cannon';
+              eWidth = 44; eHeight = 32; eHp = 120; eAtk = 12; eDef = 4; eSpeed = 0.7; eName = 'Siege Cannon';
+            } else if (roll < 0.75) {
+              enemyType = 'mortar';
+              eWidth = 38; eHeight = 36; eHp = 100; eAtk = 10; eDef = 3; eSpeed = 0.5; eName = 'Siege Mortar';
+            } else if (roll < 0.90) {
+              enemyType = 'juggernaut';
+              eWidth = 56; eHeight = 60; eHp = 320; eAtk = 14; eDef = 6; eSpeed = 1.0; eName = 'Juggernaut Brute';
+            } else {
+              enemyType = 'siege_machine';
+              eWidth = 68; eHeight = 50; eHp = 400; eAtk = 16; eDef = 7; eSpeed = 0.9; eName = 'Siege Battering Ram';
+            }
+
+            this.enemies.push({
+              id: this.enemyIdCounter++,
+              x: spawnX,
+              y: spawnY,
+              vx: spawnFacing * eSpeed,
+              vy: 0,
+              width: eWidth,
+              height: eHeight,
+              type: enemyType,
+              hp: eHp,
+              maxHp: eHp,
+              attack: eAtk,
+              defense: eDef,
+              facing: spawnFacing,
+              shootCooldown: 60,
+              state: 'patrol',
+              animFrame: 0,
+              name: eName
+            });
+
+            soundService.playShoot();
+            for (let p = 0; p < 12; p++) {
+              this.particles.push({
+                x: spawnX + Math.random() * eWidth,
+                y: spawnY + Math.random() * eHeight,
+                vx: (Math.random() - 0.5) * 6,
+                vy: -Math.random() * 5 - 2,
+                size: Math.random() * 5 + 3,
+                color: p % 2 === 0 ? '#fbbf24' : '#ef4444',
+                life: 25,
+                maxLife: 25
+              });
+            }
+          }
+        }
+      } else if (this.totemActive && this.totemHp <= 0) {
+        // Totem destroyed!
+        this.totemActive = false;
+        this.pHP = 0;
+        this.callbacks.onHpChange?.(0, this.pMaxHP);
+        soundService.playHit();
+        this.addFloatingText(this.totemX + this.totemWidth / 2, this.totemY, FT_TOTEM_DESTROYED.text, FT_TOTEM_DESTROYED.color);
+        this.screenShake = 40;
+        for (let p = 0; p < 60; p++) {
+          this.particles.push({
+            x: this.totemX + Math.random() * this.totemWidth,
+            y: this.totemY + Math.random() * this.totemHeight,
+            vx: (Math.random() - 0.5) * 12,
+            vy: -Math.random() * 10 - 2,
+            size: Math.random() * 8 + 4,
+            color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#f59e0b' : '#334155',
+            life: 50,
+            maxLife: 50
+          });
+        }
+        setTimeout(() => {
+          this.callbacks.onPlayerDeath?.();
+        }, 800);
       }
     }
 
@@ -6322,6 +7041,7 @@ export class GameEngine {
         this.isPlunging = false;
 
         // Particle thruster trail
+        const isSpiritedLaunch = this.blastermonUltWasSpirited || (this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0);
         if (this.frameCount % 2 === 0) {
           this.particles.push({
             x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 16,
@@ -6329,7 +7049,7 @@ export class GameEngine {
             vx: (Math.random() - 0.5) * 3,
             vy: Math.random() * 5 + 3,
             size: Math.random() * 5 + 2,
-            color: Math.random() > 0.5 ? '#7c3aed' : '#fbbf24',
+            color: isSpiritedLaunch ? (Math.random() > 0.5 ? '#38bdf8' : '#ffffff') : (Math.random() > 0.5 ? '#7c3aed' : '#fbbf24'),
             life: 16,
             maxLife: 16
           });
@@ -6346,6 +7066,7 @@ export class GameEngine {
           soundService.playThunderboltDeath();
         }
       } else if (this.blastermonUltPhase === 'giant_blade') {
+        const isSpiritedSlam = this.blastermonUltWasSpirited || (this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0);
         // Blastermon AND the colossal blade plunge and slam to the ground TOGETHER!
         const slamSpeed = 30;
         this.blastermonGiantBladeY += slamSpeed;
@@ -6362,7 +7083,9 @@ export class GameEngine {
             vx: (Math.random() - 0.5) * 6,
             vy: -Math.random() * 8 - 4,
             size: Math.random() * 6 + 3,
-            color: p % 3 === 0 ? '#fbbf24' : p % 3 === 1 ? '#c084fc' : '#ffffff',
+            color: isSpiritedSlam
+              ? (p % 3 === 0 ? '#38bdf8' : p % 3 === 1 ? '#00f0ff' : '#ffffff')
+              : (p % 3 === 0 ? '#fbbf24' : p % 3 === 1 ? '#c084fc' : '#ffffff'),
             life: 16,
             maxLife: 16
           });
@@ -6383,7 +7106,12 @@ export class GameEngine {
           this.screenShake = 55;
           soundService.playAzuremonImpact();
           soundService.playThunderboltDeath();
-          this.addFloatingText(this.blastermonGiantBladeX, this.blastermonGiantBladeTargetY - 40, FT_BLASTERMON_GIANT_BLADE_SLAM.text, FT_BLASTERMON_GIANT_BLADE_SLAM.color);
+          this.addFloatingText(
+            this.blastermonGiantBladeX,
+            this.blastermonGiantBladeTargetY - 40,
+            FT_BLASTERMON_GIANT_BLADE_SLAM.text,
+            isSpiritedSlam ? '#38bdf8' : FT_BLASTERMON_GIANT_BLADE_SLAM.color
+          );
 
           // Massive impact shockwave particles in 380px radius
           for (let p = 0; p < 45; p++) {
@@ -6395,7 +7123,9 @@ export class GameEngine {
               vx: Math.cos(ang) * spd,
               vy: -Math.abs(Math.sin(ang) * spd) - 3,
               size: Math.random() * 8 + 4,
-              color: p % 3 === 0 ? '#fbbf24' : p % 3 === 1 ? '#c084fc' : '#ffffff',
+              color: isSpiritedSlam
+                ? (p % 3 === 0 ? '#38bdf8' : p % 3 === 1 ? '#00f0ff' : '#ffffff')
+                : (p % 3 === 0 ? '#fbbf24' : p % 3 === 1 ? '#c084fc' : '#ffffff'),
               life: 30,
               maxLife: 30
             });
@@ -6447,7 +7177,7 @@ export class GameEngine {
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, 'SPIRITED FADED', '#94a3b8');
       }
 
-      // Ambient violet and radiant gold lightning motes
+      // Ambient electric cyan and diamond white lightning motes
       if (this.frameCount % 2 === 0) {
         this.particles.push({
           x: this.px + Math.random() * this.pWidth,
@@ -6455,7 +7185,7 @@ export class GameEngine {
           vx: (Math.random() - 0.5) * 2,
           vy: -Math.random() * 3 - 1,
           size: Math.random() * 5 + 2,
-          color: Math.random() > 0.4 ? '#c084fc' : '#fbbf24',
+          color: Math.random() > 0.4 ? '#38bdf8' : '#ffffff',
           life: 16,
           maxLife: 16
         });
@@ -6485,6 +7215,200 @@ export class GameEngine {
     // Blastermon Ultimate Ground Cleave Impact Rift Decay
     if (this.blastermonUltImpactTimer > 0) {
       this.blastermonUltImpactTimer--;
+    }
+
+    // Phantomon: Damned Charging Lance Empowered State Update
+    if (this.phantomonUltActive) {
+      this.phantomonUltTimer--;
+
+      // Radiant crimson dragon aura & dark void lightning motes around Phantomon
+      if (this.frameCount % 2 === 0) {
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + (Math.random() - 0.5) * 26,
+          y: this.py + Math.random() * this.pHeight,
+          vx: (Math.random() - 0.5) * 2,
+          vy: -Math.random() * 3 - 1,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.5 ? '#ef4444' : '#7f1d1d',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      // Ult Expiration: Void shockwave explodes dealing 400% ATK damage & 2s stun in 300px radius
+      if (this.phantomonUltTimer <= 0) {
+        this.phantomonUltActive = false;
+        soundService.playHit();
+        this.screenShake = 25;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_PHANTOMON_DETONATION.text, FT_PHANTOMON_DETONATION.color);
+
+        const shockRadius = 300;
+        const shockDmg = Math.floor(this.stats.attack * 4.0);
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dist = Math.hypot(ex - (this.px + this.pWidth / 2), ey - (this.py + this.pHeight / 2));
+          if (dist <= shockRadius) {
+            this.damageEnemy(enemy, shockDmg);
+            enemy.stunnedTimer = 120; // 2 seconds stun
+            this.addFloatingText(ex, ey - 20, FT_STUNNED_2S.text, FT_STUNNED_2S.color);
+          }
+        });
+
+        // Void detonation explosion particles
+        for (let p = 0; p < 45; p++) {
+          const ang = (p / 45) * Math.PI * 2;
+          const spd = Math.random() * 7 + 4;
+          this.particles.push({
+            x: this.px + this.pWidth / 2,
+            y: this.py + this.pHeight / 2,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: Math.random() * 7 + 3,
+            color: p % 2 === 0 ? '#ef4444' : '#09090b',
+            life: 30,
+            maxLife: 30
+          });
+        }
+      }
+    }
+
+    // Update Phantomon afterimages
+    for (let i = this.phantomonAfterimages.length - 1; i >= 0; i--) {
+      this.phantomonAfterimages[i].alpha -= 0.08;
+      if (this.phantomonAfterimages[i].alpha <= 0) {
+        this.phantomonAfterimages.splice(i, 1);
+      }
+    }
+
+    if (this.phantomonDashCutTimer > 0) {
+      this.phantomonDashCutTimer--;
+    }
+
+    if (this.phantomonDashActive) {
+      this.phantomonDashTimer--;
+      this.pvx = this.pFacing * 28.5; // 400px dash across 14 frames
+      this.pvy = 0;
+
+      // Push custom Phantomon dragon afterimages
+      this.phantomonAfterimages.push({
+        x: this.px,
+        y: this.py,
+        facing: this.pFacing,
+        alpha: 0.9
+      });
+
+      // Blazing thruster exhaust and void spark particles along dash path
+      for (let p = 0; p < 3; p++) {
+        this.particles.push({
+          x: this.px + (this.pFacing === 1 ? -4 : this.pWidth + 4),
+          y: this.py + 8 + Math.random() * (this.pHeight - 14),
+          vx: -this.pFacing * (Math.random() * 9 + 6),
+          vy: (Math.random() - 0.5) * 4,
+          size: Math.random() * 6 + 3,
+          color: Math.random() > 0.4 ? '#ef4444' : '#00f0ff',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      // Hit detection along the dash
+      this.checkMeleeHit(this.px - 20, this.py - 10, this.pWidth + 50, this.pHeight + 20, Math.floor(this.stats.attack * 0.4));
+
+      if (this.phantomonDashTimer <= 0) {
+        this.phantomonDashActive = false;
+        this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight, 16, '#ef4444');
+      }
+    }
+
+    if (this.phantomonStrikeActive) {
+      this.phantomonStrikeTimer--;
+      if (this.phantomonStrikeTimer <= 0) {
+        this.phantomonStrikeActive = false;
+      }
+    }
+
+    // Phantomon Shadow Illusions AI Loop (3x faster speed)
+    if (this.phantomonShadowIllusions.length > 0) {
+      for (let i = this.phantomonShadowIllusions.length - 1; i >= 0; i--) {
+        const ill = this.phantomonShadowIllusions[i];
+        ill.timer--;
+        if (ill.timer <= 0) {
+          this.phantomonShadowIllusions.splice(i, 1);
+          continue;
+        }
+
+        // Ambient shadow trail motes (3x faster flight trail)
+        this.particles.push({
+          x: ill.x + (Math.random() - 0.5) * 12,
+          y: ill.y + (Math.random() - 0.5) * 14,
+          vx: -ill.vx * 0.35 + (Math.random() - 0.5) * 2,
+          vy: -ill.vy * 0.35 + (Math.random() - 0.5) * 2,
+          size: Math.random() * 5 + 2,
+          color: ill.isEmpowered ? '#ef4444' : '#00f0ff',
+          life: 12,
+          maxLife: 12
+        });
+
+        // Seek closest enemy
+        let closestDist = 800;
+        let targetEnemy: Enemy | null = null;
+        for (const e of this.enemies) {
+          if (e.hp <= 0) continue;
+          const d = Math.hypot(e.x + e.width / 2 - ill.x, e.y + e.height / 2 - ill.y);
+          if (d < closestDist) {
+            closestDist = d;
+            targetEnemy = e;
+          }
+        }
+
+        if (targetEnemy) {
+          const targetMidX = targetEnemy.x + targetEnemy.width / 2;
+          const targetMidY = targetEnemy.y + targetEnemy.height / 2;
+          const dx = targetMidX - ill.x;
+          const dy = targetMidY - ill.y;
+          ill.facing = dx >= 0 ? 1 : -1;
+
+          // Move toward target enemy 3x faster
+          const moveSpeed = ill.isEmpowered ? 16.5 : 12.0;
+          if (closestDist > 35) {
+            const angle = Math.atan2(dy, dx);
+            ill.vx = Math.cos(angle) * moveSpeed;
+            ill.vy = Math.sin(angle) * moveSpeed;
+            ill.x += ill.vx;
+            ill.y += ill.vy;
+          } else {
+            ill.vx = 0;
+            ill.vy = 0;
+          }
+
+          // Attack enemy if in melee range
+          if (closestDist <= 65) {
+            if (ill.attackCooldown > 0) {
+              ill.attackCooldown--;
+            } else {
+              ill.attackCooldown = ill.isEmpowered ? 16 : 22;
+              const dmg = Math.floor(this.stats.attack * (ill.isEmpowered ? 5.2 : 3.2));
+              this.damageEnemy(targetEnemy, dmg);
+              soundService.playHit();
+              soundService.playScytheSwing();
+              this.spawnDustParticles(targetEnemy.x + targetEnemy.width / 2, targetEnemy.y + targetEnemy.height / 2, 12, ill.isEmpowered ? '#ef4444' : '#00f0ff');
+              this.addFloatingText(targetEnemy.x + targetEnemy.width / 2, targetEnemy.y - 15, ill.isEmpowered ? '💥 VOID CLEAVE!' : '⚡ SHADOW SLASH!', ill.isEmpowered ? '#ef4444' : '#00f0ff', true);
+            }
+          }
+        } else {
+          // Hover near player if no enemy on screen (3x faster follow)
+          const pMidX = this.px + this.pWidth / 2 + (ill.id % 2 === 0 ? 45 : -45);
+          const pMidY = this.py + this.pHeight / 2 - 10;
+          const dP = Math.hypot(pMidX - ill.x, pMidY - ill.y);
+          if (dP > 15) {
+            const a = Math.atan2(pMidY - ill.y, pMidX - ill.x);
+            ill.x += Math.cos(a) * 9.0;
+            ill.y += Math.sin(a) * 9.0;
+          }
+        }
+      }
     }
 
     if (this.magemonUltActive) {
@@ -7150,7 +8074,7 @@ export class GameEngine {
     }
 
     const touchedHazardPool = this.getTileSymbol(pxMid, pyFeet) === '*' || this.getTileSymbol(this.px + 4, pyFeet) === '*' || this.getTileSymbol(this.px + this.pWidth - 4, pyFeet) === '*';
-    if (touchedHazardPool && this.pHP > 0 && (this.skeletonDeathTimer || 0) <= 0 && (this.frozenDeathTimer || 0) <= 0 && (this.electrocutionDeathTimer || 0) <= 0 && (this.reaperDeathTimer || 0) <= 0 && (this.antimatterDeathTimer || 0) <= 0) {
+    if (touchedHazardPool && this.pHP > 0 && (this.skeletonDeathTimer || 0) <= 0 && (this.frozenDeathTimer || 0) <= 0 && (this.electrocutionDeathTimer || 0) <= 0 && (this.reaperDeathTimer || 0) <= 0 && (this.antimatterDeathTimer || 0) <= 0 && (this.skewerDeathTimer || 0) <= 0) {
       const themeType = this.level.theme.type;
 
       if (themeType === 'shadow') {
@@ -7290,6 +8214,30 @@ export class GameEngine {
               color: i % 3 === 0 ? '#06b6d4' : i % 3 === 1 ? '#e879f9' : '#a5f3fc',
               life: 35,
               maxLife: 35
+            });
+          }
+        } else if (themeType === 'arena') {
+          soundService.playHit();
+          this.skewerDeathTimer = 90;
+          this.skewerX = pxMid;
+          this.skewerY = pyFeet;
+          this.pvx = 0;
+          this.pvy = 0;
+          this.screenShake = 30;
+          this.addFloatingText(pxMid, this.py - 20, FT_SKEWER_IMPALED.text, FT_SKEWER_IMPALED.color);
+
+          for (let i = 0; i < 30; i++) {
+            const ang = -Math.PI / 2 + (Math.random() - 0.5) * 1.2;
+            const spd = Math.random() * 8 + 3;
+            this.particles.push({
+              x: pxMid + (Math.random() - 0.5) * 20,
+              y: pyFeet,
+              vx: Math.cos(ang) * spd,
+              vy: Math.sin(ang) * spd,
+              size: Math.random() * 6 + 3,
+              color: i % 3 === 0 ? '#ef4444' : i % 3 === 1 ? '#94a3b8' : '#cbd5e1',
+              life: 40,
+              maxLife: 40
             });
           }
         } else {
@@ -7537,12 +8485,12 @@ export class GameEngine {
       }
     }
 
-    if (!this.shieldmonChargeActive && !this.shieldmonDashActive) {
+    if (!this.shieldmonChargeActive && !this.shieldmonDashActive && !this.phantomonDashActive) {
       this.pvx *= this.friction;
       if (Math.abs(this.pvx) < 0.1) this.pvx = 0;
     }
 
-    if (this.shieldmonChargeActive) {
+    if (this.shieldmonChargeActive || this.phantomonDashActive) {
       this.pvy = 0;
     } else if (this.selectedDraco === 'EndMon' && this.endmonUltActive) {
       // Hovering Flight Mechanic:
@@ -8248,6 +9196,140 @@ export class GameEngine {
         return;
       }
 
+      if ((proj as any).type === 'cannonball') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: (Math.random() - 0.5) * 1.5,
+            size: Math.random() * 4 + 2,
+            color: Math.random() > 0.5 ? '#94a3b8' : '#f97316',
+            life: 10,
+            maxLife: 10
+          });
+        }
+
+        const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2) ||
+                         proj.x < 0 || proj.x > this.levelWidth || proj.y < 0 || proj.y > this.levelHeight;
+
+        const hitPlayer = this.px < proj.x + proj.width &&
+                          this.px + this.pWidth > proj.x &&
+                          this.py < proj.y + proj.height &&
+                          this.py + this.pHeight > proj.y &&
+                          this.pInvulnerableFrames <= 0;
+
+        const hitTotem = this.isDefenseMode && this.totemActive &&
+                         this.totemX < proj.x + proj.width &&
+                         this.totemX + this.totemWidth > proj.x &&
+                         this.totemY < proj.y + proj.height &&
+                         this.totemY + this.totemHeight > proj.y;
+
+        if (hitPlayer || hitTotem || hitSolid) {
+          if (hitPlayer) {
+            this.handlePlayerHit(proj.damage, proj.x);
+          }
+          if (hitTotem) {
+            this.totemHp -= 30;
+            this.addFloatingText(this.totemX + this.totemWidth / 2, this.totemY, FT_TOTEM_DAMAGED(30).text, FT_TOTEM_DAMAGED(30).color);
+            soundService.playHit();
+          }
+          soundService.playHit();
+          this.screenShake = Math.max(this.screenShake, 14);
+          for (let p = 0; p < 12; p++) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: (Math.random() - 0.5) * 6,
+              vy: (Math.random() - 0.5) * 6,
+              size: Math.random() * 6 + 2,
+              color: p % 2 === 0 ? '#f59e0b' : '#64748b',
+              life: 18,
+              maxLife: 18
+            });
+          }
+          this.projectiles.splice(index, 1);
+          return;
+        }
+        return;
+      }
+
+      if ((proj as any).type === 'mortar_shell') {
+        proj.vy += 0.28;
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: -proj.vx * 0.2,
+            vy: -proj.vy * 0.2,
+            size: Math.random() * 4 + 2,
+            color: '#f97316',
+            life: 8,
+            maxLife: 8
+          });
+        }
+
+        const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2) ||
+                         proj.x < 0 || proj.x > this.levelWidth || proj.y > this.levelHeight;
+
+        const hitPlayer = this.px < proj.x + proj.width &&
+                          this.px + this.pWidth > proj.x &&
+                          this.py < proj.y + proj.height &&
+                          this.py + this.pHeight > proj.y &&
+                          this.pInvulnerableFrames <= 0;
+
+        const hitTotem = this.isDefenseMode && this.totemActive &&
+                         this.totemX < proj.x + proj.width &&
+                         this.totemX + this.totemWidth > proj.x &&
+                         this.totemY < proj.y + proj.height &&
+                         this.totemY + this.totemHeight > proj.y;
+
+        if (hitSolid || hitPlayer || hitTotem) {
+          soundService.playHit();
+          this.screenShake = Math.max(this.screenShake, 18);
+          const expRadius = 75;
+          const expMidX = proj.x + proj.width / 2;
+          const expMidY = proj.y + proj.height / 2;
+
+          const distP = Math.hypot(this.px + this.pWidth / 2 - expMidX, this.py + this.pHeight / 2 - expMidY);
+          if (distP <= expRadius && this.pInvulnerableFrames <= 0) {
+            this.handlePlayerHit(proj.damage, expMidX);
+          }
+
+          if (this.isDefenseMode && this.totemActive) {
+            const distT = Math.hypot(this.totemX + this.totemWidth / 2 - expMidX, this.totemY + this.totemHeight / 2 - expMidY);
+            if (distT <= expRadius + 30) {
+              this.totemHp -= 40;
+              this.addFloatingText(this.totemX + this.totemWidth / 2, this.totemY, FT_TOTEM_DAMAGED(40).text, FT_TOTEM_DAMAGED(40).color);
+            }
+          }
+
+          for (let p = 0; p < 18; p++) {
+            const a = Math.random() * Math.PI * 2;
+            const spd = Math.random() * 6 + 2;
+            this.particles.push({
+              x: expMidX,
+              y: expMidY,
+              vx: Math.cos(a) * spd,
+              vy: Math.sin(a) * spd,
+              size: Math.random() * 6 + 3,
+              color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#f97316' : '#fef08a',
+              life: 20,
+              maxLife: 20
+            });
+          }
+          this.projectiles.splice(index, 1);
+          return;
+        }
+        return;
+      }
+
       if ((proj as any).type === 'homing_bomb') {
         let nearestEnemy: Enemy | null = null;
         let minDistance = 1000;
@@ -8526,7 +9608,7 @@ export class GameEngine {
               vx: -proj.vx * 0.2 + (Math.random() - 0.5) * 2,
               vy: (Math.random() - 0.5) * 3,
               size: Math.random() * 5 + 2,
-              color: Math.random() > 0.4 ? '#c084fc' : '#fef08a',
+              color: Math.random() > 0.4 ? '#38bdf8' : '#ffffff',
               life: 14,
               maxLife: 14
             });
@@ -9107,8 +10189,8 @@ export class GameEngine {
                 hitSet.push(enemy.id);
                 this.damageEnemy(enemy, proj.damage);
                 soundService.playHit();
-                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#c084fc');
-                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#fef08a');
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 12, '#38bdf8');
+                this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#ffffff');
               }
             } else if (proj.type === 'sun_strike') {
             } else if ((proj as any).type === 'homing_bomb') {
@@ -10226,6 +11308,199 @@ export class GameEngine {
               life: 18,
               maxLife: 18
             });
+          }
+        }
+      } else if (enemy.type === 'arena_knight') {
+        const distP = Math.hypot((this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2), (this.py + this.pHeight / 2) - (enemy.y + enemy.height / 2));
+        const targetPlayer = !this.isDefenseMode || !this.totemActive || distP <= 350;
+        const tgtX = targetPlayer ? (this.px + this.pWidth / 2) : (this.totemX + this.totemWidth / 2);
+        const tgtY = targetPlayer ? (this.py + this.pHeight / 2) : (this.totemY + this.totemHeight / 2);
+        const dX = tgtX - (enemy.x + enemy.width / 2);
+        const dY = tgtY - (enemy.y + enemy.height / 2);
+        enemy.facing = dX >= 0 ? 1 : -1;
+
+        // Advance towards target
+        enemy.vx = enemy.facing * 2.2;
+
+        // Melee attack on player or totem
+        enemy.shootCooldown--;
+        if (Math.abs(dX) < 45 && Math.abs(dY) < 60) {
+          if (enemy.shootCooldown <= 0) {
+            enemy.shootCooldown = 45;
+            soundService.playHit();
+            if (targetPlayer) {
+              this.handlePlayerHit(enemy.attack, enemy.x + enemy.width / 2);
+            } else if (this.isDefenseMode && this.totemActive) {
+              this.totemHp -= 25;
+              this.addFloatingText(this.totemX + this.totemWidth / 2, this.totemY, FT_TOTEM_DAMAGED(25).text, FT_TOTEM_DAMAGED(25).color);
+              this.spawnDustParticles(this.totemX + this.totemWidth / 2, this.totemY + this.totemHeight / 2, 8, '#f59e0b');
+            }
+          }
+        }
+      } else if (enemy.type === 'juggernaut') {
+        const distP = Math.hypot((this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2), (this.py + this.pHeight / 2) - (enemy.y + enemy.height / 2));
+        const targetPlayer = !this.isDefenseMode || !this.totemActive || distP <= 350;
+        const tgtX = targetPlayer ? (this.px + this.pWidth / 2) : (this.totemX + this.totemWidth / 2);
+        const tgtY = targetPlayer ? (this.py + this.pHeight / 2) : (this.totemY + this.totemHeight / 2);
+        const dX = tgtX - (enemy.x + enemy.width / 2);
+        enemy.facing = dX >= 0 ? 1 : -1;
+
+        // Heavy march
+        enemy.vx = enemy.facing * 1.1;
+
+        // Periodic Ground Stomp Shockwave
+        enemy.shootCooldown--;
+        if (enemy.shootCooldown <= 0) {
+          enemy.shootCooldown = 160;
+          soundService.playHit();
+          this.screenShake = Math.max(this.screenShake, 22);
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 25, FT_JUGGERNAUT_STOMP.text, FT_JUGGERNAUT_STOMP.color);
+
+          // Stomp dust particles
+          for (let p = 0; p < 18; p++) {
+            this.particles.push({
+              x: enemy.x + enemy.width / 2 + (Math.random() - 0.5) * 80,
+              y: enemy.y + enemy.height,
+              vx: (Math.random() - 0.5) * 6,
+              vy: -Math.random() * 5 - 2,
+              size: Math.random() * 6 + 3,
+              color: p % 2 === 0 ? '#f59e0b' : '#78350f',
+              life: 22,
+              maxLife: 22
+            });
+          }
+
+          // Damage player if in 130px radius
+          if (distP <= 130 && this.pInvulnerableFrames <= 0) {
+            this.handlePlayerHit(enemy.attack, enemy.x + enemy.width / 2);
+          }
+
+          // Damage totem if within reach
+          if (this.isDefenseMode && this.totemActive) {
+            const distT = Math.hypot((this.totemX + this.totemWidth / 2) - (enemy.x + enemy.width / 2), (this.totemY + this.totemHeight / 2) - (enemy.y + enemy.height / 2));
+            if (distT <= 140) {
+              this.totemHp -= 50;
+              this.addFloatingText(this.totemX + this.totemWidth / 2, this.totemY, FT_TOTEM_DAMAGED(50).text, FT_TOTEM_DAMAGED(50).color);
+            }
+          }
+        }
+      } else if (enemy.type === 'cannon') {
+        const distP = Math.hypot((this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2), (this.py + this.pHeight / 2) - (enemy.y + enemy.height / 2));
+        const targetPlayer = !this.isDefenseMode || !this.totemActive || distP <= 350;
+        const tgtX = targetPlayer ? (this.px + this.pWidth / 2) : (this.totemX + this.totemWidth / 2);
+        const dX = tgtX - (enemy.x + enemy.width / 2);
+        enemy.facing = dX >= 0 ? 1 : -1;
+
+        // Maintain medium siege range
+        const distAbs = Math.abs(dX);
+        if (distAbs > 420) {
+          enemy.vx = enemy.facing * 0.8;
+        } else if (distAbs < 260) {
+          enemy.vx = -enemy.facing * 0.8;
+        } else {
+          enemy.vx = 0;
+        }
+
+        // Fire cannonball
+        enemy.shootCooldown--;
+        if (enemy.shootCooldown <= 0) {
+          enemy.shootCooldown = 130;
+          soundService.playShoot();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, FT_CANNON_FIRE.text, FT_CANNON_FIRE.color);
+
+          this.projectiles.push({
+            x: enemy.x + (enemy.facing === 1 ? enemy.width : -14),
+            y: enemy.y + 10,
+            vx: enemy.facing * 7.5,
+            vy: -0.6,
+            width: 14,
+            height: 14,
+            isEnemy: true,
+            damage: enemy.attack,
+            color: '#475569',
+            type: 'cannonball' as any
+          });
+
+          // Muzzle smoke
+          for (let p = 0; p < 8; p++) {
+            this.particles.push({
+              x: enemy.x + (enemy.facing === 1 ? enemy.width : 0),
+              y: enemy.y + 12,
+              vx: enemy.facing * (Math.random() * 4 + 2),
+              vy: (Math.random() - 0.5) * 2,
+              size: Math.random() * 5 + 2,
+              color: '#94a3b8',
+              life: 14,
+              maxLife: 14
+            });
+          }
+        }
+      } else if (enemy.type === 'mortar') {
+        const distP = Math.hypot((this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2), (this.py + this.pHeight / 2) - (enemy.y + enemy.height / 2));
+        const targetPlayer = !this.isDefenseMode || !this.totemActive || distP <= 350;
+        const tgtX = targetPlayer ? (this.px + this.pWidth / 2) : (this.totemX + this.totemWidth / 2);
+        const dX = tgtX - (enemy.x + enemy.width / 2);
+        enemy.facing = dX >= 0 ? 1 : -1;
+
+        // Maintain long artillery distance
+        const distAbs = Math.abs(dX);
+        if (distAbs > 520) {
+          enemy.vx = enemy.facing * 0.6;
+        } else if (distAbs < 320) {
+          enemy.vx = -enemy.facing * 0.6;
+        } else {
+          enemy.vx = 0;
+        }
+
+        // Lob high-arc mortar shell
+        enemy.shootCooldown--;
+        if (enemy.shootCooldown <= 0) {
+          enemy.shootCooldown = 170;
+          soundService.playShoot();
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 20, FT_MORTAR_SHELL.text, FT_MORTAR_SHELL.color);
+
+          const flightTime = 55;
+          const arcVx = dX / flightTime;
+          const arcVy = -10.5;
+
+          this.projectiles.push({
+            x: enemy.x + enemy.width / 2,
+            y: enemy.y,
+            vx: arcVx,
+            vy: arcVy,
+            width: 12,
+            height: 12,
+            isEnemy: true,
+            damage: enemy.attack,
+            color: '#f97316',
+            type: 'mortar_shell' as any
+          });
+        }
+      } else if (enemy.type === 'siege_machine') {
+        const distP = Math.hypot((this.px + this.pWidth / 2) - (enemy.x + enemy.width / 2), (this.py + this.pHeight / 2) - (enemy.y + enemy.height / 2));
+        const targetPlayer = !this.isDefenseMode || !this.totemActive || distP <= 350;
+        const tgtX = targetPlayer ? (this.px + this.pWidth / 2) : (this.totemX + this.totemWidth / 2);
+        const dX = tgtX - (enemy.x + enemy.width / 2);
+        enemy.facing = dX >= 0 ? 1 : -1;
+
+        // Steady unstoppable rolling advance
+        enemy.vx = enemy.facing * 1.2;
+
+        // Ramming attack on contact
+        enemy.shootCooldown--;
+        if (Math.abs(dX) < 55) {
+          if (enemy.shootCooldown <= 0) {
+            enemy.shootCooldown = 75;
+            soundService.playHit();
+            this.screenShake = Math.max(this.screenShake, 24);
+
+            if (targetPlayer) {
+              this.handlePlayerHit(enemy.attack, enemy.x + enemy.width / 2);
+            } else if (this.isDefenseMode && this.totemActive) {
+              this.totemHp -= 80;
+              this.addFloatingText(this.totemX + this.totemWidth / 2, this.totemY, FT_RAM_SLAM.text, FT_RAM_SLAM.color);
+              this.spawnDustParticles(this.totemX + this.totemWidth / 2, this.totemY + this.totemHeight / 2, 14, '#ef4444');
+            }
           }
         }
       } else if (enemy.type === 'king_kong') {
@@ -11743,6 +13018,11 @@ export class GameEngine {
       bgGrad.addColorStop(0, '#02040a');
       bgGrad.addColorStop(0.5, '#090514');
       bgGrad.addColorStop(1, '#1e1b4b');
+    } else if (themeType === 'arena') {
+      bgGrad.addColorStop(0, '#1c1917');
+      bgGrad.addColorStop(0.4, '#451a03');
+      bgGrad.addColorStop(0.8, '#78350f');
+      bgGrad.addColorStop(1, '#292524');
     } else {
       bgGrad.addColorStop(0, '#180202');
       bgGrad.addColorStop(0.5, '#450a0a');
@@ -11995,6 +13275,69 @@ export class GameEngine {
       this.ctx.beginPath();
       this.ctx.arc(moonX, moonY, moonRad, 0, Math.PI * 2);
       this.ctx.fill();
+    } else if (themeType === 'arena') {
+      // 1. Far Layer: Colosseum Roman Arches & Outer Wall Silhouettes
+      this.ctx.fillStyle = 'rgba(41, 37, 36, 0.65)';
+      const archSpacing = 160;
+      const pX1 = pmod(-(scrollX * 0.12), archSpacing);
+      for (let x = pX1 - archSpacing; x < viewW + archSpacing; x += archSpacing) {
+        this.ctx.fillRect(x + 15, viewH - 260, 24, 260);
+        this.ctx.fillRect(x + archSpacing - 39, viewH - 260, 24, 260);
+        this.ctx.beginPath();
+        this.ctx.arc(x + archSpacing / 2, viewH - 260, archSpacing / 2 - 15, Math.PI, 0);
+        this.ctx.fill();
+        this.ctx.fillRect(x + 10, viewH - 280, archSpacing - 20, 24);
+      }
+
+      // 2. Mid Layer: Spectator galleries & cheering silhouettes with emperor banners
+      this.ctx.fillStyle = 'rgba(28, 25, 23, 0.78)';
+      const pX2 = pmod(-(scrollX * 0.25), 200);
+      for (let x = pX2 - 200; x < viewW + 200; x += 200) {
+        this.ctx.fillRect(x, viewH - 180, 200, 180);
+        // Red emperor banners
+        this.ctx.fillStyle = 'rgba(185, 28, 28, 0.85)';
+        this.ctx.fillRect(x + 35, viewH - 170, 24, 60);
+        this.ctx.fillRect(x + 140, viewH - 170, 24, 60);
+        // Golden eagle crest
+        this.ctx.fillStyle = 'rgba(251, 191, 36, 0.9)';
+        this.ctx.fillRect(x + 43, viewH - 155, 8, 8);
+        this.ctx.fillRect(x + 148, viewH - 155, 8, 8);
+        this.ctx.fillStyle = 'rgba(28, 25, 23, 0.78)';
+      }
+
+      // 3. Near Layer: Colosseum Pillars & Flaming Braziers
+      const pillarSpacing = 280;
+      const pX3 = pmod(-(scrollX * 0.4), pillarSpacing);
+      for (let x = pX3 - pillarSpacing; x < viewW + pillarSpacing; x += pillarSpacing) {
+        // Grand Corinthian pillar
+        this.ctx.fillStyle = 'rgba(68, 64, 60, 0.85)';
+        this.ctx.fillRect(x + 20, viewH - 220, 26, 220);
+        this.ctx.fillRect(x + 15, viewH - 228, 36, 10);
+        this.ctx.fillRect(x + 15, viewH - 14, 36, 14);
+
+        // Flaming bronze brazier atop pedestal
+        this.ctx.fillStyle = '#78350f';
+        this.ctx.fillRect(x + 80, viewH - 110, 18, 110);
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.beginPath();
+        this.ctx.arc(x + 89, viewH - 110, 16, Math.PI, 0);
+        this.ctx.fill();
+
+        // Brazier flame animation
+        const fPulse = Math.sin(this.frameCount * 0.2 + x) * 4;
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.arc(x + 89, viewH - 120 + fPulse * 0.3, 11, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.beginPath();
+        this.ctx.arc(x + 89, viewH - 123 + fPulse * 0.5, 7, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.arc(x + 89, viewH - 126 + fPulse, 3.5, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
     }
 
     this.ctx.restore();
@@ -12253,6 +13596,43 @@ export class GameEngine {
               this.ctx.arc(ex + 8, ey + 8 + Math.sin(this.frameCount * 0.1) * 3, 3, 0, Math.PI * 2);
               this.ctx.arc(ex + 26, ey + 14 + Math.cos(this.frameCount * 0.1) * 3, 2.5, 0, Math.PI * 2);
               this.ctx.fill();
+            }
+          } else if (themeType === 'arena') {
+            // Skewer Trap Tile: Iron grating with sharp protruding spear tips
+            this.ctx.fillStyle = '#1c1917';
+            this.ctx.fillRect(ex, ey, ts, ts);
+
+            // Steel iron grate bars
+            this.ctx.strokeStyle = '#44403c';
+            this.ctx.lineWidth = 2;
+            for (let g = 0; g < 4; g++) {
+              const gx = ex + 6 + g * 9;
+              this.ctx.beginPath();
+              this.ctx.moveTo(gx, ey);
+              this.ctx.lineTo(gx, ey + ts);
+              this.ctx.stroke();
+            }
+
+            // Glistening metallic spear tips poking through grate
+            const spearBob = Math.sin(this.frameCount * 0.15 + c * 0.8) * 3;
+            for (let s = 0; s < 3; s++) {
+              const sx = ex + 7 + s * 12;
+              const sy = ey + 12 + spearBob;
+              this.ctx.fillStyle = '#94a3b8';
+              this.ctx.beginPath();
+              this.ctx.moveTo(sx, sy - 14); // spear tip
+              this.ctx.lineTo(sx + 3.5, sy);
+              this.ctx.lineTo(sx - 3.5, sy);
+              this.ctx.closePath();
+              this.ctx.fill();
+
+              // Silver edge highlight
+              this.ctx.strokeStyle = '#f8fafc';
+              this.ctx.lineWidth = 1;
+              this.ctx.beginPath();
+              this.ctx.moveTo(sx, sy - 14);
+              this.ctx.lineTo(sx, sy);
+              this.ctx.stroke();
             }
           } else {
             this.ctx.fillStyle = '#450a0a';
@@ -12580,6 +13960,134 @@ export class GameEngine {
         this.ctx.shadowBlur = 6;
         this.ctx.fillText('EXIT PORTAL (LOCKED 🔒)', ex + ts / 2, ey - 14);
       }
+      this.ctx.restore();
+    }
+
+    // Defense Mode: Central Totem Rendering (Monolith with 600px emerald aura & HP bar)
+    if (this.isDefenseMode && this.totemActive) {
+      this.ctx.save();
+      const tx = this.totemX;
+      const ty = this.totemY;
+      const tw = this.totemWidth;
+      const th = this.totemHeight;
+      const tMidX = tx + tw / 2;
+      const tMidY = ty + th / 2;
+
+      // 1. 600px Healing Aura Radius Circle (Translucent pulsing emerald ring)
+      const auraPulse = Math.sin(this.frameCount * 0.05) * 6;
+      const auraR = 600;
+      this.ctx.save();
+      this.ctx.strokeStyle = 'rgba(16, 185, 129, 0.25)';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.setLineDash([12, 10]);
+      this.ctx.beginPath();
+      this.ctx.arc(tMidX, tMidY, auraR + auraPulse, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      const auraGrad = this.ctx.createRadialGradient(tMidX, tMidY, 40, tMidX, tMidY, auraR);
+      auraGrad.addColorStop(0, 'rgba(16, 185, 129, 0.08)');
+      auraGrad.addColorStop(0.8, 'rgba(16, 185, 129, 0.02)');
+      auraGrad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+      this.ctx.fillStyle = auraGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(tMidX, tMidY, auraR, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+
+      // 2. Base Pedestal (Ancient stone tiers)
+      this.ctx.fillStyle = '#334155';
+      this.ctx.strokeStyle = '#1e293b';
+      this.ctx.lineWidth = 2;
+      this.ctx.fillRect(tx - 6, ty + th - 16, tw + 12, 16);
+      this.ctx.strokeRect(tx - 6, ty + th - 16, tw + 12, 16);
+
+      this.ctx.fillStyle = '#475569';
+      this.ctx.fillRect(tx, ty + th - 26, tw, 10);
+      this.ctx.strokeRect(tx, ty + th - 26, tw, 10);
+
+      // 3. Monolith Body (Ancient gold and obsidian spire)
+      const monoGrad = this.ctx.createLinearGradient(tx, ty, tx + tw, ty);
+      monoGrad.addColorStop(0, '#0f172a');
+      monoGrad.addColorStop(0.5, '#1e293b');
+      monoGrad.addColorStop(1, '#0f172a');
+      this.ctx.fillStyle = monoGrad;
+      this.ctx.strokeStyle = '#fbbf24';
+      this.ctx.lineWidth = 2;
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(tx + 8, ty + th - 26);
+      this.ctx.lineTo(tx + 14, ty + 24);
+      this.ctx.lineTo(tMidX, ty + 6);
+      this.ctx.lineTo(tx + tw - 14, ty + 24);
+      this.ctx.lineTo(tx + tw - 8, ty + th - 26);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // 4. Emerald Core & Glowing Runic Carvings
+      const corePulse = 0.7 + Math.sin(this.frameCount * 0.08) * 0.3;
+      this.ctx.save();
+      this.ctx.shadowColor = '#10b981';
+      this.ctx.shadowBlur = 18;
+
+      // Central diamond gem core
+      const gemGrad = this.ctx.createRadialGradient(tMidX, ty + 46, 2, tMidX, ty + 46, 16);
+      gemGrad.addColorStop(0, '#ffffff');
+      gemGrad.addColorStop(0.4, '#34d399');
+      gemGrad.addColorStop(1, '#047857');
+      this.ctx.fillStyle = gemGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(tMidX, ty + 32);
+      this.ctx.lineTo(tMidX + 12, ty + 46);
+      this.ctx.lineTo(tMidX, ty + 60);
+      this.ctx.lineTo(tMidX - 12, ty + 46);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // Runic lines down monolith
+      this.ctx.strokeStyle = `rgba(52, 211, 153, ${corePulse})`;
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.moveTo(tMidX, ty + 62);
+      this.ctx.lineTo(tMidX, ty + th - 30);
+      this.ctx.moveTo(tMidX - 10, ty + 50);
+      this.ctx.lineTo(tMidX - 10, ty + 70);
+      this.ctx.moveTo(tMidX + 10, ty + 50);
+      this.ctx.lineTo(tMidX + 10, ty + 70);
+      this.ctx.stroke();
+      this.ctx.restore();
+
+      // 5. Floating Crown Shards at Top
+      for (let s = 0; s < 3; s++) {
+        const shardAngle = this.frameCount * 0.04 + (s * Math.PI * 2) / 3;
+        const sx = tMidX + Math.cos(shardAngle) * 22;
+        const sy = ty - 4 + Math.sin(shardAngle) * 6;
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.beginPath();
+        this.ctx.arc(sx, sy, 3.5, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // 6. Totem Health Bar
+      const hpPct = Math.max(0, this.totemHp / this.totemMaxHp);
+      const barW = 84;
+      const barH = 8;
+      const barX = tMidX - barW / 2;
+      const barY = ty - 22;
+
+      this.ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+      this.ctx.fillRect(barX - 2, barY - 2, barW + 4, barH + 4);
+      this.ctx.fillStyle = hpPct > 0.5 ? '#10b981' : hpPct > 0.25 ? '#f59e0b' : '#ef4444';
+      this.ctx.fillRect(barX, barY, barW * hpPct, barH);
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1;
+      this.ctx.strokeRect(barX, barY, barW, barH);
+
+      this.ctx.font = 'bold 9px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillText(`TOTEM: ${Math.max(0, Math.floor(this.totemHp))} / ${this.totemMaxHp}`, tMidX, barY - 4);
+
       this.ctx.restore();
     }
 
@@ -12997,104 +14505,59 @@ export class GameEngine {
         const cx = proj.x + proj.width / 2;
         const cy = proj.y + proj.height / 2;
         const facingDir = proj.vx >= 0 ? 1 : -1;
-        const pulse = Math.sin(this.frameCount * 0.4) * 3;
-        const waveH = 58 + pulse;
+        const pulse = Math.sin(this.frameCount * 0.4) * 1.5;
+        const waveH = 56 + pulse;
 
-        // 1. Aerodynamic Sonic Shockwave Echoes (trailing wake)
-        for (let w = 3; w >= 1; w--) {
-          const echoOffset = facingDir * -w * 16;
-          const echoAlpha = (4 - w) * 0.14;
+        // 1. Faint aerodynamic wake trails behind the blade
+        for (let w = 2; w >= 1; w--) {
+          const echoOffset = facingDir * -w * 12;
+          const echoAlpha = (3 - w) * 0.08;
           const echoScale = 1 - w * 0.1;
-          this.ctx.strokeStyle = `rgba(192, 132, 252, ${echoAlpha})`;
-          this.ctx.lineWidth = 3 - w * 0.6;
+          this.ctx.strokeStyle = `rgba(56, 189, 248, ${echoAlpha})`;
+          this.ctx.lineWidth = 1;
           this.ctx.beginPath();
           if (facingDir === 1) {
-            this.ctx.arc(cx + echoOffset - 18, cy, waveH * echoScale, -Math.PI * 0.42, Math.PI * 0.42, false);
+            this.ctx.arc(cx + echoOffset - 6, cy, waveH * echoScale, -Math.PI * 0.35, Math.PI * 0.35, false);
           } else {
-            this.ctx.arc(cx + echoOffset + 18, cy, waveH * echoScale, Math.PI * 0.58, Math.PI * 1.42, false);
+            this.ctx.arc(cx + echoOffset + 6, cy, waveH * echoScale, Math.PI * 0.65, Math.PI * 1.35, false);
           }
           this.ctx.stroke();
         }
 
-        // 2. Wide Outer Ethereal Violet Halo
-        this.ctx.save();
-        this.ctx.shadowColor = '#c084fc';
-        this.ctx.shadowBlur = 26;
-        this.ctx.strokeStyle = 'rgba(168, 85, 247, 0.4)';
-        this.ctx.lineWidth = 14;
-        this.ctx.beginPath();
-        if (facingDir === 1) {
-          this.ctx.arc(cx - 16, cy, waveH + 4, -Math.PI * 0.44, Math.PI * 0.44, false);
-        } else {
-          this.ctx.arc(cx + 16, cy, waveH + 4, Math.PI * 0.56, Math.PI * 1.44, false);
-        }
-        this.ctx.stroke();
-        this.ctx.restore();
+        // 2. Single Layer Razor-Thin Celestial Crescent Blade (~5px thickness)
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 14;
 
-        // 3. Primary Celestial Cleave Crescent Blade Body
-        const cleaveGrad = this.ctx.createLinearGradient(cx - 32 * facingDir, cy, cx + 32 * facingDir, cy);
-        cleaveGrad.addColorStop(0, 'rgba(59, 7, 100, 0.3)');
-        cleaveGrad.addColorStop(0.3, '#7c3aed');
-        cleaveGrad.addColorStop(0.65, '#c084fc');
-        cleaveGrad.addColorStop(0.88, '#fef08a');
+        const cleaveGrad = this.ctx.createLinearGradient(cx - 8 * facingDir, cy, cx + 8 * facingDir, cy);
+        cleaveGrad.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+        cleaveGrad.addColorStop(0.5, '#38bdf8');
+        cleaveGrad.addColorStop(0.85, '#00f0ff');
         cleaveGrad.addColorStop(1, '#ffffff');
 
         this.ctx.fillStyle = cleaveGrad;
-        this.ctx.strokeStyle = '#fbbf24';
-        this.ctx.lineWidth = 2.5;
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.2;
+
+        // Razor-thin aerodynamic crescent (5px apex width tapering to pinpoint tips)
+        const tipX = cx - facingDir * 6;
+        const outerApexX = cx + facingDir * 7; // Leading razor edge
+        const innerApexX = cx + facingDir * 2; // Sleek inner contour
 
         this.ctx.beginPath();
-        if (facingDir === 1) {
-          // Sharp upper wing tip
-          this.ctx.moveTo(cx - 18, cy - waveH);
-          // Outer forward-slashing cutting curve
-          this.ctx.bezierCurveTo(cx + 26, cy - waveH * 0.5, cx + 26, cy + waveH * 0.5, cx - 18, cy + waveH);
-          // Inner hollowed blade body curve
-          this.ctx.quadraticCurveTo(cx + 2, cy, cx - 18, cy - waveH);
-        } else {
-          // Sharp upper wing tip
-          this.ctx.moveTo(cx + 18, cy - waveH);
-          // Outer forward-slashing cutting curve
-          this.ctx.bezierCurveTo(cx - 26, cy - waveH * 0.5, cx - 26, cy + waveH * 0.5, cx + 18, cy + waveH);
-          // Inner hollowed blade body curve
-          this.ctx.quadraticCurveTo(cx - 2, cy, cx + 18, cy - waveH);
-        }
+        // Sharp upper tip
+        this.ctx.moveTo(tipX, cy - waveH);
+        // Forward cutting curve
+        this.ctx.bezierCurveTo(outerApexX, cy - waveH * 0.45, outerApexX, cy + waveH * 0.45, tipX, cy + waveH);
+        // Inner razor hollow curve
+        this.ctx.quadraticCurveTo(innerApexX, cy, tipX, cy - waveH);
         this.ctx.closePath();
         this.ctx.fill();
         this.ctx.stroke();
 
-        // 4. White-Hot Luminescent Laser Cutting Edge
-        this.ctx.save();
-        this.ctx.shadowColor = '#ffffff';
-        this.ctx.shadowBlur = 18;
-        this.ctx.strokeStyle = '#ffffff';
-        this.ctx.lineWidth = 3.5;
-        this.ctx.beginPath();
-        if (facingDir === 1) {
-          this.ctx.arc(cx - 16, cy, waveH - 2, -Math.PI * 0.41, Math.PI * 0.41, false);
-        } else {
-          this.ctx.arc(cx + 16, cy, waveH - 2, Math.PI * 0.59, Math.PI * 1.41, false);
-        }
-        this.ctx.stroke();
-        this.ctx.restore();
-
-        // 5. Crackling Runic Lightning Sparks Dancing Along the Blade Face
-        this.ctx.strokeStyle = '#fef08a';
-        this.ctx.lineWidth = 2;
-        for (let j = 0; j < 3; j++) {
-          const sparkY = cy - 35 + j * 35 + Math.sin(this.frameCount * 0.6 + j * 2) * 8;
-          const sparkX = cx + facingDir * (12 + Math.cos(this.frameCount * 0.5 + j) * 6);
-          this.ctx.beginPath();
-          this.ctx.moveTo(sparkX, sparkY);
-          this.ctx.lineTo(sparkX + facingDir * 8, sparkY - 6);
-          this.ctx.lineTo(sparkX + facingDir * 4, sparkY + 8);
-          this.ctx.stroke();
-        }
-
-        // 6. Blinding Center Core Flare
+        // 3. Tiny razor glint sparkle at the leading apex
         this.ctx.fillStyle = '#ffffff';
         this.ctx.beginPath();
-        this.ctx.ellipse(cx + facingDir * 6, cy, 14, 5, facingDir === 1 ? -0.2 : 0.2, 0, Math.PI * 2);
+        this.ctx.arc(outerApexX, cy, 2, 0, Math.PI * 2);
         this.ctx.fill();
 
         this.ctx.restore();
@@ -15210,6 +16673,334 @@ export class GameEngine {
         this.ctx.shadowColor = '#d97706';
         this.ctx.shadowBlur = 6;
         this.ctx.fillText(`👑 LIVING PYRAMID [${phase.toUpperCase()}]`, cx, hbY - 6);
+      } else if (enemy.type === 'arena_knight') {
+        this.ctx.save();
+        const ex = enemy.x;
+        const ey = enemy.y;
+        const ew = enemy.width;
+        const eh = enemy.height;
+        const fDir = enemy.facing;
+        const eMidX = ex + ew / 2;
+
+        // 1. Roman Legionary Tunic & Greaves
+        this.ctx.fillStyle = '#991b1b';
+        this.ctx.fillRect(ex + 8, ey + eh - 22, ew - 16, 14);
+
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.fillRect(ex + 8, ey + eh - 8, 8, 8);
+        this.ctx.fillRect(ex + ew - 16, ey + eh - 8, 8, 8);
+
+        // 2. Bronze Lorica Segmentata (Cuirass)
+        this.ctx.fillStyle = '#d97706';
+        this.ctx.strokeStyle = '#78350f';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.fillRect(ex + 6, ey + 14, ew - 12, 16);
+        this.ctx.strokeRect(ex + 6, ey + 14, ew - 12, 16);
+
+        // 3. Roman Crested Helmet (Galea)
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.beginPath();
+        this.ctx.arc(eMidX, ey + 10, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Sweeping horsehair crest
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.moveTo(eMidX - 6, ey + 4);
+        this.ctx.quadraticCurveTo(eMidX, ey - 7, eMidX + 8, ey + 4);
+        this.ctx.lineTo(eMidX + 6, ey + 6);
+        this.ctx.quadraticCurveTo(eMidX, ey - 3, eMidX - 4, ey + 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Visor slit
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.fillRect(eMidX + fDir * 2 - 2, ey + 9, 5, 2.5);
+
+        // 4. Rectangular Red Scutum Shield
+        const sW = 10;
+        const sH = 26;
+        const sX = fDir === 1 ? ex + ew - 4 : ex - 6;
+        const sY = ey + 12;
+        this.ctx.fillStyle = '#dc2626';
+        this.ctx.strokeStyle = '#fbbf24';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.fillRect(sX, sY, sW, sH);
+        this.ctx.strokeRect(sX, sY, sW, sH);
+        this.ctx.fillStyle = '#fbbf24';
+        this.ctx.fillRect(sX + 3, sY + 6, 4, 14);
+
+        // 5. Gladius Short Sword
+        const swX = fDir === 1 ? ex - 2 : ex + ew + 2;
+        this.ctx.fillStyle = '#cbd5e1';
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(swX, ey + 16);
+        this.ctx.lineTo(swX + fDir * 14, ey + 12);
+        this.ctx.lineTo(swX, ey + 18);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      } else if (enemy.type === 'juggernaut') {
+        this.ctx.save();
+        const ex = enemy.x;
+        const ey = enemy.y;
+        const ew = enemy.width;
+        const eh = enemy.height;
+        const fDir = enemy.facing;
+        const eMidX = ex + ew / 2;
+
+        // 1. Armored Plate Legs
+        this.ctx.fillStyle = '#1e293b';
+        this.ctx.strokeStyle = '#475569';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillRect(ex + 10, ey + eh - 20, 14, 20);
+        this.ctx.strokeRect(ex + 10, ey + eh - 20, 14, 20);
+        this.ctx.fillRect(ex + ew - 24, ey + eh - 20, 14, 20);
+        this.ctx.strokeRect(ex + ew - 24, ey + eh - 20, 14, 20);
+
+        // 2. Heavy Iron Torso & Belts
+        this.ctx.fillStyle = '#334155';
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillRect(ex + 6, ey + 18, ew - 12, eh - 36);
+        this.ctx.strokeRect(ex + 6, ey + 18, ew - 12, eh - 36);
+
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.fillRect(eMidX - 6, ey + eh - 24, 12, 6);
+
+        // 3. Spiked Shoulder Pauldrons
+        this.ctx.fillStyle = '#1e293b';
+        this.ctx.fillRect(ex, ey + 14, 14, 14);
+        this.ctx.fillRect(ex + ew - 14, ey + 14, 14, 14);
+        this.ctx.fillStyle = '#e2e8f0';
+        this.ctx.beginPath();
+        this.ctx.moveTo(ex + 4, ey + 14);
+        this.ctx.lineTo(ex + 7, ey + 4);
+        this.ctx.lineTo(ex + 10, ey + 14);
+        this.ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.moveTo(ex + ew - 10, ey + 14);
+        this.ctx.lineTo(ex + ew - 7, ey + 4);
+        this.ctx.lineTo(ex + ew - 4, ey + 14);
+        this.ctx.fill();
+
+        // 4. Horned Gladiator Helmet
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.strokeStyle = '#d97706';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(eMidX, ey + 12, 11, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#facc15';
+        this.ctx.fillRect(eMidX + fDir * 3 - 3, ey + 11, 6, 2.5);
+
+        this.ctx.strokeStyle = '#e2e8f0';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(eMidX - 8, ey + 8);
+        this.ctx.quadraticCurveTo(eMidX - 16, ey - 2, eMidX - 14, ey - 8);
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.moveTo(eMidX + 8, ey + 8);
+        this.ctx.quadraticCurveTo(eMidX + 16, ey - 2, eMidX + 14, ey - 8);
+        this.ctx.stroke();
+
+        // 5. Spiked Iron Morningstar Mace
+        const maceX = fDir === 1 ? ex + ew + 4 : ex - 12;
+        const maceY = ey + 16;
+        this.ctx.fillStyle = '#78350f';
+        this.ctx.fillRect(maceX, maceY, 4, 32);
+        this.ctx.fillStyle = '#334155';
+        this.ctx.strokeStyle = '#e2e8f0';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(maceX + 2, maceY, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      } else if (enemy.type === 'cannon') {
+        this.ctx.save();
+        const ex = enemy.x;
+        const ey = enemy.y;
+        const ew = enemy.width;
+        const eh = enemy.height;
+        const fDir = enemy.facing;
+        const eMidX = ex + ew / 2;
+
+        // 1. Wooden Carriage Base
+        this.ctx.fillStyle = '#78350f';
+        this.ctx.strokeStyle = '#451a03';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.fillRect(ex + 8, ey + eh - 14, ew - 16, 8);
+        this.ctx.strokeRect(ex + 8, ey + eh - 14, ew - 16, 8);
+
+        // 2. Cannon Barrel
+        this.ctx.save();
+        this.ctx.translate(eMidX, ey + 14);
+        const barrelAngle = fDir === 1 ? -0.12 : 0.12;
+        this.ctx.rotate(barrelAngle);
+
+        const bGrad = this.ctx.createLinearGradient(-16 * fDir, -7, 24 * fDir, 7);
+        bGrad.addColorStop(0, '#334155');
+        bGrad.addColorStop(0.5, '#64748b');
+        bGrad.addColorStop(1, '#1e293b');
+        this.ctx.fillStyle = bGrad;
+        this.ctx.strokeStyle = '#0f172a';
+        this.ctx.lineWidth = 1.5;
+
+        this.ctx.beginPath();
+        this.ctx.moveTo(-16 * fDir, -7);
+        this.ctx.lineTo(24 * fDir, -5);
+        this.ctx.lineTo(24 * fDir, 5);
+        this.ctx.lineTo(-16 * fDir, 7);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.fillRect(22 * fDir - (fDir === 1 ? 0 : 4), -6, 4, 12);
+
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.arc(-16 * fDir, -8, 2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        // 3. Spoked Wooden Wheel
+        const wX = eMidX - 2;
+        const wY = ey + eh - 10;
+        const wR = 9;
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.strokeStyle = '#1e293b';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(wX, wY, wR, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#1e293b';
+        this.ctx.beginPath();
+        this.ctx.arc(wX, wY, 3, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.restore();
+      } else if (enemy.type === 'mortar') {
+        this.ctx.save();
+        const ex = enemy.x;
+        const ey = enemy.y;
+        const ew = enemy.width;
+        const eh = enemy.height;
+        const fDir = enemy.facing;
+        const eMidX = ex + ew / 2;
+
+        // 1. Reinforced Heavy Base Platform
+        this.ctx.fillStyle = '#451a03';
+        this.ctx.strokeStyle = '#1c1917';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillRect(ex + 4, ey + eh - 12, ew - 8, 12);
+        this.ctx.strokeRect(ex + 4, ey + eh - 12, ew - 8, 12);
+
+        this.ctx.fillStyle = '#475569';
+        this.ctx.fillRect(ex + 8, ey + eh - 16, 6, 6);
+        this.ctx.fillRect(ex + ew - 14, ey + eh - 16, 6, 6);
+
+        // 2. Thick Mortar Tube angled high upward
+        this.ctx.save();
+        this.ctx.translate(eMidX, ey + eh - 12);
+        const mortarAngle = fDir === 1 ? -Math.PI * 0.35 : -Math.PI * 0.65;
+        this.ctx.rotate(mortarAngle);
+
+        this.ctx.fillStyle = '#334155';
+        this.ctx.strokeStyle = '#0f172a';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillRect(0, -9, 26, 18);
+        this.ctx.strokeRect(0, -9, 26, 18);
+
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.fillRect(6, -10, 4, 20);
+        this.ctx.fillRect(18, -10, 5, 20);
+
+        this.ctx.fillStyle = '#1e293b';
+        this.ctx.fillRect(25, -10.5, 3, 21);
+
+        this.ctx.restore();
+        this.ctx.restore();
+      } else if (enemy.type === 'siege_machine') {
+        this.ctx.save();
+        const ex = enemy.x;
+        const ey = enemy.y;
+        const ew = enemy.width;
+        const eh = enemy.height;
+        const fDir = enemy.facing;
+        const eMidX = ex + ew / 2;
+
+        // 1. Iron-Banded Spiked Wheels
+        this.ctx.fillStyle = '#1e293b';
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 2;
+        const wheelY = ey + eh - 8;
+        this.ctx.beginPath();
+        this.ctx.arc(ex + 12, wheelY, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.arc(ex + ew - 12, wheelY, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // 2. Covered Timber Mantlet Frame with Sloped Iron Roof
+        this.ctx.fillStyle = '#78350f';
+        this.ctx.strokeStyle = '#451a03';
+        this.ctx.lineWidth = 2;
+        this.ctx.fillRect(ex + 8, ey + 18, ew - 16, eh - 26);
+        this.ctx.strokeRect(ex + 8, ey + 18, ew - 16, eh - 26);
+
+        this.ctx.fillStyle = '#334155';
+        this.ctx.strokeStyle = '#1e293b';
+        this.ctx.beginPath();
+        this.ctx.moveTo(ex + 2, ey + 18);
+        this.ctx.lineTo(eMidX, ey + 6);
+        this.ctx.lineTo(ex + ew - 2, ey + 18);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.fillRect(eMidX - 3, ey + 7, 6, 4);
+
+        // 3. Suspended Battering Ram Log protruding front
+        const ramOsc = Math.sin(this.frameCount * 0.12) * 6;
+        const ramX = fDir === 1 ? ex + ew - 8 + ramOsc : ex - 16 - ramOsc;
+        const ramY = ey + eh - 22;
+
+        this.ctx.fillStyle = '#451a03';
+        this.ctx.fillRect(fDir === 1 ? ex + 18 : ramX, ramY, 28, 10);
+
+        this.ctx.fillStyle = '#b45309';
+        this.ctx.strokeStyle = '#78350f';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        if (fDir === 1) {
+          this.ctx.moveTo(ramX, ramY - 2);
+          this.ctx.lineTo(ramX + 14, ramY + 5);
+          this.ctx.lineTo(ramX, ramY + 12);
+        } else {
+          this.ctx.moveTo(ramX + 14, ramY - 2);
+          this.ctx.lineTo(ramX, ramY + 5);
+          this.ctx.lineTo(ramX + 14, ramY + 12);
+        }
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.restore();
       }
 
       if (
@@ -15451,6 +17242,53 @@ export class GameEngine {
         this.ctx.beginPath();
         this.ctx.arc(0, 0, r * 0.65, 0, Math.PI * 2);
         this.ctx.stroke();
+      } else if (pType === 'cannonball') {
+        this.ctx.translate(cx, cy);
+        const ballAngle = this.frameCount * 0.15;
+        this.ctx.rotate(ballAngle);
+
+        const r = pw / 2;
+        const ballGrad = this.ctx.createRadialGradient(-r * 0.3, -r * 0.3, 1, 0, 0, r);
+        ballGrad.addColorStop(0, '#94a3b8');
+        ballGrad.addColorStop(0.4, '#475569');
+        ballGrad.addColorStop(1, '#0f172a');
+
+        this.ctx.fillStyle = ballGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, r, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#64748b';
+        this.ctx.lineWidth = 1;
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.arc(-r * 0.35, -r * 0.35, 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else if (pType === 'mortar_shell') {
+        const shellAngle = Math.atan2(proj.vy, proj.vx);
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(shellAngle);
+
+        this.ctx.fillStyle = '#334155';
+        this.ctx.strokeStyle = '#0f172a';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(pw / 2, 0);
+        this.ctx.lineTo(-pw / 2, -ph / 2);
+        this.ctx.lineTo(-pw / 2, ph / 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.fillRect(0, -ph / 2 + 1, 3, ph - 2);
+
+        this.ctx.fillStyle = '#ef4444';
+        this.ctx.beginPath();
+        this.ctx.arc(-pw / 2 - 2, 0, 2, 0, Math.PI * 2);
+        this.ctx.fill();
       } else {
         this.ctx.fillStyle = proj.color || '#fbbf24';
         this.ctx.fillRect(px, py, pw, ph);
@@ -15580,7 +17418,7 @@ export class GameEngine {
       this.ctx.restore();
     }
 
-    if (this.skeletonDeathTimer <= 0 && this.frozenDeathTimer <= 0 && this.electrocutionDeathTimer <= 0 && this.reaperDeathTimer <= 0 && this.antimatterDeathTimer <= 0) {
+    if (this.skeletonDeathTimer <= 0 && this.frozenDeathTimer <= 0 && this.electrocutionDeathTimer <= 0 && this.reaperDeathTimer <= 0 && this.antimatterDeathTimer <= 0 && this.skewerDeathTimer <= 0) {
       this.ctx.save();
 
       const isSpinning = this.selectedDraco === 'Jumpmon' && this.jumpmonSpinActive;
@@ -15705,6 +17543,11 @@ export class GameEngine {
         accentColor = '#7c3aed';
         bellyColor = '#27272a';
         detailColor = '#fbbf24';
+      } else if (this.selectedDraco === 'Phantomon') {
+        mainColor = '#09090b';
+        accentColor = this.phantomonUltActive ? '#ef4444' : '#00f0ff';
+        bellyColor = '#18181b';
+        detailColor = this.phantomonUltActive ? '#f43f5e' : '#38bdf8';
       }
 
       const px = this.px;
@@ -15747,8 +17590,9 @@ export class GameEngine {
         const auraPulse = Math.sin(this.frameCount * 0.16) * (isSpirited ? 10 : 3);
         const auraRadius = (isSpirited ? pw * 1.6 : pw * 0.75) + auraPulse;
         const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, auraRadius);
-        grad.addColorStop(0, isSpirited ? 'rgba(254, 240, 138, 0.5)' : 'rgba(124, 58, 237, 0.25)');
-        grad.addColorStop(0.5, isSpirited ? 'rgba(192, 132, 252, 0.4)' : 'rgba(88, 28, 135, 0.15)');
+        grad.addColorStop(0, isSpirited ? 'rgba(255, 255, 255, 0.65)' : 'rgba(124, 58, 237, 0.25)');
+        grad.addColorStop(0.35, isSpirited ? 'rgba(56, 189, 248, 0.45)' : 'rgba(88, 28, 135, 0.15)');
+        grad.addColorStop(0.7, isSpirited ? 'rgba(2, 132, 199, 0.2)' : 'rgba(88, 28, 135, 0.05)');
         grad.addColorStop(1, 'rgba(24, 24, 27, 0)');
 
         this.ctx.fillStyle = grad;
@@ -15762,9 +17606,38 @@ export class GameEngine {
             const dang = this.frameCount * 0.12 + d * (Math.PI / 2);
             const dx = px + pw / 2 + Math.cos(dang) * (pw + 8);
             const dy = py + ph / 2 + Math.sin(dang) * (ph / 2 + 8);
-            this.ctx.fillStyle = d % 2 === 0 ? '#fbbf24' : '#c084fc';
+            this.ctx.fillStyle = d % 2 === 0 ? '#38bdf8' : '#ffffff';
             this.ctx.beginPath();
             this.ctx.arc(dx, dy, 3.5, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        }
+        this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Phantomon') {
+        this.ctx.save();
+        const isUlt = this.phantomonUltActive;
+        const auraPulse = Math.sin(this.frameCount * 0.16) * (isUlt ? 10 : 4);
+        const auraRadius = (isUlt ? pw * 1.7 : pw * 0.85) + auraPulse;
+        const grad = this.ctx.createRadialGradient(px + pw / 2, py + ph / 2, 4, px + pw / 2, py + ph / 2, auraRadius);
+        grad.addColorStop(0, isUlt ? 'rgba(239, 68, 68, 0.45)' : 'rgba(0, 240, 255, 0.3)');
+        grad.addColorStop(0.5, isUlt ? 'rgba(185, 28, 28, 0.25)' : 'rgba(14, 116, 144, 0.15)');
+        grad.addColorStop(1, 'rgba(9, 9, 11, 0)');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, auraRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        if (isUlt) {
+          for (let a = 0; a < 3; a++) {
+            const ang = this.frameCount * 0.12 + a * (Math.PI * 2 / 3);
+            const rX = px + pw / 2 + Math.cos(ang) * (pw + 8);
+            const rY = py + ph / 2 + Math.sin(ang) * (ph / 2 + 8);
+            this.ctx.fillStyle = a % 2 === 0 ? '#ef4444' : '#ffffff';
+            this.ctx.beginPath();
+            this.ctx.arc(rX, rY, 2.5, 0, Math.PI * 2);
             this.ctx.fill();
           }
         }
@@ -17087,13 +18960,13 @@ export class GameEngine {
         const isSpirited = this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0;
         const cy = bodyY;
 
-        // 1. Dual-Layer Shadow Paladin Cape
+        // 1. Dual-Layer Shadow Paladin Cape (Pristine White with Cyan trim in Spirited)
         const capeWave = Math.sin(this.frameCount * 0.18) * (this.pGrounded ? 3 : 6);
         const capeDir = -this.pFacing;
 
-        // Cape outer dark shadow
-        this.ctx.fillStyle = '#09090b';
-        this.ctx.strokeStyle = isSpirited ? '#fbbf24' : '#581c87';
+        // Cape outer
+        this.ctx.fillStyle = isSpirited ? '#ffffff' : '#09090b';
+        this.ctx.strokeStyle = isSpirited ? '#38bdf8' : '#581c87';
         this.ctx.lineWidth = 1.8;
         this.ctx.beginPath();
         this.ctx.moveTo(px + pw / 2, cy + 12);
@@ -17104,8 +18977,8 @@ export class GameEngine {
         this.ctx.fill();
         this.ctx.stroke();
 
-        // Cape inner violet silk lining
-        this.ctx.fillStyle = isSpirited ? '#7c3aed' : '#3b0764';
+        // Cape inner lining (Celestial icy blue in Spirited)
+        this.ctx.fillStyle = isSpirited ? '#e0f2fe' : '#3b0764';
         this.ctx.beginPath();
         this.ctx.moveTo(px + pw / 2 + capeDir * 2, cy + 14);
         this.ctx.quadraticCurveTo(px + pw / 2 + capeDir * 14 + capeWave, cy + ph / 2, px + pw / 2 + capeDir * 18 + capeWave, cy + ph + 2);
@@ -17114,8 +18987,15 @@ export class GameEngine {
         this.ctx.fill();
 
         // 2. Armored Legs & Sabatons (Boots)
-        this.ctx.fillStyle = '#18181b';
-        this.ctx.strokeStyle = '#3f3f46';
+        if (isSpirited) {
+          // Navy bodysuit thigh underlayer
+          this.ctx.fillStyle = '#0f172a';
+          this.ctx.fillRect(px + 6, cy + ph - 16, 8, 4);
+          this.ctx.fillRect(px + pw - 14, cy + ph - 16, 8, 4);
+        }
+
+        this.ctx.fillStyle = isSpirited ? '#ffffff' : '#18181b';
+        this.ctx.strokeStyle = isSpirited ? '#94a3b8' : '#3f3f46';
         this.ctx.lineWidth = 1.5;
         // Left & right greaves
         this.ctx.fillRect(px + 6, cy + ph - 14, 8, 14);
@@ -17123,14 +19003,14 @@ export class GameEngine {
         this.ctx.fillRect(px + pw - 14, cy + ph - 14, 8, 14);
         this.ctx.strokeRect(px + pw - 14, cy + ph - 14, 8, 14);
 
-        // Gold knee poleyns
-        this.ctx.fillStyle = '#fbbf24';
+        // Knee poleyns (Cyan light strip in Spirited)
+        this.ctx.fillStyle = isSpirited ? '#00f0ff' : '#fbbf24';
         this.ctx.fillRect(px + 7, cy + ph - 15, 6, 4);
         this.ctx.fillRect(px + pw - 13, cy + ph - 15, 6, 4);
 
-        // 3. Obsidian Breastplate / Cuirass
-        this.ctx.fillStyle = '#18181b';
-        this.ctx.strokeStyle = '#3b0764';
+        // 3. Breastplate / Cuirass (White Armor Plates & Navy Bodysuit)
+        this.ctx.fillStyle = isSpirited ? '#ffffff' : '#18181b';
+        this.ctx.strokeStyle = isSpirited ? '#94a3b8' : '#3b0764';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
         this.ctx.moveTo(px + 4, cy + 12);
@@ -17141,16 +19021,69 @@ export class GameEngine {
         this.ctx.fill();
         this.ctx.stroke();
 
-        // Center Gold Paladin Cross Crest
-        this.ctx.fillStyle = isSpirited ? '#fef08a' : '#fbbf24';
-        this.ctx.fillRect(px + pw / 2 - 2, cy + 16, 4, 14);
-        this.ctx.fillRect(px + pw / 2 - 6, cy + 20, 12, 3.5);
+        if (isSpirited) {
+          // Bodysuit dark navy under-collar & flank insets
+          this.ctx.fillStyle = '#0f172a';
+          this.ctx.fillRect(px + pw / 2 - 5, cy + 13, 10, 3);
+          this.ctx.fillRect(px + 5, cy + ph - 15, 4, 3);
+          this.ctx.fillRect(px + pw - 9, cy + ph - 15, 4, 3);
+
+          // Glowing Electric Cyan Circuit Lines (torso)
+          this.ctx.strokeStyle = '#00f0ff';
+          this.ctx.lineWidth = 1.3;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 7, cy + 16);
+          this.ctx.lineTo(px + pw / 2 - 4, cy + 22);
+          this.ctx.lineTo(px + pw / 2 - 3, cy + ph - 13);
+          this.ctx.moveTo(px + pw - 7, cy + 16);
+          this.ctx.lineTo(px + pw / 2 + 4, cy + 22);
+          this.ctx.lineTo(px + pw / 2 + 3, cy + ph - 13);
+          this.ctx.stroke();
+
+          // Central Radiant Ruby Red Diamond Gem (Chest Core like image)
+          const gemX = px + pw / 2;
+          const gemY = cy + 22;
+          this.ctx.save();
+          this.ctx.shadowColor = '#ef4444';
+          this.ctx.shadowBlur = 8;
+          this.ctx.fillStyle = '#dc2626';
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(gemX, gemY - 5);
+          this.ctx.lineTo(gemX + 4.5, gemY);
+          this.ctx.lineTo(gemX, gemY + 6);
+          this.ctx.lineTo(gemX - 4.5, gemY);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+          // Specular Glint
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.beginPath();
+          this.ctx.arc(gemX - 1.2, gemY - 1.8, 1.2, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.restore();
+
+          // Waist Ruby Buckle Gem
+          this.ctx.fillStyle = '#dc2626';
+          this.ctx.strokeStyle = '#f87171';
+          this.ctx.lineWidth = 0.8;
+          this.ctx.beginPath();
+          this.ctx.ellipse(gemX, cy + ph - 13, 3, 2, 0, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+        } else {
+          // Center Gold Paladin Cross Crest (Normal Blastermon)
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.fillRect(px + pw / 2 - 2, cy + 16, 4, 14);
+          this.ctx.fillRect(px + pw / 2 - 6, cy + 20, 12, 3.5);
+        }
 
         // 4. Spiked Pauldrons (Shoulders)
         const leftShoulderX = this.pFacing === 1 ? px - 2 : px + pw - 10;
         const rightShoulderX = this.pFacing === 1 ? px + pw - 8 : px - 4;
-        this.ctx.fillStyle = '#27272a';
-        this.ctx.strokeStyle = '#7c3aed';
+        this.ctx.fillStyle = isSpirited ? '#ffffff' : '#27272a';
+        this.ctx.strokeStyle = isSpirited ? '#38bdf8' : '#7c3aed';
         this.ctx.lineWidth = 1.5;
         // Left Pauldron
         this.ctx.beginPath();
@@ -17170,13 +19103,20 @@ export class GameEngine {
         this.ctx.fill();
         this.ctx.stroke();
 
-        // 5. Blaster Helmet (Shadow Knight Horned Crest)
+        if (isSpirited) {
+          // Cyan light insets on shoulders
+          this.ctx.fillStyle = '#00f0ff';
+          this.ctx.fillRect(leftShoulderX + (this.pFacing === 1 ? -1 : 1), cy + 10, 3, 1.8);
+          this.ctx.fillRect(rightShoulderX + (this.pFacing === 1 ? 2 : -4), cy + 10, 3, 1.8);
+        }
+
+        // 5. Blaster Helmet
         const helmX = px + pw / 2;
         const helmY = cy + 10;
 
         // Helmet Dome
-        this.ctx.fillStyle = '#09090b';
-        this.ctx.strokeStyle = '#581c87';
+        this.ctx.fillStyle = isSpirited ? '#ffffff' : '#09090b';
+        this.ctx.strokeStyle = isSpirited ? '#94a3b8' : '#581c87';
         this.ctx.lineWidth = 1.8;
         this.ctx.beginPath();
         this.ctx.arc(helmX, helmY, 12, Math.PI, 0, false);
@@ -17186,9 +19126,9 @@ export class GameEngine {
         this.ctx.fill();
         this.ctx.stroke();
 
-        // Sharp Twin Shadow Horns
-        this.ctx.fillStyle = '#18181b';
-        this.ctx.strokeStyle = '#7c3aed';
+        // Sharp Twin Shadow Horns -> White Swept Blade Wings in Spirited
+        this.ctx.fillStyle = isSpirited ? '#f8fafc' : '#18181b';
+        this.ctx.strokeStyle = isSpirited ? '#38bdf8' : '#7c3aed';
         this.ctx.lineWidth = 1.6;
         // Left Horn
         this.ctx.beginPath();
@@ -17208,8 +19148,8 @@ export class GameEngine {
         this.ctx.fill();
         this.ctx.stroke();
 
-        // Glowing Eye Visor Slit (Crimson / Violet-Gold in Spirited)
-        const eyeColor = isSpirited ? '#fef08a' : '#ef4444';
+        // Glowing Eye Visor Slit (Crimson in Base, Electric Cyan in Spirited)
+        const eyeColor = isSpirited ? '#00f0ff' : '#ef4444';
         this.ctx.save();
         this.ctx.shadowColor = eyeColor;
         this.ctx.shadowBlur = isSpirited ? 10 : 6;
@@ -17218,7 +19158,26 @@ export class GameEngine {
         this.ctx.fillRect(eyeX, helmY + 2, 10, 2.5);
         this.ctx.restore();
 
-        // 6. Blaster Dark Broadsword (Normal) vs Plunging Colossal Grip (Ultimate Slam)
+        if (isSpirited) {
+          // Iconic Forehead Ruby Red Gem (like in image)
+          this.ctx.save();
+          this.ctx.shadowColor = '#ef4444';
+          this.ctx.shadowBlur = 6;
+          this.ctx.fillStyle = '#dc2626';
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 0.8;
+          this.ctx.beginPath();
+          this.ctx.moveTo(helmX, helmY - 4);
+          this.ctx.lineTo(helmX + 3, helmY);
+          this.ctx.lineTo(helmX, helmY + 4);
+          this.ctx.lineTo(helmX - 3, helmY);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+
+        // 6. Broadsword (Normal) vs Plunging Colossal Grip (Ultimate Slam)
         const isPlungingWithGiantBlade = this.blastermonUltActive && this.blastermonUltPhase === 'giant_blade';
         if (!isPlungingWithGiantBlade) {
           this.ctx.save();
@@ -17232,23 +19191,33 @@ export class GameEngine {
           this.ctx.rotate(swingAngle);
 
           // Sword Hilt & Pommel
-          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.fillStyle = isSpirited ? '#ffffff' : '#fbbf24';
           this.ctx.beginPath();
           this.ctx.arc(-2, 10, 2.5, 0, Math.PI * 2);
           this.ctx.fill();
 
-          this.ctx.fillStyle = '#1c1917';
+          this.ctx.fillStyle = isSpirited ? '#0f172a' : '#1c1917';
           this.ctx.fillRect(-3, 0, 3, 10);
 
-          // Crossguard
-          this.ctx.fillStyle = '#fbbf24';
-          this.ctx.strokeStyle = '#d97706';
+          // Crossguard (White/silver with ruby gem in Spirited)
+          this.ctx.fillStyle = isSpirited ? '#ffffff' : '#fbbf24';
+          this.ctx.strokeStyle = isSpirited ? '#94a3b8' : '#d97706';
           this.ctx.lineWidth = 1;
           this.ctx.fillRect(-8, -2, 14, 3.5);
 
-          // Heavy Broadsword Blade
-          this.ctx.fillStyle = '#18181b';
-          this.ctx.strokeStyle = isSpirited ? '#fbbf24' : '#7c3aed';
+          if (isSpirited) {
+            // Ruby Red Jewel at Crossguard (from image)
+            this.ctx.save();
+            this.ctx.fillStyle = '#dc2626';
+            this.ctx.beginPath();
+            this.ctx.arc(-1, -0.5, 1.8, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.restore();
+          }
+
+          // Heavy Broadsword Blade (White/Silver with cyan edge in Spirited)
+          this.ctx.fillStyle = isSpirited ? '#ffffff' : '#18181b';
+          this.ctx.strokeStyle = isSpirited ? '#38bdf8' : '#7c3aed';
           this.ctx.lineWidth = 1.5;
           this.ctx.beginPath();
           this.ctx.moveTo(-5, -2);
@@ -17260,43 +19229,59 @@ export class GameEngine {
           this.ctx.fill();
           this.ctx.stroke();
 
-          // Runic Blade Fuller Glow
-          this.ctx.strokeStyle = isSpirited ? '#fef08a' : '#c084fc';
-          this.ctx.lineWidth = 1.2;
+          // Runic Blade Fuller Glow (Electric Cyan in Spirited)
+          this.ctx.strokeStyle = isSpirited ? '#00f0ff' : '#c084fc';
+          this.ctx.lineWidth = 1.4;
           this.ctx.beginPath();
           this.ctx.moveTo(0, -3);
           this.ctx.lineTo(0, -35);
           this.ctx.stroke();
 
-          // Sweeping Multi-Layer Energy Cleave Arc on Attack Swing
+          // Attack Swing Arc
           if (isAttacking) {
             this.ctx.save();
             const slashProgress = (10 - this.attackDuration) / 10;
             const arcStart = -Math.PI * 0.7;
             const arcEnd = arcStart + slashProgress * Math.PI * 1.1;
 
-            // Outer luminous haze
-            this.ctx.shadowColor = isSpirited ? '#fef08a' : '#c084fc';
-            this.ctx.shadowBlur = 18;
-            this.ctx.strokeStyle = isSpirited ? 'rgba(254, 240, 138, 0.45)' : 'rgba(124, 58, 237, 0.5)';
-            this.ctx.lineWidth = 16;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 44, arcStart, arcEnd);
-            this.ctx.stroke();
+            if (isSpirited) {
+              // SINGLE LAYER crisp celestial cyan & white energy slash arc
+              this.ctx.shadowColor = '#00f0ff';
+              this.ctx.shadowBlur = 16;
+              this.ctx.strokeStyle = '#38bdf8';
+              this.ctx.lineWidth = 6.5;
+              this.ctx.beginPath();
+              this.ctx.arc(0, 0, 45, arcStart, arcEnd);
+              this.ctx.stroke();
 
-            // Mid-layer intense plasma blade
-            this.ctx.strokeStyle = isSpirited ? 'rgba(251, 191, 36, 0.9)' : 'rgba(192, 132, 252, 0.85)';
-            this.ctx.lineWidth = 8;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 45, arcStart + 0.1, arcEnd);
-            this.ctx.stroke();
+              // Pure white sharp leading razor edge (single unified stroke)
+              this.ctx.strokeStyle = '#ffffff';
+              this.ctx.lineWidth = 2.5;
+              this.ctx.beginPath();
+              this.ctx.arc(0, 0, 46, arcStart + 0.1, arcEnd);
+              this.ctx.stroke();
+            } else {
+              // Base multi-layer dark energy arc for Blaster Dark
+              this.ctx.shadowColor = '#c084fc';
+              this.ctx.shadowBlur = 18;
+              this.ctx.strokeStyle = 'rgba(124, 58, 237, 0.5)';
+              this.ctx.lineWidth = 16;
+              this.ctx.beginPath();
+              this.ctx.arc(0, 0, 44, arcStart, arcEnd);
+              this.ctx.stroke();
 
-            // Blinding white cutting edge
-            this.ctx.strokeStyle = '#ffffff';
-            this.ctx.lineWidth = 2.5;
-            this.ctx.beginPath();
-            this.ctx.arc(0, 0, 46, arcStart + 0.2, arcEnd);
-            this.ctx.stroke();
+              this.ctx.strokeStyle = 'rgba(192, 132, 252, 0.85)';
+              this.ctx.lineWidth = 8;
+              this.ctx.beginPath();
+              this.ctx.arc(0, 0, 45, arcStart + 0.1, arcEnd);
+              this.ctx.stroke();
+
+              this.ctx.strokeStyle = '#ffffff';
+              this.ctx.lineWidth = 2.5;
+              this.ctx.beginPath();
+              this.ctx.arc(0, 0, 46, arcStart + 0.2, arcEnd);
+              this.ctx.stroke();
+            }
 
             // Blade tip spark star
             const tipX = Math.cos(arcEnd) * 46;
@@ -17313,8 +19298,8 @@ export class GameEngine {
         } else {
           // Blastermon gripping the colossal plunging blade with both hands as they slam together!
           this.ctx.save();
-          this.ctx.fillStyle = '#27272a';
-          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.strokeStyle = '#38bdf8';
           this.ctx.lineWidth = 1.6;
 
           // Left Arm extended down to sword hilt
@@ -17325,12 +19310,452 @@ export class GameEngine {
           this.ctx.fillRect(px + pw - 11, cy + 16, 7, 26);
           this.ctx.strokeRect(px + pw - 11, cy + 16, 7, 26);
 
-          // Gold armored gauntlets gripping the crossguard
-          this.ctx.fillStyle = '#fbbf24';
+          // Armored gauntlets gripping the crossguard
+          this.ctx.fillStyle = '#ffffff';
           this.ctx.fillRect(px + 3, cy + 40, 9, 6);
           this.ctx.fillRect(px + pw - 12, cy + 40, 9, 6);
 
           this.ctx.restore();
+        }
+
+        this.ctx.restore();
+      } else if (this.selectedDraco === 'Phantomon') {
+        this.ctx.save();
+        const isUlt = this.phantomonUltActive;
+        const glowCol = isUlt ? '#ef4444' : '#00f0ff';
+        const secCol = isUlt ? '#f43f5e' : '#38bdf8';
+        
+        // 1. Phantomon Dedicated Shadow Dragon Afterimages during Dash
+        if (this.phantomonAfterimages.length > 0) {
+          this.phantomonAfterimages.forEach(img => {
+            this.ctx.save();
+            this.ctx.globalAlpha = img.alpha * 0.45;
+            const ax = img.x;
+            const ay = img.y;
+
+            this.ctx.save();
+            this.ctx.translate(ax + pw / 2, ay + ph / 2);
+            this.ctx.rotate(img.facing * 0.4);
+            this.ctx.translate(-(ax + pw / 2), -(ay + ph / 2));
+
+            // Translucent glowing dragon silhouette
+            this.ctx.fillStyle = '#090514';
+            this.ctx.strokeStyle = glowCol;
+            this.ctx.lineWidth = 1.6;
+
+            this.ctx.beginPath();
+            this.ctx.arc(ax + pw / 2, ay + 12, 10, 0, Math.PI * 2);
+            this.ctx.moveTo(ax + 6, ay + 16);
+            this.ctx.lineTo(ax + pw - 6, ay + 16);
+            this.ctx.lineTo(ax + pw - 8, ay + ph - 4);
+            this.ctx.lineTo(ax + 8, ay + ph - 4);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // Swept wings silhouette
+            this.ctx.beginPath();
+            this.ctx.moveTo(ax + 4, ay + 18);
+            this.ctx.lineTo(ax - 30 * img.facing, ay + 2);
+            this.ctx.lineTo(ax + 4, ay + 30);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.restore();
+            this.ctx.restore();
+          });
+        }
+
+        const isDash = this.phantomonDashActive;
+        this.ctx.save();
+        if (isDash) {
+          this.ctx.translate(px + pw / 2, bodyY + ph / 2);
+          this.ctx.rotate(this.pFacing * 0.4); // Supersonic forward charge tilt!
+          this.ctx.translate(-(px + pw / 2), -(bodyY + ph / 2));
+        }
+
+        // 2. Double Obsidian Dragon Wings with Cyan/Crimson Veins
+        const wingFlap = isDash ? -6 : Math.sin(this.frameCount * 0.16) * (this.pGrounded ? 4 : 8);
+        this.ctx.save();
+        this.ctx.fillStyle = '#09090b';
+        this.ctx.strokeStyle = glowCol;
+        this.ctx.lineWidth = 2;
+
+        // Left wing
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 4, bodyY + 14);
+        this.ctx.quadraticCurveTo(px - 26 + wingFlap, bodyY - 14, px - 20 + wingFlap, bodyY + ph / 2);
+        this.ctx.quadraticCurveTo(px - 10, bodyY + ph - 2, px + 8, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Right wing
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw - 4, bodyY + 14);
+        this.ctx.quadraticCurveTo(px + pw + 26 - wingFlap, bodyY - 14, px + pw + 20 - wingFlap, bodyY + ph / 2);
+        this.ctx.quadraticCurveTo(px + pw + 10, bodyY + ph - 2, px + pw - 8, bodyY + ph - 6);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Wing cybernetic rib lines
+        this.ctx.strokeStyle = secCol;
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 2, bodyY + 16);
+        this.ctx.lineTo(px - 16 + wingFlap, bodyY + 2);
+        this.ctx.moveTo(px + pw - 2, bodyY + 16);
+        this.ctx.lineTo(px + pw + 16 - wingFlap, bodyY + 2);
+        this.ctx.stroke();
+
+        // Thruster jet exhaust flares from wing cannons during dash
+        if (isDash) {
+          const exhaustX = this.pFacing === 1 ? px - 16 : px + pw + 16;
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.shadowColor = '#ef4444';
+          this.ctx.shadowBlur = 16;
+          this.ctx.beginPath();
+          this.ctx.moveTo(exhaustX, bodyY + 10);
+          this.ctx.lineTo(exhaustX - this.pFacing * 35, bodyY + 16);
+          this.ctx.lineTo(exhaustX, bodyY + 22);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.beginPath();
+          this.ctx.moveTo(exhaustX, bodyY + 12);
+          this.ctx.lineTo(exhaustX - this.pFacing * 22, bodyY + 16);
+          this.ctx.lineTo(exhaustX, bodyY + 20);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
+
+        this.ctx.restore();
+
+        // 3. Wing-Mounted Cannon Barrels
+        this.ctx.fillStyle = '#27272a';
+        this.ctx.fillRect(px - 10, bodyY + 10, 6, 12);
+        this.ctx.fillRect(px + pw + 4, bodyY + 10, 6, 12);
+        this.ctx.fillStyle = glowCol;
+        this.ctx.fillRect(px - 9, bodyY + 8, 4, 3);
+        this.ctx.fillRect(px + pw + 5, bodyY + 8, 4, 3);
+
+        // 4. Obsidian Armored Torso
+        this.ctx.fillStyle = '#09090b';
+        this.ctx.strokeStyle = '#27272a';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.fillRect(px + 6, bodyY + 12, pw - 12, ph - 16);
+        this.ctx.strokeRect(px + 6, bodyY + 12, pw - 12, ph - 16);
+
+        // 5. Dark Dragon Breastplate with Cyan/Crimson Circuit Veins
+        this.ctx.fillStyle = '#18181b';
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 10, bodyY + 16);
+        this.ctx.lineTo(px + pw - 10, bodyY + 16);
+        this.ctx.lineTo(px + pw / 2, bodyY + ph - 8);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Neon circuit ribs
+        this.ctx.strokeStyle = glowCol;
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + 8, bodyY + 20);
+        this.ctx.lineTo(px + pw / 2 - 6, bodyY + 22);
+        this.ctx.moveTo(px + pw - 8, bodyY + 20);
+        this.ctx.lineTo(px + pw / 2 + 6, bodyY + 22);
+        this.ctx.stroke();
+
+        // 6. Bladed Dragon Tail
+        const tailDir = -this.pFacing;
+        const tailWave = isDash ? 0 : Math.sin(this.frameCount * 0.2) * 4;
+        this.ctx.strokeStyle = '#18181b';
+        this.ctx.lineWidth = 3.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2, bodyY + ph - 10);
+        this.ctx.quadraticCurveTo(px + pw / 2 + tailDir * 18, bodyY + ph - 4 + tailWave, px + pw / 2 + tailDir * 26, bodyY + ph - 14 + tailWave);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = glowCol;
+        this.ctx.beginPath();
+        const tailTipX = px + pw / 2 + tailDir * 26;
+        const tailTipY = bodyY + ph - 14 + tailWave;
+        this.ctx.moveTo(tailTipX, tailTipY - 4);
+        this.ctx.lineTo(tailTipX + tailDir * 8, tailTipY);
+        this.ctx.lineTo(tailTipX, tailTipY + 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // 7. Horned Dragon Helmet
+        this.ctx.fillStyle = '#09090b';
+        this.ctx.strokeStyle = '#27272a';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, bodyY + 11, 10, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = '#18181b';
+        this.ctx.lineWidth = 2.8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2 - 6, bodyY + 6);
+        this.ctx.quadraticCurveTo(px + pw / 2 - 16, bodyY - 4, px + pw / 2 - 12 + this.pFacing * 4, bodyY - 12);
+        this.ctx.stroke();
+        this.ctx.beginPath();
+        this.ctx.moveTo(px + pw / 2 + 6, bodyY + 6);
+        this.ctx.quadraticCurveTo(px + pw / 2 + 16, bodyY - 4, px + pw / 2 + 12 + this.pFacing * 4, bodyY - 12);
+        this.ctx.stroke();
+
+        this.ctx.fillStyle = glowCol;
+        this.ctx.fillRect(px + pw / 2 + (this.pFacing === 1 ? 0 : -6), bodyY + 10, 7, 2.5);
+
+        // 8. Phantom Scythe Weapon & Attack Swing
+        this.ctx.save();
+        const handX = this.pFacing === 1 ? px + pw - 4 : px + 4;
+        const handY = bodyY + 22;
+        this.ctx.translate(handX, handY);
+
+        const swingAngle = isDash
+          ? (this.pFacing === 1 ? Math.PI / 2 : -Math.PI / 2)
+          : (this.isAttacking ? (-0.6 + ((10 - this.attackDuration) / 10) * 1.5) * this.pFacing : 0.2 * this.pFacing);
+        this.ctx.rotate(swingAngle);
+
+        this.ctx.fillStyle = '#18181b';
+        this.ctx.fillRect(-2, -34, 4, 52);
+
+        this.ctx.fillStyle = '#09090b';
+        this.ctx.strokeStyle = glowCol;
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-2, -34);
+        this.ctx.quadraticCurveTo(this.pFacing * 28, -42, this.pFacing * 34, -22);
+        this.ctx.quadraticCurveTo(this.pFacing * 18, -26, 2, -26);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = glowCol;
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-2, -34);
+        this.ctx.quadraticCurveTo(this.pFacing * 28, -42, this.pFacing * 34, -22);
+        this.ctx.stroke();
+
+        if (isDash) {
+          // Blazing elongated void lance laser blade extending forward during Dash Slash!
+          this.ctx.save();
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 4;
+          this.ctx.shadowColor = '#ef4444';
+          this.ctx.shadowBlur = 20;
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.pFacing * 34, -22);
+          this.ctx.lineTo(this.pFacing * 110, -22);
+          this.ctx.stroke();
+
+          this.ctx.strokeStyle = '#ef4444';
+          this.ctx.lineWidth = 9;
+          this.ctx.beginPath();
+          this.ctx.moveTo(this.pFacing * 30, -22);
+          this.ctx.lineTo(this.pFacing * 105, -22);
+          this.ctx.stroke();
+          this.ctx.restore();
+        }
+
+        this.ctx.restore();
+
+        // Restore forward dash tilt
+        this.ctx.restore();
+
+        // 8b. Enhanced Basic Attack Piercing Dash Slash Mach Cone & Shockwaves
+        if (isDash) {
+          this.ctx.save();
+          const waveX = px + (this.pFacing === 1 ? pw + 12 : -12);
+          const waveY = bodyY + ph / 2;
+
+          // Piercing Mach shockwave cone cutting through the air
+          const coneGrad = this.ctx.createLinearGradient(waveX, waveY, waveX + this.pFacing * 110, waveY);
+          coneGrad.addColorStop(0, '#ffffff');
+          coneGrad.addColorStop(0.3, '#ef4444');
+          coneGrad.addColorStop(0.7, 'rgba(0, 240, 255, 0.75)');
+          coneGrad.addColorStop(1, 'rgba(9, 9, 11, 0)');
+
+          this.ctx.fillStyle = coneGrad;
+          this.ctx.beginPath();
+          this.ctx.moveTo(waveX, waveY - 60);
+          this.ctx.quadraticCurveTo(waveX + this.pFacing * 110, waveY, waveX, waveY + 60);
+          this.ctx.quadraticCurveTo(waveX + this.pFacing * 35, waveY, waveX, waveY - 60);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          // Sonic boom expanding rings behind the mach cone
+          for (let r = 1; r <= 2; r++) {
+            const ringX = waveX - this.pFacing * (r * 25);
+            this.ctx.strokeStyle = `rgba(239, 68, 68, ${0.7 / r})`;
+            this.ctx.lineWidth = 3 / r;
+            this.ctx.beginPath();
+            this.ctx.ellipse(ringX, waveY, 12, 45 + r * 10, 0, 0, Math.PI * 2);
+            this.ctx.stroke();
+          }
+
+          // Incandescent horizontal vacuum cut line through the cone
+          this.ctx.strokeStyle = '#ffffff';
+          this.ctx.lineWidth = 4;
+          this.ctx.shadowColor = '#00f0ff';
+          this.ctx.shadowBlur = 15;
+          this.ctx.beginPath();
+          this.ctx.moveTo(waveX - this.pFacing * 30, waveY);
+          this.ctx.lineTo(waveX + this.pFacing * 115, waveY);
+          this.ctx.stroke();
+
+          // Speed lines streaming past Phantomon
+          this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+          this.ctx.lineWidth = 1.5;
+          [-35, -18, 18, 35].forEach((offY, idx) => {
+            const sX = px - this.pFacing * (30 + idx * 15);
+            this.ctx.beginPath();
+            this.ctx.moveTo(sX, bodyY + ph / 2 + offY);
+            this.ctx.lineTo(sX + this.pFacing * 80, bodyY + ph / 2 + offY);
+            this.ctx.stroke();
+          });
+
+          this.ctx.restore();
+        }
+
+        // 9. Upgraded Shadow Illusions Rendering (3x speed animated dragons)
+        if (this.phantomonShadowIllusions.length > 0) {
+          this.phantomonShadowIllusions.forEach(ill => {
+            this.ctx.save();
+            const illGlow = ill.isEmpowered ? '#ef4444' : '#00f0ff';
+            const ix = ill.x - pw / 2;
+            const iy = ill.y - ph / 2;
+            const iFlap = Math.sin(this.frameCount * 0.4 + ill.id * 2) * 8;
+            const isAttacking = ill.attackCooldown < 12;
+
+            // Trailing motion blur afterimages for 3x speed flight
+            for (let trail = 1; trail <= 2; trail++) {
+              this.ctx.save();
+              this.ctx.globalAlpha = 0.22 / trail;
+              const trailX = ix - (ill.vx || 0) * trail * 0.5;
+              const trailY = iy - (ill.vy || 0) * trail * 0.5;
+              this.ctx.fillStyle = illGlow;
+              this.ctx.fillRect(trailX + 8, trailY + 8, pw - 16, ph - 14);
+              this.ctx.restore();
+            }
+
+            this.ctx.globalAlpha = 0.75;
+
+            // A. Spectral Dragon Wings
+            this.ctx.save();
+            this.ctx.fillStyle = '#09090b';
+            this.ctx.strokeStyle = illGlow;
+            this.ctx.lineWidth = 1.5;
+
+            // Left wing
+            this.ctx.beginPath();
+            this.ctx.moveTo(ix + 6, iy + 14);
+            this.ctx.quadraticCurveTo(ix - 18 + iFlap, iy - 8, ix - 14 + iFlap, iy + ph / 2);
+            this.ctx.lineTo(ix + 6, iy + ph / 2);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // Right wing
+            this.ctx.beginPath();
+            this.ctx.moveTo(ix + pw - 6, iy + 14);
+            this.ctx.quadraticCurveTo(ix + pw + 18 - iFlap, iy - 8, ix + pw + 14 - iFlap, iy + ph / 2);
+            this.ctx.lineTo(ix + pw - 6, iy + ph / 2);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+            this.ctx.restore();
+
+            // B. Obsidian Dragon Body
+            this.ctx.fillStyle = '#090514';
+            this.ctx.strokeStyle = illGlow;
+            this.ctx.lineWidth = 1.6;
+            this.ctx.beginPath();
+            this.ctx.moveTo(ix + 8, iy + 10);
+            this.ctx.lineTo(ix + pw - 8, iy + 10);
+            this.ctx.lineTo(ix + pw - 10, iy + ph - 6);
+            this.ctx.lineTo(ix + 10, iy + ph - 6);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // Glowing Core Rune
+            this.ctx.fillStyle = illGlow;
+            this.ctx.beginPath();
+            this.ctx.arc(ix + pw / 2, iy + ph / 2 - 2, 4, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // C. Horned Helm & Glowing Visor
+            this.ctx.fillStyle = '#090514';
+            this.ctx.strokeStyle = illGlow;
+            this.ctx.lineWidth = 1.5;
+            this.ctx.beginPath();
+            this.ctx.arc(ix + pw / 2, iy + 8, 9, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            // Dragon horns on helm
+            this.ctx.strokeStyle = illGlow;
+            this.ctx.lineWidth = 1.8;
+            this.ctx.beginPath();
+            this.ctx.moveTo(ix + pw / 2 - 5, iy + 5);
+            this.ctx.lineTo(ix + pw / 2 - 12 + ill.facing * 3, iy - 5);
+            this.ctx.moveTo(ix + pw / 2 + 5, iy + 5);
+            this.ctx.lineTo(ix + pw / 2 + 12 + ill.facing * 3, iy - 5);
+            this.ctx.stroke();
+
+            // Visor eye
+            this.ctx.fillStyle = illGlow;
+            this.ctx.fillRect(ix + pw / 2 + (ill.facing === 1 ? 0 : -6), iy + 7, 6, 2.5);
+
+            // D. Dynamic Scythe Attack & Slash Swing
+            this.ctx.save();
+            const iHandX = ix + (ill.facing === 1 ? pw - 2 : 2);
+            const iHandY = iy + 18;
+            this.ctx.translate(iHandX, iHandY);
+
+            const iSwing = isAttacking ? ((12 - ill.attackCooldown) / 12) * Math.PI * ill.facing : 0.2 * ill.facing;
+            this.ctx.rotate(iSwing);
+
+            // Scythe pole
+            this.ctx.fillStyle = '#18181b';
+            this.ctx.fillRect(-1.5, -24, 3, 38);
+
+            // Scythe curved blade
+            this.ctx.fillStyle = '#090514';
+            this.ctx.strokeStyle = illGlow;
+            this.ctx.lineWidth = 1.6;
+            this.ctx.beginPath();
+            this.ctx.moveTo(-1.5, -24);
+            this.ctx.quadraticCurveTo(ill.facing * 20, -30, ill.facing * 24, -14);
+            this.ctx.quadraticCurveTo(ill.facing * 12, -18, 1.5, -18);
+            this.ctx.closePath();
+            this.ctx.fill();
+            this.ctx.stroke();
+
+            this.ctx.restore();
+
+            // E. Slash Arc Trail during Attack
+            if (isAttacking) {
+              this.ctx.save();
+              const arcX = ix + (ill.facing === 1 ? pw + 8 : -8);
+              const arcY = iy + 16;
+              this.ctx.strokeStyle = illGlow;
+              this.ctx.lineWidth = 3;
+              this.ctx.beginPath();
+              this.ctx.arc(arcX, arcY, 22, -0.6, 0.6);
+              this.ctx.stroke();
+              this.ctx.restore();
+            }
+
+            this.ctx.restore();
+          });
         }
 
         this.ctx.restore();
@@ -18304,7 +20729,8 @@ export class GameEngine {
           this.selectedDraco === 'Reapermon' ||
           this.selectedDraco === 'Mikomon' ||
           this.selectedDraco === 'EndMon' ||
-          this.selectedDraco === 'Blastermon'
+          this.selectedDraco === 'Blastermon' ||
+          this.selectedDraco === 'Phantomon'
         ) {
           // Custom Dracos render their own dedicated weapons & spell effects
         } else {
@@ -18444,7 +20870,8 @@ export class GameEngine {
           this.selectedDraco === 'Reapermon' ||
           this.selectedDraco === 'Mikomon' ||
           this.selectedDraco === 'EndMon' ||
-          this.selectedDraco === 'Blastermon'
+          this.selectedDraco === 'Blastermon' ||
+          this.selectedDraco === 'Phantomon'
         ) {
           // Custom Dracos render their own staff, cleaver, scythe, anchor, or dark energy hands
         } else {
@@ -18898,6 +21325,7 @@ export class GameEngine {
     // Blastermon Lightning Arcs Visual Rendering
     if (this.blastermonLightningArcs.length > 0) {
       this.ctx.save();
+      const isSpiritedNow = this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0;
       this.blastermonLightningArcs.forEach(arc => {
         const progress = arc.timer / arc.maxTimer;
         const alpha = Math.max(0.1, progress);
@@ -18924,40 +21352,81 @@ export class GameEngine {
           arc.segments = segs;
         }
 
-        // Layer 1: Wide Outer Violet Glow
-        this.ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.4})`;
-        this.ctx.lineWidth = 10;
-        this.ctx.beginPath();
-        arc.segments.forEach((pt, idx) => {
-          if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
-          else this.ctx.lineTo(pt.x, pt.y);
-        });
-        this.ctx.stroke();
+        const isLightArc = isSpiritedNow || arc.color === '#38bdf8' || arc.color === '#00f0ff';
 
-        // Layer 2: Radiant Electric Violet Mid-tone
-        this.ctx.strokeStyle = `rgba(192, 132, 252, ${alpha * 0.85})`;
-        this.ctx.lineWidth = 4;
-        this.ctx.beginPath();
-        arc.segments.forEach((pt, idx) => {
-          if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
-          else this.ctx.lineTo(pt.x, pt.y);
-        });
-        this.ctx.stroke();
+        if (isLightArc) {
+          // LIGHT PALETTE: Electric Cyan, Soft Sky Blue & Pure White
+          this.ctx.save();
+          this.ctx.shadowColor = '#00f0ff';
+          this.ctx.shadowBlur = 16;
 
-        // Layer 3: Pure White High-Voltage Core
-        this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-        this.ctx.lineWidth = 1.8;
-        this.ctx.beginPath();
-        arc.segments.forEach((pt, idx) => {
-          if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
-          else this.ctx.lineTo(pt.x, pt.y);
-        });
-        this.ctx.stroke();
+          // Layer 1: Wide Outer Light Cyan Glow
+          this.ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.45})`;
+          this.ctx.lineWidth = 10;
+          this.ctx.beginPath();
+          arc.segments.forEach((pt, idx) => {
+            if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+            else this.ctx.lineTo(pt.x, pt.y);
+          });
+          this.ctx.stroke();
+
+          // Layer 2: Radiant Electric Neon Cyan Mid-tone
+          this.ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.9})`;
+          this.ctx.lineWidth = 4;
+          this.ctx.beginPath();
+          arc.segments.forEach((pt, idx) => {
+            if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+            else this.ctx.lineTo(pt.x, pt.y);
+          });
+          this.ctx.stroke();
+
+          // Layer 3: Pure White High-Voltage Core
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+          this.ctx.lineWidth = 1.8;
+          this.ctx.beginPath();
+          arc.segments.forEach((pt, idx) => {
+            if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+            else this.ctx.lineTo(pt.x, pt.y);
+          });
+          this.ctx.stroke();
+          this.ctx.restore();
+        } else {
+          // DARK PALETTE: Shadow Violet & Purple
+          // Layer 1: Wide Outer Violet Glow
+          this.ctx.strokeStyle = `rgba(168, 85, 247, ${alpha * 0.4})`;
+          this.ctx.lineWidth = 10;
+          this.ctx.beginPath();
+          arc.segments.forEach((pt, idx) => {
+            if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+            else this.ctx.lineTo(pt.x, pt.y);
+          });
+          this.ctx.stroke();
+
+          // Layer 2: Radiant Electric Violet Mid-tone
+          this.ctx.strokeStyle = `rgba(192, 132, 252, ${alpha * 0.85})`;
+          this.ctx.lineWidth = 4;
+          this.ctx.beginPath();
+          arc.segments.forEach((pt, idx) => {
+            if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+            else this.ctx.lineTo(pt.x, pt.y);
+          });
+          this.ctx.stroke();
+
+          // Layer 3: Pure White High-Voltage Core
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+          this.ctx.lineWidth = 1.8;
+          this.ctx.beginPath();
+          arc.segments.forEach((pt, idx) => {
+            if (idx === 0) this.ctx.moveTo(pt.x, pt.y);
+            else this.ctx.lineTo(pt.x, pt.y);
+          });
+          this.ctx.stroke();
+        }
       });
       this.ctx.restore();
     }
 
-    // Blastermon Ultimate: Stroke of Bravery Giant Blade Slam Rendering
+    // Blastermon Ultimate: Stroke of Bravery Giant Blade Slam Rendering (Always White Holy Judgment Blade)
     if (this.blastermonUltActive && this.blastermonUltPhase === 'giant_blade') {
       this.ctx.save();
       const bladeX = this.blastermonGiantBladeX;
@@ -18965,33 +21434,33 @@ export class GameEngine {
       const bladeH = 140;
       const bladeW = 34;
 
-      // Dark thunder sky aura around blade
+      // Radiant thunder sky aura around blade
       const auraGrad = this.ctx.createRadialGradient(bladeX, bladeTipY - bladeH / 2, 20, bladeX, bladeTipY - bladeH / 2, 120);
-      auraGrad.addColorStop(0, 'rgba(192, 132, 252, 0.4)');
-      auraGrad.addColorStop(0.5, 'rgba(124, 58, 237, 0.2)');
-      auraGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      auraGrad.addColorStop(0, 'rgba(0, 240, 255, 0.45)');
+      auraGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.25)');
+      auraGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
       this.ctx.fillStyle = auraGrad;
       this.ctx.beginPath();
       this.ctx.arc(bladeX, bladeTipY - bladeH / 2, 120, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Blade downward speed trail
-      this.ctx.fillStyle = 'rgba(124, 58, 237, 0.25)';
+      // Blade downward speed trail (Light celestial cyan & white)
+      this.ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
       this.ctx.fillRect(bladeX - bladeW / 2, bladeTipY - bladeH - 80, bladeW, 80);
 
-      // Pommel
-      this.ctx.fillStyle = '#fbbf24';
+      // Pommel (Pure white / silver)
+      this.ctx.fillStyle = '#ffffff';
       this.ctx.beginPath();
       this.ctx.arc(bladeX, bladeTipY - bladeH - 30, 8, 0, Math.PI * 2);
       this.ctx.fill();
 
-      // Grip
-      this.ctx.fillStyle = '#18181b';
+      // Grip (Midnight navy)
+      this.ctx.fillStyle = '#0f172a';
       this.ctx.fillRect(bladeX - 5, bladeTipY - bladeH - 30, 10, 30);
 
-      // Massive Crossguard
-      this.ctx.fillStyle = '#fbbf24';
-      this.ctx.strokeStyle = '#d97706';
+      // Massive Crossguard (Pristine White with Cyan outline)
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.strokeStyle = '#38bdf8';
       this.ctx.lineWidth = 2;
       this.ctx.beginPath();
       this.ctx.moveTo(bladeX - bladeW * 0.9, bladeTipY - bladeH);
@@ -19002,16 +21471,29 @@ export class GameEngine {
       this.ctx.fill();
       this.ctx.stroke();
 
-      // Giant Blade Body
-      const bladeGrad = this.ctx.createLinearGradient(bladeX - bladeW / 2, 0, bladeX + bladeW / 2, 0);
-      bladeGrad.addColorStop(0, '#09090b');
-      bladeGrad.addColorStop(0.4, '#18181b');
-      bladeGrad.addColorStop(0.5, '#7c3aed');
-      bladeGrad.addColorStop(0.6, '#18181b');
-      bladeGrad.addColorStop(1, '#09090b');
+      // Center Ruby Red Core Gem on Crossguard
+      this.ctx.save();
+      this.ctx.shadowColor = '#ef4444';
+      this.ctx.shadowBlur = 8;
+      this.ctx.fillStyle = '#dc2626';
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 1;
+      this.ctx.beginPath();
+      this.ctx.arc(bladeX, bladeTipY - bladeH + 6, 4.5, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.stroke();
+      this.ctx.restore();
 
+      // Giant Blade Body - PURE WHITE & METALLIC SILVER with Electric Cyan Runner
+      const bladeGrad = this.ctx.createLinearGradient(bladeX - bladeW / 2, 0, bladeX + bladeW / 2, 0);
+      bladeGrad.addColorStop(0, '#e2e8f0');
+      bladeGrad.addColorStop(0.3, '#ffffff');
+      bladeGrad.addColorStop(0.5, '#00f0ff');
+      bladeGrad.addColorStop(0.7, '#ffffff');
+      bladeGrad.addColorStop(1, '#e2e8f0');
       this.ctx.fillStyle = bladeGrad;
-      this.ctx.strokeStyle = '#c084fc';
+      this.ctx.strokeStyle = '#38bdf8';
+
       this.ctx.lineWidth = 3;
       this.ctx.beginPath();
       this.ctx.moveTo(bladeX - bladeW / 2, bladeTipY - bladeH + 12);
@@ -19023,19 +21505,19 @@ export class GameEngine {
       this.ctx.fill();
       this.ctx.stroke();
 
-      // Golden Runic Center Spine
-      this.ctx.strokeStyle = '#fbbf24';
+      // Cyan Runic Center Spine
+      this.ctx.strokeStyle = '#00f0ff';
       this.ctx.lineWidth = 2.5;
       this.ctx.beginPath();
       this.ctx.moveTo(bladeX, bladeTipY - bladeH + 16);
       this.ctx.lineTo(bladeX, bladeTipY - 26);
       this.ctx.stroke();
 
-      // Crackling lightning ribbons wrapping the giant blade
+      // Crackling electric cyan lightning ribbons wrapping the giant blade
       for (let r = 0; r < 4; r++) {
         const ry = bladeTipY - bladeH + 20 + r * 28;
         const rxOffset = Math.sin(this.frameCount * 0.5 + r) * (bladeW / 2 + 10);
-        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.strokeStyle = '#00f0ff';
         this.ctx.lineWidth = 2;
         this.ctx.beginPath();
         this.ctx.moveTo(bladeX - rxOffset, ry - 6);
@@ -19062,60 +21544,39 @@ export class GameEngine {
         const slashLength = 110;
         const slashAngle = -0.55 * dir + (1.1 * dir) * pEase + cleave.angle;
 
-        // 1. Broad Sweeping Energy Cleave Slash Ribbon (Curved cutting arc)
-        this.ctx.save();
-        this.ctx.shadowColor = '#c084fc';
-        this.ctx.shadowBlur = 28;
-
-        const slashGrad = this.ctx.createLinearGradient(cx - dir * 45, cy - 65, cx + dir * 45, cy + 45);
-        slashGrad.addColorStop(0, `rgba(124, 58, 237, ${alpha * 0.1})`);
-        slashGrad.addColorStop(0.35, `rgba(192, 132, 252, ${alpha * 0.8})`);
-        slashGrad.addColorStop(0.75, `rgba(254, 240, 138, ${alpha * 0.95})`);
-        slashGrad.addColorStop(1, `rgba(255, 255, 255, ${alpha})`);
-
-        this.ctx.strokeStyle = slashGrad;
-        this.ctx.lineWidth = 18;
-        this.ctx.beginPath();
-        const startX = cx - dir * 42;
-        const startY = cy - 75;
-        const endX = startX + dir * 85 * pEase;
-        const endY = startY + 115 * pEase;
-        this.ctx.moveTo(startX, startY);
-        this.ctx.quadraticCurveTo(cx + dir * 25, cy - 10, endX, endY);
-        this.ctx.stroke();
-
-        // White-hot inner cutting filament
-        this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-        this.ctx.lineWidth = 4.5;
-        this.ctx.stroke();
-        this.ctx.restore();
-
-        // 2. Crescent Energy Blade-Wave Slicing Across Target
+        // Single Layer Celestial Energy Cleave Slash Arc (Single layer, no overlapping ribbon)
         this.ctx.save();
         this.ctx.translate(cx, cy);
         this.ctx.rotate(slashAngle);
 
-        const arcR = 55;
-        this.ctx.shadowColor = '#fef08a';
-        this.ctx.shadowBlur = 18;
+        const arcR = 56;
+        this.ctx.shadowColor = '#00f0ff';
+        this.ctx.shadowBlur = 20;
 
-        // Luminous cutting crescent
-        this.ctx.strokeStyle = `rgba(254, 240, 138, ${alpha * 0.9})`;
-        this.ctx.lineWidth = 8;
+        const slashGrad = this.ctx.createLinearGradient(-arcR * dir, -arcR, arcR * dir, arcR);
+        slashGrad.addColorStop(0, `rgba(2, 132, 199, ${alpha * 0.2})`);
+        slashGrad.addColorStop(0.35, `rgba(56, 189, 248, ${alpha * 0.85})`);
+        slashGrad.addColorStop(0.75, `rgba(0, 240, 255, ${alpha * 0.95})`);
+        slashGrad.addColorStop(1, `rgba(255, 255, 255, ${alpha})`);
+
+        // Luminous single cutting crescent (sleek and thin)
+        this.ctx.strokeStyle = slashGrad;
+        this.ctx.lineWidth = 4;
+        this.ctx.lineCap = 'round';
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, arcR, -Math.PI * 0.4, Math.PI * 0.4);
+        this.ctx.arc(0, 0, arcR, -Math.PI * 0.42, Math.PI * 0.42);
         this.ctx.stroke();
 
         // Pure white razor core
         this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
-        this.ctx.lineWidth = 3;
+        this.ctx.lineWidth = 1.2;
         this.ctx.beginPath();
-        this.ctx.arc(0, 0, arcR, -Math.PI * 0.35, Math.PI * 0.35);
+        this.ctx.arc(0, 0, arcR, -Math.PI * 0.38, Math.PI * 0.38);
         this.ctx.stroke();
 
         this.ctx.restore();
 
-        // 3. Impact Cleave Burst & Cross-Slash Flares
+        // 2. Impact Cleave Burst & Cross-Slash Flares
         if (pRaw > 0.3) {
           const impactProgress = (pRaw - 0.3) / 0.7;
           const ringR = impactProgress * 70;
@@ -19123,7 +21584,7 @@ export class GameEngine {
 
           this.ctx.save();
           // Expanding shockwave ring
-          this.ctx.strokeStyle = `rgba(254, 240, 138, ${ringAlpha})`;
+          this.ctx.strokeStyle = `rgba(0, 240, 255, ${ringAlpha})`;
           this.ctx.lineWidth = Math.max(0.5, 3.5 * (1 - impactProgress));
           this.ctx.beginPath();
           const safeRingR = Math.max(1, ringR);
@@ -19155,24 +21616,33 @@ export class GameEngine {
       const riftAlpha = Math.max(0, Math.min(1, this.blastermonUltImpactTimer / 50));
       const ix = this.blastermonUltImpactX;
       const iy = this.blastermonUltImpactY;
+      const isSpiritedSlam = this.blastermonUltWasSpirited || (this.blastermonSpiritedActive && this.blastermonSpiritedTimer > 0);
 
       // 1. Vertical Heavenly Light Pillar Eruption
       const pillarW = 120 * (1 - riftProg * 0.6);
       const pillarGrad = this.ctx.createLinearGradient(ix - pillarW / 2, 0, ix + pillarW / 2, 0);
-      pillarGrad.addColorStop(0, `rgba(124, 58, 237, 0)`);
-      pillarGrad.addColorStop(0.3, `rgba(192, 132, 252, ${riftAlpha * 0.5})`);
-      pillarGrad.addColorStop(0.5, `rgba(255, 255, 255, ${riftAlpha * 0.9})`);
-      pillarGrad.addColorStop(0.7, `rgba(254, 240, 138, ${riftAlpha * 0.5})`);
-      pillarGrad.addColorStop(1, `rgba(124, 58, 237, 0)`);
+      if (isSpiritedSlam) {
+        pillarGrad.addColorStop(0, `rgba(56, 189, 248, 0)`);
+        pillarGrad.addColorStop(0.25, `rgba(56, 189, 248, ${riftAlpha * 0.5})`);
+        pillarGrad.addColorStop(0.5, `rgba(255, 255, 255, ${riftAlpha * 0.95})`);
+        pillarGrad.addColorStop(0.75, `rgba(0, 240, 255, ${riftAlpha * 0.5})`);
+        pillarGrad.addColorStop(1, `rgba(56, 189, 248, 0)`);
+      } else {
+        pillarGrad.addColorStop(0, `rgba(124, 58, 237, 0)`);
+        pillarGrad.addColorStop(0.3, `rgba(192, 132, 252, ${riftAlpha * 0.5})`);
+        pillarGrad.addColorStop(0.5, `rgba(255, 255, 255, ${riftAlpha * 0.9})`);
+        pillarGrad.addColorStop(0.7, `rgba(254, 240, 138, ${riftAlpha * 0.5})`);
+        pillarGrad.addColorStop(1, `rgba(124, 58, 237, 0)`);
+      }
 
       this.ctx.fillStyle = pillarGrad;
       this.ctx.fillRect(ix - pillarW / 2, iy - 600, pillarW, 600);
 
       // 2. Expanding Ground Shockwave Crescents
       const groundDist = Math.max(1, riftProg * 260);
-      this.ctx.strokeStyle = `rgba(254, 240, 138, ${riftAlpha})`;
+      this.ctx.strokeStyle = isSpiritedSlam ? `rgba(0, 240, 255, ${riftAlpha})` : `rgba(254, 240, 138, ${riftAlpha})`;
       this.ctx.lineWidth = Math.max(1, 5 * riftAlpha);
-      this.ctx.shadowColor = '#c084fc';
+      this.ctx.shadowColor = isSpiritedSlam ? '#38bdf8' : '#c084fc';
       this.ctx.shadowBlur = 25;
 
       this.ctx.beginPath();
@@ -19180,7 +21650,7 @@ export class GameEngine {
       this.ctx.stroke();
 
       // 3. Jagged Ground Fissure Slices
-      this.ctx.strokeStyle = '#fef08a';
+      this.ctx.strokeStyle = isSpiritedSlam ? '#ffffff' : '#fef08a';
       this.ctx.lineWidth = Math.max(1, 3 * riftAlpha);
       this.ctx.beginPath();
       this.ctx.moveTo(ix - groundDist * 0.9, iy);
@@ -20791,6 +23261,98 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    if (this.skewerDeathTimer > 0) {
+      this.skewerDeathTimer--;
+      if (this.skewerDeathTimer === 0) {
+        this.callbacks.onPlayerDeath();
+      }
+
+      this.ctx.save();
+      const alpha = Math.min(1.0, this.skewerDeathTimer / 20);
+      const thrustProgress = Math.min(1.0, (90 - this.skewerDeathTimer) / 12);
+      const sx = this.skewerX || (this.px + this.pWidth / 2);
+      const sy = this.skewerY || (this.py + this.pHeight);
+
+      // 1. Thrusting Steel Impalement Spears extending upwards
+      const spearCount = 3;
+      const spearHeights = [70, 95, 75];
+      for (let s = 0; s < spearCount; s++) {
+        const offX = (s - 1) * 16;
+        const currentH = spearHeights[s] * thrustProgress;
+        const tipX = sx + offX;
+        const tipY = sy - currentH;
+
+        // Steel spear shaft
+        this.ctx.fillStyle = '#475569';
+        this.ctx.fillRect(tipX - 2.5, tipY, 5, currentH);
+
+        // Razor-sharp steel spearhead
+        this.ctx.fillStyle = '#cbd5e1';
+        this.ctx.strokeStyle = '#94a3b8';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(tipX, tipY - 22);
+        this.ctx.lineTo(tipX + 6, tipY);
+        this.ctx.lineTo(tipX - 6, tipY);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Blood stains on spear tips
+        if (thrustProgress > 0.4) {
+          this.ctx.fillStyle = '#b91c1c';
+          this.ctx.beginPath();
+          this.ctx.moveTo(tipX, tipY - 22);
+          this.ctx.lineTo(tipX + 3, tipY - 10);
+          this.ctx.lineTo(tipX - 3, tipY - 10);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
+      }
+
+      // 2. Impaled Draco Silhouette hoisted upward and trembling
+      if (this.skewerDeathTimer > 15) {
+        this.ctx.save();
+        this.ctx.globalAlpha = alpha;
+        const tremble = this.skewerDeathTimer > 45 ? (Math.random() - 0.5) * 4 : 0;
+        const impaledY = sy - 65 * thrustProgress + tremble;
+
+        this.ctx.translate(sx, impaledY);
+        this.ctx.rotate(0.12);
+
+        this.ctx.fillStyle = '#334155';
+        this.ctx.strokeStyle = '#ef4444';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.fillRect(-14, -18, 28, 36);
+        this.ctx.strokeRect(-14, -18, 28, 36);
+
+        this.ctx.beginPath();
+        this.ctx.arc(0, -26, 11, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = '#ef4444';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-6, -28); this.ctx.lineTo(-2, -24);
+        this.ctx.moveTo(-2, -28); this.ctx.lineTo(-6, -24);
+        this.ctx.moveTo(2, -28); this.ctx.lineTo(6, -24);
+        this.ctx.moveTo(6, -28); this.ctx.lineTo(2, -24);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      }
+
+      // 3. Screen red flash at impact
+      if (this.skewerDeathTimer > 80) {
+        const flashAlpha = (this.skewerDeathTimer - 80) / 10;
+        this.ctx.fillStyle = `rgba(185, 28, 28, ${flashAlpha * 0.45})`;
+        this.ctx.fillRect(-500, -500, this.canvas.width + 1000, this.canvas.height + 1000);
+      }
+
+      this.ctx.restore();
+    }
+
     if (this.playerRootedTimer > 0) {
       this.ctx.save();
       this.ctx.strokeStyle = '#22c55e';
@@ -21230,6 +23792,150 @@ export class GameEngine {
       this.ctx.restore();
     }
 
+    if (this.phantomonStrikeActive && this.phantomonStrikeTimer > 0) {
+      this.ctx.save();
+      const alpha = Math.min(1.0, this.phantomonStrikeTimer / 8);
+      const progress = 1 - (this.phantomonStrikeTimer / 22);
+      const sx = this.phantomonStrikeX;
+      const sy = this.phantomonStrikeY;
+      const facing = this.phantomonStrikeFacing || 1;
+
+      // 1. Dark Void screen flash at start
+      if (this.phantomonStrikeTimer > 14) {
+        const flashA = (this.phantomonStrikeTimer - 14) / 8;
+        this.ctx.fillStyle = `rgba(15, 23, 42, ${flashA * 0.4})`;
+        this.ctx.fillRect(this.cameraX, this.cameraY, this.canvas.width || 800, this.canvas.height || 600);
+      }
+
+      // 2. Colossal Sweeping Oval Scythe Slash Arc
+      const startAngle = facing === 1 ? -Math.PI * 0.7 : Math.PI * 1.7;
+      const sweepAngle = facing * (progress * Math.PI * 2.2);
+      const currentAngle = startAngle + sweepAngle;
+      const radiusX = 145 + progress * 35; // Wide horizontal oval radius: 145px - 180px
+      const radiusY = 72 + progress * 18;  // Flattened vertical oval radius: 72px - 90px
+      const rot = facing * 0.12;          // Aerodynamic tilt of the oval slice plane
+
+      // Outer blazing crimson aura slash arc
+      this.ctx.strokeStyle = `rgba(239, 68, 68, ${alpha * 0.85})`;
+      this.ctx.lineWidth = 28 * (1 - progress * 0.3);
+      this.ctx.shadowColor = '#ef4444';
+      this.ctx.shadowBlur = 28;
+      this.ctx.beginPath();
+      this.ctx.ellipse(sx, sy, radiusX, radiusY, rot, startAngle, currentAngle, facing === -1);
+      this.ctx.stroke();
+
+      // Middle cyan hyper-energy razor crescent
+      this.ctx.strokeStyle = `rgba(0, 240, 255, ${alpha * 0.9})`;
+      this.ctx.lineWidth = 14 * (1 - progress * 0.2);
+      this.ctx.shadowColor = '#00f0ff';
+      this.ctx.shadowBlur = 18;
+      this.ctx.beginPath();
+      this.ctx.ellipse(sx, sy, radiusX + 3, radiusY + 2, rot, startAngle, currentAngle, facing === -1);
+      this.ctx.stroke();
+
+      // Core pure white incandescent cutting edge
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha})`;
+      this.ctx.lineWidth = 4;
+      this.ctx.shadowBlur = 0;
+      this.ctx.beginPath();
+      this.ctx.ellipse(sx, sy, radiusX + 4, radiusY + 3, rot, startAngle, currentAngle, facing === -1);
+      this.ctx.stroke();
+
+      // 3. Spectral Giant Scythe Blade at the leading edge of the oval
+      const cosR = Math.cos(rot);
+      const sinR = Math.sin(rot);
+      const ex0 = Math.cos(currentAngle) * radiusX;
+      const ey0 = Math.sin(currentAngle) * radiusY;
+      const bladeTipX = sx + (ex0 * cosR - ey0 * sinR);
+      const bladeTipY = sy + (ex0 * sinR + ey0 * cosR);
+
+      this.ctx.save();
+      this.ctx.translate(bladeTipX, bladeTipY);
+      this.ctx.rotate(currentAngle + rot + (facing === 1 ? Math.PI / 2 : -Math.PI / 2));
+
+      // Spectral Scythe Blade head
+      this.ctx.fillStyle = `rgba(9, 9, 11, ${alpha * 0.95})`;
+      this.ctx.strokeStyle = '#ef4444';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.quadraticCurveTo(facing * 35, -55, facing * 55, -12);
+      this.ctx.quadraticCurveTo(facing * 20, -18, 0, 18);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // Incandescent white-hot blade cutting edge
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.quadraticCurveTo(facing * 35, -55, facing * 55, -12);
+      this.ctx.stroke();
+      this.ctx.restore();
+
+      // 4. Central Dragon Eye Void Sigil at center of swing
+      this.ctx.fillStyle = `rgba(239, 68, 68, ${alpha * 0.75})`;
+      this.ctx.beginPath();
+      this.ctx.ellipse(sx, sy, 18 * (1 - progress * 0.4), 10 * (1 - progress * 0.4), rot, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.fillRect(sx - 5, sy - 1.5, 10, 3);
+
+      this.ctx.restore();
+    }
+
+    if (this.phantomonDashCutTimer > 0) {
+      this.ctx.save();
+      const cutAlpha = Math.min(1.0, this.phantomonDashCutTimer / 16);
+      const x1 = this.phantomonDashCutStartX;
+      const x2 = this.phantomonDashCutEndX;
+      const cy = this.phantomonDashCutY;
+
+      // 1. Outer Crimson Vacuum Blade Scar
+      this.ctx.strokeStyle = `rgba(239, 68, 68, ${cutAlpha * 0.9})`;
+      this.ctx.lineWidth = 14 * cutAlpha;
+      this.ctx.shadowColor = '#ef4444';
+      this.ctx.shadowBlur = 24;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x1, cy);
+      this.ctx.lineTo(x2, cy);
+      this.ctx.stroke();
+
+      // 2. Cyan Hyper-Energy Arc
+      this.ctx.strokeStyle = `rgba(0, 240, 255, ${cutAlpha * 0.85})`;
+      this.ctx.lineWidth = 6 * cutAlpha;
+      this.ctx.shadowColor = '#00f0ff';
+      this.ctx.shadowBlur = 14;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x1, cy);
+      this.ctx.lineTo(x2, cy);
+      this.ctx.stroke();
+
+      // 3. Core Pure White Dimensional Incision Line
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${cutAlpha})`;
+      this.ctx.lineWidth = 2.5 * cutAlpha;
+      this.ctx.shadowBlur = 0;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x1, cy);
+      this.ctx.lineTo(x2, cy);
+      this.ctx.stroke();
+
+      // 4. Cross-Slash Impact Flashes at End
+      const dir = x2 >= x1 ? 1 : -1;
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${cutAlpha * 0.8})`;
+      this.ctx.lineWidth = 3 * cutAlpha;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x2 - dir * 25, cy - 35);
+      this.ctx.lineTo(x2 + dir * 25, cy + 35);
+      this.ctx.moveTo(x2 - dir * 25, cy + 35);
+      this.ctx.lineTo(x2 + dir * 25, cy - 35);
+      this.ctx.stroke();
+
+      this.ctx.restore();
+    }
+
     if (this.selectedDraco === 'Shieldmon' && this.shieldmonChargeActive) {
       this.ctx.save();
 
@@ -21409,19 +24115,20 @@ export class GameEngine {
       this.ctx.fillText(`"${this.getUltimateVoiceLine()}"`, 45, h - 85);
     }
 
-    if (this.isSurvivalMode) {
-      const secondsTotal = Math.max(0, Math.ceil(this.survivalTimer / 60));
+    if (this.isSurvivalMode || this.isDefenseMode) {
+      const timerVal = this.isDefenseMode ? this.defenseTimer : this.survivalTimer;
+      const secondsTotal = Math.max(0, Math.ceil(timerVal / 60));
       const mins = Math.floor(secondsTotal / 60);
       const secs = secondsTotal % 60;
       const timeStr = `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
 
       this.ctx.save();
-      const tw = 240;
-      const th = 36;
+      const tw = this.isDefenseMode ? 280 : 240;
+      const th = this.isDefenseMode ? 46 : 36;
       const tx = (this.canvas.width - tw) / 2;
       const ty = 12;
 
-      this.ctx.fillStyle = 'rgba(28, 25, 23, 0.88)';
+      this.ctx.fillStyle = 'rgba(28, 25, 23, 0.9)';
       this.ctx.strokeStyle = secondsTotal <= 15 ? '#ef4444' : '#f59e0b';
       this.ctx.lineWidth = 2;
       this.ctx.fillRect(tx, ty, tw, th);
@@ -21433,10 +24140,31 @@ export class GameEngine {
       this.ctx.shadowColor = secondsTotal <= 15 ? '#ef4444' : '#f59e0b';
       this.ctx.shadowBlur = 8;
       this.ctx.fillText(
-        this.survivalTimer === 0 ? '🛡️ SURVIVED! REACH PORTAL 🌀' : `🛡️ ARENA DEFENSE: ${timeStr}`,
+        timerVal === 0 ? '🛡️ SURVIVED! REACH PORTAL 🌀' : `🛡️ ARENA DEFENSE: ${timeStr}`,
         tx + tw / 2,
-        ty + 22
+        ty + (this.isDefenseMode ? 18 : 22)
       );
+
+      if (this.isDefenseMode && this.totemActive) {
+        const hpPct = Math.max(0, this.totemHp / this.totemMaxHp);
+        const barW = tw - 24;
+        const barH = 7;
+        const barX = tx + 12;
+        const barY = ty + 28;
+
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+        this.ctx.fillRect(barX, barY, barW, barH);
+        this.ctx.fillStyle = hpPct > 0.5 ? '#10b981' : hpPct > 0.25 ? '#f59e0b' : '#ef4444';
+        this.ctx.fillRect(barX, barY, barW * hpPct, barH);
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 0.8;
+        this.ctx.strokeRect(barX, barY, barW, barH);
+
+        this.ctx.font = 'bold 8px monospace';
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillText(`TOTEM HP: ${Math.max(0, Math.floor(this.totemHp))} / ${this.totemMaxHp}`, tx + tw / 2, barY + 6);
+      }
+
       this.ctx.restore();
     }
   }

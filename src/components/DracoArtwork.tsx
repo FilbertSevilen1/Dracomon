@@ -82,6 +82,92 @@ export const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: n
     );
   }
 
+  if (name === 'Phantomon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <defs>
+          <linearGradient id="phantomonBladeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#00f0ff" />
+            <stop offset="45%" stopColor="#0284c7" />
+            <stop offset="85%" stopColor="#09090b" />
+            <stop offset="100%" stopColor="#000000" />
+          </linearGradient>
+          <linearGradient id="phantomonWingGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#0f172a" />
+            <stop offset="50%" stopColor="#1e1b4b" />
+            <stop offset="100%" stopColor="#0284c7" />
+          </linearGradient>
+          <radialGradient id="phantomonCoreGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#00f0ff" />
+            <stop offset="65%" stopColor="#0284c7" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+        </defs>
+        <ellipse cx="50" cy="88" rx="26" ry="6" fill="rgba(0,0,0,0.5)" />
+
+        {/* Ambient Dark Dragon Aura */}
+        <circle cx="50" cy="48" r="42" fill="rgba(2, 132, 199, 0.08)" stroke="#00f0ff" strokeWidth="0.8" strokeDasharray="6 4" />
+
+        {/* Phantom Blaster Dragon Spreading Wings with Cannon Barrels */}
+        {/* Left Wing */}
+        <path d="M 38 46 Q 12 24 6 12 Q 20 28 22 48 Q 28 58 36 54 Z" fill="url(#phantomonWingGrad)" stroke="#00f0ff" strokeWidth="1.2" />
+        <rect x="8" y="14" width="4" height="22" rx="1.5" fill="#0f172a" stroke="#00f0ff" strokeWidth="1" transform="rotate(-25 10 25)" />
+        {/* Right Wing */}
+        <path d="M 62 46 Q 88 24 94 12 Q 80 28 78 48 Q 72 58 64 54 Z" fill="url(#phantomonWingGrad)" stroke="#00f0ff" strokeWidth="1.2" />
+        <rect x="88" y="14" width="4" height="22" rx="1.5" fill="#0f172a" stroke="#00f0ff" strokeWidth="1" transform="rotate(25 90 25)" />
+
+        {/* Shadow Dragon Tail */}
+        <path d="M 46 76 Q 30 84 26 92 Q 36 94 48 80 Z" fill="#09090b" stroke="#00f0ff" strokeWidth="1" />
+
+        {/* Armored Dragon Legs */}
+        <path d="M 36 68 L 32 86 L 42 86 L 42 68 Z" fill="#09090b" stroke="#1e293b" strokeWidth="1.5" />
+        <path d="M 58 68 L 58 86 L 68 86 L 64 68 Z" fill="#09090b" stroke="#1e293b" strokeWidth="1.5" />
+        {/* Claws */}
+        <polygon points="31,86 34,89 37,86" fill="#00f0ff" />
+        <polygon points="63,86 66,89 69,86" fill="#00f0ff" />
+
+        {/* Obsidian Cuirass with Cyan Runic Core */}
+        <path d="M 34 38 L 30 68 L 70 68 L 66 38 Z" fill="#09090b" stroke="#1e293b" strokeWidth="2" />
+        <path d="M 38 40 L 34 66 L 66 66 L 62 40 Z" fill="#030712" />
+
+        {/* Glowing Azure Dragon Core */}
+        <circle cx="50" cy="52" r="5" fill="url(#phantomonCoreGlow)" />
+        <polygon points="50,47 54,52 50,57 46,52" fill="#ffffff" />
+        {/* Circuit lines */}
+        <path d="M 46 52 L 38 56" stroke="#00f0ff" strokeWidth="1.2" fill="none" />
+        <path d="M 54 52 L 62 56" stroke="#00f0ff" strokeWidth="1.2" fill="none" />
+
+        {/* Dragon Spiked Pauldrons */}
+        <path d="M 28 38 L 18 28 L 32 34 Z" fill="#09090b" stroke="#00f0ff" strokeWidth="1.5" />
+        <path d="M 72 38 L 82 28 L 68 34 Z" fill="#09090b" stroke="#00f0ff" strokeWidth="1.5" />
+
+        {/* Dragon Knight Helmet */}
+        <path d="M 36 32 Q 50 14 64 32 L 64 40 Q 50 44 36 40 Z" fill="#09090b" stroke="#1e293b" strokeWidth="2" />
+
+        {/* Phantom Blaster Horns (Sharp Sweeping Crest) */}
+        <path d="M 38 26 Q 20 8 18 2 Q 28 14 40 20 Z" fill="#09090b" stroke="#00f0ff" strokeWidth="1.5" />
+        <path d="M 62 26 Q 80 8 82 2 Q 72 14 60 20 Z" fill="#09090b" stroke="#00f0ff" strokeWidth="1.5" />
+        {/* Center Spire */}
+        <polygon points="50,6 47,22 53,22" fill="#00f0ff" />
+
+        {/* Glowing Electric Cyan Visor */}
+        <rect x="40" y="28" width="20" height="3" rx="1.5" fill="#00f0ff" />
+        <circle cx="50" cy="29.5" r="1.5" fill="#ffffff" />
+
+        {/* Colossal Void Scythe (Held Angled) */}
+        <g transform="rotate(22 75 45)">
+          {/* Haft */}
+          <rect x="71" y="8" width="3" height="82" fill="#0f172a" stroke="#1e293b" strokeWidth="0.8" rx="1" />
+          {/* Scythe Curved Crescent Blade */}
+          <path d="M 72 14 Q 52 -6 28 2 Q 52 10 70 24 Z" fill="url(#phantomonBladeGrad)" stroke="#00f0ff" strokeWidth="1.4" />
+          {/* Scythe Core Gem */}
+          <circle cx="72" cy="18" r="3.5" fill="#00f0ff" />
+          <circle cx="72" cy="18" r="1.8" fill="#ffffff" />
+        </g>
+      </svg>
+    );
+  }
+
   if (name === 'EndMon') {
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>

@@ -42,6 +42,8 @@ import {
   Award,
   Layers,
   ScrollText,
+  Crown,
+  Users,
 } from 'lucide-react';
 
 import { useRouter } from 'next/navigation';
@@ -952,40 +954,52 @@ export default function Home() {
 
                     return (
                       <>
-                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between backdrop-blur-md ${
+                        {/* FREE TIER CARD - Adventurer Pass */}
+                        <div className={`p-7 rounded-2xl border transition-all flex flex-col justify-between ${
                           isFreeActive
-                            ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-500/30 shadow-2xl'
+                            ? 'bg-gradient-to-b from-stone-900 to-stone-950 border-amber-500/50 ring-1 ring-amber-500/30 shadow-xl'
                             : isFreeLower
-                            ? 'bg-stone-900/40 border-stone-800 opacity-60 shadow-none'
-                            : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 shadow-xl'
+                            ? 'bg-stone-950/40 border-stone-800/60 opacity-60 shadow-none'
+                            : 'bg-stone-900/70 border-stone-800 hover:border-stone-700 shadow-lg'
                         }`}>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-bold text-stone-400 uppercase">Standard Tier</span>
+                              <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded bg-stone-800/80 text-stone-400 border border-stone-700/60 font-display">
+                                Adventurer
+                              </span>
                               {isFreeActive ? (
-                                <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-500 text-stone-950 flex items-center gap-1 font-display shadow-xs">
+                                  <Check className="w-3 h-3 stroke-[2.5]" /> Active
+                                </span>
                               ) : isFreeLower ? (
-                                <span className="text-[10px] font-mono font-bold bg-stone-800 text-stone-400 px-2.5 py-0.5 rounded-full">INCLUDED</span>
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-stone-900 text-stone-500 border border-stone-800 font-display">
+                                  Included
+                                </span>
                               ) : null}
                             </div>
-                            <h3 className="text-2xl font-black text-white font-display">Free Tier</h3>
-                            <div className="text-3xl font-black text-stone-100 font-mono">0 <span className="text-sm text-stone-400 font-sans">Coins</span></div>
-                            <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Start with Jumpmon, Archermon &amp; Shieldmon</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Unlock remaining roster via campaign coins</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Standard Level 1 starting stats</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Full offline local save persistence</li>
+                            <div>
+                              <h3 className="text-2xl font-black text-white font-display">Free Tier</h3>
+                              <p className="text-xs text-stone-400 mt-0.5">Starter Roster &amp; Standard Progression</p>
+                            </div>
+                            <div className="text-2xl font-black text-stone-200 font-display flex items-baseline gap-1.5">
+                              0 <span className="text-xs font-semibold text-stone-400">Coins required</span>
+                            </div>
+                            <ul className="space-y-2.5 text-xs text-stone-300 pt-4 border-t border-stone-800/80">
+                              <li className="flex items-center gap-2.5"><Users className="w-4 h-4 text-stone-400 shrink-0" /> Start with Jumpmon, Archermon &amp; Shieldmon</li>
+                              <li className="flex items-center gap-2.5"><Coins className="w-4 h-4 text-stone-400 shrink-0" /> Unlock remaining roster via campaign coins</li>
+                              <li className="flex items-center gap-2.5"><Shield className="w-4 h-4 text-stone-400 shrink-0" /> Standard Level 1 starting stats</li>
+                              <li className="flex items-center gap-2.5"><Check className="w-4 h-4 text-stone-400 shrink-0" /> Full offline local save persistence</li>
                             </ul>
                           </div>
                           <button
                             disabled={isFreeActive || isFreeLower}
                             onClick={() => switchTier('Free')}
-                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs uppercase tracking-wider font-mono transition-all ${
+                            className={`w-full py-3 mt-8 rounded-xl font-bold text-xs uppercase tracking-wider font-display transition-all ${
                               isFreeActive
-                                ? 'bg-stone-800 text-stone-400 cursor-default'
+                                ? 'bg-stone-900 border border-stone-800 text-stone-500 cursor-default shadow-inner'
                                 : isFreeLower
-                                ? 'bg-stone-900 text-stone-500 border border-stone-800 cursor-not-allowed opacity-75'
-                                : 'bg-stone-100 text-stone-950 hover:bg-white shadow-md active:scale-95'
+                                ? 'bg-stone-950 text-stone-600 border border-stone-800/60 cursor-not-allowed'
+                                : 'bg-stone-100 hover:bg-white text-stone-950 shadow-md active:translate-y-0.5'
                             }`}
                           >
                             {isFreeActive
@@ -996,41 +1010,53 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between backdrop-blur-md ${
+                        {/* BASIC TIER CARD - Guild Champion */}
+                        <div className={`p-7 rounded-2xl border transition-all flex flex-col justify-between ${
                           isBasicActive
-                            ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-500/30 shadow-2xl'
+                            ? 'bg-gradient-to-b from-stone-900 to-stone-950 border-amber-500/60 ring-1 ring-amber-500/40 shadow-xl'
                             : isBasicLower
-                            ? 'bg-stone-900/40 border-stone-800 opacity-60 shadow-none'
-                            : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 shadow-xl'
+                            ? 'bg-stone-950/40 border-stone-800/60 opacity-60 shadow-none'
+                            : 'bg-stone-900/70 border-stone-800 hover:border-stone-700 shadow-lg'
                         }`}>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-bold text-emerald-400 uppercase">Recommended Tier</span>
+                              <span className="px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 font-display">
+                                Guild Champion
+                              </span>
                               {isBasicActive ? (
-                                <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-500 text-stone-950 flex items-center gap-1 font-display shadow-xs">
+                                  <Check className="w-3 h-3 stroke-[2.5]" /> Active
+                                </span>
                               ) : isBasicLower ? (
-                                <span className="text-[10px] font-mono font-bold bg-stone-800 text-stone-400 px-2.5 py-0.5 rounded-full">INCLUDED</span>
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-stone-900 text-stone-500 border border-stone-800 font-display">
+                                  Included
+                                </span>
                               ) : null}
                             </div>
-                            <h3 className="text-2xl font-black text-white font-display">Basic Tier</h3>
-                            <div className="text-3xl font-black text-emerald-400 font-mono">Level 5 <span className="text-sm text-stone-400 font-sans">All Unlocked</span></div>
-                            <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Starts with 5,000 Gold Coins 🪙</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Every Character Unlocked Immediately!</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Instant Level 5 starting level</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> +1 Bonus splitted to ALL attributes per level up</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-400" /> Instant Whitemon &amp; Bird Familiar access</li>
+                            <div>
+                              <h3 className="text-2xl font-black text-white font-display">Basic Tier</h3>
+                              <p className="text-xs text-stone-400 mt-0.5">Instant Level 5 Boost &amp; Early Gold</p>
+                            </div>
+                            <div className="text-2xl font-black text-emerald-400 font-display flex items-baseline gap-1.5">
+                              Level 5 <span className="text-xs font-semibold text-stone-400">All Unlocked</span>
+                            </div>
+                            <ul className="space-y-2.5 text-xs text-stone-300 pt-4 border-t border-stone-800/80">
+                              <li className="flex items-center gap-2.5"><Coins className="w-4 h-4 text-emerald-400 shrink-0" /> Starts with 5,000 Gold Coins</li>
+                              <li className="flex items-center gap-2.5"><Users className="w-4 h-4 text-emerald-400 shrink-0" /> Every Character Unlocked immediately</li>
+                              <li className="flex items-center gap-2.5"><Zap className="w-4 h-4 text-emerald-400 shrink-0" /> Instant Level 5 starting power</li>
+                              <li className="flex items-center gap-2.5"><Sparkles className="w-4 h-4 text-emerald-400 shrink-0" /> +1 Stat bonus divided across all attributes</li>
+                              <li className="flex items-center gap-2.5"><Shield className="w-4 h-4 text-emerald-400 shrink-0" /> Whitemon &amp; Bird Familiar companion access</li>
                             </ul>
                           </div>
                           <button
                             disabled={isBasicActive || isBasicLower}
                             onClick={() => switchTier('Basic')}
-                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs uppercase tracking-wider font-mono transition-all ${
+                            className={`w-full py-3 mt-8 rounded-xl font-bold text-xs uppercase tracking-wider font-display transition-all ${
                               isBasicActive
-                                ? 'bg-stone-800 text-stone-400 cursor-default'
+                                ? 'bg-stone-900 border border-stone-800 text-stone-500 cursor-default shadow-inner'
                                 : isBasicLower
-                                ? 'bg-stone-900 text-stone-500 border border-stone-800 cursor-not-allowed opacity-75'
-                                : 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-lg shadow-emerald-950/50 active:scale-95'
+                                ? 'bg-stone-950 text-stone-600 border border-stone-800/60 cursor-not-allowed'
+                                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:translate-y-0.5 border border-emerald-500/50'
                             }`}
                           >
                             {isBasicActive
@@ -1041,35 +1067,45 @@ export default function Home() {
                           </button>
                         </div>
 
-                        <div className={`p-8 rounded-3xl border transition-all flex flex-col justify-between backdrop-blur-md ${
+                        {/* PREMIUM TIER CARD - God Tier */}
+                        <div className={`p-7 rounded-2xl border transition-all flex flex-col justify-between relative overflow-hidden ${
                           isPremiumActive
-                            ? 'bg-amber-500/10 border-amber-400 ring-2 ring-amber-500/30 shadow-2xl'
-                            : 'bg-stone-900/80 border-stone-800 hover:border-stone-700 shadow-xl'
+                            ? 'bg-gradient-to-b from-stone-900 via-stone-900 to-stone-950 border-amber-500/60 ring-1 ring-amber-400/40 shadow-2xl shadow-amber-950/30'
+                            : 'bg-stone-900/80 border-stone-800 hover:border-amber-500/40 shadow-xl'
                         }`}>
                           <div className="space-y-4">
                             <div className="flex items-center justify-between">
-                              <span className="text-xs font-mono font-bold text-purple-400 uppercase">God Tier</span>
+                              <span className="px-2.5 py-0.5 text-[10px] font-black uppercase tracking-widest rounded bg-amber-500/15 text-amber-300 border border-amber-500/40 font-display flex items-center gap-1">
+                                <Crown className="w-3 h-3 text-amber-400" /> God Tier
+                              </span>
                               {isPremiumActive && (
-                                <span className="text-[10px] font-mono font-black bg-amber-400 text-stone-950 px-2.5 py-0.5 rounded-full">ACTIVE</span>
+                                <span className="px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded bg-amber-500 text-stone-950 flex items-center gap-1 font-display shadow-xs">
+                                  <Check className="w-3 h-3 stroke-[2.5]" /> Active
+                                </span>
                               )}
                             </div>
-                            <h3 className="text-2xl font-black text-white font-display">Premium Tier</h3>
-                            <div className="text-3xl font-black text-purple-400 font-mono">Max Boost <span className="text-sm text-stone-400 font-sans">Full Roster</span></div>
-                            <ul className="space-y-2.5 text-xs text-stone-300 font-mono pt-4 border-t border-stone-800">
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Starts with 25,000 Gold Coins 🪙</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Every Character Unlocked immediately</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> High starting level (Level 10)</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Maximized +1 bonus to ALL stats per level</li>
-                              <li className="flex items-center gap-2"><Check className="w-4 h-4 text-purple-400" /> Full energy regeneration perks</li>
+                            <div>
+                              <h3 className="text-2xl font-black text-white font-display">Premium Tier</h3>
+                              <p className="text-xs text-stone-400 mt-0.5">Maximum Power &amp; Full Arsenal</p>
+                            </div>
+                            <div className="text-2xl font-black text-amber-400 font-display flex items-baseline gap-2">
+                              Max Boost <span className="text-xs font-semibold text-stone-400">Full Roster</span>
+                            </div>
+                            <ul className="space-y-2.5 text-xs text-stone-300 pt-4 border-t border-stone-800/80">
+                              <li className="flex items-center gap-2.5"><Coins className="w-4 h-4 text-amber-400 shrink-0" /> Starts with 25,000 Gold Coins</li>
+                              <li className="flex items-center gap-2.5"><Users className="w-4 h-4 text-amber-400 shrink-0" /> Complete Roster unlocked immediately</li>
+                              <li className="flex items-center gap-2.5"><Zap className="w-4 h-4 text-amber-400 shrink-0" /> Level 10 Starting Power on all heroes</li>
+                              <li className="flex items-center gap-2.5"><Sparkles className="w-4 h-4 text-amber-400 shrink-0" /> Maximized +1 bonus to ALL stats per level</li>
+                              <li className="flex items-center gap-2.5"><Shield className="w-4 h-4 text-amber-400 shrink-0" /> Full energy regeneration perks &amp; stages</li>
                             </ul>
                           </div>
                           <button
                             disabled={isPremiumActive}
                             onClick={() => switchTier('Premium')}
-                            className={`w-full py-3 mt-8 rounded-2xl font-extrabold text-xs uppercase tracking-wider font-mono transition-all ${
+                            className={`w-full py-3 mt-8 rounded-xl font-bold text-xs uppercase tracking-wider font-display transition-all ${
                               isPremiumActive
-                                ? 'bg-stone-800 text-stone-400 cursor-default'
-                                : 'bg-purple-600 text-white hover:bg-purple-500 shadow-lg shadow-purple-950/50 active:scale-95'
+                                ? 'bg-stone-900 border border-stone-800 text-stone-500 cursor-default shadow-inner'
+                                : 'bg-gradient-to-b from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 shadow-lg active:translate-y-0.5 border border-amber-400/80'
                             }`}
                           >
                             {isPremiumActive ? 'Current Active Tier' : 'Activate Premium Tier'}
@@ -1084,7 +1120,7 @@ export default function Home() {
               <section id="characters" className="w-full max-w-6xl mx-auto px-6 md:px-12 py-20 md:py-24 border-t border-stone-800/80">
                 <div className="text-center max-w-3xl mx-auto space-y-3">
                   <h2 className="text-3xl md:text-5xl font-black text-white uppercase tracking-wider font-display">Meet The Dragon Guardians</h2>
-                  <p className="text-xs md:text-sm text-stone-400 max-w-xl mx-auto font-mono">
+                  <p className="text-xs md:text-sm text-stone-400 max-w-xl mx-auto">
                     Each dragon companion possesses deep lore, distinct weapon swing styles, and active battle abilities.
                   </p>
                 </div>
@@ -1099,7 +1135,7 @@ export default function Home() {
                       <motion.div
                         key={item.name}
                         whileHover={{ y: -6 }}
-                        className={`p-7 rounded-3xl border backdrop-blur-md ${
+                        className={`p-7 rounded-2xl border backdrop-blur-md ${
                           isSelected
                             ? 'border-amber-400 ring-2 ring-amber-500/30 bg-stone-900/90 shadow-2xl'
                             : isUnlocked
@@ -1115,16 +1151,16 @@ export default function Home() {
 
                             <div className="shrink-0">
                               {isSelected ? (
-                                <span className="px-2.5 py-1 text-[10px] font-mono font-black uppercase tracking-wider bg-amber-400 text-stone-950 rounded-md shadow-sm flex items-center gap-1 border border-amber-300">
-                                  <Sparkles className="w-3 h-3 text-stone-950 fill-stone-950" /> EQUIPPED
+                                <span className="px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider bg-amber-500 text-stone-950 rounded shadow-xs flex items-center gap-1 border border-amber-400">
+                                  <Sparkles className="w-2.5 h-2.5 text-stone-950 fill-stone-950" /> Equipped
                                 </span>
                               ) : isUnlocked ? (
-                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded-md flex items-center gap-1">
-                                  <Check className="w-3 h-3 text-emerald-400" /> UNLOCKED
+                                <span className="px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider bg-emerald-950/60 text-emerald-300 border border-emerald-500/40 rounded flex items-center gap-1 shadow-xs">
+                                  <Check className="w-2.5 h-2.5 text-emerald-400 stroke-[2.5]" /> Unlocked
                                 </span>
                               ) : (
-                                <span className="px-2.5 py-1 text-[10px] font-mono font-extrabold uppercase tracking-wider bg-stone-950 text-stone-400 border border-stone-800 rounded-md flex items-center gap-1">
-                                  <Lock className="w-3 h-3 text-stone-500" /> LOCKED
+                                <span className="px-2 py-0.5 text-[10px] font-display font-bold uppercase tracking-wider bg-stone-900/90 text-stone-400 border border-stone-800 rounded flex items-center gap-1">
+                                  <Lock className="w-2.5 h-2.5 text-stone-500" /> Locked
                                 </span>
                               )}
                             </div>

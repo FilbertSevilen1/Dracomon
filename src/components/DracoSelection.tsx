@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { SaveData, TierType, PlayerStats } from '../types/game';
-import { Shield, Zap, Lock, Sparkles, Coins, Award, X, Check, ArrowUpRight, Search, Trash2 } from 'lucide-react';
+import { Shield, Zap, Lock, Sparkles, Coins, Award, X, Check, ArrowUpRight, Search, Trash2, Swords } from 'lucide-react';
 import { soundService } from '../services/sound';
 import { HeroDemoCanvas } from './HeroDemoCanvas';
 import { LevelUpModal } from './LevelUpModal';
@@ -254,6 +254,16 @@ const DRACO_META: {
     colorClass: 'text-purple-400 border-purple-500 bg-purple-950',
     bgGradient: 'from-purple-950 via-zinc-900 to-amber-950',
   },
+  Phantomon: {
+    role: 'Shadow Dragon Knight / Illusion Duelist',
+    abilityName: 'Void Scythe Slash & Shadow Illusions',
+    abilityDesc: 'Basic attack performs melee scythe slashes with void waves. Skill summons 2 dark shadow illusions of Phantomon that seek out nearby enemies and relentlessly attack them with scythes for 8 seconds (12s cooldown).',
+    ultimateName: 'Damned Charging Lance (100 Energy)',
+    ultimateDesc: 'Slashes and sacrifices all active illusions in explosive dark detonations that ravage nearby enemies. Phantomon enters an empowered state for 12 seconds: body accents ignite from blue to crimson red, gains an all-damage bonus, basic attack enhances to a 600px piercing Dash Slash, and skill becomes Strike of Death (4s CD, swings giant scythe and summons illusions on hit for 4s that get slashed again while ult is active). When the ultimate ends, Phantomon unleashes a cataclysmic void shockwave that damages and stuns all nearby enemies!',
+    cost: 500,
+    colorClass: 'text-cyan-400 border-cyan-500 bg-cyan-950',
+    bgGradient: 'from-slate-950 via-indigo-950 to-cyan-950',
+  },
 };
 
 export const DracoSelection: React.FC<DracoSelectionProps> = ({
@@ -491,8 +501,9 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                           {itemUnlocked ? `Lv.${dData.level || 1}` : `Unlock: ${meta.cost}🪙`}
                         </span>
                         {itemUnlocked && Array.isArray(dData.equipped) && dData.equipped.length > 0 && (
-                          <span className="text-[9px] px-1 py-0.2 bg-amber-950/80 border border-amber-800/80 text-amber-300 rounded font-mono font-bold">
-                            {dData.equipped.length}⚔️
+                          <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-stone-900/90 border border-amber-500/30 text-amber-300 rounded text-[9px] font-display font-bold shadow-xs">
+                            <Swords className="w-2.5 h-2.5 text-amber-400" />
+                            <span>{dData.equipped.length}/5</span>
                           </span>
                         )}
                       </div>
@@ -583,13 +594,13 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                     <div className="flex items-center gap-2">
                       <h4 className="text-sm font-black text-white uppercase tracking-wider font-display truncate">{selectedName}</h4>
                       {isEquipped && (
-                        <span className="text-[9px] font-mono px-1.5 py-0.2 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 rounded font-bold">
-                          ACTIVE
+                        <span className="text-[9px] font-display font-bold px-1.5 py-0.5 bg-emerald-950/70 text-emerald-300 border border-emerald-500/30 rounded flex items-center gap-1 shadow-xs">
+                          <Check className="w-2.5 h-2.5 text-emerald-400 stroke-[2.5]" /> Active
                         </span>
                       )}
                     </div>
-                    <p className="text-[11px] font-mono text-stone-400 mt-0.5">
-                      {isUnlocked ? `Loadout • ${equippedCount} of 5 typed slots equipped` : `Unlock hero to equip gear`}
+                    <p className="text-[11px] text-stone-400 mt-0.5 font-display">
+                      {isUnlocked ? `Loadout • ${equippedCount} of 5 slots equipped` : `Unlock hero to equip gear`}
                     </p>
                   </div>
                 </div>
@@ -609,9 +620,10 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                           setTimeout(() => setFeedbackToast(null), 2000);
                         }
                       }}
-                      className="flex-1 sm:flex-none px-3 py-1.5 bg-amber-500/10 hover:bg-amber-500/20 border border-amber-500/40 hover:border-amber-400 text-amber-300 rounded-xl text-xs font-bold font-display transition-all"
+                      className="flex-1 sm:flex-none px-3.5 py-1.5 bg-gradient-to-b from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-stone-950 border border-amber-400/80 rounded-lg text-xs font-black font-display uppercase tracking-wider shadow-sm active:translate-y-0.5 transition-all flex items-center justify-center gap-1.5"
                     >
-                      ⚡ Auto-Equip
+                      <Zap className="w-3.5 h-3.5 fill-current" />
+                      <span>Auto-Equip</span>
                     </button>
                     {equippedCount > 0 && (
                       <button
@@ -621,7 +633,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                           setFeedbackToast('Cleared all equipped gear');
                           setTimeout(() => setFeedbackToast(null), 2000);
                         }}
-                        className="px-2.5 py-1.5 bg-stone-900 hover:bg-rose-950 border border-stone-800 hover:border-rose-700 text-stone-400 hover:text-rose-300 rounded-xl text-xs transition-all"
+                        className="px-2.5 py-1.5 bg-stone-900 hover:bg-stone-800 border border-stone-800 hover:border-stone-700 text-stone-400 hover:text-rose-400 rounded-lg text-xs transition-all active:translate-y-0.5 shadow-sm"
                         title="Unequip all gear"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -639,50 +651,50 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               )}
 
               {/* Total Equipment Stat Boosts Bar */}
-              <div className="p-3 bg-stone-950/80 rounded-2xl border border-stone-800 space-y-1.5">
-                <div className="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-stone-400 font-display">
-                  <span>Equipment Stat Bonuses:</span>
-                  <span className="text-amber-400 font-mono font-bold">Total Power</span>
+              <div className="p-3 bg-stone-950/80 rounded-xl border border-stone-800/80 space-y-1.5">
+                <div className="flex items-center justify-between text-[10px] font-bold uppercase tracking-wider text-stone-400 font-display">
+                  <span>Equipment Stat Bonuses</span>
+                  <span className="text-amber-400 font-bold">Total Boost</span>
                 </div>
                 <div className="flex flex-wrap gap-1.5">
                   {eqBonus.attack > 0 && (
-                    <span className="px-2 py-0.5 bg-amber-950/70 border border-amber-800/80 text-amber-300 text-[10px] font-mono font-bold rounded-lg">
+                    <span className="px-2 py-0.5 bg-amber-950/60 border border-amber-800/60 text-amber-300 text-[10px] font-display font-bold rounded">
                       +{eqBonus.attack} ATK
                     </span>
                   )}
                   {eqBonus.defense > 0 && (
-                    <span className="px-2 py-0.5 bg-blue-950/70 border border-blue-800/80 text-blue-300 text-[10px] font-mono font-bold rounded-lg">
+                    <span className="px-2 py-0.5 bg-blue-950/60 border border-blue-800/60 text-blue-300 text-[10px] font-display font-bold rounded">
                       +{eqBonus.defense} DEF
                     </span>
                   )}
                   {eqBonus.hp > 0 && (
-                    <span className="px-2 py-0.5 bg-rose-950/70 border border-rose-800/80 text-rose-300 text-[10px] font-mono font-bold rounded-lg">
+                    <span className="px-2 py-0.5 bg-rose-950/60 border border-rose-800/60 text-rose-300 text-[10px] font-display font-bold rounded">
                       +{eqBonus.hp} HP
                     </span>
                   )}
                   {eqBonus.speed > 0 && (
-                    <span className="px-2 py-0.5 bg-emerald-950/70 border border-emerald-800/80 text-emerald-300 text-[10px] font-mono font-bold rounded-lg">
+                    <span className="px-2 py-0.5 bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 text-[10px] font-display font-bold rounded">
                       +{eqBonus.speed} SPD
                     </span>
                   )}
                   {eqBonus.jump > 0 && (
-                    <span className="px-2 py-0.5 bg-purple-950/70 border border-purple-800/80 text-purple-300 text-[10px] font-mono font-bold rounded-lg">
+                    <span className="px-2 py-0.5 bg-purple-950/60 border border-purple-800/60 text-purple-300 text-[10px] font-display font-bold rounded">
                       +{eqBonus.jump} JUMP
                     </span>
                   )}
                   {eqBonus.range > 0 && (
-                    <span className="px-2 py-0.5 bg-cyan-950/70 border border-cyan-800/80 text-cyan-300 text-[10px] font-mono font-bold rounded-lg">
+                    <span className="px-2 py-0.5 bg-cyan-950/60 border border-cyan-800/60 text-cyan-300 text-[10px] font-display font-bold rounded">
                       +{eqBonus.range} RNG
                     </span>
                   )}
                   {(eqBonus.energyRegen || 0) > 0 && (
-                    <span className="px-2 py-0.5 bg-yellow-950/70 border border-yellow-800/80 text-yellow-300 text-[10px] font-mono font-bold rounded-lg">
+                    <span className="px-2 py-0.5 bg-yellow-950/60 border border-yellow-800/80 text-yellow-300 text-[10px] font-display font-bold rounded">
                       +{eqBonus.energyRegen} NRG
                     </span>
                   )}
                   {Object.values(eqBonus).every(v => v === 0) && (
-                    <span className="text-[11px] text-stone-500 font-mono italic">
-                      Equip items into their designated typed slots below
+                    <span className="text-[11px] text-stone-500 italic">
+                      Equip items into their designated slots below
                     </span>
                   )}
                 </div>
@@ -701,30 +713,31 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   return (
                     <div key={slotIdx} className="space-y-2">
                       <div
-                        className={`p-3 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
+                        className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
                           eq
-                            ? 'bg-stone-950/90 border-stone-800 hover:border-stone-700'
-                            : 'bg-stone-950/40 border-dashed border-stone-800 hover:border-stone-700'
+                            ? 'bg-stone-900/80 border-stone-800/80 hover:border-stone-700'
+                            : 'bg-stone-950/40 border border-dashed border-stone-800/60 hover:border-stone-700'
                         }`}
                       >
                         <div className="flex items-center gap-3 min-w-0 flex-1">
                           <div
-                            className="w-10 h-10 rounded-xl flex items-center justify-center text-xl shrink-0 shadow-md"
+                            className="w-11 h-11 rounded-lg flex items-center justify-center text-xl shrink-0 shadow-inner relative overflow-hidden transition-all"
                             style={{
-                              backgroundColor: '#0f172a',
-                              border: eq && rarityCfg ? `2px solid ${rarityCfg.color}` : '1px dashed #334155'
+                              backgroundColor: eq ? '#1c1917' : '#141210',
+                              border: eq && rarityCfg ? `1.5px solid ${rarityCfg.color}90` : '1px dashed rgba(120, 113, 108, 0.4)',
+                              boxShadow: eq && rarityCfg ? `0 0 12px ${rarityCfg.color}25` : 'none'
                             }}
                           >
                             <span>{eq?.icon || slotCfg.icon}</span>
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-1.5">
-                              <span className="text-[10px] font-mono font-bold text-amber-400 uppercase">
-                                {slotCfg.icon} {slotCfg.label} Slot
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider font-display">
+                                {slotCfg.label} Slot
                               </span>
                               {eq && rarityCfg && (
                                 <span
-                                  className="text-[9px] font-black uppercase px-1.5 py-0.2 rounded font-mono"
+                                  className="text-[9px] font-extrabold uppercase px-1.5 py-0.5 rounded font-display tracking-wider shadow-xs"
                                   style={{
                                     backgroundColor: rarityCfg.bg,
                                     color: rarityCfg.color,
@@ -735,19 +748,22 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                                 </span>
                               )}
                             </div>
-                            <h5 className="text-xs font-bold text-stone-200 truncate mt-0.5">
+                            <h5 className={`text-xs font-bold truncate mt-0.5 font-display ${eq ? 'text-stone-100' : 'text-stone-400'}`}>
                               {eq ? eq.name : `Empty ${slotCfg.label} Slot`}
                             </h5>
                             {eq && eq.stats ? (
-                              <div className="flex flex-wrap gap-1 mt-1">
+                              <div className="flex flex-wrap gap-1.5 mt-1">
                                 {Object.entries(eq.stats).map(([k, v]) => (
-                                  <span key={k} className="text-[9px] font-mono text-emerald-400 font-bold">
+                                  <span
+                                    key={k}
+                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-stone-950/80 border border-stone-800 text-[9px] font-display font-bold text-emerald-400 shadow-xs"
+                                  >
                                     +{v} {k.toUpperCase()}
                                   </span>
                                 ))}
                               </div>
                             ) : (
-                              <p className="text-[10px] text-stone-500 font-mono mt-0.5 truncate">
+                              <p className="text-[10px] text-stone-500 mt-0.5 truncate">
                                 {slotCfg.desc}
                               </p>
                             )}
@@ -761,10 +777,10 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                                 soundService.playClick();
                                 setActiveSlotPicker(isPickerOpen ? null : slotIdx);
                               }}
-                              className={`px-3 py-1.5 rounded-xl text-xs font-bold font-display transition-all ${
+                              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-display transition-all active:translate-y-0.5 ${
                                 isPickerOpen
-                                  ? 'bg-amber-500 text-stone-950 shadow-md'
-                                  : 'bg-stone-900 hover:bg-stone-800 text-stone-300 border border-stone-800'
+                                  ? 'bg-amber-500 text-stone-950 shadow-sm'
+                                  : 'bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700/80 shadow-xs'
                               }`}
                             >
                               {eq ? 'Swap' : `+ Equip ${slotCfg.label}`}

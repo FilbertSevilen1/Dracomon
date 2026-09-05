@@ -299,8 +299,33 @@ export const FT_BLASTERMON_LIGHTNING_ARC: FloatingTextEntry = { text: '⚡ SHADO
 export const FT_BLASTERMON_CHAIN_LIGHTNING: FloatingTextEntry = { text: '⚡ CHAIN LIGHTNING KILL!', color: '#a855f7' };
 export const FT_STROKE_OF_BRAVERY: FloatingTextEntry        = { text: '⚔️ STROKE OF BRAVERY!', color: '#a855f7' };
 export const FT_BLASTERMON_GIANT_BLADE_SLAM: FloatingTextEntry = { text: '💥 GIANT BLADE CLEAVE!', color: '#e9d5ff' };
-export const FT_BLASTERMON_SPIRITED: FloatingTextEntry      = { text: '✨ SPIRITED FORM (8s)!', color: '#fbbf24' };
-export const FT_BLASTERMON_SHINING_CLEAVE: FloatingTextEntry = { text: '✨ SHINING CLEAVE!', color: '#fef08a' };
+export const FT_BLASTERMON_SPIRITED: FloatingTextEntry      = { text: '✨ SPIRITED FORM (8s)!', color: '#38bdf8' };
+export const FT_BLASTERMON_SHINING_CLEAVE: FloatingTextEntry = { text: '✨ SHINING CLEAVE!', color: '#38bdf8' };
 
+// ---------------------------------------------------------------------------
+// Phantomon: Phantom Blaster Dragon
+// ---------------------------------------------------------------------------
+export const FT_PHANTOMON_SCYTHE_SLASH: FloatingTextEntry   = { text: '☠️ VOID SCYTHE SLASH!', color: '#38bdf8' };
+export const FT_PHANTOMON_SHADOW_ILLUSION: FloatingTextEntry = { text: '👥 SHADOW ILLUSIONS (8s)!', color: '#00f0ff' };
+export const FT_PHANTOMON_SHADOW_ILLUSIONS: FloatingTextEntry = { text: '👥 EMPOWERED ILLUSIONS (8s)!', color: '#00f0ff' };
+export const FT_PHANTOMON_DAMNED_LANCE: FloatingTextEntry   = { text: '🔥 DAMNED CHARGING LANCE!', color: '#ef4444' };
+export const FT_PHANTOMON_DASH_SLASH: FloatingTextEntry     = { text: '⚡ VOID DASH SLASH (400px)!', color: '#f87171' };
+export const FT_PHANTOMON_STRIKE_OF_DEATH: FloatingTextEntry = { text: '☠️ STRIKE OF DEATH!', color: '#dc2626' };
+export const FT_PHANTOMON_SACRIFICE_BURST: FloatingTextEntry = { text: '💥 ILLUSION BURST!', color: '#ef4444' };
+export const FT_PHANTOMON_DETONATION: FloatingTextEntry      = { text: '💥 CATACLYSMIC VOID STUN (2s)!', color: '#fca5a5' };
 
-
+// ---------------------------------------------------------------------------
+// Arena Defense & Siege Entities
+// ---------------------------------------------------------------------------
+export const FT_TOTEM_HEAL: FloatingTextEntry          = { text: '💚 TOTEM HEALING AURA (+1)', color: '#4ade80' };
+export function FT_TOTEM_DAMAGED(dmg?: number): FloatingTextEntry {
+  return { text: dmg !== undefined ? `🛡️ TOTEM -${dmg} HP!` : '🛡️ TOTEM DAMAGED!', color: '#f87171' };
+}
+export const FT_TOTEM_DESTROYED: FloatingTextEntry     = { text: '❌ TOTEM DESTROYED - DEFEAT!', color: '#ef4444' };
+export const FT_DEFENSE_VICTORY: FloatingTextEntry     = { text: '🏆 TOTEM SURVIVED (3 MIN)! VICTORY!', color: '#fbbf24' };
+export const FT_SKEWER_IMPALED: FloatingTextEntry      = { text: '🗡️ SKEWER IMPALED!', color: '#ef4444' };
+export const FT_CANNON_FIRE: FloatingTextEntry         = { text: '💣 CANNON FIRE!', color: '#f97316' };
+export const FT_MORTAR_SHELL: FloatingTextEntry        = { text: '💥 MORTAR ARTILLERY!', color: '#fbbf24' };
+export const FT_RAM_SLAM: FloatingTextEntry            = { text: '🪵 BATTERING RAM CRUSH!', color: '#d97706' };
+export const FT_JUGGERNAUT_STOMP: FloatingTextEntry    = { text: '🦏 JUGGERNAUT EARTHQUAKE!', color: '#f59e0b' };
+export const FT_KNIGHT_GUARD: FloatingTextEntry        = { text: '🛡️ SHIELD BLOCKED!', color: '#94a3b8' };
