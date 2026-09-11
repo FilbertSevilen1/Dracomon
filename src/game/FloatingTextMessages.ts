@@ -334,6 +334,15 @@ export const FT_PHANTOMON_SACRIFICE_BURST: FloatingTextEntry = { text: '💥 ILL
 export const FT_PHANTOMON_DETONATION: FloatingTextEntry      = { text: '💥 CATACLYSMIC VOID STUN (2s)!', color: '#fca5a5' };
 
 // ---------------------------------------------------------------------------
+// Megumon: Crimson Demon Archmage
+// ---------------------------------------------------------------------------
+export const FT_MEGUMON_STAFF_SMACK: FloatingTextEntry        = { text: '💥 STAFF SMACK (BONK)!', color: '#fbbf24' };
+export const FT_MEGUMON_MANA_CONVERGENCE: FloatingTextEntry   = { text: '✨ MANA CONVERGENCE (+50 NRG/s)!', color: '#f59e0b' };
+export const FT_MEGUMON_CHANTING: FloatingTextEntry          = { text: '🔥 CHANTING EXPLOSION (DRAINING NRG)!', color: '#ef4444' };
+export const FT_MEGUMON_EXPLOSION: FloatingTextEntry         = { text: '💥 CRIMSON DEMON EXPLOSION!!', color: '#ff0033' };
+export const FT_MEGUMON_COLLAPSED: FloatingTextEntry         = { text: '💫 EXHAUSTED & COLLAPSED (2s)!', color: '#fde047' };
+
+// ---------------------------------------------------------------------------
 // Arena Defense & Siege Entities
 // ---------------------------------------------------------------------------
 export const FT_TOTEM_HEAL: FloatingTextEntry          = { text: '💚 TOTEM HEALING AURA (+1)', color: '#4ade80' };

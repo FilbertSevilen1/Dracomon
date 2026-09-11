@@ -266,6 +266,16 @@ const DRACO_META: {
     colorClass: 'text-cyan-400 border-cyan-500 bg-cyan-950',
     bgGradient: 'from-slate-950 via-indigo-950 to-cyan-950',
   },
+  Megumon: {
+    role: 'Arch Wizard / Crimson Demon Archmage',
+    abilityName: 'Staff Smack & Mana Convergence',
+    abilityDesc: 'Basic attack bonks enemies with her wizard staff. Skill converges mana to gain 50 energy per second for 4 seconds while damaging enemies with a burning area (6s cooldown).',
+    ultimateName: 'Crimson Demon Explosion (300 Energy)',
+    ultimateDesc: 'Channels a 2-second incantation centered on the most effective enemy in front of her (e.g. the middle one of a group). Drains 150 energy per second over 2 seconds (cancels if hit or moving). The summoning oval starts dim and surges with blinding radiance as the incantation builds. When energy reaches 0, calls down a devastating celestial beam from the sky with expanding animated shockwaves dealing massive damage (player level * 1% max HP + attack scaling). Megumon is completely invincible during the 2s blast, followed by a 2-second collapse stun!',
+    cost: 500,
+    colorClass: 'text-rose-500 border-rose-500 bg-rose-950',
+    bgGradient: 'from-red-950 via-rose-950 to-amber-950',
+  },
 };
 
 export const DracoSelection: React.FC<DracoSelectionProps> = ({

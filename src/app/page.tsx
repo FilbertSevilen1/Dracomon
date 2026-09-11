@@ -730,6 +730,45 @@ export default function Home() {
         </svg>
       ),
     },
+    {
+      name: 'Megumon',
+      title: 'Arch Wizard of the Crimson Demons',
+      cost: 500,
+      role: 'Arch Wizard / Crimson Demon Archmage',
+      lore: 'Directly inspired by Megumin from KonoSuba! An eccentric arch wizard who has dedicated her entire life to the pursuit of the ultimate magic: Explosion. Wields a signature spiral wizard staff to bonk foes in melee, channels Mana Convergence to rapidly absorb 50 energy per second for 4 seconds while scorching nearby enemies with an ambient burn vortex, and casts Crimson Demon Explosion (300 Energy) — chanting an incantation centered on the densest enemy cluster that unleashes a colossal sky beam to incinerate the area for massive damage, leaving her completely exhausted and stunned for 2 seconds!',
+      signatureSkill: 'Mana Convergence (+50 Energy/s for 4s • Radiating Burn Vortex • 6s CD)',
+      ultimateSkill: 'Crimson Demon Explosion (300 Energy • Channels Target Area • Celestial Sky Beam • Level * 1% Max HP + Atk Scaling • 2s Invincibility • 2s Collapse Stun)',
+      color: 'rose',
+      tagColor: 'bg-rose-950 text-rose-300 border-rose-700 font-mono',
+      attackType: 'Wizard Staff Smack (Melee Bonk)',
+      hp: saveData.dracos['Megumon']?.hp || 28,
+      atk: saveData.dracos['Megumon']?.attack || 14,
+      def: saveData.dracos['Megumon']?.defense || 3.5,
+      spd: saveData.dracos['Megumon']?.speed || 7.0,
+      jump: 11,
+      svg: (
+        <svg width="70" height="70" viewBox="0 0 100 100" className="animate-float-slow">
+          <ellipse cx="50" cy="88" rx="24" ry="5" fill="rgba(0,0,0,0.35)" />
+          {/* Cape */}
+          <path d="M 33 46 Q 16 62 20 84 Q 32 79 38 68 Z" fill="#451a03" stroke="#78350f" strokeWidth="1.2" />
+          <path d="M 67 46 Q 84 62 80 84 Q 68 79 62 68 Z" fill="#451a03" stroke="#78350f" strokeWidth="1.2" />
+          {/* Staff */}
+          <line x1="72" y1="88" x2="84" y2="28" stroke="#78350f" strokeWidth="3" strokeLinecap="round" />
+          <circle cx="83" cy="18" r="6" fill="#ef4444" stroke="#fbbf24" strokeWidth="1.5" />
+          {/* Body Dress */}
+          <path d="M 36 44 L 32 70 Q 50 75 68 70 L 64 44 Z" fill="#dc2626" stroke="#991b1b" strokeWidth="1.5" />
+          <rect x="34" y="55" width="32" height="3" fill="#fbbf24" />
+          {/* Head & Eyepatch */}
+          <ellipse cx="50" cy="36" rx="13" ry="12" fill="#fed7aa" />
+          <rect x="42" y="33" width="7" height="6" rx="1.5" fill="#09090b" />
+          <circle cx="56" cy="35" r="2.5" fill="#ef4444" />
+          {/* Witch Hat */}
+          <path d="M 22 30 C 30 23 70 23 78 30 C 70 34 30 34 22 30 Z" fill="#260e0e" stroke="#7f1d1d" strokeWidth="1.5" />
+          <path d="M 35 28 Q 44 12 56 6 Q 62 3 60 9 Q 57 17 65 28 Z" fill="#260e0e" stroke="#7f1d1d" strokeWidth="1.5" />
+          <circle cx="50" cy="26" r="3.5" fill="#fbbf24" />
+        </svg>
+      ),
+    },
   ];
 
 

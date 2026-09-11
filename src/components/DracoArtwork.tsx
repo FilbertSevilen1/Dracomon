@@ -3,6 +3,149 @@ import React from 'react';
 export const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: number }> = ({ name, animated = false, size = 90 }) => {
   const animClass = animated ? 'animate-float-slow mx-auto' : 'mx-auto';
 
+  if (name === 'Megumon') {
+    return (
+      <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
+        <defs>
+          <linearGradient id="megumonHatGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#3b1111" />
+            <stop offset="60%" stopColor="#1c0a0a" />
+            <stop offset="100%" stopColor="#0a0505" />
+          </linearGradient>
+          <linearGradient id="megumonRobeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#ef4444" />
+            <stop offset="50%" stopColor="#dc2626" />
+            <stop offset="100%" stopColor="#991b1b" />
+          </linearGradient>
+          <linearGradient id="megumonCapeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#572118" />
+            <stop offset="70%" stopColor="#30130d" />
+            <stop offset="100%" stopColor="#1a0a07" />
+          </linearGradient>
+          <linearGradient id="megumonStaffGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#92400e" />
+            <stop offset="50%" stopColor="#78350f" />
+            <stop offset="100%" stopColor="#451a03" />
+          </linearGradient>
+          <radialGradient id="megumonOrbGlow" cx="50%" cy="50%" r="50%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="35%" stopColor="#ef4444" />
+            <stop offset="75%" stopColor="#991b1b" />
+            <stop offset="100%" stopColor="transparent" />
+          </radialGradient>
+          <radialGradient id="megumonEyeGlow" cx="45%" cy="45%" r="50%">
+            <stop offset="0%" stopColor="#fca5a5" />
+            <stop offset="40%" stopColor="#ef4444" />
+            <stop offset="100%" stopColor="#991b1b" />
+          </radialGradient>
+        </defs>
+
+        {/* Floor Shadow */}
+        <ellipse cx="50" cy="89" rx="26" ry="5.5" fill="rgba(0,0,0,0.42)" />
+
+        {/* Ambient Mana Convergence Magic Runes */}
+        <circle cx="50" cy="52" r="39" fill="rgba(239, 68, 68, 0.08)" stroke="#ef4444" strokeWidth="0.9" strokeDasharray="4 3" opacity="0.8" />
+        <circle cx="50" cy="52" r="44" fill="none" stroke="#fbbf24" strokeWidth="0.6" strokeDasharray="2 4" opacity="0.6" />
+
+        {/* Flowing Archmage Cloak Behind */}
+        <path d="M 33 46 Q 14 62 18 84 Q 30 79 38 68 Z" fill="url(#megumonCapeGrad)" stroke="#78350f" strokeWidth="1.2" />
+        <path d="M 67 46 Q 86 62 82 84 Q 70 79 62 68 Z" fill="url(#megumonCapeGrad)" stroke="#78350f" strokeWidth="1.2" />
+
+        {/* Wizard Staff (Held Diagonal) */}
+        <g id="megumonStaff">
+          {/* Wooden Shaft */}
+          <line x1="72" y1="88" x2="84" y2="28" stroke="url(#megumonStaffGrad)" strokeWidth="3.5" strokeLinecap="round" />
+          <line x1="72.5" y1="88" x2="84.5" y2="28" stroke="#b45309" strokeWidth="1" strokeLinecap="round" opacity="0.6" />
+          {/* Gold Spiral Head */}
+          <path d="M 83 31 C 88 23 93 19 88 13 C 81 7 74 15 77 24 C 79 28 85 29 88 26" fill="none" stroke="#fbbf24" strokeWidth="2.4" strokeLinecap="round" />
+          {/* Floating Crimson Core Gem Orb */}
+          <circle cx="83" cy="18" r="6.5" fill="url(#megumonOrbGlow)" />
+          <circle cx="81.5" cy="16.5" r="2" fill="#ffffff" opacity="0.9" />
+          {/* Mana Sparks from Staff */}
+          <circle cx="89" cy="14" r="1.4" fill="#fbbf24" />
+          <circle cx="76" cy="12" r="1.2" fill="#ef4444" />
+          <circle cx="86" cy="24" r="1" fill="#fef08a" />
+        </g>
+
+        {/* Legs: Left Boot & Right Bandaged Leg */}
+        {/* Left Leg: Brown Adventurer Boot */}
+        <path d="M 54 68 L 53 85 L 61 85 L 59 68 Z" fill="#451a03" stroke="#290e02" strokeWidth="1.2" />
+        <rect x="52" y="78" width="9" height="2" fill="#d97706" rx="0.8" />
+        {/* Right Leg: Bandaged Leg with Black Ribbon */}
+        <path d="M 40 68 L 39 85 L 47 85 L 46 68 Z" fill="#f8fafc" stroke="#94a3b8" strokeWidth="1.2" />
+        <line x1="39" y1="72" x2="47" y2="73" stroke="#cbd5e1" strokeWidth="1.2" />
+        <line x1="39" y1="76" x2="47" y2="77" stroke="#cbd5e1" strokeWidth="1.2" />
+        <line x1="39" y1="80" x2="47" y2="81" stroke="#cbd5e1" strokeWidth="1.2" />
+        <rect x="40" y="70" width="7" height="2" fill="#18181b" rx="0.6" />
+
+        {/* Red Archmage Tunic / Dress */}
+        <path d="M 36 43 L 32 69 Q 50 74 68 69 L 64 43 Z" fill="url(#megumonRobeGrad)" stroke="#7f1d1d" strokeWidth="1.8" />
+        {/* Gold Trim along Tunic Hem */}
+        <path d="M 32 69 Q 50 74 68 69" fill="none" stroke="#fbbf24" strokeWidth="2.5" />
+        {/* Gold Waist Belt & Buckle */}
+        <rect x="34" y="54" width="32" height="4.5" fill="#1c1917" rx="1" />
+        <rect x="34" y="54.5" width="32" height="3" fill="#b45309" />
+        <rect x="46.5" y="53" width="7" height="6.5" rx="1.2" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+        <rect x="48.5" y="55" width="3" height="2.5" fill="#1c1917" />
+
+        {/* Brown Capelet / Collar over Shoulders */}
+        <path d="M 33 42 Q 50 48 67 42 Q 62 52 50 51 Q 38 52 33 42 Z" fill="url(#megumonCapeGrad)" stroke="#451a03" strokeWidth="1.5" />
+        {/* Gold Brooch / Collar Clasp */}
+        <circle cx="50" cy="45" r="2.8" fill="#fbbf24" stroke="#d97706" strokeWidth="0.8" />
+        <circle cx="50" cy="45" r="1.2" fill="#ef4444" />
+
+        {/* Head & Face */}
+        <ellipse cx="50" cy="36" rx="14" ry="12.5" fill="#fed7aa" stroke="#fba76a" strokeWidth="1" />
+        {/* Dark Chestnut Hair */}
+        <path d="M 36 34 Q 38 46 36 49 Q 42 45 44 38 Z" fill="#2d1212" />
+        <path d="M 64 34 Q 62 46 64 49 Q 58 45 56 38 Z" fill="#2d1212" />
+        <path d="M 38 31 Q 44 36 49 33 Q 54 36 62 31 Q 50 24 38 31 Z" fill="#3b1111" />
+
+        {/* Signature Eyepatch over Right Eye */}
+        <rect x="41" y="32" width="7.5" height="7" rx="2" fill="#09090b" stroke="#27272a" strokeWidth="1" />
+        {/* Eyepatch Red Cross Stitch */}
+        <line x1="44.75" y1="33.5" x2="44.75" y2="37.5" stroke="#ef4444" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="42.75" y1="35.5" x2="46.75" y2="35.5" stroke="#ef4444" strokeWidth="1.4" strokeLinecap="round" />
+        <line x1="37" y1="33" x2="42" y2="34" stroke="#09090b" strokeWidth="1" />
+        <line x1="48" y1="35" x2="52" y2="36" stroke="#09090b" strokeWidth="1" />
+
+        {/* Radiant Crimson Demon Eye (Left) */}
+        <ellipse cx="55.5" cy="35" rx="3.4" ry="4" fill="url(#megumonEyeGlow)" />
+        <circle cx="55.5" cy="35" r="1.6" fill="#450a0a" />
+        <circle cx="54.5" cy="33.8" r="1" fill="#ffffff" />
+        <circle cx="56.5" cy="36.2" r="0.6" fill="#fef08a" />
+
+        {/* Cute Confident Smile */}
+        <path d="M 49 42 Q 52 44.5 54 42" fill="none" stroke="#9a3412" strokeWidth="1.2" strokeLinecap="round" />
+        {/* Blush Marks */}
+        <ellipse cx="40" cy="40" rx="2.5" ry="1.2" fill="#f43f5e" opacity="0.45" />
+        <ellipse cx="60" cy="40" rx="2.5" ry="1.2" fill="#f43f5e" opacity="0.45" />
+
+        {/* Oversized Archmage Witch Hat */}
+        <g id="megumonHat">
+          {/* Hat Brim */}
+          <path d="M 18 31 C 28 22 72 22 82 31 C 72 36 28 36 18 31 Z" fill="url(#megumonHatGrad)" stroke="#7f1d1d" strokeWidth="1.8" />
+          <path d="M 20 31 C 29 24 71 24 80 31" fill="none" stroke="#fbbf24" strokeWidth="1.4" />
+          {/* Hat Cone with Crinkle at Top */}
+          <path d="M 33 28 Q 42 12 56 6 Q 64 2 62 9 Q 58 17 67 28 Z" fill="url(#megumonHatGrad)" stroke="#7f1d1d" strokeWidth="1.8" />
+          {/* Gold Hat Band */}
+          <path d="M 33 27 Q 50 32 67 27 L 66 23 Q 50 28 34 23 Z" fill="#fbbf24" stroke="#d97706" strokeWidth="0.8" />
+          {/* Gold Face Emblem / Hat Buckle */}
+          <circle cx="50" cy="26" r="4.2" fill="#fbbf24" stroke="#d97706" strokeWidth="1" />
+          <circle cx="48.5" cy="25" r="1" fill="#1c1917" />
+          <circle cx="51.5" cy="25" r="1" fill="#1c1917" />
+          <path d="M 48.5 27.5 Q 50 29 51.5 27.5" fill="none" stroke="#1c1917" strokeWidth="0.8" strokeLinecap="round" />
+        </g>
+
+        {/* Crimson Explosion Embers Floating Overhead */}
+        <path d="M 28 14 L 30 18 L 26 18 Z" fill="#ef4444" opacity="0.85" />
+        <circle cx="23" cy="22" r="1.5" fill="#fbbf24" />
+        <circle cx="70" cy="4" r="1.8" fill="#ef4444" />
+        <circle cx="74" cy="7" r="1" fill="#fef08a" />
+      </svg>
+    );
+  }
+
   if (name === 'Blastermon') {
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>

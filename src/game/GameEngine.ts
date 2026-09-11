@@ -206,6 +206,11 @@ import {
   FT_RAM_SLAM,
   FT_JUGGERNAUT_STOMP,
   FT_KNIGHT_GUARD,
+  FT_MEGUMON_STAFF_SMACK,
+  FT_MEGUMON_MANA_CONVERGENCE,
+  FT_MEGUMON_CHANTING,
+  FT_MEGUMON_EXPLOSION,
+  FT_MEGUMON_COLLAPSED,
 } from './FloatingTextMessages';
 
 interface FloatingText {
@@ -453,6 +458,15 @@ export class GameEngine {
   private reapermonSlashImpactX = 0;
   private reapermonSlashImpactY = 0;
   private mikomonUltActiveTimer = 0;
+
+  // Megumon (Konosuba Megumin) state
+  private megumonManaConvergenceTimer = 0;
+  private megumonChanneling = false;
+  private megumonUltTargetX = 0;
+  private megumonUltTargetY = 0;
+  private megumonExplosionActive = false;
+  private megumonExplosionTimer = 0;
+  private megumonStaffSwingTimer = 0;
 
   private musouSlashActive = false;
   private musouSlashTimer = 0;
@@ -835,6 +849,10 @@ export class GameEngine {
     if (this.channelingSpell === 'black_hole') {
       (this as any).enigmonBlackHoleActive = false;
       (this as any).enigmonBlackHoleTimer = 0;
+      const _ftCI = FT_CHANNEL_INTERRUPTED(reason); this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, _ftCI.text, _ftCI.color);
+      soundService.playHit();
+    } else if (this.channelingSpell === 'crimson_demon_explosion') {
+      this.megumonChanneling = false;
       const _ftCI = FT_CHANNEL_INTERRUPTED(reason); this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, _ftCI.text, _ftCI.color);
       soundService.playHit();
     }
@@ -1766,6 +1784,15 @@ export class GameEngine {
     this.phantomonStrikeX = 0;
     this.phantomonStrikeY = 0;
     this.skewerDeathTimer = 0;
+
+    // Reset Megumon state
+    this.megumonManaConvergenceTimer = 0;
+    this.megumonChanneling = false;
+    this.megumonUltTargetX = 0;
+    this.megumonUltTargetY = 0;
+    this.megumonExplosionActive = false;
+    this.megumonExplosionTimer = 0;
+    this.megumonStaffSwingTimer = 0;
 
     let playerSpawnFound = false;
     const activeEntities = this.getActiveEntities();
@@ -2986,6 +3013,43 @@ export class GameEngine {
         });
       }
       this.addFloatingText(slashX, slashY - 15, '☠️ SCYTHE CLEAVE', '#c084fc');
+    } else if (this.selectedDraco === 'Megumon') {
+      soundService.playHit();
+      const smackX = this.px + (this.pFacing === 1 ? this.pWidth + 12 : -12);
+      const smackY = this.py + this.pHeight / 2;
+      this.attackDuration = 10;
+      this.attackCooldown = 18;
+      this.megumonStaffSwingTimer = 14;
+      const smackDmg = Math.ceil(this.stats.attack * 1.25);
+
+      this.enemies.forEach(enemy => {
+        if (enemy.hp <= 0) return;
+        const ex = enemy.x + enemy.width / 2;
+        const ey = enemy.y + enemy.height / 2;
+        const dist = Math.hypot(ex - smackX, ey - smackY);
+        const inFront = (this.pFacing === 1 && ex >= this.px - 25) || (this.pFacing === -1 && ex <= this.px + this.pWidth + 25);
+        if (dist <= 110 && inFront) {
+          this.damageEnemy(enemy, smackDmg);
+          this.spawnDustParticles(ex, ey, 10, '#fbbf24');
+          this.spawnDustParticles(ex, ey, 8, '#ef4444');
+          this.addFloatingText(ex, ey - 20, FT_MEGUMON_STAFF_SMACK.text, FT_MEGUMON_STAFF_SMACK.color);
+        }
+      });
+
+      for (let i = 0; i < 12; i++) {
+        const ang = (Math.random() - 0.5) * Math.PI * 0.8 + (this.pFacing === 1 ? 0 : Math.PI);
+        const spd = Math.random() * 8 + 3;
+        this.particles.push({
+          x: smackX,
+          y: smackY,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd - 1,
+          size: Math.random() * 5 + 2,
+          color: i % 3 === 0 ? '#fbbf24' : i % 3 === 1 ? '#ef4444' : '#f59e0b',
+          life: 18,
+          maxLife: 18
+        });
+      }
     } else {
       soundService.playHit();
       this.checkMeleeHit(this.px - 24, this.py - 16, this.pWidth + 48, this.pHeight + 32, this.stats.attack, true);
@@ -4192,6 +4256,28 @@ export class GameEngine {
           }
         });
       }
+    } else if (this.selectedDraco === 'Megumon') {
+      soundService.playMegumonManaConvergence();
+      // Mana Convergence (6s CD = 360 frames, 4s duration = 240 frames)
+      this.specialCooldown = 360;
+      this.megumonManaConvergenceTimer = 240;
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_MEGUMON_MANA_CONVERGENCE.text, FT_MEGUMON_MANA_CONVERGENCE.color);
+
+      // Burst of mana conversion sparks around Megumon
+      for (let p = 0; p < 24; p++) {
+        const ang = Math.random() * Math.PI * 2;
+        const spd = Math.random() * 6 + 2;
+        this.particles.push({
+          x: this.px + this.pWidth / 2,
+          y: this.py + this.pHeight / 2,
+          vx: Math.cos(ang) * spd,
+          vy: Math.sin(ang) * spd,
+          size: Math.random() * 5 + 3,
+          color: p % 2 === 0 ? '#ef4444' : '#fbbf24',
+          life: 25,
+          maxLife: 25
+        });
+      }
     }
   }
 
@@ -4405,6 +4491,7 @@ export class GameEngine {
       case 'EndMon': return 100;
       case 'Blastermon': return 100;
       case 'Phantomon': return 100;
+      case 'Megumon': return 300;
       default: return 100;
     }
   }
@@ -4436,6 +4523,7 @@ export class GameEngine {
       case 'EndMon': return 'Eternal Apocalypse';
       case 'Blastermon': return 'Stroke of Bravery';
       case 'Phantomon': return 'Damned Charging Lance';
+      case 'Megumon': return 'Crimson Demon Explosion';
       default: return 'Ultimate';
     }
   }
@@ -4463,6 +4551,7 @@ export class GameEngine {
       case 'EndMon': return 'Stand up, Vanguard! ETERNAL APOCALYPSE!';
       case 'Blastermon': return 'Determination forged in darkness! STROKE OF BRAVERY!';
       case 'Phantomon': return 'All illusions yield to darkness! DAMNED CHARGING LANCE!';
+      case 'Megumon': return 'Darkness blacker than black and darker than dark... EXPLOSION!!';
       default: return 'Unleash full power!';
     }
   }
@@ -4483,6 +4572,19 @@ export class GameEngine {
     }
 
     const cost = this.getUltimateCost();
+    if (this.selectedDraco === 'Megumon') {
+      if (this.pEnergy >= 300) {
+        // Does not deduct immediately; channeling drains 100/s until 0
+        this.ultimateCinematicActive = true;
+        this.ultimateCinematicDuration = 75;
+        soundService.playLevelUp();
+      } else {
+        soundService.playHit();
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 10, 'NEED 300 ENERGY FOR EXPLOSION!', '#ef4444');
+      }
+      return;
+    }
+
     if (this.pEnergy >= cost) {
       this.pEnergy -= cost;
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
@@ -5325,6 +5427,54 @@ export class GameEngine {
           maxLife: 30
         });
       }
+    } else if (this.selectedDraco === 'Megumon') {
+      soundService.playLevelUp();
+      this.screenShake = 25;
+
+      // Find candidate enemies in front of Megumon capped at 1200px range
+      const MAX_ULT_RANGE = 1200;
+      const pCenterX = this.px + this.pWidth / 2;
+      const candidates: Enemy[] = [];
+      this.enemies.forEach(e => {
+        if (e.hp <= 0) return;
+        const eCenterX = e.x + e.width / 2;
+        const distX = this.pFacing === 1 ? (eCenterX - pCenterX) : (pCenterX - eCenterX);
+        const distY = Math.abs((e.y + e.height / 2) - (this.py + this.pHeight / 2));
+        if (distX >= -40 && distX <= MAX_ULT_RANGE && distY < 600) {
+          candidates.push(e);
+        }
+      });
+
+      // Default to max range (1200px in front of Megumon) if no enemies found
+      let targetX = pCenterX + this.pFacing * MAX_ULT_RANGE;
+      let targetY = this.py + this.pHeight / 2;
+
+      if (candidates.length > 0) {
+        // Center on the most effective enemy (e.g. if 3 enemies, center on the middle one)
+        candidates.sort((a, b) => a.x - b.x);
+        const middleIndex = Math.floor(candidates.length / 2);
+        const targetEnemy = candidates[middleIndex];
+        targetX = targetEnemy.x + targetEnemy.width / 2;
+        targetY = targetEnemy.y + targetEnemy.height / 2;
+
+        // Ensure clamped within 1200px range
+        if (this.pFacing === 1 && targetX > pCenterX + MAX_ULT_RANGE) {
+          targetX = pCenterX + MAX_ULT_RANGE;
+        } else if (this.pFacing === -1 && targetX < pCenterX - MAX_ULT_RANGE) {
+          targetX = pCenterX - MAX_ULT_RANGE;
+        }
+      }
+
+      this.megumonUltTargetX = targetX;
+      this.megumonUltTargetY = targetY;
+      this.isChanneling = true;
+      this.channelingSpell = 'crimson_demon_explosion';
+      this.megumonChanneling = true;
+      this.channelingTimer = 120; // 2 seconds (drains 150/sec from 300 energy)
+      this.channelingMaxDuration = 120;
+
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_MEGUMON_CHANTING.text, FT_MEGUMON_CHANTING.color);
+      soundService.playMegumonChant();
     }
 
     this.birdX = this.px;
@@ -8988,6 +9138,40 @@ export class GameEngine {
 
       if (isMovingInput) {
         this.cancelChanneling('Movement');
+      } else if (this.channelingSpell === 'crimson_demon_explosion') {
+        // Megumon Channeling: drain 150 energy/s (150 / 60 per frame, 300 total over 2 seconds)
+        this.pEnergy = Math.max(0, this.pEnergy - (150 / 60));
+        this.channelingTimer = Math.max(0, this.channelingTimer - 1);
+        this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
+
+        // Chanting mana particles streaming towards target
+        if (this.frameCount % 2 === 0) {
+          const t = Math.random();
+          const startX = this.px + (this.pFacing === 1 ? this.pWidth : 0);
+          const startY = this.py + 10;
+          this.particles.push({
+            x: startX + t * (this.megumonUltTargetX - startX),
+            y: startY + t * (this.megumonUltTargetY - startY) + Math.sin(t * Math.PI) * -20,
+            vx: (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 2 - 1,
+            size: Math.random() * 5 + 2,
+            color: Math.random() > 0.5 ? '#ef4444' : '#fbbf24',
+            life: 15,
+            maxLife: 15
+          });
+        }
+
+        if (this.pEnergy <= 0) {
+          // Channeling completed! Initiate sky beam descent transition followed by ground detonation
+          this.isChanneling = false;
+          this.channelingSpell = null;
+          this.megumonChanneling = false;
+
+          this.megumonExplosionActive = true;
+          this.megumonExplosionTimer = 145; // 25 frames descent transition from sky + 120 frames ground blast
+          this.pInvulnerableFrames = Math.max(this.pInvulnerableFrames, 145); // completely invincible throughout
+          this.screenShake = 16; // Initial rumble as skies rupture
+        }
       } else {
         this.channelingTimer--;
         (this as any).enigmonBlackHoleTimer = this.channelingTimer;
@@ -13674,6 +13858,235 @@ export class GameEngine {
 
     if (this.reapermonSlashImpactTimer > 0) {
       this.reapermonSlashImpactTimer--;
+    }
+
+    // Megumon Staff Swing Timer
+    if (this.megumonStaffSwingTimer > 0) {
+      this.megumonStaffSwingTimer--;
+    }
+
+    // Megumon Mana Convergence (4s duration = 240 frames)
+    if (this.megumonManaConvergenceTimer > 0) {
+      this.megumonManaConvergenceTimer--;
+
+      // Gains 50 energy per second (50 / 60 per frame)
+      this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + (50 / 60));
+      this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
+
+      // Swirling mana convergence particles inward toward Megumon
+      if (this.frameCount % 2 === 0) {
+        const ang = Math.random() * Math.PI * 2;
+        const rad = 70 + Math.random() * 30;
+        this.particles.push({
+          x: this.px + this.pWidth / 2 + Math.cos(ang) * rad,
+          y: this.py + this.pHeight / 2 + Math.sin(ang) * rad,
+          vx: -Math.cos(ang) * 4.5,
+          vy: -Math.sin(ang) * 4.5,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.4 ? '#ef4444' : '#fbbf24',
+          life: 18,
+          maxLife: 18
+        });
+      }
+
+      // Damages enemy by burn area (120px radius around Megumon every 10 frames)
+      if (this.frameCount % 10 === 0) {
+        const pCenterX = this.px + this.pWidth / 2;
+        const pCenterY = this.py + this.pHeight / 2;
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dist = Math.hypot(ex - pCenterX, ey - pCenterY);
+          if (dist <= 120) {
+            const burnDmg = Math.max(1, Math.floor(this.stats.attack * 0.35));
+            this.damageEnemy(enemy, burnDmg);
+            enemy.burnTimer = 45;
+            this.spawnDustParticles(ex, ey, 6, '#ef4444');
+            this.addFloatingText(ex, ey - 10, `-${burnDmg} 🔥`, '#f97316');
+          }
+        });
+      }
+    }
+
+    // Megumon Crimson Demon Explosion Blast Update (2s animation = 120 frames)
+    // Megumon Crimson Demon Explosion Blast Update (25f descent transition + 120f blast = 145 frames)
+    if (this.megumonExplosionActive) {
+      this.megumonExplosionTimer--;
+      // Megumon is completely invincible during the explosion sequence
+      this.pInvulnerableFrames = Math.max(this.pInvulnerableFrames, 10);
+
+      // Phase 1: Sky Beam Descent Transition (Frames 144 down to 121)
+      if (this.megumonExplosionTimer > 120) {
+        const descentProgress = (145 - this.megumonExplosionTimer) / 25;
+        const skyY = this.cameraY - 150;
+        const currentTipY = skyY + (this.megumonUltTargetY - skyY) * Math.pow(descentProgress, 1.6);
+        this.screenShake = Math.max(this.screenShake, 14);
+
+        // Pre-impact descending beam particles
+        for (let p = 0; p < 4; p++) {
+          this.particles.push({
+            x: this.megumonUltTargetX + (Math.random() - 0.5) * 24,
+            y: currentTipY + (Math.random() - 0.5) * 20,
+            vx: (Math.random() - 0.5) * 4,
+            vy: -Math.random() * 5 - 2,
+            size: Math.random() * 4 + 2,
+            color: p % 2 === 0 ? '#fef08a' : '#ef4444',
+            life: 14,
+            maxLife: 14
+          });
+        }
+      }
+
+      // Phase 2 Ground Impact Frame (Frame 120: exact moment beam spear strikes ground zero)
+      if (this.megumonExplosionTimer === 120) {
+        this.screenShake = 70;
+        soundService.playMegumonExplosion();
+
+        // Massive burst of impact particles & vertical plasma erupting from ground zero
+        for (let p = 0; p < 36; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 16 + 4;
+          this.particles.push({
+            x: this.megumonUltTargetX,
+            y: this.megumonUltTargetY,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 3,
+            size: Math.random() * 10 + 4,
+            color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#fbbf24' : '#ffffff',
+            life: 35,
+            maxLife: 35
+          });
+        }
+
+        // Kinetic ground shockwave dust waves spreading outward horizontally across terrain
+        for (let s = 0; s < 30; s++) {
+          const dir = s % 2 === 0 ? 1 : -1;
+          const spd = Math.random() * 16 + 6;
+          this.particles.push({
+            x: this.megumonUltTargetX,
+            y: this.megumonUltTargetY + (Math.random() - 0.5) * 14,
+            vx: dir * spd,
+            vy: (Math.random() - 0.5) * 3 - 1.2,
+            size: Math.random() * 9 + 4,
+            color: s % 3 === 0 ? '#ffffff' : s % 3 === 1 ? '#fef08a' : '#ef4444',
+            life: 28,
+            maxLife: 28
+          });
+        }
+
+        // Deal massive damage with distance falloff: less damage when farther from the center of the blast
+        const dracoLevel = (this.stats as any).level || 1;
+        const targetX = this.megumonUltTargetX;
+        const targetY = this.megumonUltTargetY;
+        const MAX_SHOCKWAVE_RADIUS = 380; // Expanding shockwave boundary
+
+        this.enemies.forEach(enemy => {
+          if (enemy.hp <= 0) return;
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          const dist = Math.hypot(ex - targetX, ey - targetY);
+
+          // 1. Direct hit along celestial sky beam column (from sky down to ground impact zone)
+          const inBeamColumn = Math.abs(ex - targetX) <= 150 && ey <= targetY + 80;
+
+          // 2. In shockwave/blast radius
+          const inShockwaveArea = dist <= MAX_SHOCKWAVE_RADIUS;
+
+          if (inBeamColumn || inShockwaveArea) {
+            const percentHpDmg = Math.floor(enemy.maxHp * (dracoLevel * 0.01));
+            const attackDmg = Math.floor(this.stats.attack * 8.5);
+            const baseTotalDmg = Math.max(1, percentHpDmg + attackDmg);
+
+            // Damage falloff: 100% damage at center or direct beam hit, smoothly scales down to 25% at edge of shockwave
+            let falloff = 1.0;
+            if (!inBeamColumn) {
+              falloff = Math.max(0.25, 1.0 - (dist / MAX_SHOCKWAVE_RADIUS) * 0.75);
+            }
+            const finalDmg = Math.max(1, Math.floor(baseTotalDmg * falloff));
+
+            this.damageEnemy(enemy, finalDmg);
+            this.spawnDustParticles(ex, ey, 16, '#ef4444');
+            this.spawnDustParticles(ex, ey, 12, '#fbbf24');
+            this.addFloatingText(ex, ey - 25, `💥 -${finalDmg}`, '#ef4444', true);
+          }
+        });
+
+        this.addFloatingText(targetX, targetY - 40, FT_MEGUMON_EXPLOSION.text, FT_MEGUMON_EXPLOSION.color, true);
+      }
+
+      // Phase 3: Colossal Ground Zero Blast (Frames 119 down to 1)
+      if (this.megumonExplosionTimer < 120 && this.megumonExplosionTimer > 0) {
+        if (this.frameCount % 3 === 0) {
+          this.screenShake = Math.max(this.screenShake, 22);
+        }
+
+        // Explosion burst particles from ground zero
+        for (let p = 0; p < 5; p++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = Math.random() * 12 + 2;
+          this.particles.push({
+            x: this.megumonUltTargetX + (Math.random() - 0.5) * 50,
+            y: this.megumonUltTargetY + (Math.random() - 0.5) * 35,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd - 3,
+            size: Math.random() * 9 + 4,
+            color: p % 3 === 0 ? '#ef4444' : p % 3 === 1 ? '#fbbf24' : '#1c0a0a',
+            life: 28,
+            maxLife: 28
+          });
+        }
+
+        // Kinetic ground shockwave dust plumes following the expanding shockwave front
+        if (this.frameCount % 2 === 0) {
+          const t = 120 - this.megumonExplosionTimer;
+          const cycleProgress = (t % 22) / 22;
+          const waveDist = Math.pow(cycleProgress, 0.75) * 380;
+          for (let s = -1; s <= 1; s += 2) {
+            this.particles.push({
+              x: this.megumonUltTargetX + s * waveDist + (Math.random() - 0.5) * 24,
+              y: this.megumonUltTargetY + (Math.random() - 0.5) * 14,
+              vx: s * (Math.random() * 6 + 3),
+              vy: -Math.random() * 4 - 1.2,
+              size: Math.random() * 8 + 4,
+              color: Math.random() > 0.4 ? '#ffffff' : (Math.random() > 0.5 ? '#fef08a' : '#ef4444'),
+              life: 22,
+              maxLife: 22
+            });
+          }
+        }
+
+        // Continuous celestial beam burn damage with distance falloff
+        if (this.frameCount % 8 === 0) {
+          const targetX = this.megumonUltTargetX;
+          const targetY = this.megumonUltTargetY;
+          const MAX_SHOCKWAVE_RADIUS = 380;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const ex = enemy.x + enemy.width / 2;
+            const ey = enemy.y + enemy.height / 2;
+            const dist = Math.hypot(ex - targetX, ey - targetY);
+            const inBeamColumn = Math.abs(ex - targetX) <= 150 && ey <= targetY + 80;
+            const inShockwaveArea = dist <= MAX_SHOCKWAVE_RADIUS;
+
+            if (inBeamColumn || inShockwaveArea) {
+              const baseBurnDmg = Math.max(1, Math.floor(this.stats.attack * 1.25));
+              const falloff = inBeamColumn ? 1.0 : Math.max(0.25, 1.0 - (dist / MAX_SHOCKWAVE_RADIUS) * 0.75);
+              const finalBurnDmg = Math.max(1, Math.floor(baseBurnDmg * falloff));
+              this.damageEnemy(enemy, finalBurnDmg);
+              this.spawnDustParticles(ex, ey, 3, '#fbbf24');
+            }
+          });
+        }
+      }
+
+      if (this.megumonExplosionTimer <= 0) {
+        this.megumonExplosionActive = false;
+        // Then get stunned for 2 seconds afterwards (120 frames)
+        this.playerStunnedTimer = 120;
+        this.pvx = 0;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_MEGUMON_COLLAPSED.text, FT_MEGUMON_COLLAPSED.color, true);
+      }
     }
 
     // Butchermon Rotten Flesh Skill (Toggle)
@@ -19198,6 +19611,11 @@ export class GameEngine {
         accentColor = this.phantomonUltActive ? '#ef4444' : '#00f0ff';
         bellyColor = '#18181b';
         detailColor = this.phantomonUltActive ? '#f43f5e' : '#38bdf8';
+      } else if (this.selectedDraco === 'Megumon') {
+        mainColor = '#dc2626';
+        accentColor = '#991b1b';
+        bellyColor = '#fef08a';
+        detailColor = '#fbbf24';
       }
 
       const px = this.px;
@@ -21651,6 +22069,430 @@ export class GameEngine {
         }
 
         this.ctx.restore();
+      } else if (this.selectedDraco === 'Megumon') {
+        this.ctx.save();
+
+        if (this.playerStunnedTimer > 0) {
+          // --- COMICAL COLLAPSED MEGUMIN POSE (After Explosion) ---
+          const floorY = py + ph;
+
+          // 1. Wizard staff lying flat on floor
+          this.ctx.save();
+          this.ctx.strokeStyle = '#78350f';
+          this.ctx.lineWidth = 3.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px - this.pFacing * 16, floorY - 3);
+          this.ctx.lineTo(px + this.pFacing * 38, floorY - 3);
+          this.ctx.stroke();
+
+          // Gold spiral head lying down
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 2.2;
+          this.ctx.beginPath();
+          this.ctx.arc(px + this.pFacing * 38, floorY - 4, 7, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // Staff core ruby orb dim ember
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.beginPath();
+          this.ctx.arc(px + this.pFacing * 38, floorY - 4, 4, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.restore();
+
+          // 2. Fallen Witch Hat tilted on the ground
+          this.ctx.save();
+          this.ctx.translate(px + (this.pFacing === 1 ? -12 : pw + 12), floorY - 8);
+          this.ctx.rotate(this.pFacing === 1 ? -0.35 : 0.35);
+          this.ctx.fillStyle = '#260e0e';
+          this.ctx.strokeStyle = '#7f1d1d';
+          this.ctx.lineWidth = 1.5;
+          // Hat cone
+          this.ctx.beginPath();
+          this.ctx.moveTo(-10, 0);
+          this.ctx.lineTo(12, 0);
+          this.ctx.lineTo(4, -14);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+          // Hat brim
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(-14, 0);
+          this.ctx.lineTo(16, 0);
+          this.ctx.stroke();
+          // Buckle
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.fillRect(0, -5, 4, 4);
+          this.ctx.restore();
+
+          // 3. Flattened body face-down on the ground
+          this.ctx.fillStyle = '#dc2626';
+          this.ctx.strokeStyle = '#991b1b';
+          this.ctx.lineWidth = 1.8;
+          this.ctx.beginPath();
+          this.ctx.roundRect(px + 4, floorY - 14, pw - 8, 12, [6, 6, 2, 2]);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Brown cape draped over back
+          this.ctx.fillStyle = '#451a03';
+          this.ctx.beginPath();
+          this.ctx.roundRect(px + 6, floorY - 15, pw - 12, 6, [3, 3, 0, 0]);
+          this.ctx.fill();
+
+          // 4. Head resting flat
+          const headX = this.pFacing === 1 ? px + pw - 6 : px + 6;
+          this.ctx.fillStyle = '#fed7aa';
+          this.ctx.beginPath();
+          this.ctx.arc(headX, floorY - 9, 8, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Comical Spiral Eyes (@ @)
+          this.ctx.strokeStyle = '#3b1111';
+          this.ctx.lineWidth = 1.4;
+          const eyeCenterX = this.pFacing === 1 ? headX + 2 : headX - 2;
+          this.ctx.beginPath();
+          this.ctx.arc(eyeCenterX, floorY - 9, 3.2, 0, Math.PI * 1.8);
+          this.ctx.stroke();
+
+          // Little sweat drop
+          this.ctx.fillStyle = '#38bdf8';
+          this.ctx.beginPath();
+          this.ctx.arc(headX, floorY - 20 + Math.sin(this.frameCount * 0.15) * 3, 3, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Dizzy floating stars above collapsed Megumin
+          const dizzyAng = this.frameCount * 0.1;
+          for (let s = 0; s < 3; s++) {
+            const sAng = dizzyAng + s * ((Math.PI * 2) / 3);
+            const starX = px + pw / 2 + Math.cos(sAng) * 16;
+            const starY = floorY - 26 + Math.sin(sAng) * 6;
+            this.ctx.fillStyle = '#fbbf24';
+            this.ctx.beginPath();
+            this.ctx.arc(starX, starY, 2.2, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+        } else {
+          // --- ACTIVE MEGUMON SPRITE ---
+          const capeWave = Math.sin(this.frameCount * 0.18) * 4;
+
+          // 1. Flowing Brown Archmage Cape Behind
+          this.ctx.fillStyle = '#451a03';
+          this.ctx.strokeStyle = '#78350f';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 4, bodyY + 14);
+          this.ctx.quadraticCurveTo(px - 12 * this.pFacing + capeWave, bodyY + ph / 2, px - 16 * this.pFacing + capeWave, bodyY + ph - 2);
+          this.ctx.quadraticCurveTo(px + pw / 2, bodyY + ph + 4, px + pw + 6 * this.pFacing, bodyY + ph - 4);
+          this.ctx.quadraticCurveTo(px + pw - 4, bodyY + ph / 2, px + pw - 4, bodyY + 14);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // 2. Legs: Brown Boot (left) & Bandaged Leg (right)
+          const leftLegX = this.pFacing === 1 ? px + 6 : px + pw - 14;
+          const rightLegX = this.pFacing === 1 ? px + pw - 14 : px + 6;
+          // Bandaged leg
+          this.ctx.fillStyle = '#f8fafc';
+          this.ctx.strokeStyle = '#94a3b8';
+          this.ctx.lineWidth = 1.2;
+          this.ctx.fillRect(rightLegX, bodyY + ph - 8 + legStride, 8, 8);
+          this.ctx.strokeRect(rightLegX, bodyY + ph - 8 + legStride, 8, 8);
+          // Dark ribbon on bandage
+          this.ctx.fillStyle = '#09090b';
+          this.ctx.fillRect(rightLegX, bodyY + ph - 7 + legStride, 8, 2);
+          // Brown boot
+          this.ctx.fillStyle = '#451a03';
+          this.ctx.fillRect(leftLegX, bodyY + ph - 8 - legStride, 8, 8);
+
+          // 3. Crimson Archmage Tunic / Dress
+          this.ctx.fillStyle = '#dc2626';
+          this.ctx.strokeStyle = '#7f1d1d';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.arc(px + pw / 2, bodyY + pw / 2, pw / 2 - 2, Math.PI, 0, false);
+          this.ctx.lineTo(px + pw - 4, bodyY + ph - 6);
+          this.ctx.quadraticCurveTo(px + pw / 2, bodyY + ph - 2, px + 4, bodyY + ph - 6);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Gold Trim at Dress Hem
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(px + 4, bodyY + ph - 6);
+          this.ctx.quadraticCurveTo(px + pw / 2, bodyY + ph - 2, px + pw - 4, bodyY + ph - 6);
+          this.ctx.stroke();
+
+          // Gold Waist Belt & Buckle
+          this.ctx.fillStyle = '#1c1917';
+          this.ctx.fillRect(px + 6, bodyY + ph / 2 + 3, pw - 12, 4);
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.strokeStyle = '#d97706';
+          this.ctx.lineWidth = 0.8;
+          this.ctx.fillRect(px + pw / 2 - 4, bodyY + ph / 2 + 2, 8, 6);
+          this.ctx.strokeRect(px + pw / 2 - 4, bodyY + ph / 2 + 2, 8, 6);
+
+          // Shoulder Capelet with Gold Brooch
+          this.ctx.fillStyle = '#451a03';
+          this.ctx.beginPath();
+          this.ctx.roundRect(px + 4, bodyY + 12, pw - 8, 6, 3);
+          this.ctx.fill();
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.beginPath();
+          this.ctx.arc(px + pw / 2, bodyY + 14, 3, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.beginPath();
+          this.ctx.arc(px + pw / 2, bodyY + 14, 1.4, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // 4. Head & Face
+          const headCenterX = px + pw / 2;
+          const headCenterY = bodyY + 12;
+          this.ctx.fillStyle = '#fed7aa';
+          this.ctx.beginPath();
+          this.ctx.arc(headCenterX, headCenterY, 11, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Dark Chestnut Bangs
+          this.ctx.fillStyle = '#260e0e';
+          this.ctx.beginPath();
+          this.ctx.arc(headCenterX, headCenterY - 3, 11, Math.PI, 0);
+          this.ctx.fill();
+
+          // Signature Eyepatch over Back Eye
+          const eyePatchX = this.pFacing === 1 ? headCenterX - 6 : headCenterX + 2;
+          this.ctx.fillStyle = '#09090b';
+          this.ctx.fillRect(eyePatchX, headCenterY - 3, 5, 5);
+          this.ctx.strokeStyle = '#ef4444';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(eyePatchX + 2.5, headCenterY - 2.5);
+          this.ctx.lineTo(eyePatchX + 2.5, headCenterY + 1.5);
+          this.ctx.moveTo(eyePatchX + 0.5, headCenterY - 0.5);
+          this.ctx.lineTo(eyePatchX + 4.5, headCenterY - 0.5);
+          this.ctx.stroke();
+
+          // Glowing Crimson Demon Eye (Front Eye)
+          const crimsonEyeX = this.pFacing === 1 ? headCenterX + 3 : headCenterX - 5;
+          const eyePulse = this.megumonChanneling ? Math.sin(this.frameCount * 0.3) * 1.5 : 0;
+          this.ctx.fillStyle = '#ef4444';
+          this.ctx.beginPath();
+          this.ctx.arc(crimsonEyeX, headCenterY - 1, 2.8 + eyePulse, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.beginPath();
+          this.ctx.arc(crimsonEyeX + (this.pFacing === 1 ? 0.8 : -0.8), headCenterY - 1.8, 1, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Eye Flare Trail during Channeling or Mana Convergence
+          if (this.megumonChanneling || this.megumonManaConvergenceTimer > 0) {
+            this.ctx.strokeStyle = '#f87171';
+            this.ctx.lineWidth = 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(crimsonEyeX, headCenterY - 1);
+            this.ctx.lineTo(crimsonEyeX - this.pFacing * 12, headCenterY - 6 + Math.sin(this.frameCount * 0.2) * 3);
+            this.ctx.stroke();
+          }
+
+          // Cute Blush
+          this.ctx.fillStyle = 'rgba(244, 63, 94, 0.45)';
+          this.ctx.beginPath();
+          this.ctx.arc(crimsonEyeX, headCenterY + 3, 2, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // 5. Oversized Witch Hat
+          this.ctx.save();
+          this.ctx.translate(headCenterX, headCenterY - 8);
+          // Hat Brim
+          this.ctx.fillStyle = '#260e0e';
+          this.ctx.strokeStyle = '#7f1d1d';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.ellipse(0, 0, 22, 5.5, 0, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Gold Brim Edge Trim
+          this.ctx.strokeStyle = '#fbbf24';
+          this.ctx.lineWidth = 1.2;
+          this.ctx.beginPath();
+          this.ctx.ellipse(0, 0, 21, 5, 0, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // Twisted Hat Cone
+          this.ctx.fillStyle = '#260e0e';
+          this.ctx.strokeStyle = '#7f1d1d';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.moveTo(-11, 0);
+          this.ctx.quadraticCurveTo(-2, -18, 8, -26);
+          this.ctx.quadraticCurveTo(12, -28, 10, -22);
+          this.ctx.quadraticCurveTo(8, -12, 11, 0);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Gold Hat Band & Face Emblem Buckle
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.fillRect(-10, -4, 20, 3.5);
+          this.ctx.beginPath();
+          this.ctx.arc(0, -2, 3.5, 0, Math.PI * 2);
+          this.ctx.fill();
+          this.ctx.fillStyle = '#1c1917';
+          this.ctx.fillRect(-1.5, -3, 3, 2);
+          this.ctx.restore();
+
+          // 6. Signature Wizard Staff & Attack/Channeling Animations
+          const staffBaseX = px + (this.pFacing === 1 ? pw - 2 : 2);
+          const staffBaseY = bodyY + 16;
+
+          this.ctx.save();
+          if (this.megumonStaffSwingTimer > 0) {
+            // --- Basic Attack Staff Smack Swing Animation ---
+            const swingProgress = (14 - this.megumonStaffSwingTimer) / 14;
+            // Arc swings from high overhead downward
+            const swingAngle = this.pFacing === 1
+              ? -Math.PI * 0.45 + swingProgress * (Math.PI * 0.9)
+              : Math.PI + Math.PI * 0.45 - swingProgress * (Math.PI * 0.9);
+
+            this.ctx.translate(staffBaseX, staffBaseY);
+            this.ctx.rotate(swingAngle);
+
+            // Wooden Staff Shaft
+            this.ctx.strokeStyle = '#78350f';
+            this.ctx.lineWidth = 3.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -6);
+            this.ctx.lineTo(0, 34);
+            this.ctx.stroke();
+
+            // Gold Crescent Head & Core Orb
+            this.ctx.strokeStyle = '#fbbf24';
+            this.ctx.lineWidth = 2.4;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 34, 7, 0, Math.PI * 2);
+            this.ctx.stroke();
+            this.ctx.fillStyle = '#ef4444';
+            this.ctx.beginPath();
+            this.ctx.arc(0, 34, 4.5, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Swing Impact Slash Trail Arc
+            this.ctx.strokeStyle = 'rgba(251, 191, 36, 0.7)';
+            this.ctx.lineWidth = 8;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 36, -0.6, 0.6);
+            this.ctx.stroke();
+
+            this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+            this.ctx.lineWidth = 3.5;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 0, 36, -0.4, 0.4);
+            this.ctx.stroke();
+          } else if (this.megumonChanneling) {
+            // --- Channeling Ultimate Pose: Staff Held Forward Pointing at Target ---
+            const aimAngle = this.pFacing === 1 ? -0.2 : Math.PI + 0.2;
+            this.ctx.translate(staffBaseX, staffBaseY);
+            this.ctx.rotate(aimAngle);
+
+            this.ctx.strokeStyle = '#78350f';
+            this.ctx.lineWidth = 3.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(32, 0);
+            this.ctx.stroke();
+
+            // Pulsating Blinding Ruby Core Gem
+            const orbPulse = Math.sin(this.frameCount * 0.35) * 3;
+            this.ctx.strokeStyle = '#fbbf24';
+            this.ctx.lineWidth = 2.5;
+            this.ctx.beginPath();
+            this.ctx.arc(32, 0, 8 + orbPulse, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = '#ef4444';
+            this.ctx.beginPath();
+            this.ctx.arc(32, 0, 5 + orbPulse * 0.6, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.fillStyle = '#ffffff';
+            this.ctx.beginPath();
+            this.ctx.arc(32, 0, 2, 0, Math.PI * 2);
+            this.ctx.fill();
+          } else if (this.megumonManaConvergenceTimer > 0) {
+            // --- Mana Convergence Stance: Staff Raised Overhead Gathering Mana ---
+            const convergeAngle = this.pFacing === 1 ? -1.15 : Math.PI + 1.15;
+            this.ctx.translate(staffBaseX, staffBaseY);
+            this.ctx.rotate(convergeAngle);
+
+            // Staff Shaft
+            this.ctx.strokeStyle = '#78350f';
+            this.ctx.lineWidth = 3.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, 0);
+            this.ctx.lineTo(34, 0);
+            this.ctx.stroke();
+
+            // Resonating Ruby Core & Golden Halo
+            const haloPulse = Math.sin(this.frameCount * 0.3) * 3;
+            this.ctx.strokeStyle = '#fbbf24';
+            this.ctx.lineWidth = 2.4;
+            this.ctx.beginPath();
+            this.ctx.arc(34, 0, 8 + haloPulse, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            this.ctx.fillStyle = '#ef4444';
+            this.ctx.beginPath();
+            this.ctx.arc(34, 0, 5 + haloPulse * 0.6, 0, Math.PI * 2);
+            this.ctx.fill();
+
+            // Radiant Diamond Star Flare on Staff Core
+            this.ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)';
+            this.ctx.lineWidth = 2;
+            const starR = 12 + haloPulse * 2;
+            this.ctx.beginPath();
+            this.ctx.moveTo(34 - starR, 0);
+            this.ctx.lineTo(34 + starR, 0);
+            this.ctx.moveTo(34, -starR);
+            this.ctx.lineTo(34, starR);
+            this.ctx.stroke();
+          } else {
+            // --- Normal Idle/Running Stance ---
+            this.ctx.translate(staffBaseX, staffBaseY);
+            const idleAngle = this.pFacing === 1 ? -0.45 : Math.PI + 0.45;
+            this.ctx.rotate(idleAngle);
+
+            this.ctx.strokeStyle = '#78350f';
+            this.ctx.lineWidth = 3.5;
+            this.ctx.beginPath();
+            this.ctx.moveTo(0, -10);
+            this.ctx.lineTo(0, 32);
+            this.ctx.stroke();
+
+            // Gold Spiral Head
+            this.ctx.strokeStyle = '#fbbf24';
+            this.ctx.lineWidth = 2.2;
+            this.ctx.beginPath();
+            this.ctx.arc(0, 32, 7, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // Crimson Orb
+            this.ctx.fillStyle = '#ef4444';
+            this.ctx.beginPath();
+            this.ctx.arc(0, 32, 4.5, 0, Math.PI * 2);
+            this.ctx.fill();
+            this.ctx.fillStyle = '#fef08a';
+            this.ctx.beginPath();
+            this.ctx.arc(-1, 31, 1.2, 0, Math.PI * 2);
+            this.ctx.fill();
+          }
+          this.ctx.restore();
+        }
+
+        this.ctx.restore();
       } else if (this.selectedDraco === 'Enigmon') {
         this.ctx.save();
         const wingFlap = Math.sin(this.frameCount * 0.15) * 4;
@@ -22692,7 +23534,8 @@ export class GameEngine {
           this.selectedDraco === 'Mikomon' ||
           this.selectedDraco === 'EndMon' ||
           this.selectedDraco === 'Blastermon' ||
-          this.selectedDraco === 'Phantomon'
+          this.selectedDraco === 'Phantomon' ||
+          this.selectedDraco === 'Megumon'
         ) {
           // Custom Dracos render their own dedicated weapons & spell effects
         } else {
@@ -22881,7 +23724,8 @@ export class GameEngine {
           this.selectedDraco === 'Mikomon' ||
           this.selectedDraco === 'EndMon' ||
           this.selectedDraco === 'Blastermon' ||
-          this.selectedDraco === 'Phantomon'
+          this.selectedDraco === 'Phantomon' ||
+          this.selectedDraco === 'Megumon'
         ) {
           // Custom Dracos render their own staff, cleaver, scythe, anchor, or dark energy hands
         } else {
@@ -24640,6 +25484,646 @@ export class GameEngine {
 
         this.ctx.restore();
       }
+    }
+
+    // =========================================================================
+    // MEGUMON (CRIMSON DEMON ARCHMAGE) WORLD VISUAL EFFECTS
+    // =========================================================================
+    // 1. Mana Convergence Burning Area Aura & Inward Swirling Mana Vortex (Pure Circle, Solid Lines)
+    if (this.selectedDraco === 'Megumon' && this.megumonManaConvergenceTimer > 0) {
+      this.ctx.save();
+      const pCenterX = this.px + this.pWidth / 2;
+      const pCenterY = this.py + this.pHeight / 2;
+      const radius = 120;
+      const pulse = Math.sin(this.frameCount * 0.22) * 8;
+      const rot = this.frameCount * 0.045;
+
+      // Ground radial burn & arcane vortex glow (Pure Circle)
+      const burnGrad = this.ctx.createRadialGradient(pCenterX, pCenterY, 8, pCenterX, pCenterY, radius + pulse);
+      burnGrad.addColorStop(0, 'rgba(254, 240, 138, 0.50)'); // hot golden mana center
+      burnGrad.addColorStop(0.3, 'rgba(239, 68, 68, 0.38)'); // vibrant crimson
+      burnGrad.addColorStop(0.7, 'rgba(249, 115, 22, 0.22)'); // blazing orange
+      burnGrad.addColorStop(1, 'rgba(185, 28, 28, 0)');
+      this.ctx.fillStyle = burnGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(pCenterX, pCenterY, radius + pulse, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // Outer Crimson Runic Circle (Solid line, NO DASH)
+      this.ctx.strokeStyle = '#ef4444';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(pCenterX, pCenterY, radius - 2, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Middle Golden Runic Ring (Solid line, NO DASH)
+      this.ctx.strokeStyle = '#fbbf24';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(pCenterX, pCenterY, radius * 0.72, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // 8-Pointed Archmage Star (Octagram) on ground (Solid line, Pure Circle)
+      this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.75)';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      const starRadius = radius * 0.68;
+      for (let p = 0; p < 8; p++) {
+        const starAng = rot + p * (Math.PI / 4);
+        const pR = p % 2 === 0 ? starRadius : starRadius * 0.45;
+        const sx = pCenterX + Math.cos(starAng) * pR;
+        const sy = pCenterY + Math.sin(starAng) * pR;
+        if (p === 0) this.ctx.moveTo(sx, sy);
+        else this.ctx.lineTo(sx, sy);
+      }
+      this.ctx.closePath();
+      this.ctx.stroke();
+
+      // Inward Swirling Logarithmic Mana Spiral Arms (4 arms drawing ambient energy)
+      for (let arm = 0; arm < 4; arm++) {
+        const armBase = rot * 1.5 + (arm * Math.PI) / 2;
+        this.ctx.strokeStyle = arm % 2 === 0 ? 'rgba(239, 68, 68, 0.8)' : 'rgba(251, 191, 36, 0.85)';
+        this.ctx.lineWidth = 2.2;
+        this.ctx.beginPath();
+        for (let step = 0; step <= 16; step++) {
+          const t = step / 16;
+          const r = radius * (1 - t);
+          const theta = armBase + t * Math.PI * 1.6;
+          const sx = pCenterX + Math.cos(theta) * r;
+          const sy = pCenterY + Math.sin(theta) * r;
+          if (step === 0) this.ctx.moveTo(sx, sy);
+          else this.ctx.lineTo(sx, sy);
+        }
+        this.ctx.stroke();
+      }
+
+      // Rotating Archmage Runes orbiting around perimeter in circular path
+      for (let i = 0; i < 8; i++) {
+        const ang = rot + (i * Math.PI) / 4;
+        const rx = pCenterX + Math.cos(ang) * (radius - 12);
+        const ry = pCenterY + Math.sin(ang) * (radius - 12);
+        // Rune diamond
+        this.ctx.fillStyle = i % 2 === 0 ? '#ef4444' : '#fbbf24';
+        this.ctx.beginPath();
+        this.ctx.arc(rx, ry, 3.8, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Radiating runic spark
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1;
+        this.ctx.beginPath();
+        this.ctx.moveTo(rx - 3, ry);
+        this.ctx.lineTo(rx + 3, ry);
+        this.ctx.moveTo(rx, ry - 3);
+        this.ctx.lineTo(rx, ry + 3);
+        this.ctx.stroke();
+      }
+
+      // Ascending Fiery Mana Embers
+      for (let e = 0; e < 10; e++) {
+        const emberLife = ((this.frameCount * 2.5 + e * 24) % 100) / 100;
+        const emberDist = (radius * 0.75) * (1 - emberLife * 0.4);
+        const emberAng = (e * 0.628) + rot;
+        const ex = pCenterX + Math.cos(emberAng) * emberDist + Math.sin(this.frameCount * 0.15 + e) * 6;
+        const ey = pCenterY + Math.sin(emberAng) * emberDist - emberLife * 65;
+        const alpha = Math.sin(emberLife * Math.PI);
+
+        this.ctx.fillStyle = e % 2 === 0 ? `rgba(239, 68, 68, ${alpha})` : `rgba(251, 191, 36, ${alpha})`;
+        this.ctx.beginPath();
+        this.ctx.arc(ex, ey, 2.5 * (1 - emberLife * 0.5), 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // Expanding Periodic Burn Shockwave Circle Ring (solid line, no dashes)
+      const tickProgress = (this.frameCount % 10) / 10;
+      const waveRadius = tickProgress * radius;
+      const waveAlpha = (1 - tickProgress) * 0.65;
+      this.ctx.strokeStyle = `rgba(239, 68, 68, ${waveAlpha})`;
+      this.ctx.lineWidth = 3 * (1 - tickProgress) + 1;
+      this.ctx.beginPath();
+      this.ctx.arc(pCenterX, pCenterY, waveRadius, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      this.ctx.restore();
+    }
+
+    // 2. Crimson Demon Explosion Channeling Arcane Circle (Darkened Field + Blazing Luminous 3D Oval)
+    if (this.selectedDraco === 'Megumon' && this.isChanneling && this.channelingSpell === 'crimson_demon_explosion') {
+      this.ctx.save();
+      const targetX = this.megumonUltTargetX;
+      const targetY = this.megumonUltTargetY;
+      const spin = this.frameCount * 0.05;
+      const maxRadius = 180;
+      const channelPulse = Math.sin(this.frameCount * 0.15) * 6;
+
+      const camX = this.cameraX;
+      const camY = this.cameraY;
+      const cw = this.canvas.width;
+      const ch = this.canvas.height;
+      const channelProgress = Math.min(1.0, Math.max(0.0, (300 - this.pEnergy) / 300)); // 0.0 to 1.0
+      // Oval starts dim (0.12) and exponentially surges to blinding brilliance (1.0) as chanting progresses
+      const brightness = 0.12 + Math.pow(channelProgress, 1.4) * 0.88;
+
+      // =======================================================================
+      // 1. FIELD DARKENING: THE ENTIRE BATTLEFIELD DARKENS DRAMATICALLY
+      // =======================================================================
+      // Deep ominous crimson-black shadows envelop the screen, growing darker as energy reaches zero
+      const fieldDarkness = 0.68 + channelProgress * 0.20; // 0.68 to 0.88 opacity
+      this.ctx.fillStyle = `rgba(6, 1, 3, ${fieldDarkness})`;
+      this.ctx.fillRect(camX, camY, cw, ch);
+
+      // Ambient crimson aura around Megumon to illuminate her in the darkness
+      const megumonMidX = this.px + this.pWidth / 2;
+      const megumonMidY = this.py + this.pHeight / 2;
+      const casterAura = this.ctx.createRadialGradient(megumonMidX, megumonMidY, 8, megumonMidX, megumonMidY, 95);
+      casterAura.addColorStop(0, `rgba(239, 68, 68, ${0.25 + brightness * 0.35})`);
+      casterAura.addColorStop(0.4, `rgba(251, 191, 36, ${brightness * 0.28})`);
+      casterAura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = casterAura;
+      this.ctx.beginPath();
+      this.ctx.arc(megumonMidX, megumonMidY, 95, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // =======================================================================
+      // 2. DYNAMIC OVAL: STARTS DIM AND BECOMES BRIGHTER AS CHANNELING PROGRESSES
+      // =======================================================================
+      // A. Ground Glow Radiance Well (3D Oval Core: starts dim, flares to white-hot core)
+      this.ctx.save();
+      this.ctx.translate(targetX, targetY);
+      this.ctx.scale(1, 0.42);
+      const glowR = (maxRadius * (0.6 + channelProgress * 0.4)) + channelPulse;
+      const ovalRadiance = this.ctx.createRadialGradient(0, 0, 8, 0, 0, glowR + 40);
+      ovalRadiance.addColorStop(0, `rgba(255, 255, 255, ${brightness * 0.98})`);   // White-hot core flares up
+      ovalRadiance.addColorStop(0.18, `rgba(254, 240, 138, ${brightness * 0.90})`); // Golden flare
+      ovalRadiance.addColorStop(0.48, `rgba(239, 68, 68, ${brightness * 0.75})`);   // Searing crimson
+      ovalRadiance.addColorStop(0.78, `rgba(185, 28, 28, ${brightness * 0.38})`);  // Demonic red corona
+      ovalRadiance.addColorStop(1, 'rgba(0, 0, 0, 0)');
+      this.ctx.fillStyle = ovalRadiance;
+      this.ctx.beginPath();
+      this.ctx.arc(0, 0, glowR + 40, 0, Math.PI * 2);
+      this.ctx.fill();
+      this.ctx.restore();
+
+      // B. Vertical Mana Light Pillars / Shafts (emerge as energy charges past 20%)
+      const rayPower = Math.max(0, (channelProgress - 0.2) / 0.8) * brightness;
+      if (rayPower > 0.05) {
+        for (let b = 0; b < 6; b++) {
+          const rayAng = spin * 1.4 + b * ((Math.PI * 2) / 6);
+          const rayDist = (maxRadius * 0.62) + Math.sin(this.frameCount * 0.2 + b) * 12;
+          const rx = targetX + Math.cos(rayAng) * rayDist;
+          const ry = targetY + Math.sin(rayAng) * (rayDist * 0.42);
+          const rayH = (80 + Math.sin(this.frameCount * 0.25 + b * 2) * 35) * (0.5 + channelProgress * 0.5);
+          const rayGrad = this.ctx.createLinearGradient(rx, ry - rayH, rx, ry);
+          rayGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          rayGrad.addColorStop(0.3, `rgba(254, 240, 138, ${rayPower * 0.45})`);
+          rayGrad.addColorStop(0.8, `rgba(239, 68, 68, ${rayPower * 0.85})`);
+          rayGrad.addColorStop(1, `rgba(255, 255, 255, ${rayPower * 0.95})`);
+          this.ctx.fillStyle = rayGrad;
+          this.ctx.fillRect(rx - 3.5, ry - rayH, 7, rayH);
+        }
+      }
+
+      // C. Outer Crimson Rune 3D Oval with Multi-Layer Glow Bloom
+      this.ctx.shadowColor = '#ef4444';
+      this.ctx.shadowBlur = Math.floor(4 + brightness * 22);
+
+      // Glow backing
+      this.ctx.strokeStyle = `rgba(239, 68, 68, ${brightness * 0.85})`;
+      this.ctx.lineWidth = 2 + brightness * 5;
+      this.ctx.beginPath();
+      this.ctx.ellipse(targetX, targetY, maxRadius, maxRadius * 0.42, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Sharp crimson inner stroke
+      this.ctx.strokeStyle = `rgba(239, 68, 68, ${0.25 + brightness * 0.75})`;
+      this.ctx.lineWidth = 2 + brightness * 2;
+      this.ctx.beginPath();
+      this.ctx.ellipse(targetX, targetY, maxRadius, maxRadius * 0.42, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // White-hot core highlight on the outer rim (intensifies near climax)
+      if (channelProgress > 0.25) {
+        const whiteAlpha = Math.min(1.0, (channelProgress - 0.25) * 1.33);
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${whiteAlpha * 0.95})`;
+        this.ctx.lineWidth = 0.8 + whiteAlpha * 0.8;
+        this.ctx.beginPath();
+        this.ctx.ellipse(targetX, targetY, maxRadius, maxRadius * 0.42, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
+      // D. Concentric Gold Rune 3D Oval with Radiant Golden Bloom
+      this.ctx.shadowColor = '#fbbf24';
+      this.ctx.shadowBlur = Math.floor(2 + brightness * 16);
+
+      this.ctx.strokeStyle = `rgba(251, 191, 36, ${0.2 + brightness * 0.8})`;
+      this.ctx.lineWidth = 1.5 + brightness * 1.7;
+      this.ctx.beginPath();
+      this.ctx.ellipse(targetX, targetY, maxRadius - 16, (maxRadius - 16) * 0.42, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      if (channelProgress > 0.3) {
+        const goldWhite = Math.min(1.0, (channelProgress - 0.3) * 1.4);
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${goldWhite * 0.9})`;
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.ellipse(targetX, targetY, maxRadius - 16, (maxRadius - 16) * 0.42, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
+      // E. Rotating Crimson & Golden Pentagram with Blazing Lines
+      this.ctx.shadowColor = '#fde047';
+      this.ctx.shadowBlur = Math.floor(2 + brightness * 18);
+
+      // Pentagram Base Glow
+      this.ctx.strokeStyle = `rgba(239, 68, 68, ${0.25 + brightness * 0.75})`;
+      this.ctx.lineWidth = 1.8 + brightness * 2.2;
+      this.ctx.beginPath();
+      for (let p = 0; p < 5; p++) {
+        const starAng = spin + p * ((Math.PI * 4) / 5);
+        const sx = targetX + Math.cos(starAng) * (maxRadius - 30);
+        const sy = targetY + Math.sin(starAng) * ((maxRadius - 30) * 0.42);
+        if (p === 0) this.ctx.moveTo(sx, sy);
+        else this.ctx.lineTo(sx, sy);
+      }
+      this.ctx.closePath();
+      this.ctx.stroke();
+
+      // Pentagram Golden Core Line
+      this.ctx.strokeStyle = `rgba(254, 240, 138, ${brightness * 0.95})`;
+      this.ctx.lineWidth = 0.8 + brightness * 1.2;
+      this.ctx.beginPath();
+      for (let p = 0; p < 5; p++) {
+        const starAng = spin + p * ((Math.PI * 4) / 5);
+        const sx = targetX + Math.cos(starAng) * (maxRadius - 30);
+        const sy = targetY + Math.sin(starAng) * ((maxRadius - 30) * 0.42);
+        if (p === 0) this.ctx.moveTo(sx, sy);
+        else this.ctx.lineTo(sx, sy);
+      }
+      this.ctx.closePath();
+      this.ctx.stroke();
+
+      // F. 8 Orbiting Blazing Rune Diamonds along the perimeter
+      this.ctx.shadowColor = '#ffffff';
+      this.ctx.shadowBlur = Math.floor(1 + brightness * 11);
+      for (let i = 0; i < 8; i++) {
+        const runeAng = spin * 0.8 + (i * Math.PI) / 4;
+        const rx = targetX + Math.cos(runeAng) * (maxRadius - 8);
+        const ry = targetY + Math.sin(runeAng) * ((maxRadius - 8) * 0.42);
+
+        this.ctx.fillStyle = `rgba(255, 255, 255, ${0.25 + brightness * 0.75})`;
+        this.ctx.beginPath();
+        this.ctx.arc(rx, ry, 2 + brightness * 1.5, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = `rgba(254, 240, 138, ${brightness})`;
+        this.ctx.lineWidth = 1 + brightness * 0.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(rx - 4, ry);
+        this.ctx.lineTo(rx + 4, ry);
+        this.ctx.moveTo(rx, ry - 4 * 0.42);
+        this.ctx.lineTo(rx, ry + 4 * 0.42);
+        this.ctx.stroke();
+      }
+
+      // G. Ascending Fiery Mana Embers rising from the luminous oval into the darkness
+      this.ctx.shadowBlur = 0;
+      const emberCount = Math.floor(4 + brightness * 8);
+      for (let e = 0; e < emberCount; e++) {
+        const emberLife = ((this.frameCount * 3 + e * 20) % 100) / 100;
+        const emberDist = (maxRadius * 0.72) * (1 - emberLife * 0.35);
+        const emberAng = (e * 0.523) + spin;
+        const ex = targetX + Math.cos(emberAng) * emberDist;
+        const ey = targetY + Math.sin(emberAng) * (emberDist * 0.42) - emberLife * 75;
+        const alpha = Math.sin(emberLife * Math.PI) * brightness;
+
+        this.ctx.fillStyle = e % 3 === 0 ? `rgba(255, 255, 255, ${alpha})` : (e % 3 === 1 ? `rgba(254, 240, 138, ${alpha})` : `rgba(239, 68, 68, ${alpha})`);
+        this.ctx.beginPath();
+        this.ctx.arc(ex, ey, (1.5 + brightness * 1.3) * (1 - emberLife * 0.5), 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      // =======================================================================
+      // 3. SEARING MANA LIGHTNING ARC FROM MEGUMON'S STAFF TO TARGET OVAL
+      // =======================================================================
+      const staffTipX = this.px + (this.pFacing === 1 ? this.pWidth + 18 : -18);
+      const staffTipY = this.py + 8;
+      const controlY = Math.min(staffTipY, targetY) - 85;
+
+      this.ctx.shadowColor = '#ef4444';
+      this.ctx.shadowBlur = Math.floor(4 + brightness * 16);
+
+      // Outer Crimson Lightning Corona
+      this.ctx.strokeStyle = `rgba(239, 68, 68, ${0.3 + brightness * 0.6})`;
+      this.ctx.lineWidth = 2 + brightness * 4;
+      this.ctx.beginPath();
+      this.ctx.moveTo(staffTipX, staffTipY);
+      this.ctx.quadraticCurveTo((staffTipX + targetX) / 2, controlY, targetX, targetY);
+      this.ctx.stroke();
+
+      // Mid Golden Plasma Filament
+      this.ctx.strokeStyle = `rgba(251, 191, 36, ${brightness * 0.9})`;
+      this.ctx.lineWidth = 1 + brightness * 2.5;
+      this.ctx.beginPath();
+      this.ctx.moveTo(staffTipX, staffTipY);
+      this.ctx.quadraticCurveTo((staffTipX + targetX) / 2, controlY, targetX, targetY);
+      this.ctx.stroke();
+
+      // Searing White Core Laser (surges near climax)
+      if (channelProgress > 0.25) {
+        const whiteCoreAlpha = Math.min(1.0, (channelProgress - 0.25) * 1.33);
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${whiteCoreAlpha * 0.95})`;
+        this.ctx.lineWidth = 0.8 + whiteCoreAlpha;
+        this.ctx.beginPath();
+        this.ctx.moveTo(staffTipX, staffTipY);
+        this.ctx.quadraticCurveTo((staffTipX + targetX) / 2, controlY, targetX, targetY);
+        this.ctx.stroke();
+      }
+
+      // =======================================================================
+      // 4. OVERHEAD CHANNELING HUD
+      // =======================================================================
+      this.ctx.font = 'bold 14px monospace';
+      this.ctx.textAlign = 'center';
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.shadowColor = '#ef4444';
+      this.ctx.shadowBlur = 12;
+      this.ctx.fillText(`⚡ CHANTING EXPLOSION: ${Math.max(0, Math.ceil(this.pEnergy))} NRG ⚡`, targetX, targetY - (maxRadius * 0.42) - 18);
+      this.ctx.shadowBlur = 0;
+
+      this.ctx.restore();
+    }
+
+    // 3. Crimson Demon Explosion Cataclysmic Blast (Sky Descent Transition + 3D Ground Blast Animation)
+    if (this.selectedDraco === 'Megumon' && this.megumonExplosionActive && this.megumonExplosionTimer > 0) {
+      this.ctx.save();
+      const targetX = this.megumonUltTargetX;
+      const targetY = this.megumonUltTargetY;
+      const skyY = this.cameraY - 180;
+      const camX = this.cameraX;
+      const camY = this.cameraY;
+      const cw = this.canvas.width;
+      const ch = this.canvas.height;
+
+      if (this.megumonExplosionTimer > 120) {
+        // =====================================================================
+        // TRANSITION PHASE: CELESTIAL BEAM BLASTS DOWN FROM THE SKY (25 FRAMES)
+        // =====================================================================
+        const descentProgress = (145 - this.megumonExplosionTimer) / 25; // 0.0 to 1.0
+        const easeT = Math.pow(descentProgress, 1.7);
+        const currentTipY = skyY + (targetY - skyY) * easeT;
+
+        // 1. Sky charge / darkening celestial vignette
+        const vignetteAlpha = Math.min(0.7, descentProgress * 0.85);
+        const vignetteGrad = this.ctx.createRadialGradient(targetX, skyY + 60, 30, targetX, skyY + 60, cw * 0.7);
+        vignetteGrad.addColorStop(0, `rgba(239, 68, 68, ${vignetteAlpha * 0.5})`);
+        vignetteGrad.addColorStop(0.4, `rgba(185, 28, 28, ${vignetteAlpha * 0.3})`);
+        vignetteGrad.addColorStop(1, `rgba(10, 3, 3, ${vignetteAlpha})`);
+        this.ctx.fillStyle = vignetteGrad;
+        this.ctx.fillRect(camX, camY, cw, ch);
+
+        // 2. Celestial Sky Portal at top of screen
+        const portalR = 75 + Math.sin(this.frameCount * 0.35) * 12;
+        const portalGrad = this.ctx.createRadialGradient(targetX, skyY + 40, 6, targetX, skyY + 40, portalR);
+        portalGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        portalGrad.addColorStop(0.25, 'rgba(254, 240, 138, 0.85)');
+        portalGrad.addColorStop(0.6, 'rgba(239, 68, 68, 0.65)');
+        portalGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+        this.ctx.fillStyle = portalGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(targetX, skyY + 40, portalR, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 3. Faint pre-strike targeting line from sky down to ground zero
+        this.ctx.strokeStyle = `rgba(254, 240, 138, ${0.25 + Math.sin(this.frameCount * 0.4) * 0.15})`;
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.moveTo(targetX, skyY);
+        this.ctx.lineTo(targetX, targetY);
+        this.ctx.stroke();
+
+        // 4. Searing Celestial Spear blasting down from the heavens
+        const spearWidth = 45 + descentProgress * 35;
+        const spearGrad = this.ctx.createLinearGradient(targetX - spearWidth, 0, targetX + spearWidth, 0);
+        spearGrad.addColorStop(0, 'rgba(220, 38, 38, 0)');
+        spearGrad.addColorStop(0.35, 'rgba(239, 68, 68, 0.75)');
+        spearGrad.addColorStop(0.5, 'rgba(251, 191, 36, 0.95)');
+        spearGrad.addColorStop(0.65, 'rgba(239, 68, 68, 0.75)');
+        spearGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+        this.ctx.fillStyle = spearGrad;
+        this.ctx.fillRect(targetX - spearWidth / 2, skyY, spearWidth, currentTipY - skyY);
+
+        // Core white laser column
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(targetX - 8, skyY, 16, currentTipY - skyY);
+
+        // Blinding Arrowhead Tip of the descending beam
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.moveTo(targetX, currentTipY + 30);
+        this.ctx.lineTo(targetX - spearWidth * 0.7, currentTipY - 12);
+        this.ctx.lineTo(targetX + spearWidth * 0.7, currentTipY - 12);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Radiant diamond flare on the descending spearhead
+        const flareR = 26 + Math.sin(this.frameCount * 0.5) * 8;
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 3;
+        this.ctx.beginPath();
+        this.ctx.moveTo(targetX - flareR, currentTipY);
+        this.ctx.lineTo(targetX + flareR, currentTipY);
+        this.ctx.moveTo(targetX, currentTipY - flareR);
+        this.ctx.lineTo(targetX, currentTipY + flareR);
+        this.ctx.stroke();
+
+        // 5. Ground Target Seal flaring in anticipation (3D Oval)
+        const groundFlareAlpha = descentProgress * 0.95;
+        this.ctx.strokeStyle = `rgba(254, 240, 138, ${groundFlareAlpha})`;
+        this.ctx.lineWidth = 3.5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(targetX, targetY, 100 * descentProgress + 20, (100 * descentProgress + 20) * 0.42, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+      } else {
+        // =====================================================================
+        // DETONATION PHASE: CATACLYSMIC GROUND ZERO EXPLOSION (120 FRAMES)
+        // =====================================================================
+        const blastProgress = (120 - this.megumonExplosionTimer) / 120; // 0.0 to 1.0
+
+        // Dark Vignette across screen
+        const vignetteGrad = this.ctx.createRadialGradient(targetX, targetY, 40, targetX, targetY, cw * 0.75);
+        vignetteGrad.addColorStop(0, 'rgba(255, 255, 255, 0.2)');
+        vignetteGrad.addColorStop(0.3, 'rgba(220, 38, 38, 0.45)');
+        vignetteGrad.addColorStop(0.7, 'rgba(69, 10, 10, 0.7)');
+        vignetteGrad.addColorStop(1, 'rgba(10, 3, 3, 0.85)');
+        this.ctx.fillStyle = vignetteGrad;
+        this.ctx.fillRect(camX, camY, cw, ch);
+
+        // A. Massive Celestial Sky Beam (full width column descending from heavens)
+        const beamAlpha = Math.sin(blastProgress * Math.PI); // Fades in and out smoothly
+        const beamWidth = 140 * beamAlpha;
+
+        // Outer Corona of Beam
+        const beamCorona = this.ctx.createLinearGradient(targetX - beamWidth, 0, targetX + beamWidth, 0);
+        beamCorona.addColorStop(0, 'rgba(220, 38, 38, 0)');
+        beamCorona.addColorStop(0.3, 'rgba(239, 68, 68, 0.65)');
+        beamCorona.addColorStop(0.5, 'rgba(251, 191, 36, 0.9)');
+        beamCorona.addColorStop(0.7, 'rgba(239, 68, 68, 0.65)');
+        beamCorona.addColorStop(1, 'rgba(220, 38, 38, 0)');
+        this.ctx.fillStyle = beamCorona;
+        this.ctx.fillRect(targetX - beamWidth, skyY, beamWidth * 2, targetY - skyY);
+
+        // Core Laser Line
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(targetX - 25 * beamAlpha, skyY, 50 * beamAlpha, targetY - skyY);
+
+        // B. Expanding Catastrophic Blast 3D Oval at Ground Zero
+        const maxBlastRad = 280;
+        const currentRadius = Math.min(maxBlastRad, blastProgress * maxBlastRad * 1.3);
+
+        this.ctx.save();
+        this.ctx.translate(targetX, targetY);
+        this.ctx.scale(1, 0.42);
+        const blastGrad = this.ctx.createRadialGradient(0, 0, 10, 0, 0, currentRadius);
+        blastGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        blastGrad.addColorStop(0.25, 'rgba(254, 240, 138, 0.85)');
+        blastGrad.addColorStop(0.55, 'rgba(239, 68, 68, 0.75)');
+        blastGrad.addColorStop(0.85, 'rgba(153, 27, 27, 0.5)');
+        blastGrad.addColorStop(1, 'rgba(69, 10, 10, 0)');
+        this.ctx.fillStyle = blastGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, currentRadius, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.restore();
+
+        // =====================================================================
+        // C. MULTI-LAYER ANIMATED EXPANDING SHOCKWAVES & PRESSURE DOME
+        // =====================================================================
+        const timeAfterImpact = 120 - this.megumonExplosionTimer; // 0 to 120
+        const maxShockwaveRad = 400;
+
+        // 1. Primary Supersonic Detonation Shockwave (Frames 0 to 35)
+        if (timeAfterImpact <= 35) {
+          const primaryP = timeAfterImpact / 35; // 0.0 to 1.0
+          const primaryR = Math.pow(primaryP, 0.65) * 440;
+          const primaryAlpha = Math.pow(1 - primaryP, 1.4);
+
+          // A. Upper Translucent Supersonic Pressure Dome (Air Compression Bubble)
+          this.ctx.save();
+          const domeGrad = this.ctx.createRadialGradient(targetX, targetY, primaryR * 0.65, targetX, targetY, primaryR);
+          domeGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+          domeGrad.addColorStop(0.75, `rgba(254, 240, 138, ${primaryAlpha * 0.25})`);
+          domeGrad.addColorStop(0.94, `rgba(255, 255, 255, ${primaryAlpha * 0.50})`);
+          domeGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          this.ctx.fillStyle = domeGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(targetX, targetY, primaryR, Math.PI, 0); // Upper atmospheric hemisphere
+          this.ctx.fill();
+
+          // Dome Outer Edge Arc
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${primaryAlpha * 0.90})`;
+          this.ctx.lineWidth = Math.max(1, 4 * primaryAlpha);
+          this.ctx.beginPath();
+          this.ctx.arc(targetX, targetY, primaryR, Math.PI, 0);
+          this.ctx.stroke();
+          this.ctx.restore();
+
+          // B. 3D Ground Compression Rings
+          // Outer blazing crimson bloom
+          this.ctx.strokeStyle = `rgba(239, 68, 68, ${primaryAlpha * 0.85})`;
+          this.ctx.lineWidth = 8 * primaryAlpha + 2;
+          this.ctx.beginPath();
+          this.ctx.ellipse(targetX, targetY, primaryR, primaryR * 0.42, 0, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // Solar golden mid-ring
+          this.ctx.strokeStyle = `rgba(254, 240, 138, ${primaryAlpha * 0.95})`;
+          this.ctx.lineWidth = 4 * primaryAlpha + 1.5;
+          this.ctx.beginPath();
+          this.ctx.ellipse(targetX, targetY, primaryR, primaryR * 0.42, 0, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // Blinding white-hot knife edge
+          this.ctx.strokeStyle = `rgba(255, 255, 255, ${primaryAlpha})`;
+          this.ctx.lineWidth = 2 * primaryAlpha + 1;
+          this.ctx.beginPath();
+          this.ctx.ellipse(targetX, targetY, primaryR, primaryR * 0.42, 0, 0, Math.PI * 2);
+          this.ctx.stroke();
+
+          // C. Radial Mach Compression Spikes on the Primary Shockwave Front
+          this.ctx.strokeStyle = `rgba(254, 240, 138, ${primaryAlpha * 0.75})`;
+          this.ctx.lineWidth = 2 * primaryAlpha + 0.8;
+          for (let sp = 0; sp < 20; sp++) {
+            const spAng = sp * (Math.PI / 10) + (primaryP * 0.4);
+            const rIn = primaryR - 10;
+            const rOut = primaryR + 18 * primaryAlpha;
+            const p1x = targetX + Math.cos(spAng) * rIn;
+            const p1y = targetY + Math.sin(spAng) * (rIn * 0.42);
+            const p2x = targetX + Math.cos(spAng) * rOut;
+            const p2y = targetY + Math.sin(spAng) * (rOut * 0.42);
+            this.ctx.beginPath();
+            this.ctx.moveTo(p1x, p1y);
+            this.ctx.lineTo(p2x, p2y);
+            this.ctx.stroke();
+          }
+        }
+
+        // 2. Continuous Rhythmic Pulsing Secondary Shockwaves (rippling every 22 frames across the full 2s duration)
+        for (let waveIdx = 0; waveIdx < 3; waveIdx++) {
+          const wavePhase = (timeAfterImpact + waveIdx * 7) % 22;
+          const waveP = wavePhase / 22; // 0.0 to 1.0
+          const waveRad = Math.pow(waveP, 0.72) * maxShockwaveRad;
+          // Fade with wave life & fade over the 2s explosion duration
+          const waveLifeFade = Math.pow(1 - waveP, 1.35);
+          const totalLifeFade = Math.sin(blastProgress * Math.PI);
+          const waveAlpha = waveLifeFade * totalLifeFade;
+
+          if (waveAlpha > 0.02) {
+            // Expanding 3D Ground Ripple Ring
+            this.ctx.strokeStyle = waveIdx === 0
+              ? `rgba(255, 255, 255, ${waveAlpha * 0.95})`
+              : (waveIdx === 1 ? `rgba(254, 240, 138, ${waveAlpha * 0.85})` : `rgba(239, 68, 68, ${waveAlpha * 0.75})`);
+            this.ctx.lineWidth = (6 - waveIdx * 1.5) * waveAlpha + 1.5;
+            this.ctx.beginPath();
+            this.ctx.ellipse(targetX, targetY, waveRad, waveRad * 0.42, 0, 0, Math.PI * 2);
+            this.ctx.stroke();
+
+            // Upper atmospheric shock arc
+            this.ctx.strokeStyle = `rgba(255, 255, 255, ${waveAlpha * 0.35})`;
+            this.ctx.lineWidth = 2 * waveAlpha + 0.5;
+            this.ctx.beginPath();
+            this.ctx.arc(targetX, targetY, waveRad * 0.88, Math.PI, 0);
+            this.ctx.stroke();
+          }
+        }
+
+        // 3. Ground Zero Searing Fracture Fissures (radiating volcanic cracks in terrain)
+        const fractureAlpha = Math.sin(blastProgress * Math.PI) * 0.9;
+        if (fractureAlpha > 0.05) {
+          this.ctx.strokeStyle = `rgba(254, 240, 138, ${fractureAlpha})`;
+          this.ctx.lineWidth = 2.2;
+          for (let f = 0; f < 8; f++) {
+            const fAng = (f * Math.PI) / 4 + 0.15;
+            const fLen = 85 + (f % 3) * 28;
+            this.ctx.beginPath();
+            this.ctx.moveTo(targetX, targetY);
+            const midX = targetX + Math.cos(fAng + 0.1) * (fLen * 0.5);
+            const midY = targetY + Math.sin(fAng + 0.1) * (fLen * 0.5 * 0.42);
+            const endX = targetX + Math.cos(fAng - 0.08) * fLen;
+            const endY = targetY + Math.sin(fAng - 0.08) * (fLen * 0.42);
+            this.ctx.lineTo(midX, midY);
+            this.ctx.lineTo(endX, endY);
+            this.ctx.stroke();
+          }
+        }
+
+        // D. Ground Zero Impact Crater Glow (3D Oval)
+        this.ctx.fillStyle = 'rgba(254, 240, 138, 0.6)';
+        this.ctx.beginPath();
+        this.ctx.ellipse(targetX, targetY, 60 * beamAlpha, 18 * beamAlpha, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+
+      this.ctx.restore();
     }
 
     if (this.lunarmonSkillActive && this.lunarmonSkillTimer > 0) {

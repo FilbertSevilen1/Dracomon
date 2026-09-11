@@ -1182,8 +1182,219 @@ class SoundService {
     subOsc.stop(now + 1.4);
   }
 
+  public playMegumonChant() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
 
+    const now = this.ctx.currentTime;
+    const chantDuration = 2.0;
 
+    // 1. Ascending magical resonance harmonic
+    const osc1 = this.ctx.createOscillator();
+    const gain1 = this.ctx.createGain();
+    osc1.type = 'triangle';
+    osc1.frequency.setValueAtTime(220, now);
+    osc1.frequency.exponentialRampToValueAtTime(659.25, now + chantDuration); // A3 to E5
+    gain1.gain.setValueAtTime(0.01, now);
+    gain1.gain.linearRampToValueAtTime(this.sfxVolume * 0.5, now + 0.35);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + chantDuration);
+
+    // Vibrato LFO
+    const lfo = this.ctx.createOscillator();
+    const lfoGain = this.ctx.createGain();
+    lfo.frequency.setValueAtTime(7, now);
+    lfoGain.gain.setValueAtTime(10, now);
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc1.frequency);
+    lfo.start(now);
+    lfo.stop(now + chantDuration);
+
+    osc1.connect(gain1);
+    gain1.connect(this.ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + chantDuration);
+
+    // 2. High arcane overtone
+    const osc2 = this.ctx.createOscillator();
+    const gain2 = this.ctx.createGain();
+    osc2.type = 'sine';
+    osc2.frequency.setValueAtTime(440, now);
+    osc2.frequency.exponentialRampToValueAtTime(1318.5, now + chantDuration); // E6
+    gain2.gain.setValueAtTime(0.01, now);
+    gain2.gain.linearRampToValueAtTime(this.sfxVolume * 0.35, now + 0.5);
+    gain2.gain.exponentialRampToValueAtTime(0.001, now + chantDuration);
+
+    osc2.connect(gain2);
+    gain2.connect(this.ctx.destination);
+    osc2.start(now);
+    osc2.stop(now + chantDuration);
+
+    // 3. Gathering rushing mana wind
+    const bufferSize = Math.floor(this.ctx.sampleRate * chantDuration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(300, now);
+    filter.frequency.exponentialRampToValueAtTime(1800, now + chantDuration);
+    filter.Q.setValueAtTime(3.0, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(0.01, now);
+    noiseGain.gain.linearRampToValueAtTime(this.sfxVolume * 0.45, now + 1.1);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + chantDuration);
+
+    noise.connect(filter);
+    filter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start(now);
+    noise.stop(now + chantDuration);
+  }
+
+  public playMegumonExplosion() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+    const explosionDuration = 2.4;
+
+    // 1. Cataclysmic celestial sky-beam screecher (energy blast discharge)
+    const beamOsc = this.ctx.createOscillator();
+    const beamGain = this.ctx.createGain();
+    const beamFilter = this.ctx.createBiquadFilter();
+
+    beamOsc.type = 'sawtooth';
+    beamOsc.frequency.setValueAtTime(2600, now);
+    beamOsc.frequency.exponentialRampToValueAtTime(80, now + 0.6);
+
+    beamFilter.type = 'lowpass';
+    beamFilter.frequency.setValueAtTime(4000, now);
+    beamFilter.frequency.exponentialRampToValueAtTime(300, now + 0.6);
+    beamFilter.Q.setValueAtTime(3.5, now);
+
+    beamGain.gain.setValueAtTime(this.sfxVolume * 0.95, now);
+    beamGain.gain.exponentialRampToValueAtTime(0.001, now + 0.7);
+
+    beamOsc.connect(beamFilter);
+    beamFilter.connect(beamGain);
+    beamGain.connect(this.ctx.destination);
+    beamOsc.start(now);
+    beamOsc.stop(now + 0.7);
+
+    // 2. Heavy white noise detonation shockwave
+    const bufferSize = Math.floor(this.ctx.sampleRate * explosionDuration);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const noiseFilter = this.ctx.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.setValueAtTime(1600, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(60, now + 2.0);
+    noiseFilter.Q.setValueAtTime(2.5, now);
+
+    const noiseGain = this.ctx.createGain();
+    noiseGain.gain.setValueAtTime(this.sfxVolume * 1.0, now);
+    noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 2.2);
+
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.ctx.destination);
+    noise.start(now);
+    noise.stop(now + 2.2);
+
+    // 3. Sub-bass seismic earth-shaking rumble
+    const subOsc = this.ctx.createOscillator();
+    const subGain = this.ctx.createGain();
+    subOsc.type = 'sine';
+    subOsc.frequency.setValueAtTime(110, now);
+    subOsc.frequency.exponentialRampToValueAtTime(22, now + 2.4);
+
+    subGain.gain.setValueAtTime(this.sfxVolume * 1.0, now);
+    subGain.gain.exponentialRampToValueAtTime(0.001, now + 2.4);
+
+    subOsc.connect(subGain);
+    subGain.connect(this.ctx.destination);
+    subOsc.start(now);
+    subOsc.stop(now + 2.4);
+
+    // 4. Secondary delayed ground shockwave thud (+0.12s)
+    const thudOsc = this.ctx.createOscillator();
+    const thudGain = this.ctx.createGain();
+    thudOsc.type = 'triangle';
+    thudOsc.frequency.setValueAtTime(90, now + 0.12);
+    thudOsc.frequency.exponentialRampToValueAtTime(18, now + 1.8);
+
+    thudGain.gain.setValueAtTime(0.001, now);
+    thudGain.gain.setValueAtTime(this.sfxVolume * 0.85, now + 0.12);
+    thudGain.gain.exponentialRampToValueAtTime(0.001, now + 1.8);
+
+    thudOsc.connect(thudGain);
+    thudGain.connect(this.ctx.destination);
+    thudOsc.start(now + 0.12);
+    thudOsc.stop(now + 1.8);
+  }
+
+  public playMegumonManaConvergence() {
+    this.initCtx();
+    if (!this.ctx || this.isMuted || this.sfxVolume === 0) return;
+
+    const now = this.ctx.currentTime;
+
+    // Resonant mana bell arpeggio (C5 - E5 - G5 - C6)
+    const notes = [523.25, 659.25, 783.99, 1046.5];
+    notes.forEach((freq, idx) => {
+      if (!this.ctx) return;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + idx * 0.05);
+
+      gain.gain.setValueAtTime(this.sfxVolume * 0.4, now + idx * 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + idx * 0.05 + 0.4);
+
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start(now + idx * 0.05);
+      osc.stop(now + idx * 0.05 + 0.4);
+    });
+
+    // Fire whoosh swell
+    const bufferSize = Math.floor(this.ctx.sampleRate * 0.5);
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(400, now);
+    filter.frequency.exponentialRampToValueAtTime(1400, now + 0.5);
+    filter.Q.setValueAtTime(2.0, now);
+
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(this.sfxVolume * 0.5, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    noise.start(now);
+    noise.stop(now + 0.5);
+  }
 
   public stopBGM() {
     if (this.musicInterval) {

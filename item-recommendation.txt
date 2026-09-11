@@ -104,7 +104,7 @@ C. RANGED SNIPER ARCHETYPE (Archermon, Mikomon, Azuremon):
      5. Dragonscale Vest / Celestial Dragonplate (Armor)
    - Total Net Gains: +4 to +6 RNG, +35 to +55 ATK, +100+ HP, +2.0 SPD.
 
-D. SPELLCASTER / CASTER ARCHETYPE (Magemon, Enigmon, Shadowmon, Lunarmon, Bombamon, Thundermon):
+D. SPELLCASTER / CASTER ARCHETYPE (Magemon, Enigmon, Shadowmon, Lunarmon, Bombamon, Thundermon, Megumon):
    - Focus on Energy Regen rate (frequent Ultimates), Spell ATK, and Defensive Shielding.
    - Recommended 5-Slot Build:
      1. Thunderstrike Staff / World Slayer Scythe (Weapon)

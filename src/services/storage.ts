@@ -306,6 +306,18 @@ export const DEFAULT_SAVE_DATA: SaveData = {
       unlocked: false,
       energyRegen: 1.0,
     },
+    Megumon: {
+      level: 1,
+      exp: 0,
+      hp: 28,
+      attack: 14.0,
+      defense: 3.5,
+      speed: 7.0,
+      jump: 11,
+      range: 3,
+      unlocked: false,
+      energyRegen: 1.0,
+    },
   },
   tier: 'Free',
   difficulty: 'normal',
@@ -612,6 +624,20 @@ export const storageService = {
             speed: 7.6,
             jump: 11,
             range: 5,
+            unlocked: false,
+            energyRegen: 1.0,
+          };
+        }
+        if (!parsed.dracos.Megumon) {
+          parsed.dracos.Megumon = {
+            level: 1,
+            exp: 0,
+            hp: 28,
+            attack: 14.0,
+            defense: 3.5,
+            speed: 7.0,
+            jump: 11,
+            range: 3,
             unlocked: false,
             energyRegen: 1.0,
           };
