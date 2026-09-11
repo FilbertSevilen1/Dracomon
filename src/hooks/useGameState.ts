@@ -380,8 +380,14 @@ export function useGameState() {
       if (!draco || !Array.isArray(draco.equipped)) return prev;
 
       const currentEquipped = normalizeDracoEquipped(draco.equipped);
-      if (slotIndex < 0 || slotIndex >= 5) return prev;
+      if (slotIndex < 0 || slotIndex >= 6) return prev;
       if (!currentEquipped[slotIndex]) return prev;
+
+      // Scepter slot (index 5) or draco_scepter CANNOT be unequipped once equipped!
+      if (slotIndex === 5 || currentEquipped[slotIndex] === 'draco_scepter') {
+        soundService.playHit();
+        return prev;
+      }
 
       const newEquipped = [...currentEquipped];
       newEquipped[slotIndex] = '';
@@ -403,16 +409,109 @@ export function useGameState() {
     return success;
   }, [updateSaveState]);
 
+  const buyAndEquipScepter = useCallback((dracoName: string) => {
+    let success = false;
+    updateSaveState(prev => {
+      const draco = prev.dracos[dracoName];
+      if (!draco || !draco.unlocked) return prev;
+
+      const SCEPTER_ID = 'draco_scepter';
+      const SCEPTER_COST = 10000;
+      const scepterSlotIndex = 5;
+
+      const currentEquipped = normalizeDracoEquipped(draco.equipped || []);
+      // Already permanently equipped on this draco!
+      if (currentEquipped[scepterSlotIndex] === SCEPTER_ID || currentEquipped.includes(SCEPTER_ID)) {
+        return prev;
+      }
+
+      // Count how many copies of Draco Scepter are equipped across ALL dracos
+      let totalEquippedCount = 0;
+      Object.keys(prev.dracos).forEach(k => {
+        const d = prev.dracos[k];
+        if (d && Array.isArray(d.equipped) && d.equipped.includes(SCEPTER_ID)) {
+          totalEquippedCount++;
+        }
+      });
+
+      const invItem = prev.inventory.find(i => i.id === SCEPTER_ID);
+      const bagQuantity = invItem?.quantity || 0;
+      const unassignedCopies = Math.max(0, bagQuantity - totalEquippedCount);
+
+      let newCoins = prev.player.coins;
+      let newInventory = [...prev.inventory];
+
+      // If no free unassigned scepter in bag, user must buy one for 10,000 gold
+      if (unassignedCopies <= 0) {
+        if (newCoins < SCEPTER_COST) {
+          soundService.playHit();
+          return prev;
+        }
+        newCoins -= SCEPTER_COST;
+        const eqData = EQUIPMENT_REGISTRY[SCEPTER_ID];
+        if (invItem) {
+          newInventory = newInventory.map(i => i.id === SCEPTER_ID ? { ...i, quantity: i.quantity + 1 } : i);
+        } else if (eqData) {
+          newInventory.push({
+            id: eqData.id,
+            name: eqData.name,
+            type: 'equipment',
+            slot: 'scepter',
+            rarity: eqData.rarity,
+            description: eqData.description,
+            quantity: 1,
+            stats: eqData.stats
+          });
+        }
+      }
+
+      // Permanently equip into dedicated scepter slot (index 5)
+      const newEquipped = [...currentEquipped];
+      newEquipped[scepterSlotIndex] = SCEPTER_ID;
+
+      const updatedDracos = {
+        ...prev.dracos,
+        [dracoName]: {
+          ...draco,
+          equipped: newEquipped
+        }
+      };
+
+      soundService.playLevelUp();
+      success = true;
+
+      return {
+        ...prev,
+        player: {
+          ...prev.player,
+          coins: newCoins
+        },
+        inventory: newInventory,
+        dracos: updatedDracos
+      };
+    });
+    return success;
+  }, [updateSaveState]);
+
+  const unequipScepter = useCallback((_dracoName: string) => {
+    // Scepter is permanently bound to the hero and cannot be unequipped!
+    soundService.playHit();
+    return false;
+  }, []);
+
   const unequipAllItems = useCallback((dracoName: string) => {
     let success = false;
     updateSaveState(prev => {
       const draco = prev.dracos[dracoName];
       if (!draco || !Array.isArray(draco.equipped)) return prev;
 
+      const currentEquipped = normalizeDracoEquipped(draco.equipped);
+      // Preserve permanently bound scepter in slot 5
+      const scepterItem = currentEquipped[5] || '';
       const updatedDracos = { ...prev.dracos };
       updatedDracos[dracoName] = {
         ...draco,
-        equipped: ['', '', '', '', '']
+        equipped: ['', '', '', '', '', scepterItem]
       };
 
       soundService.playClick();
@@ -446,11 +545,12 @@ export function useGameState() {
         }
       });
 
-      const newEquipped: string[] = ['', '', '', '', ''];
+      const currentEquipped = normalizeDracoEquipped(draco.equipped || []);
+      const newEquipped: string[] = ['', '', '', '', '', currentEquipped[5] || ''];
       let anyEquipped = false;
 
       // For each slot type in order [weapon, armor, boots, accessory, relic]
-      EQUIPMENT_SLOTS_ORDER.forEach((slotType, slotIdx) => {
+      EQUIPMENT_SLOTS_ORDER.slice(0, 5).forEach((slotType, slotIdx) => {
         const candidates: { id: string; power: number }[] = [];
 
         prev.inventory.forEach(invItem => {
@@ -1135,8 +1235,10 @@ export function useGameState() {
     usePotion,
     useUpgradeStone,
     buyItem,
+    buyAndEquipScepter,
     equipItem,
     unequipItem,
+    unequipScepter,
     unequipAllItems,
     autoEquipOptimal,
     craftItem,

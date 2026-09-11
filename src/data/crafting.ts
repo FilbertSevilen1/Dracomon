@@ -11,7 +11,7 @@ export interface CraftingIngredient {
 export interface CraftingRecipe {
   id: string;
   name: string;
-  category: 'weapon' | 'armor' | 'boots' | 'accessory' | 'relic' | 'consumable';
+  category: EquipmentSlot | 'consumable';
   resultItemId: string;
   resultQuantity: number;
   requiredCoins: number;

@@ -533,32 +533,80 @@ export const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: n
   if (name === 'Jumpmon') {
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
-        <ellipse cx="50" cy="85" rx="28" ry="6" fill="rgba(0,0,0,0.2)" />
+        <defs>
+          <linearGradient id="jumpmon-body-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="35%" stopColor="#fbbf24" />
+            <stop offset="85%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#d97706" />
+          </linearGradient>
+          <linearGradient id="jumpmon-ear-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#f59e0b" />
+            <stop offset="100%" stopColor="#b45309" />
+          </linearGradient>
+        </defs>
 
-        {/* Kangaroo Bunny Ears */}
-        <path d="M 36 32 Q 22 4 34 8 Q 40 18 42 24 Z" fill="#f59e0b" stroke="#d97706" strokeWidth="1.8" />
-        <path d="M 64 32 Q 78 4 66 8 Q 60 18 58 24 Z" fill="#f59e0b" stroke="#d97706" strokeWidth="1.8" />
-        <path d="M 34 26 Q 26 8 33 11 Z" fill="#fef08a" />
-        <path d="M 66 26 Q 74 8 67 11 Z" fill="#fef08a" />
+        {/* Ambient Ground Kinetic Rings */}
+        <ellipse cx="50" cy="87" rx="30" ry="6" fill="rgba(0,0,0,0.25)" />
+        <ellipse cx="50" cy="87" rx="22" ry="4" fill="none" stroke="#f59e0b" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
 
-        {/* Main Body */}
-        <circle cx="50" cy="52" r="24" fill="#fbbf24" stroke="#d97706" strokeWidth="3" />
-        <circle cx="50" cy="58" r="14" fill="#fef08a" />
+        {/* Powerful Coiled Kangaroo Dragon Tail */}
+        <path d="M 28 64 Q 10 74 12 56 Q 14 44 24 50" fill="none" stroke="#d97706" strokeWidth="7" strokeLinecap="round" />
+        <path d="M 28 64 Q 10 74 12 56 Q 14 44 24 50" fill="none" stroke="#fbbf24" strokeWidth="4" strokeLinecap="round" />
+        <circle cx="12" cy="56" r="3.5" fill="#f59e0b" />
+        <circle cx="12" cy="56" r="1.5" fill="#fef08a" />
 
-        {/* Eyes & Cheek Blush */}
-        <circle cx="43" cy="46" r="3" fill="#000000" />
-        <circle cx="57" cy="46" r="3" fill="#000000" />
-        <circle cx="44" cy="45" r="1" fill="#ffffff" />
-        <circle cx="58" cy="45" r="1" fill="#ffffff" />
-        <circle cx="38" cy="52" r="2.5" fill="#f87171" />
-        <circle cx="62" cy="52" r="2.5" fill="#f87171" />
+        {/* Aerodynamic Dragon Bunny Ears */}
+        {/* Left Ear */}
+        <path d="M 37 32 C 24 16 16 0 32 3 C 38 6 42 18 43 25 Z" fill="url(#jumpmon-ear-grad)" stroke="#92400e" strokeWidth="1.8" />
+        <path d="M 35 27 C 27 15 22 6 32 8 C 36 10 38 18 39 23 Z" fill="#fef08a" opacity="0.9" />
+        {/* Right Ear */}
+        <path d="M 63 32 C 76 16 84 0 68 3 C 62 6 58 18 57 25 Z" fill="url(#jumpmon-ear-grad)" stroke="#92400e" strokeWidth="1.8" />
+        <path d="M 65 27 C 73 15 78 6 68 8 C 64 10 62 18 61 23 Z" fill="#fef08a" opacity="0.9" />
 
-        {/* Golden Star Core */}
-        <polygon points="50,53 52,58 57,58 53,61 55,66 50,63 45,66 47,61 43,58 48,58" fill="#f59e0b" />
+        {/* Dynamic Dragon Torso & Head */}
+        <circle cx="50" cy="53" r="23" fill="url(#jumpmon-body-grad)" stroke="#b45309" strokeWidth="2.5" />
 
-        {/* Spring Jump Boots */}
-        <rect x="30" y="72" width="14" height="8" rx="3" fill="#d97706" stroke="#b45309" strokeWidth="1.5" />
-        <rect x="56" y="72" width="14" height="8" rx="3" fill="#d97706" stroke="#b45309" strokeWidth="1.5" />
+        {/* Luminous Golden Chest Plate */}
+        <path d="M 40 48 Q 50 44 60 48 Q 63 65 50 72 Q 37 65 40 48 Z" fill="#fef08a" stroke="#d97706" strokeWidth="1.2" />
+
+        {/* Celestial Star Crest */}
+        <polygon points="50,50 52,55 57,55 53,58 55,63 50,60 45,63 47,58 43,55 48,55" fill="#f59e0b" stroke="#b45309" strokeWidth="0.8" />
+        <circle cx="50" cy="57" r="1.5" fill="#ffffff" />
+
+        {/* Forehead Dragon Jewel */}
+        <polygon points="50,34 53,38 50,42 47,38" fill="#f59e0b" stroke="#78350f" strokeWidth="0.8" />
+        <circle cx="50" cy="38" r="1" fill="#ffffff" />
+
+        {/* Expressive Anime Eyes & Cheek Marks */}
+        {/* Left Eye */}
+        <ellipse cx="43" cy="45" rx="3.5" ry="4.5" fill="#1c1917" />
+        <ellipse cx="43.5" cy="43.5" rx="1.5" ry="2" fill="#ffffff" />
+        <circle cx="44.5" cy="47" r="0.8" fill="#fbbf24" />
+        {/* Right Eye */}
+        <ellipse cx="57" cy="45" rx="3.5" ry="4.5" fill="#1c1917" />
+        <ellipse cx="56.5" cy="43.5" rx="1.5" ry="2" fill="#ffffff" />
+        <circle cx="55.5" cy="47" r="0.8" fill="#fbbf24" />
+        {/* Cheek Marks */}
+        <path d="M 35 50 L 39 52 M 34 53 L 38 55" stroke="#ea580c" strokeWidth="1.2" strokeLinecap="round" />
+        <path d="M 65 50 L 61 52 M 66 53 L 62 55" stroke="#ea580c" strokeWidth="1.2" strokeLinecap="round" />
+
+        {/* High-Tech Kinetic Spring Boots */}
+        {/* Left Spring Boot */}
+        <rect x="27" y="70" width="16" height="9" rx="3" fill="#b45309" stroke="#78350f" strokeWidth="1.5" />
+        <line x1="29" y1="79" x2="41" y2="79" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M 31 79 Q 35 83 31 87 Q 39 87 39 83" fill="none" stroke="#fbbf24" strokeWidth="2" />
+        <rect x="29" y="86" width="12" height="4" rx="1.5" fill="#f59e0b" />
+        {/* Right Spring Boot */}
+        <rect x="57" y="70" width="16" height="9" rx="3" fill="#b45309" stroke="#78350f" strokeWidth="1.5" />
+        <line x1="59" y1="79" x2="71" y2="79" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round" />
+        <path d="M 61 79 Q 65 83 61 87 Q 69 87 69 83" fill="none" stroke="#fbbf24" strokeWidth="2" />
+        <rect x="59" y="86" width="12" height="4" rx="1.5" fill="#f59e0b" />
+
+        {/* Spark Particles */}
+        <circle cx="24" cy="42" r="1.5" fill="#fef08a" />
+        <circle cx="76" cy="44" r="1.5" fill="#fef08a" />
+        <circle cx="50" cy="22" r="1.2" fill="#fbbf24" />
       </svg>
     );
   }
@@ -566,30 +614,74 @@ export const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: n
   if (name === 'Shieldmon') {
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
-        <ellipse cx="50" cy="85" rx="26" ry="6" fill="rgba(0,0,0,0.25)" />
+        <defs>
+          <linearGradient id="shieldmon-armor-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#60a5fa" />
+            <stop offset="40%" stopColor="#3b82f6" />
+            <stop offset="85%" stopColor="#1d4ed8" />
+            <stop offset="100%" stopColor="#1e3a8a" />
+          </linearGradient>
+          <linearGradient id="shield-face-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#334155" />
+            <stop offset="50%" stopColor="#1e293b" />
+            <stop offset="100%" stopColor="#0f172a" />
+          </linearGradient>
+        </defs>
 
-        {/* Armored Shoulder Pads */}
-        <path d="M 28 42 Q 10 24 32 32 Z" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.5" />
-        <path d="M 72 42 Q 90 24 68 32 Z" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.5" />
+        {/* Shadow & Runic Ward Perimeter */}
+        <ellipse cx="50" cy="87" rx="30" ry="6" fill="rgba(0,0,0,0.3)" />
+        <ellipse cx="50" cy="87" rx="26" ry="5" fill="none" stroke="#60a5fa" strokeWidth="1" strokeDasharray="4 3" opacity="0.7" />
 
-        {/* Titan Guardian Horns */}
-        <path d="M 36 32 L 28 14 L 40 24 Z" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="1.5" />
-        <path d="M 64 32 L 72 14 L 60 24 Z" fill="#1d4ed8" stroke="#60a5fa" strokeWidth="1.5" />
+        {/* Layered Bastion Pauldrons */}
+        <path d="M 24 40 Q 6 22 28 30 Z" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.8" />
+        <path d="M 26 43 Q 12 30 30 36 Z" fill="#3b82f6" opacity="0.8" />
+        <path d="M 76 40 Q 94 22 72 30 Z" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.8" />
+        <path d="M 74 43 Q 88 30 70 36 Z" fill="#3b82f6" opacity="0.8" />
 
-        {/* Main Body */}
-        <rect x="32" y="30" width="36" height="46" rx="14" fill="#3b82f6" stroke="#1e3a8a" strokeWidth="2.8" />
+        {/* Titan Guardian Crest Horns */}
+        <path d="M 35 30 L 22 10 L 39 20 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="2" />
+        <line x1="28" y1="16" x2="35" y2="24" stroke="#60a5fa" strokeWidth="1.5" />
+        <path d="M 65 30 L 78 10 L 61 20 Z" fill="#1e3a8a" stroke="#93c5fd" strokeWidth="2" />
+        <line x1="72" y1="16" x2="65" y2="24" stroke="#60a5fa" strokeWidth="1.5" />
 
-        {/* Glowing Sapphire Visor Eyes */}
-        <rect x="40" y="40" width="6" height="5" rx="1" fill="#60a5fa" />
-        <rect x="54" y="40" width="6" height="5" rx="1" fill="#60a5fa" />
-        <rect x="42" y="41" width="2" height="3" fill="#ffffff" />
-        <rect x="56" y="41" width="2" height="3" fill="#ffffff" />
+        {/* Fortress Main Body Plate */}
+        <rect x="31" y="28" width="38" height="48" rx="14" fill="url(#shieldmon-armor-grad)" stroke="#1e3a8a" strokeWidth="2.8" />
 
-        {/* Aegis Fortress Tower Shield */}
-        <path d="M 60 36 L 82 36 L 86 76 L 71 86 L 56 76 Z" fill="#1e293b" stroke="#60a5fa" strokeWidth="2" />
-        <line x1="71" y1="42" x2="71" y2="78" stroke="#60a5fa" strokeWidth="2.5" />
-        <line x1="63" y1="56" x2="79" y2="56" stroke="#60a5fa" strokeWidth="2.5" />
-        <circle cx="71" cy="56" r="3.5" fill="#ffffff" />
+        {/* Bastion Brow & Visor Slit */}
+        <path d="M 34 38 L 66 38 L 63 46 L 37 46 Z" fill="#0f172a" stroke="#1e3a8a" strokeWidth="1.5" />
+        {/* Glowing Cyan Visor Eyes */}
+        <rect x="40" y="41" width="8" height="3" rx="1" fill="#38bdf8" />
+        <rect x="52" y="41" width="8" height="3" rx="1" fill="#38bdf8" />
+        <circle cx="44" cy="42.5" r="1" fill="#ffffff" />
+        <circle cx="56" cy="42.5" r="1" fill="#ffffff" />
+
+        {/* Chest Armor Plating & Core Gem */}
+        <polygon points="50,52 57,57 54,66 46,66 43,57" fill="#1e293b" stroke="#60a5fa" strokeWidth="1.2" />
+        <polygon points="50,54 54,58 52,63 48,63 46,58" fill="#38bdf8" />
+        <circle cx="50" cy="58.5" r="1.2" fill="#ffffff" />
+
+        {/* Armored Boots */}
+        <rect x="32" y="74" width="14" height="8" rx="2.5" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.2" />
+        <rect x="54" y="74" width="14" height="8" rx="2.5" fill="#1e3a8a" stroke="#60a5fa" strokeWidth="1.2" />
+
+        {/* Titanic Aegis Fortress Tower Shield (Front Right) */}
+        <g transform="translate(14, 2)">
+          {/* Shield Outer Shadow / Edge */}
+          <path d="M 52 30 L 78 30 L 83 72 L 65 84 L 47 72 Z" fill="#0f172a" stroke="#93c5fd" strokeWidth="2.5" />
+          {/* Shield Inset Plate */}
+          <path d="M 54 33 L 76 33 L 80 69 L 65 79 L 50 69 Z" fill="url(#shield-face-grad)" stroke="#3b82f6" strokeWidth="1.2" />
+          {/* Central Heraldic Cross */}
+          <line x1="65" y1="36" x2="65" y2="76" stroke="#60a5fa" strokeWidth="3" strokeLinecap="round" />
+          <line x1="54" y1="52" x2="76" y2="52" stroke="#60a5fa" strokeWidth="3" strokeLinecap="round" />
+          {/* Diamond Crystal Boss */}
+          <polygon points="65,46 71,52 65,58 59,52" fill="#38bdf8" stroke="#ffffff" strokeWidth="1" />
+          <circle cx="65" cy="52" r="1.8" fill="#ffffff" />
+          {/* Shield Rivets */}
+          <circle cx="56" cy="35" r="1" fill="#cbd5e1" />
+          <circle cx="74" cy="35" r="1" fill="#cbd5e1" />
+          <circle cx="78" cy="67" r="1" fill="#cbd5e1" />
+          <circle cx="52" cy="67" r="1" fill="#cbd5e1" />
+        </g>
       </svg>
     );
   }
@@ -734,15 +826,85 @@ export const DracoArtwork: React.FC<{ name: string; animated?: boolean; size?: n
   if (name === 'Archermon') {
     return (
       <svg width={size} height={size} viewBox="0 0 100 100" className={animClass}>
-        <ellipse cx="50" cy="85" rx="26" ry="6" fill="rgba(0,0,0,0.25)" />
-        <rect x="34" y="30" width="32" height="46" rx="12" fill="#10b981" stroke="#047857" strokeWidth="2.5" />
-        <path d="M 30 30 Q 50 12 70 30 Z" fill="#059669" stroke="#047857" strokeWidth="2" />
-        <circle cx="44" cy="42" r="3.5" fill="#ffffff" />
-        <circle cx="56" cy="42" r="3.5" fill="#ffffff" />
-        <circle cx="44" cy="42" r="1.5" fill="#000000" />
-        <circle cx="56" cy="42" r="1.5" fill="#000000" />
-        <path d="M 68 28 Q 80 50 68 70" fill="none" stroke="#ca8a04" strokeWidth="3" />
-        <line x1="68" y1="28" x2="68" y2="70" stroke="#e2e8f0" strokeWidth="1" />
+        <defs>
+          <linearGradient id="archermon-cloak-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#34d399" />
+            <stop offset="40%" stopColor="#10b981" />
+            <stop offset="85%" stopColor="#059669" />
+            <stop offset="100%" stopColor="#065f46" />
+          </linearGradient>
+          <linearGradient id="archermon-bow-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor="#fef08a" />
+            <stop offset="50%" stopColor="#eab308" />
+            <stop offset="100%" stopColor="#ca8a04" />
+          </linearGradient>
+        </defs>
+
+        {/* Ambient Ground Shadow & Leaves */}
+        <ellipse cx="50" cy="87" rx="28" ry="6" fill="rgba(0,0,0,0.25)" />
+        <ellipse cx="50" cy="87" rx="22" ry="4" fill="none" stroke="#10b981" strokeWidth="1" strokeDasharray="3 2" opacity="0.6" />
+
+        {/* Ranger Quiver with Fletched Arrows on Back */}
+        <g transform="translate(-10, -2)">
+          <path d="M 28 32 L 36 30 L 32 62 L 24 64 Z" fill="#78350f" stroke="#451a03" strokeWidth="1.2" />
+          {/* Arrow 1 */}
+          <line x1="28" y1="31" x2="22" y2="14" stroke="#d97706" strokeWidth="1.5" />
+          <polygon points="22,14 20,20 25,18" fill="#10b981" />
+          {/* Arrow 2 */}
+          <line x1="31" y1="30" x2="27" y2="12" stroke="#d97706" strokeWidth="1.5" />
+          <polygon points="27,12 25,18 30,16" fill="#fef08a" />
+          {/* Arrow 3 */}
+          <line x1="34" y1="31" x2="33" y2="14" stroke="#d97706" strokeWidth="1.5" />
+          <polygon points="33,14 30,20 35,18" fill="#10b981" />
+        </g>
+
+        {/* Ranger Cloak & Torso */}
+        <rect x="33" y="30" width="34" height="46" rx="13" fill="url(#archermon-cloak-grad)" stroke="#065f46" strokeWidth="2.5" />
+
+        {/* Leather Cross-Belt Harness */}
+        <line x1="34" y1="36" x2="66" y2="66" stroke="#78350f" strokeWidth="3" />
+        <line x1="34" y1="36" x2="66" y2="66" stroke="#d97706" strokeWidth="1.2" />
+        {/* Belt Buckle */}
+        <rect x="47" y="48" width="6" height="6" rx="1.5" fill="#facc15" stroke="#78350f" strokeWidth="1" />
+
+        {/* Elven Ranger Cowl / Hood with Crest Peak */}
+        <path d="M 28 32 C 30 14 44 4 50 2 C 56 4 70 14 72 32 C 62 27 38 27 28 32 Z" fill="#059669" stroke="#047857" strokeWidth="2" />
+        <path d="M 47 4 Q 50 16 53 4" fill="none" stroke="#fef08a" strokeWidth="1.2" />
+        {/* Emerald Crest Feather */}
+        <path d="M 50 3 Q 40 -8 34 -4 Q 42 0 49 4" fill="#34d399" stroke="#065f46" strokeWidth="1" />
+
+        {/* Keen Marksman Eyes & Eyebrow Mask */}
+        <ellipse cx="43" cy="41" rx="4" ry="4.5" fill="#ffffff" />
+        <ellipse cx="57" cy="41" rx="4" ry="4.5" fill="#ffffff" />
+        <ellipse cx="44.5" cy="41" rx="2" ry="3" fill="#065f46" />
+        <ellipse cx="58.5" cy="41" rx="2" ry="3" fill="#065f46" />
+        <circle cx="45" cy="40" r="0.9" fill="#ffffff" />
+        <circle cx="59" cy="40" r="0.9" fill="#ffffff" />
+        {/* Eye markings / Warpaint */}
+        <path d="M 37 44 L 41 45" stroke="#047857" strokeWidth="1.5" strokeLinecap="round" />
+        <path d="M 63 44 L 59 45" stroke="#047857" strokeWidth="1.5" strokeLinecap="round" />
+
+        {/* Ranger Leather Boots */}
+        <rect x="33" y="72" width="13" height="8" rx="2.5" fill="#78350f" stroke="#451a03" strokeWidth="1.2" />
+        <rect x="54" y="72" width="13" height="8" rx="2.5" fill="#78350f" stroke="#451a03" strokeWidth="1.2" />
+
+        {/* Masterwork Golden Recurve Longbow with Glowing String */}
+        <g transform="translate(16, 2)">
+          {/* Recurve Bow Limbs */}
+          <path d="M 54 18 C 66 28 72 48 58 78" fill="none" stroke="url(#archermon-bow-grad)" strokeWidth="3.8" strokeLinecap="round" />
+          <path d="M 54 18 C 66 28 72 48 58 78" fill="none" stroke="#78350f" strokeWidth="1" strokeDasharray="5 3" />
+          {/* Bow Tips */}
+          <circle cx="54" cy="18" r="2.2" fill="#ca8a04" />
+          <circle cx="58" cy="78" r="2.2" fill="#ca8a04" />
+          {/* Luminous Mana Bowstring */}
+          <line x1="54" y1="18" x2="48" y2="48" stroke="#a7f3d0" strokeWidth="1.5" />
+          <line x1="48" y1="48" x2="58" y2="78" stroke="#a7f3d0" strokeWidth="1.5" />
+          {/* Notched Spectral Arrow */}
+          <line x1="38" y1="48" x2="68" y2="48" stroke="#fef08a" strokeWidth="2" strokeLinecap="round" />
+          <polygon points="68,48 64,45 64,51" fill="#34d399" />
+          <polygon points="38,48 42,46 42,50" fill="#fef08a" />
+          <circle cx="50" cy="48" r="3" fill="rgba(52, 211, 153, 0.4)" />
+        </g>
       </svg>
     );
   }

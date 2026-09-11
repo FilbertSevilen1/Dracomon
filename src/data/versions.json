@@ -1,5 +1,32 @@
 [
   {
+    "version": "0.4.4",
+    "date": "September 7, 2026",
+    "tag": "Bombamon & Thundermon Draco Scepter Upgrades & Pixelmon Visual Fix",
+    "badgeColor": "bg-gradient-to-r from-sky-600 via-amber-500 to-rose-600 text-white font-black shadow-sm",
+    "summary": "Version 0.4.4 empowers Bombamon and Thundermon with devastating Mythic Draco Scepter upgrades! Bombamon ignites rapid-spreading bluish hellfire that detonates into contagious crowd burns, and unleashes explosive Flare Beams. Thundermon's ultimate summons ancient Thunder Relics that continuously zap nearby foes with thunderbolts and chain-replicate upon kills. Plus, fixes the Pixelmon projectile rendering bug.",
+    "highlights": [
+      "Bombamon Scepter Upgrade - Azure Hellfire & Flare Beam: Ground flames turn into blazing bluish fire with tripled burn damage that spreads across terrain up to 200px from the ignition point (reduced to 1/4 spread). When the flame duration ends, it violently detonates, dealing massive area damage and applying contagious burns that spread back and forth between enemies. While any ground is burning, Bombamon's basic attack converts into a high-speed Flare Beam that detonates on impact and burns all nearby foes!",
+      "Thundermon Scepter Upgrade - Thunder Relic & Raigeki Replication: When Thundermon's ultimate strikes enemies, it summons an ancient hovering Thunder Relic lasting 8 seconds. Every 2 seconds, the relic unleashes Thundermon's signature Raigeki thunderbolt upon all nearby foes. When an enemy is killed by a relic, an additional Thunder Relic is immediately summoned at their position with half the duration of the killing relic!",
+      "Hero Roster & Demo Canvas Integration: Added dedicated Scepter showcase preview profiles and automated combat demo follow-up actions for both Bombamon and Thundermon in the Scepter preview tab.",
+      "Pixelmon Projectile Bug Fix: Fixed an issue where Pixelmon's Tetris blocks and Pacman projectiles were visually obscured by a secondary rendering pass fallback solid square."
+    ]
+  },
+  {
+    "version": "0.4.3",
+    "date": "September 6, 2026",
+    "tag": "Mythic Draco Scepter, Ultimate Enhancements & Scepter Preview",
+    "badgeColor": "bg-gradient-to-r from-rose-600 via-purple-600 to-amber-500 text-white font-black shadow-sm",
+    "summary": "Version 0.4.3 introduces the Mythic item 'Draco Scepter' (10,000 Gold in shop, does not drop), conferring game-changing ultimate enhancements to Jumpmon, Archermon, and Shieldmon! Experience Jumpmon's 8s Planetfall buff with a sea-greenish body, landing ground stuns and cascading Echo Slam wave bursts. Rain down explosive arrow shower bursts with Archermon, and unleash Shieldmon's 4s complete immunity, 3x damage boost, and devastating Dome Detonation stun. Plus, preview all Scepter upgrades with the new dedicated 'Scepter' preview tab!",
+    "highlights": [
+      "New Mythic Item - Draco Scepter: Available in the Armory Shop for 10,000 Gold (never drops from enemies). Equips in the Relic slot (+50 HP, +15 ATK, +10 DEF, +0.5 Energy Regen) and unlocks catastrophic enhancements for Draco ultimates.",
+      "Jumpmon Scepter Upgrade - Planetfall & Echo Slam: When Jumpmon strikes the ground during ultimate, he gains the 8-second Planetfall buff, turning his body sea-greenish with emerald radiant auras. Whenever Jumpmon lands on the ground while Planetfall is active, he stuns nearby enemies for 1 second, damages them, and spawns seeking Echo Slam waves that strike every other nearby enemy on screen for cascading chain-reaction damage!",
+      "Archermon Scepter Upgrade - Explosive Arrow Shower: Falling arrows from Archermon's Arrow Shower now violently detonate upon contacting enemies or solid terrain, dealing explosive area damage to nearby foes with radiant emerald burst rings.",
+      "Shieldmon Scepter Upgrade - Invulnerability, 3x Damage & Dome Detonation: Shieldmon enters an unyielding Aegis state with 4 seconds of total damage immunity and 3.0x attack damage. When the protective dome expires, it detonates in a massive 300px kinetic burst that damages and stuns all nearby enemies for 2 seconds!",
+      "New Scepter Preview Section: Added a dedicated '🪄 Scepter' preview tab in the Hero Roster combat demo canvas for heroes with Scepter upgrades, allowing players to instantly showcase and test their empowered ultimates."
+    ]
+  },
+  {
     "version": "0.4.2",
     "date": "September 5, 2026",
     "tag": "Arena Theme, Defense Mode, 5 New Siege Enemies, Skewer Traps & Phantomon",

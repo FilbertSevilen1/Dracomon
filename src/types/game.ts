@@ -7,6 +7,7 @@ export interface PlayerStats {
   range: number;
   energyRegen?: number;
   level?: number;
+  hasScepter?: boolean;
 }
 
 export interface DracoData {
@@ -44,7 +45,7 @@ export interface InventoryItem {
   type: InventoryItemType;
   description: string;
   quantity: number;
-  slot?: 'weapon' | 'armor' | 'boots' | 'accessory' | 'relic';
+  slot?: 'weapon' | 'armor' | 'boots' | 'accessory' | 'relic' | 'scepter';
   rarity?: 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
   icon?: string;
   stats?: Partial<PlayerStats>;

@@ -84,6 +84,25 @@ export const FT_PRIMAL_ROAR: FloatingTextEntry           = { text: 'PRIMAL ROAR'
 export const FT_LUNAR_ECLIPSE: FloatingTextEntry         = { text: 'LUNAR ECLIPSE!',              color: '#c7d2fe' };
 export const FT_CHARGING_CARPET_BOMBING: FloatingTextEntry = { text: 'CARPET BOMBING!', color: '#f97316' };
 export const FT_CARPET_BOMBING_FLAME: FloatingTextEntry  = { text: 'ETERNAL FLAME!', color: '#ef4444' };
+export const FT_PLANETFALL_ACTIVE: FloatingTextEntry       = { text: '⚡ PLANETFALL BUFF (8s)!', color: '#2dd4bf' };
+export const FT_PLANETFALL_SLAM: FloatingTextEntry         = { text: '💥 PLANETFALL ECHO SLAM!', color: '#14b8a6' };
+export const FT_ECHO_HIT: FloatingTextEntry                = { text: '✨ ECHO IMPACT!', color: '#5eead4' };
+export const FT_ARROW_SHOWER_EXPLOSION: FloatingTextEntry = { text: '💥 ARROW DETONATION!', color: '#10b981' };
+export const FT_DOME_EXPLOSION: FloatingTextEntry          = { text: '💥 DOME DETONATION!', color: '#60a5fa' };
+export const FT_SCEPTER_IMMUNITY: FloatingTextEntry        = { text: '🛡️ SCEPTER IMMUNITY & 3x DMG!', color: '#93c5fd' };
+export const FT_TORNADO_FALL_SLAM: FloatingTextEntry       = { text: '💥 TORNADO CRASH! -FALL DMG & STUN 2s!', color: '#06b6d4' };
+export const FT_SHINING_BLADE: FloatingTextEntry           = { text: '⚔️ SHINING BLADE (8s)!', color: '#c084fc' };
+export const FT_RUPTURE_BLEED: FloatingTextEntry           = { text: '🩸 RUPTURED!', color: '#ef4444' };
+export const FT_ASSASSIN_RESET: FloatingTextEntry          = { text: '⚡ EXECUTION RESET!', color: '#e879f9' };
+export const FT_HAWK_SUMMONED: FloatingTextEntry           = { text: '🦅 CELESTIAL HAWK SUMMONED!', color: '#facc15' };
+export const FT_HAWK_GALE: FloatingTextEntry               = { text: '🌪️ CELESTIAL GUST!', color: '#38bdf8' };
+export const FT_BLUE_FLAME_BURST: FloatingTextEntry         = { text: '💥 BLUE HELLFIRE DETONATION!', color: '#38bdf8' };
+export const FT_BLUE_BURN: FloatingTextEntry                = { text: '🔥 AZURE HELLFIRE!', color: '#60a5fa' };
+export const FT_FLARE_BEAM: FloatingTextEntry               = { text: '⚡ AZURE FLARE BEAM!', color: '#38bdf8' };
+export const FT_FLARE_BEAM_BURST: FloatingTextEntry         = { text: '💥 FLARE BEAM BURST!', color: '#60a5fa' };
+export const FT_THUNDER_RELIC_SUMMONED: FloatingTextEntry   = { text: '⚡ THUNDER RELIC SUMMONED (8s)!', color: '#facc15' };
+export const FT_THUNDER_RELIC_REPLICATED: FloatingTextEntry = { text: '⚡ RELIC CHAIN REPLICATION!', color: '#06b6d4' };
+export const FT_THUNDER_RELIC_ZAP: FloatingTextEntry        = { text: '⚡ RELIC THUNDERBOLT!', color: '#facc15' };
 
 // ---------------------------------------------------------------------------
 // Player Abilities — Channeling

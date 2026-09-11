@@ -69,6 +69,8 @@ export default function Home() {
     buyItem,
     equipItem,
     unequipItem,
+    buyAndEquipScepter,
+    unequipScepter,
     unequipAllItems,
     autoEquipOptimal,
     sellEquipment,
@@ -1825,6 +1827,8 @@ export default function Home() {
             levelUpInfo={levelUpInfo}
             onApplyBonus={applyLevelUpBonus}
             pendingLevelUps={pendingLevelUps}
+            onBuyAndEquipScepter={buyAndEquipScepter}
+            onUnequipScepter={unequipScepter}
           />
         )}
 

@@ -19,7 +19,8 @@ import {
   Wrench,
   Layers,
   ChevronRight,
-  HelpCircle
+  HelpCircle,
+  Lock
 } from 'lucide-react';
 import { soundService } from '../services/sound';
 import {
@@ -133,6 +134,10 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
     return currentDracoEquipped.filter(Boolean).length;
   }, [currentDracoEquipped]);
 
+  const unequipableCount = useMemo(() => {
+    return currentDracoEquipped.filter((id, idx) => Boolean(id) && idx !== 5 && id !== 'draco_scepter').length;
+  }, [currentDracoEquipped]);
+
   const effectiveStats = useMemo(() => {
     return getEffectiveDracoStats(dracoDetails, currentDracoEquipped);
   }, [dracoDetails, currentDracoEquipped]);
@@ -174,6 +179,10 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
   };
 
   const handleUnequip = (slotIdx: number) => {
+    // Scepter is permanently bound to the hero once equipped
+    if (slotIdx === 5 || currentDracoEquipped[slotIdx] === 'draco_scepter') {
+      return;
+    }
     if (onUnequipItem) {
       onUnequipItem(selectedDraco, slotIdx);
     }
@@ -628,7 +637,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
                                   return (
                                     <>
-                                      {availableToEquip > 0 && onSellItem && (
+                                      {availableToEquip > 0 && onSellItem && invItem.id !== 'draco_scepter' && (
                                         <button
                                           onClick={() => {
                                             const ok = onSellItem(invItem.id);
@@ -645,7 +654,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                                         </button>
                                       )}
 
-                                      {availableToEquip > 0 && onDismantleItem && (
+                                      {availableToEquip > 0 && onDismantleItem && invItem.id !== 'draco_scepter' && (
                                         <button
                                           onClick={() => {
                                             const ok = onDismantleItem(invItem.id);
@@ -663,16 +672,21 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                                       )}
 
                                       <button
-                                        onClick={() => handleEquip(invItem.id, sIdx)}
-                                        disabled={availableToEquip <= 0 && !isEquippedOnCurrent}
+                                        onClick={() => {
+                                          if (isEquippedOnCurrent && invItem.id === 'draco_scepter') return;
+                                          handleEquip(invItem.id, sIdx);
+                                        }}
+                                        disabled={(availableToEquip <= 0 && !isEquippedOnCurrent) || (isEquippedOnCurrent && invItem.id === 'draco_scepter')}
                                         className={`flex-1 py-2 px-3 rounded-xl text-xs font-black uppercase tracking-wider font-display border transition-all ${
-                                          availableToEquip > 0 || isEquippedOnCurrent
+                                          isEquippedOnCurrent && invItem.id === 'draco_scepter'
+                                            ? 'bg-amber-950/70 border-amber-500/60 text-amber-300 cursor-default shadow-sm'
+                                            : availableToEquip > 0 || isEquippedOnCurrent
                                             ? 'bg-amber-500 hover:bg-amber-400 text-stone-950 border-amber-400 shadow-md'
                                             : 'bg-stone-900 text-stone-600 border-stone-800 cursor-not-allowed'
                                         }`}
                                       >
                                         {isEquippedOnCurrent
-                                          ? 'Equipped'
+                                          ? (invItem.id === 'draco_scepter' ? '🔒 Bound' : 'Equipped')
                                           : availableToEquip <= 0
                                           ? 'All In Use'
                                           : isSlotOccupied
@@ -742,7 +756,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                             isSelected ? 'bg-amber-600 text-stone-950' : 'bg-stone-900 text-stone-400'
                           }`}
                         >
-                          {eqCount}/5
+                          {eqCount}/6
                         </span>
                       </button>
                     );
@@ -856,15 +870,15 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                       </button>
                       <button
                         onClick={handleUnequipAll}
-                        disabled={equippedCount === 0}
+                        disabled={unequipableCount === 0}
                         className={`w-full py-2 px-3 border rounded-xl text-xs font-black uppercase font-display transition-all flex items-center justify-center gap-1.5 ${
-                          equippedCount > 0
+                          unequipableCount > 0
                             ? 'border-stone-700 bg-stone-900 text-stone-300 hover:bg-stone-800'
                             : 'border-stone-800 bg-stone-950 text-stone-600 cursor-not-allowed'
                         }`}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
-                        Unequip All ({equippedCount})
+                        Unequip Gear ({unequipableCount})
                       </button>
                     </div>
                   </div>
@@ -874,13 +888,13 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                     <div className="flex items-center justify-between">
                       <h4 className="text-sm font-black uppercase tracking-wider text-stone-300 font-display flex items-center gap-2">
                         <Layers className="w-4 h-4 text-amber-400" />
-                        Equipment Slots ({equippedCount}/5)
+                        Equipment Slots ({equippedCount}/6)
                       </h4>
-                      <span className="text-[11px] text-stone-500 font-mono">1 per Type: Weapon, Armor, Boots, Accessory, Relic</span>
+                      <span className="text-[11px] text-stone-500 font-mono">1 per Type: Weapon, Armor, Boots, Accessory, Relic, Scepter</span>
                     </div>
 
                     <div className="space-y-2.5">
-                      {[0, 1, 2, 3, 4].map(slotIdx => {
+                      {[0, 1, 2, 3, 4, 5].map(slotIdx => {
                         const slotType = getSlotTypeByIndex(slotIdx);
                         const slotCfg = SLOT_CONFIG[slotType];
                         const equippedId = currentDracoEquipped[slotIdx];
@@ -888,6 +902,7 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
 
                         if (eqItem) {
                           const rarityCfg = RARITY_CONFIG[eqItem.rarity] || RARITY_CONFIG.common;
+                          const isBoundScepter = slotIdx === 5 || eqItem.id === 'draco_scepter';
                           return (
                             <div
                               key={`slot-${slotIdx}`}
@@ -950,19 +965,27 @@ export const InventoryModal: React.FC<InventoryModalProps> = ({
                               </div>
 
                               <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => setSlotPickerIndex(slotIdx)}
-                                  className="px-2.5 py-1 bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 rounded-lg text-xs font-mono font-bold transition-colors"
-                                >
-                                  Swap
-                                </button>
-                                <button
-                                  onClick={() => handleUnequip(slotIdx)}
-                                  className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800 text-rose-300 rounded-lg transition-colors"
-                                  title="Unequip"
-                                >
-                                  <X className="w-4 h-4" />
-                                </button>
+                                {isBoundScepter ? (
+                                  <span className="px-2.5 py-1 bg-amber-950/70 border border-amber-500/60 text-amber-300 rounded-lg text-xs font-mono font-bold flex items-center gap-1 shadow-sm">
+                                    <Lock className="w-3.5 h-3.5" /> Bound
+                                  </span>
+                                ) : (
+                                  <>
+                                    <button
+                                      onClick={() => setSlotPickerIndex(slotIdx)}
+                                      className="px-2.5 py-1 bg-stone-900 hover:bg-stone-800 border border-stone-700 text-stone-300 rounded-lg text-xs font-mono font-bold transition-colors"
+                                    >
+                                      Swap
+                                    </button>
+                                    <button
+                                      onClick={() => handleUnequip(slotIdx)}
+                                      className="p-1.5 bg-rose-950/40 hover:bg-rose-900/60 border border-rose-800 text-rose-300 rounded-lg transition-colors"
+                                      title="Unequip"
+                                    >
+                                      <X className="w-4 h-4" />
+                                    </button>
+                                  </>
+                                )}
                               </div>
                             </div>
                           );

@@ -1,7 +1,7 @@
 import { PlayerStats, DracoData } from '../types/game';
 
 export type EquipmentRarity = 'common' | 'rare' | 'epic' | 'legendary' | 'mythic';
-export type EquipmentSlot = 'weapon' | 'armor' | 'boots' | 'accessory' | 'relic';
+export type EquipmentSlot = 'weapon' | 'armor' | 'boots' | 'accessory' | 'relic' | 'scepter';
 
 export interface EquipmentItem {
   id: string;
@@ -73,10 +73,11 @@ export const SLOT_CONFIG: Record<EquipmentSlot, { label: string; icon: string; d
   armor: { label: 'Armor', icon: '🛡️', desc: 'Increases defense and maximum health pool' },
   boots: { label: 'Boots', icon: '👢', desc: 'Increases movement speed and jump height' },
   accessory: { label: 'Accessory', icon: '💍', desc: 'Provides balanced hybrid offensive & defensive stats' },
-  relic: { label: 'Relic', icon: '🔮', desc: 'Enhances energy regeneration, stats, and ability output' }
+  relic: { label: 'Relic', icon: '🔮', desc: 'Enhances energy regeneration, stats, and ability output' },
+  scepter: { label: 'Scepter', icon: '🪄', desc: 'Dedicated Draco Scepter slot unlocking mythic ultimate power' }
 };
 
-export const EQUIPMENT_SLOTS_ORDER: EquipmentSlot[] = ['weapon', 'armor', 'boots', 'accessory', 'relic'];
+export const EQUIPMENT_SLOTS_ORDER: EquipmentSlot[] = ['weapon', 'armor', 'boots', 'accessory', 'relic', 'scepter'];
 
 export function getSlotIndexByType(slot: EquipmentSlot): number {
   const idx = EQUIPMENT_SLOTS_ORDER.indexOf(slot);
@@ -101,10 +102,10 @@ export const EQUIPMENT_REGISTRY: Record<string, EquipmentItem> = ALL_EQUIPMENT.r
 
 /**
  * Normalizes an array of equipped item IDs so that each item sits in its correct typed slot.
- * Returns a 5-element array: [weaponId, armorId, bootsId, accessoryId, relicId]
+ * Returns a 6-element array: [weaponId, armorId, bootsId, accessoryId, relicId, scepterId]
  */
 export function normalizeDracoEquipped(equipped: (string | null | undefined)[] = []): string[] {
-  const result: string[] = ['', '', '', '', ''];
+  const result: string[] = ['', '', '', '', '', ''];
   if (!Array.isArray(equipped)) return result;
 
   equipped.forEach(id => {
@@ -197,7 +198,8 @@ export function getEffectiveDracoStats(
     jump: finalJmp,
     range: finalRng,
     energyRegen: finalNrg,
-    level
+    level,
+    hasScepter: (equippedItemIds || []).includes('draco_scepter') || (draco?.equipped || []).includes('draco_scepter')
   };
 }
 
@@ -224,6 +226,8 @@ export function rollEquipmentDrop(
 
   // Filter pool based on world requirement and tier
   const eligibleItems = ALL_EQUIPMENT.filter(item => {
+    // Non-droppable items (e.g. Draco Scepter) have dropWeight <= 0
+    if (typeof item.dropWeight === 'number' && item.dropWeight <= 0) return false;
     if (item.minWorld > Math.max(1, worldId)) return false;
 
     if (enemyTier === 'boss') {

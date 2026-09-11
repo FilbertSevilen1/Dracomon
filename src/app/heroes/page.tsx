@@ -29,6 +29,8 @@ export default function HeroesPage() {
     activationError,
     setActivationError,
     handleVerifyCode,
+    buyAndEquipScepter,
+    unequipScepter,
   } = useGameState();
 
   return (
@@ -73,6 +75,8 @@ export default function HeroesPage() {
             levelUpInfo={levelUpInfo}
             onApplyBonus={applyLevelUpBonus}
             pendingLevelUps={pendingLevelUps}
+            onBuyAndEquipScepter={buyAndEquipScepter}
+            onUnequipScepter={unequipScepter}
           />
         </div>
       </main>

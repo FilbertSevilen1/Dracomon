@@ -4,7 +4,7 @@ import { motion } from 'framer-motion';
 import { SaveData, TierType, PlayerStats } from '../types/game';
 import { Shield, Zap, Lock, Sparkles, Coins, Award, X, Check, ArrowUpRight, Search, Trash2, Swords } from 'lucide-react';
 import { soundService } from '../services/sound';
-import { HeroDemoCanvas } from './HeroDemoCanvas';
+import { HeroDemoCanvas, HEROES_WITH_SCEPTER } from './HeroDemoCanvas';
 import { LevelUpModal } from './LevelUpModal';
 import { InventoryModal } from './InventoryModal';
 import { DracoArtwork } from './DracoArtwork';
@@ -40,6 +40,8 @@ interface DracoSelectionProps {
   } | null;
   onApplyBonus?: (stat: keyof PlayerStats) => void;
   pendingLevelUps?: any[];
+  onBuyAndEquipScepter?: (dracoName: string) => boolean;
+  onUnequipScepter?: (dracoName: string) => boolean;
 }
 
 const DRACO_META: {
@@ -278,6 +280,8 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
   levelUpInfo,
   onApplyBonus,
   pendingLevelUps,
+  onBuyAndEquipScepter,
+  onUnequipScepter,
 }) => {
   const router = useRouter();
   const equippedDraco = saveData.selectedDraco;
@@ -500,10 +504,10 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                         <span className="text-[10px] font-mono text-stone-400 font-bold drop-shadow">
                           {itemUnlocked ? `Lv.${dData.level || 1}` : `Unlock: ${meta.cost}🪙`}
                         </span>
-                        {itemUnlocked && Array.isArray(dData.equipped) && dData.equipped.length > 0 && (
+                        {itemUnlocked && Array.isArray(dData.equipped) && dData.equipped.filter(Boolean).length > 0 && (
                           <span className="inline-flex items-center gap-1 px-1.5 py-0.5 bg-stone-900/90 border border-amber-500/30 text-amber-300 rounded text-[9px] font-display font-bold shadow-xs">
                             <Swords className="w-2.5 h-2.5 text-amber-400" />
-                            <span>{dData.equipped.length}/5</span>
+                            <span>{dData.equipped.filter(Boolean).length}/6</span>
                           </span>
                         )}
                       </div>
@@ -546,7 +550,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
               <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-full font-bold ${
                 inspectTab === 'equipment' ? 'bg-stone-950/30 text-stone-950' : 'bg-stone-900 text-amber-400 border border-stone-800'
               }`}>
-                {equippedCount}/5
+                {equippedCount}/6
               </span>
             </button>
             <button
@@ -600,7 +604,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                       )}
                     </div>
                     <p className="text-[11px] text-stone-400 mt-0.5 font-display">
-                      {isUnlocked ? `Loadout • ${equippedCount} of 5 slots equipped` : `Unlock hero to equip gear`}
+                      {isUnlocked ? `Loadout • ${equippedCount} of 6 slots equipped` : `Unlock hero to equip gear`}
                     </p>
                   </div>
                 </div>
@@ -700,22 +704,25 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                 </div>
               </div>
 
-              {/* 5 Typed Equipment Slots */}
+              {/* 6 Typed Equipment Slots (5 Base + 1 Dedicated Scepter Slot) */}
               <div className="space-y-2 max-h-[380px] overflow-y-auto pr-1">
-                {[0, 1, 2, 3, 4].map(slotIdx => {
+                {[0, 1, 2, 3, 4, 5].map(slotIdx => {
                   const slotType = getSlotTypeByIndex(slotIdx);
                   const slotCfg = SLOT_CONFIG[slotType];
                   const eqId = equippedList[slotIdx];
                   const eq = eqId ? EQUIPMENT_REGISTRY[eqId] : null;
                   const rarityCfg = eq ? RARITY_CONFIG[eq.rarity as EquipmentRarity] || RARITY_CONFIG.common : null;
                   const isPickerOpen = activeSlotPicker === slotIdx;
+                  const isScepterSlot = slotType === 'scepter' || eq?.id === 'draco_scepter';
 
                   return (
                     <div key={slotIdx} className="space-y-2">
                       <div
                         className={`p-2.5 rounded-xl border transition-all flex items-center justify-between gap-3 ${
                           eq
-                            ? 'bg-stone-900/80 border-stone-800/80 hover:border-stone-700'
+                            ? isScepterSlot
+                              ? 'bg-amber-950/30 border-amber-500/40 hover:border-amber-500/60'
+                              : 'bg-stone-900/80 border-stone-800/80 hover:border-stone-700'
                             : 'bg-stone-950/40 border border-dashed border-stone-800/60 hover:border-stone-700'
                         }`}
                       >
@@ -732,8 +739,10 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                           </div>
                           <div className="min-w-0 flex-1">
                             <div className="flex items-center gap-1.5 flex-wrap">
-                              <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider font-display">
-                                {slotCfg.label} Slot
+                              <span className={`text-[10px] font-bold uppercase tracking-wider font-display ${
+                                isScepterSlot ? 'text-amber-400' : 'text-stone-400'
+                              }`}>
+                                {slotCfg.label} Slot {isScepterSlot && '(Dedicated)'}
                               </span>
                               {eq && rarityCfg && (
                                 <span
@@ -772,32 +781,43 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
 
                         {isUnlocked ? (
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <button
-                              onClick={() => {
-                                soundService.playClick();
-                                setActiveSlotPicker(isPickerOpen ? null : slotIdx);
-                              }}
-                              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-display transition-all active:translate-y-0.5 ${
-                                isPickerOpen
-                                  ? 'bg-amber-500 text-stone-950 shadow-sm'
-                                  : 'bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700/80 shadow-xs'
-                              }`}
-                            >
-                              {eq ? 'Swap' : `+ Equip ${slotCfg.label}`}
-                            </button>
-                            {eq && (
-                              <button
-                                onClick={() => {
-                                  soundService.playClick();
-                                  unequipItem(selectedName, slotIdx);
-                                  setFeedbackToast(`Unequipped ${eq.name}`);
-                                  setTimeout(() => setFeedbackToast(null), 2000);
-                                }}
-                                className="p-1.5 text-stone-500 hover:text-rose-400 rounded-lg hover:bg-stone-900 transition-colors"
-                                title="Unequip this item"
+                            {isScepterSlot && eq ? (
+                              <span
+                                className="px-2.5 py-1 text-[10px] font-mono font-bold bg-amber-950/70 border border-amber-500/60 text-amber-300 rounded-lg flex items-center gap-1 shadow-sm"
+                                title="Dedicated Scepter slot is permanently bound to this hero"
                               >
-                                <Trash2 className="w-3.5 h-3.5" />
-                              </button>
+                                <Lock className="w-3 h-3" /> Bound
+                              </span>
+                            ) : (
+                              <>
+                                <button
+                                  onClick={() => {
+                                    soundService.playClick();
+                                    setActiveSlotPicker(isPickerOpen ? null : slotIdx);
+                                  }}
+                                  className={`px-3 py-1.5 rounded-lg text-xs font-bold font-display transition-all active:translate-y-0.5 ${
+                                    isPickerOpen
+                                      ? 'bg-amber-500 text-stone-950 shadow-sm'
+                                      : 'bg-stone-800 hover:bg-stone-700 text-stone-200 border border-stone-700/80 shadow-xs'
+                                  }`}
+                                >
+                                  {eq ? 'Swap' : `+ Equip ${slotCfg.label}`}
+                                </button>
+                                {eq && !isScepterSlot && (
+                                  <button
+                                    onClick={() => {
+                                      soundService.playClick();
+                                      unequipItem(selectedName, slotIdx);
+                                      setFeedbackToast(`Unequipped ${eq.name}`);
+                                      setTimeout(() => setFeedbackToast(null), 2000);
+                                    }}
+                                    className="p-1.5 text-stone-500 hover:text-rose-400 rounded-lg hover:bg-stone-900 transition-colors"
+                                    title="Unequip this item"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </>
                             )}
                           </div>
                         ) : (
@@ -1082,7 +1102,7 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   <span className="text-lg">⚔️</span>
                   <div>
                     <span className="text-xs font-black uppercase text-stone-200 font-display block">
-                      Equipped Gear ({equippedList.length}/5)
+                      Equipped Gear ({equippedList.length}/6)
                     </span>
                     <div className="flex items-center gap-1 mt-1">
                       {equippedList.length > 0 ? (
@@ -1139,6 +1159,121 @@ export const DracoSelection: React.FC<DracoSelectionProps> = ({
                   <p className="text-[11px] text-purple-200/80 mt-1 leading-normal">{inspectedMeta.ultimateDesc}</p>
                 </div>
               </div>
+
+              {/* SCEPTER UPGRADE SECTION (IF HERO HAS SCEPTER UPGRADE) */}
+              {HEROES_WITH_SCEPTER[selectedName] && (() => {
+                const scepter = HEROES_WITH_SCEPTER[selectedName];
+                const hasScepterEquipped = equippedList.includes('draco_scepter');
+
+                return (
+                  <div className={`p-4 rounded-2xl border ${scepter.borderClass} bg-gradient-to-br ${scepter.bgGradient} shadow-xl space-y-2.5`}>
+                    <div className="flex items-center justify-between flex-wrap gap-2">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xl">🪄</span>
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs font-black uppercase tracking-wider text-white font-display">
+                              Draco Scepter: {scepter.title}
+                            </span>
+                            <span className="text-[9px] font-mono font-bold px-1.5 py-0.2 rounded bg-amber-950/80 border border-amber-500/60 text-amber-300 uppercase">
+                              Dedicated Scepter Slot
+                            </span>
+                          </div>
+                          <span className="text-[10px] font-mono text-stone-400 block">
+                            Empowers {inspectedMeta.ultimateName} with devastating bonus mechanics (Permanently bound)
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        {hasScepterEquipped ? (
+                          <div className="flex items-center gap-1.5">
+                            <span className="px-3 py-1 text-[10px] font-bold font-mono bg-emerald-950/90 border border-emerald-500/60 text-emerald-300 rounded-lg flex items-center gap-1.5 shadow-sm">
+                              <Check className="w-3.5 h-3.5 text-emerald-400" /> Scepter Slot Bound &amp; Active
+                            </span>
+                          </div>
+                        ) : (() => {
+                          const totalSceptersInBag = (saveData.inventory || []).find(
+                            item => item.id === 'draco_scepter'
+                          )?.quantity || 0;
+                          let totalEquippedCount = 0;
+                          Object.values(saveData.dracos || {}).forEach(d => {
+                            if (d && Array.isArray(d.equipped) && d.equipped.includes('draco_scepter')) {
+                              totalEquippedCount++;
+                            }
+                          });
+                          const unassignedScepters = Math.max(0, totalSceptersInBag - totalEquippedCount);
+                          const currentCoins = saveData.player?.coins ?? (saveData as any).coins ?? (saveData as any).gold ?? 0;
+                          const canAfford = currentCoins >= 10000;
+
+                          if (unassignedScepters > 0) {
+                            return (
+                              <button
+                                onClick={() => {
+                                  soundService.playLevelUp();
+                                  if (onBuyAndEquipScepter) {
+                                    onBuyAndEquipScepter(selectedName);
+                                  }
+                                }}
+                                className="px-3 py-1 text-[10px] font-bold font-mono bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white rounded-lg flex items-center gap-1 shadow-md shadow-emerald-950/50 active:scale-95 transition-all"
+                              >
+                                <Check className="w-3 h-3" />
+                                <span>Equip Scepter ({unassignedScepters} in Bag)</span>
+                              </button>
+                            );
+                          }
+
+                          return (
+                            <button
+                              onClick={() => {
+                                if (canAfford) {
+                                  if (onBuyAndEquipScepter) {
+                                    onBuyAndEquipScepter(selectedName);
+                                  }
+                                } else {
+                                  soundService.playHit();
+                                }
+                              }}
+                              disabled={!canAfford}
+                              className={`px-3 py-1 text-[10px] font-bold font-mono rounded-lg flex items-center gap-1 shadow-md transition-all ${
+                                canAfford
+                                  ? 'bg-gradient-to-r from-amber-500 via-rose-500 to-purple-600 hover:from-amber-400 hover:to-purple-500 text-white border border-amber-300 shadow-purple-950/60 active:scale-95'
+                                  : 'bg-stone-900 text-stone-500 border border-stone-800 cursor-not-allowed'
+                              }`}
+                              title={canAfford ? 'Buy Draco Scepter and permanently bind to this hero!' : 'Requires 10,000 Coins'}
+                            >
+                              <span>Buy &amp; Bind (10,000🪙)</span>
+                            </button>
+                          );
+                        })()}
+
+                        <button
+                          onClick={() => {
+                            soundService.playClick();
+                            setInspectTab('preview');
+                          }}
+                          className="px-2.5 py-1 text-[10px] font-bold font-mono bg-purple-950/80 hover:bg-purple-900 border border-purple-500/60 text-purple-200 rounded-lg flex items-center gap-1 shadow-sm transition-all"
+                        >
+                          <span>Test Scepter →</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <p className="text-[11px] text-stone-200 leading-relaxed font-mono">
+                      {scepter.description}
+                    </p>
+
+                    <div className="grid grid-cols-1 gap-1 pt-1.5 border-t border-white/10">
+                      {scepter.features.map((feat, idx) => (
+                        <div key={idx} className="flex items-start gap-1.5 text-[10px] text-stone-300 font-mono">
+                          <Check className="w-3 h-3 text-amber-400 shrink-0 mt-0.5" />
+                          <span>{feat}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })()}
             </div>
           )}
         </div>

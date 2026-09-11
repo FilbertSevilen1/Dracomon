@@ -20,7 +20,8 @@ import {
   Info,
   Wrench,
   Search,
-  Filter
+  Filter,
+  Lock
 } from 'lucide-react';
 import { useGameState } from '../../hooks/useGameState';
 import { soundService } from '../../services/sound';
@@ -573,18 +574,24 @@ function InventoryContent() {
                               )}
 
                               {isEquippedByCurrent ? (
-                                <button
-                                  onClick={() => {
-                                    const slotIdx = equippedList.indexOf(item.id);
-                                    if (slotIdx !== -1) {
-                                      unequipItem(selectedDraco, slotIdx);
-                                      triggerToast(`Unequipped ${item.name}`, `Removed from ${selectedDraco} loadout`, item.icon || '⚔️', undefined, 'equip');
-                                    }
-                                  }}
-                                  className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 rounded-xl text-xs font-bold font-display transition-all"
-                                >
-                                  Unequip
-                                </button>
+                                item.id === 'draco_scepter' ? (
+                                  <span className="px-3 py-1.5 bg-amber-950/80 text-amber-300 border border-amber-800/80 rounded-xl text-xs font-bold font-display flex items-center gap-1 shadow-sm">
+                                    <Lock className="w-3.5 h-3.5 text-amber-400" /> Bound
+                                  </span>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      const slotIdx = equippedList.indexOf(item.id);
+                                      if (slotIdx !== -1) {
+                                        unequipItem(selectedDraco, slotIdx);
+                                        triggerToast(`Unequipped ${item.name}`, `Removed from ${selectedDraco} loadout`, item.icon || '⚔️', undefined, 'equip');
+                                      }
+                                    }}
+                                    className="px-3 py-1.5 bg-rose-950/80 hover:bg-rose-900 text-rose-300 border border-rose-800 rounded-xl text-xs font-bold font-display transition-all"
+                                  >
+                                    Unequip
+                                  </button>
+                                )
                               ) : (
                                 <button
                                   disabled={availableForCurrent <= 0}
@@ -767,9 +774,9 @@ function InventoryContent() {
                     </div>
                   </div>
 
-                  {/* 5 Typed Equipment Slots Rows */}
+                  {/* 6 Typed Equipment Slots Rows (5 Base + 1 Dedicated Scepter) */}
                   <div className="space-y-2.5">
-                    {[0, 1, 2, 3, 4].map(slotIdx => {
+                    {[0, 1, 2, 3, 4, 5].map(slotIdx => {
                       const slotType = getSlotTypeByIndex(slotIdx);
                       const slotCfg = SLOT_CONFIG[slotType];
                       const eqId = equippedList[slotIdx];
@@ -777,13 +784,16 @@ function InventoryContent() {
                       const rarity = eq?.rarity || 'common';
                       const rarityCfg = RARITY_CONFIG[rarity as EquipmentRarity] || RARITY_CONFIG.common;
                       const isPickerOpen = activeSlotPicker === slotIdx;
+                      const isScepterSlot = slotType === 'scepter' || eq?.id === 'draco_scepter';
 
                       return (
                         <div key={slotIdx} className="space-y-2">
                           <div
                             className={`p-3.5 rounded-2xl border transition-all flex items-center justify-between gap-3 ${
                               eq
-                                ? 'bg-stone-950/90 border-stone-800 hover:border-stone-700'
+                                ? isScepterSlot
+                                  ? 'bg-amber-950/30 border-amber-500/40 hover:border-amber-500/60'
+                                  : 'bg-stone-950/90 border-stone-800 hover:border-stone-700'
                                 : 'bg-stone-950/40 border-dashed border-stone-800/80'
                             }`}
                           >
@@ -801,8 +811,8 @@ function InventoryContent() {
                                 {eq ? (
                                   <div>
                                     <div className="flex items-center gap-2">
-                                      <span className="text-xs font-bold text-amber-400 font-mono">
-                                        {slotCfg.icon} {slotCfg.label} Slot
+                                      <span className={`text-xs font-bold font-mono ${isScepterSlot ? 'text-amber-400' : 'text-amber-400'}`}>
+                                        {slotCfg.icon} {slotCfg.label} Slot {isScepterSlot && '(Dedicated)'}
                                       </span>
                                       <span
                                         className="text-[9px] font-black uppercase px-2 py-0.5 rounded font-mono"
@@ -828,7 +838,7 @@ function InventoryContent() {
                                   <div>
                                     <span className="text-xs font-bold text-amber-400 font-display uppercase flex items-center gap-1.5">
                                       <span>{slotCfg.icon}</span>
-                                      <span>Empty {slotCfg.label} Slot</span>
+                                      <span>Empty {slotCfg.label} Slot {isScepterSlot && '(Dedicated)'}</span>
                                     </span>
                                     <p className="text-[11px] text-stone-500 font-mono mt-0.5">
                                       {slotCfg.desc}
@@ -839,32 +849,43 @@ function InventoryContent() {
                             </div>
 
                             <div className="flex items-center gap-2 shrink-0">
-                              <button
-                                onClick={() => {
-                                  soundService.playClick();
-                                  setActiveSlotPicker(isPickerOpen ? null : slotIdx);
-                                }}
-                                className={`px-3 py-1.5 rounded-xl text-xs font-bold font-display transition-all ${
-                                  isPickerOpen
-                                    ? 'bg-amber-500 text-stone-950'
-                                    : 'bg-stone-800 hover:bg-stone-700 text-stone-200'
-                                }`}
-                              >
-                                {eq ? 'Swap Gear' : `+ Equip ${slotCfg.label}`}
-                              </button>
-
-                              {eq && (
-                                <button
-                                  onClick={() => {
-                                    soundService.playClick();
-                                    unequipItem(selectedDraco, slotIdx);
-                                    triggerToast(`Unequipped ${eq.name}`, `Removed from ${selectedDraco} ${slotCfg.label} slot`, eq.icon, undefined, 'equip');
-                                  }}
-                                  className="p-1.5 text-stone-500 hover:text-rose-400 rounded-lg hover:bg-stone-800 transition-colors"
-                                  title="Unequip this item"
+                              {isScepterSlot && eq ? (
+                                <span
+                                  className="px-3 py-1.5 rounded-xl text-xs font-bold font-mono bg-amber-950/70 border border-amber-500/60 text-amber-300 flex items-center gap-1.5 shadow-sm"
+                                  title="Dedicated Scepter slot is permanently bound to this hero"
                                 >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                                  <Lock className="w-3.5 h-3.5 text-amber-400" /> Bound
+                                </span>
+                              ) : (
+                                <>
+                                  <button
+                                    onClick={() => {
+                                      soundService.playClick();
+                                      setActiveSlotPicker(isPickerOpen ? null : slotIdx);
+                                    }}
+                                    className={`px-3 py-1.5 rounded-xl text-xs font-bold font-display transition-all ${
+                                      isPickerOpen
+                                        ? 'bg-amber-500 text-stone-950'
+                                        : 'bg-stone-800 hover:bg-stone-700 text-stone-200'
+                                    }`}
+                                  >
+                                    {eq ? 'Swap Gear' : `+ Equip ${slotCfg.label}`}
+                                  </button>
+
+                                  {eq && !isScepterSlot && (
+                                    <button
+                                      onClick={() => {
+                                        soundService.playClick();
+                                        unequipItem(selectedDraco, slotIdx);
+                                        triggerToast(`Unequipped ${eq.name}`, `Removed from ${selectedDraco} ${slotCfg.label} slot`, eq.icon, undefined, 'equip');
+                                      }}
+                                      className="p-1.5 text-stone-500 hover:text-rose-400 rounded-lg hover:bg-stone-800 transition-colors"
+                                      title="Unequip this item"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  )}
+                                </>
                               )}
                             </div>
                           </div>

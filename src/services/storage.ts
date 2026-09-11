@@ -632,7 +632,7 @@ export const storageService = {
           const d = parsed.dracos[key] as any;
           if (d) {
             if (!Array.isArray(d.equipped)) {
-              d.equipped = key === 'Jumpmon' ? normalizeDracoEquipped(['iron_sword']) : ['', '', '', '', ''];
+              d.equipped = key === 'Jumpmon' ? normalizeDracoEquipped(['iron_sword']) : normalizeDracoEquipped([]);
             } else {
               d.equipped = normalizeDracoEquipped(d.equipped);
             }

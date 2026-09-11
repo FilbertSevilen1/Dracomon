@@ -508,5 +508,23 @@
       "range": 1,
       "energyRegen": 0.6
     }
+  },
+  {
+    "id": "draco_scepter",
+    "name": "Draco Scepter",
+    "slot": "scepter",
+    "rarity": "mythic",
+    "description": "Mythic celestial scepter resonating with supreme draconic energy. Dramatically empowers ultimate abilities with catastrophic bonus effects.",
+    "icon": "🪄",
+    "cost": 10000,
+    "minWorld": 999,
+    "dropWeight": 0,
+    "stats": {
+      "hp": 50,
+      "attack": 15,
+      "defense": 10,
+      "energyRegen": 0.5
+    },
+    "passive": "Empowers Jumpmon, Archermon, Shieldmon, Flymon, Assassinmon, and Whitemon ultimate abilities."
   }
 ]

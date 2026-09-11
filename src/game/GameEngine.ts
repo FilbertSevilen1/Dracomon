@@ -127,6 +127,25 @@ import {
   FT_LUNAR_ECLIPSE,
   FT_CHARGING_CARPET_BOMBING,
   FT_CARPET_BOMBING_FLAME,
+  FT_PLANETFALL_ACTIVE,
+  FT_PLANETFALL_SLAM,
+  FT_ECHO_HIT,
+  FT_ARROW_SHOWER_EXPLOSION,
+  FT_DOME_EXPLOSION,
+  FT_SCEPTER_IMMUNITY,
+  FT_TORNADO_FALL_SLAM,
+  FT_SHINING_BLADE,
+  FT_RUPTURE_BLEED,
+  FT_ASSASSIN_RESET,
+  FT_HAWK_SUMMONED,
+  FT_HAWK_GALE,
+  FT_BLUE_FLAME_BURST,
+  FT_BLUE_BURN,
+  FT_FLARE_BEAM,
+  FT_FLARE_BEAM_BURST,
+  FT_THUNDER_RELIC_SUMMONED,
+  FT_THUNDER_RELIC_REPLICATED,
+  FT_THUNDER_RELIC_ZAP,
   FT_ARENA_ERUPTED,
   FT_ARENA_SURVIVED,
   FT_REAPED_BY_DEATH,
@@ -222,7 +241,7 @@ interface Projectile {
   isEnemy: boolean;
   damage: number;
   color: string;
-  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'shining_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock' | 'boomerang' | 'cactus_needle' | 'sci_fi_laser' | 'endmon_bullet' | 'endmon_homing_bullet' | 'endmon_enhanced_fireball' | 'cannonball' | 'mortar_shell' | 'phantomon_void_wave';
+  type: 'arrow' | 'fireball' | 'shield_wave' | 'bomb' | 'axe' | 'sonar' | 'meteor' | 'sun_strike' | 'tornado' | 'giant_cleave' | 'shining_cleave' | 'arcane_orb' | 'dark_energy' | 'homing_bomb' | 'wisp_orb' | 'fortune_slip' | 'fortune_slip_homing' | 'fortune_slip_clock' | 'boomerang' | 'cactus_needle' | 'sci_fi_laser' | 'endmon_bullet' | 'endmon_homing_bullet' | 'endmon_enhanced_fireball' | 'cannonball' | 'mortar_shell' | 'phantomon_void_wave' | 'dark_cleave' | 'gust_shot';
   channelTimer?: number;
   targetX?: number;
   targetY?: number;
@@ -257,6 +276,11 @@ interface GroundBurnZone {
   height: number;
   timer: number;
   duration: number;
+  isBluishFlame?: boolean;
+  originX?: number;
+  maxSpreadRange?: number;
+  burnGroupId?: string;
+  hasDetonated?: boolean;
 }
 
 interface Enemy {
@@ -411,6 +435,8 @@ export class GameEngine {
 
   private assassinmonDashActive = false;
   private assassinmonDashTimer = 0;
+  private assassinmonScepterActive = false;
+  private assassinmonScepterTimer = 0;
   private shadowAfterimages: { x: number; y: number; facing: number; alpha: number }[] = [];
 
   private reapermonBasicSwingDirection = 1;
@@ -451,9 +477,58 @@ export class GameEngine {
   private jumpmonImpactX = 0;
   private jumpmonImpactY = 0;
   private screenShake = 0;
+  public hasScepter = false;
+  private jumpmonPlanetfallTimer = 0;
+  private planetfallEchoes: Array<{
+    x: number;
+    y: number;
+    targetX: number;
+    targetY: number;
+    targetEnemyId: number;
+    damage: number;
+    speed: number;
+    life: number;
+  }> = [];
 
   private archermonUltActive = false;
   private archermonUltTimer = 0;
+  private archermonExplosions: Array<{
+    x: number;
+    y: number;
+    radius: number;
+    maxRadius: number;
+    timer: number;
+    maxTimer: number;
+    color: string;
+    secondaryColor: string;
+  }> = [];
+
+  private shieldmonDomeDetonations: Array<{
+    x: number;
+    y: number;
+    radius: number;
+    maxRadius: number;
+    timer: number;
+    maxTimer: number;
+  }> = [];
+
+  private thunderRelics: Array<{
+    id: number;
+    x: number;
+    y: number;
+    duration: number;
+    maxDuration: number;
+    intervalTimer: number;
+  }> = [];
+  private thunderRelicIdCounter = 0;
+  private relicThunderbolts: Array<{
+    x: number;
+    y: number;
+    targetX: number;
+    targetY: number;
+    timer: number;
+    maxTimer: number;
+  }> = [];
 
   private shieldmonDashActive = false;
   private shieldmonDashTimer = 0;
@@ -651,6 +726,9 @@ export class GameEngine {
   private carpetBombingStartX: number = 0;
   private carpetBombingStartY: number = 0;
   private carpetBombingFireStreamTimer: number = 0;
+  private carpetBombingBurnGroupId: string = '';
+  private lastBluishExplosionTime: number = 0;
+  private lastBluishExplosionX: number = 0;
 
   private lunarmonUltActive: boolean = false;
   private lunarmonUltPhase: 'cinematic' | 'bombarding' | 'jumping' | 'laser' = 'cinematic';
@@ -731,6 +809,7 @@ export class GameEngine {
     }
     this.selectedDraco = selectedDraco;
     this.stats = stats;
+    this.hasScepter = !!(stats as any)?.hasScepter;
     this.callbacks = callbacks;
 
     this.pHP = isDemoMode ? 9999 : stats.hp;
@@ -1580,6 +1659,8 @@ export class GameEngine {
     this.particles = [];
     this.floatingTexts = [];
     this.groundBurnZones = [];
+    this.thunderRelics = [];
+    this.relicThunderbolts = [];
     this.carpetBombingActive = false;
     stageGimmickManager.reset();
     this.gradientCache.clear();
@@ -1891,7 +1972,11 @@ export class GameEngine {
     this.keys[key] = false;
   };
 
-  public triggerAction(action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'ultimate' | 'down') {
+  public setHasScepter(val: boolean) {
+    this.hasScepter = val;
+  }
+
+  public triggerAction(action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'ultimate' | 'down' | 'scepter') {
     if (action === 'left') {
       this.keys['a'] = true;
       this.keys['d'] = false;
@@ -1906,6 +1991,17 @@ export class GameEngine {
     } else if (action === 'special') {
       this.performSpecial();
     } else if (action === 'ultimate') {
+      if (this.isDemoMode && !(this.stats as any)?.hasScepter) {
+        this.hasScepter = false;
+      }
+      this.triggerUltimate();
+    } else if (action === 'scepter') {
+      this.hasScepter = true;
+      if (this.selectedDraco === 'Whitemon') {
+        this.birdActive = true;
+        this.birdRampageTimer = 180;
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_HAWK_SUMMONED.text, FT_HAWK_SUMMONED.color, true);
+      }
       this.triggerUltimate();
     } else if (action === 'down') {
       this.keys['s'] = true;
@@ -2121,6 +2217,27 @@ export class GameEngine {
           maxLife: 12
         });
       }
+
+      // SCEPTER: Shoot homing dark cleave during Shining Blade buff
+      if (this.hasScepter && this.assassinmonScepterActive) {
+        soundService.playShoot();
+        const cleaveVx = this.pFacing * 11.0;
+        this.projectiles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth + 5 : this.px - 35,
+          y: this.py + this.pHeight / 2 - 14,
+          vx: cleaveVx,
+          vy: -1.0,
+          width: 36,
+          height: 28,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 1.5),
+          color: '#c084fc',
+          type: 'dark_cleave',
+          isHoming: true,
+          channelTimer: 180,
+        } as any);
+      }
+
       this.attackCooldown = 14;
     } else if (this.selectedDraco === 'Flymon') {
       soundService.playShoot();
@@ -2215,35 +2332,78 @@ export class GameEngine {
       } as any);
       this.spawnDustParticles(slashX, slashY, 8, '#ef4444');
     } else if (this.selectedDraco === 'Bombamon') {
-      soundService.playShoot();
+      const hasBurningGround = this.groundBurnZones.some(z => z.timer > 0);
+      if (this.hasScepter && hasBurningGround) {
+        soundService.playShoot();
+        this.attackDuration = 10;
+        this.attackCooldown = 16;
+        const beamVx = this.pFacing * (this.stats.speed + 12);
+        const beamW = 54;
+        const beamH = 18;
+        const beamX = this.pFacing === 1 ? this.px + this.pWidth : this.px - beamW;
+        const beamY = this.py + this.pHeight / 2 - beamH / 2;
 
-      const fireVx = this.pFacing * (this.stats.speed + 7);
-      this.projectiles.push({
-        x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 22,
-        y: this.py + this.pHeight / 2 - 8,
-        vx: fireVx,
-        vy: 0,
-        width: 22,
-        height: 16,
-        isEnemy: false,
-        damage: Math.floor(this.stats.attack * 1.15),
-        color: '#f97316',
-        type: 'fireball',
-        rangeCap: 600,
-        startX: this.px
-      } as any);
+        this.projectiles.push({
+          x: beamX,
+          y: beamY,
+          vx: beamVx,
+          vy: 0,
+          width: beamW,
+          height: beamH,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 2.4),
+          color: '#38bdf8',
+          type: 'flare_beam' as any,
+          rangeCap: 800,
+          startX: this.px
+        } as any);
 
-      for (let p = 0; p < 8; p++) {
-        this.particles.push({
-          x: slashX,
-          y: slashY + (Math.random() - 0.5) * 12,
-          vx: this.pFacing * (Math.random() * 5 + 3),
-          vy: (Math.random() - 0.5) * 3,
-          size: Math.random() * 5 + 3,
-          color: p % 2 === 0 ? '#f97316' : '#fef08a',
-          life: 14,
-          maxLife: 14
-        });
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_FLARE_BEAM.text, FT_FLARE_BEAM.color);
+        this.screenShake = Math.max(this.screenShake, 10);
+
+        for (let p = 0; p < 12; p++) {
+          this.particles.push({
+            x: beamX,
+            y: beamY + Math.random() * beamH,
+            vx: this.pFacing * (Math.random() * 5 + 3),
+            vy: (Math.random() - 0.5) * 4,
+            size: Math.random() * 5 + 2,
+            color: p % 2 === 0 ? '#38bdf8' : '#60a5fa',
+            life: 14,
+            maxLife: 14
+          });
+        }
+      } else {
+        soundService.playShoot();
+
+        const fireVx = this.pFacing * (this.stats.speed + 7);
+        this.projectiles.push({
+          x: this.pFacing === 1 ? this.px + this.pWidth : this.px - 22,
+          y: this.py + this.pHeight / 2 - 8,
+          vx: fireVx,
+          vy: 0,
+          width: 22,
+          height: 16,
+          isEnemy: false,
+          damage: Math.floor(this.stats.attack * 1.15),
+          color: '#f97316',
+          type: 'fireball',
+          rangeCap: 600,
+          startX: this.px
+        } as any);
+
+        for (let p = 0; p < 8; p++) {
+          this.particles.push({
+            x: slashX,
+            y: slashY + (Math.random() - 0.5) * 12,
+            vx: this.pFacing * (Math.random() * 5 + 3),
+            vy: (Math.random() - 0.5) * 3,
+            size: Math.random() * 5 + 3,
+            color: p % 2 === 0 ? '#f97316' : '#fef08a',
+            life: 14,
+            maxLife: 14
+          });
+        }
       }
     } else if (this.selectedDraco === 'Thundermon') {
       soundService.playShoot();
@@ -4182,6 +4342,18 @@ export class GameEngine {
   }
 
   private checkMeleeHit(x: number, y: number, w: number, h: number, damage: number, stopOnFirstHit = false) {
+    const applyAssassinmonRupture = (enemy: Enemy) => {
+      if (this.selectedDraco === 'Assassinmon' && this.hasScepter && this.assassinmonScepterActive) {
+        (enemy as any).ruptureBleedTimer = 120;
+        (enemy as any).ruptureBleedDmg = Math.max(1, Math.floor(this.stats.attack * 0.4));
+        (enemy as any).ruptureMoveDmg = Math.max(1, Math.floor(this.stats.attack * 0.7));
+        this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 12, FT_RUPTURE_BLEED.text, FT_RUPTURE_BLEED.color);
+        if (enemy.hp <= 0) {
+          this.triggerAssassinmonScreenSlash(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+        }
+      }
+    };
+
     if (stopOnFirstHit) {
       for (const enemy of this.enemies) {
         if (
@@ -4191,6 +4363,7 @@ export class GameEngine {
           y + h > enemy.y
         ) {
           this.damageEnemy(enemy, damage);
+          applyAssassinmonRupture(enemy);
           break;
         }
       }
@@ -4203,6 +4376,7 @@ export class GameEngine {
           y + h > enemy.y
         ) {
           this.damageEnemy(enemy, damage);
+          applyAssassinmonRupture(enemy);
         }
       });
     }
@@ -4385,7 +4559,11 @@ export class GameEngine {
       this.avatarActive = true;
       this.avatarDuration = 240;
       this.pInvulnerableFrames = 240;
-      this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_AVATAR_STATE.text, FT_AVATAR_STATE.color);
+      if (this.hasScepter) {
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_SCEPTER_IMMUNITY.text, FT_SCEPTER_IMMUNITY.color, true);
+      } else {
+        this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_AVATAR_STATE.text, FT_AVATAR_STATE.color);
+      }
 
       this.enemies.forEach(enemy => {
         if (Math.abs(this.px - enemy.x) < 350) {
@@ -4614,6 +4792,7 @@ export class GameEngine {
       }
       this.carpetBombingY = targetY;
       this.carpetBombingFireStreamTimer = 0;
+      this.carpetBombingBurnGroupId = `cb_${this.frameCount}_${this.groundBurnIdCounter}`;
 
       this.cameraZoom = 1.5;
       this.cameraZoomTargetX = this.carpetBombingX + this.pWidth / 2;
@@ -5166,7 +5345,10 @@ export class GameEngine {
       }
     }
 
-    let finalDamage = this.selectedDraco === 'Shieldmon' && this.avatarActive ? damage * 1 : damage;
+    let finalDamage = damage;
+    if (this.selectedDraco === 'Shieldmon' && this.avatarActive) {
+      finalDamage = this.hasScepter ? damage * 3.0 : damage * 1.0;
+    }
     if (this.selectedDraco === 'Flymon' && (enemy as any).isGrounded === false) {
       finalDamage *= 2.0;
     }
@@ -5926,8 +6108,766 @@ export class GameEngine {
     this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 12, '#34d399');
   }
 
+  private triggerPlanetfallEchoSlam() {
+    soundService.playHit();
+    this.screenShake = Math.max(this.screenShake, 18);
+    this.addFloatingText(this.px + this.pWidth / 2, this.py - 25, FT_PLANETFALL_SLAM.text, FT_PLANETFALL_SLAM.color);
+
+    const slamX = this.px + this.pWidth / 2;
+    const slamY = this.py + this.pHeight;
+
+    // Sea-green ground shockwave particle ring
+    for (let p = 0; p < 36; p++) {
+      const ang = (p / 36) * Math.PI * 2;
+      const spd = 4 + Math.random() * 6;
+      this.particles.push({
+        x: slamX,
+        y: slamY - 4,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd * 0.4,
+        size: Math.random() * 8 + 4,
+        color: p % 3 === 0 ? '#14b8a6' : p % 3 === 1 ? '#2dd4bf' : '#5eead4',
+        life: 26,
+        maxLife: 26
+      });
+    }
+
+    // Slam enemies within 500px: stuns for 1s and damages them
+    const hitEnemies: Enemy[] = [];
+    const landingRadius = 500;
+    const landingDmg = Math.max(5, Math.floor(this.stats.attack * 2.2));
+
+    this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      const ex = enemy.x + enemy.width / 2;
+      const ey = enemy.y + enemy.height / 2;
+      const dist = Math.hypot(ex - slamX, ey - slamY);
+      if (dist <= landingRadius) {
+        // Stun for 1 second (60 frames)
+        enemy.stunnedTimer = Math.max(enemy.stunnedTimer || 0, 60);
+        this.damageEnemy(enemy, landingDmg);
+        this.spawnDustParticles(ex, ey, 14, '#2dd4bf');
+        this.addFloatingText(enemy.x, enemy.y - 15, 'STUNNED 1s!', '#2dd4bf');
+        hitEnemies.push(enemy);
+      }
+    });
+
+    // Echoes: for each enemy damaged by this effect, emit echoes targeting every other nearby enemy on screen (Like Earthshaker's echo slam)
+    hitEnemies.forEach(originEnemy => {
+      const ox = originEnemy.x + originEnemy.width / 2;
+      const oy = originEnemy.y + originEnemy.height / 2;
+
+      this.enemies.forEach(targetEnemy => {
+        if (targetEnemy.hp <= 0 || targetEnemy.id === originEnemy.id) return;
+        const tx = targetEnemy.x + targetEnemy.width / 2;
+        const ty = targetEnemy.y + targetEnemy.height / 2;
+        const dist = Math.hypot(tx - ox, ty - oy);
+        if (dist < 900) {
+          const echoDmg = Math.max(2, Math.floor(this.stats.attack * 0.9));
+          this.planetfallEchoes.push({
+            x: ox,
+            y: oy,
+            targetX: tx,
+            targetY: ty,
+            targetEnemyId: targetEnemy.id,
+            damage: echoDmg,
+            speed: 16,
+            life: 45
+          });
+        }
+      });
+    });
+  }
+
+  private updatePlanetfallEchoes() {
+    for (let i = this.planetfallEchoes.length - 1; i >= 0; i--) {
+      const echo = this.planetfallEchoes[i];
+      echo.life--;
+      const targetEnemy = this.enemies.find(e => e.id === echo.targetEnemyId && e.hp > 0);
+      if (targetEnemy) {
+        echo.targetX = targetEnemy.x + targetEnemy.width / 2;
+        echo.targetY = targetEnemy.y + targetEnemy.height / 2;
+      }
+      const dx = echo.targetX - echo.x;
+      const dy = echo.targetY - echo.y;
+      const dist = Math.hypot(dx, dy);
+
+      if (this.frameCount % 2 === 0) {
+        this.particles.push({
+          x: echo.x,
+          y: echo.y,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: (Math.random() - 0.5) * 1.5,
+          size: Math.random() * 5 + 2,
+          color: '#2dd4bf',
+          life: 14,
+          maxLife: 14
+        });
+      }
+
+      if (dist < echo.speed || echo.life <= 0) {
+        if (targetEnemy && targetEnemy.hp > 0) {
+          this.damageEnemy(targetEnemy, echo.damage);
+          this.spawnDustParticles(echo.targetX, echo.targetY, 12, '#5eead4');
+          this.addFloatingText(targetEnemy.x, targetEnemy.y - 20, FT_ECHO_HIT.text, FT_ECHO_HIT.color);
+        }
+        this.planetfallEchoes.splice(i, 1);
+      } else {
+        echo.x += (dx / dist) * echo.speed;
+        echo.y += (dy / dist) * echo.speed;
+      }
+    }
+  }
+
+  private drawPlanetfallEchoes() {
+    if (this.planetfallEchoes.length === 0) return;
+    this.ctx.save();
+    this.planetfallEchoes.forEach(echo => {
+      const pulse = Math.sin(this.frameCount * 0.35) * 2.5;
+      const dx = echo.targetX - echo.x;
+      const dy = echo.targetY - echo.y;
+      const moveAngle = Math.atan2(dy, dx);
+
+      // Trailing Resonant Wave Arc
+      this.ctx.strokeStyle = 'rgba(45, 212, 191, 0.5)';
+      this.ctx.lineWidth = 3;
+      this.ctx.beginPath();
+      this.ctx.arc(echo.x, echo.y, 14 + pulse, moveAngle + Math.PI / 2, moveAngle + (3 * Math.PI) / 2);
+      this.ctx.stroke();
+
+      // Outer Jade Aura Ring
+      this.ctx.strokeStyle = '#5eead4';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.arc(echo.x, echo.y, 8 + pulse, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // Glowing Cyan Core
+      const coreGrad = this.ctx.createRadialGradient(echo.x, echo.y, 1, echo.x, echo.y, 8);
+      coreGrad.addColorStop(0, '#ffffff');
+      coreGrad.addColorStop(0.5, '#2dd4bf');
+      coreGrad.addColorStop(1, 'rgba(20, 184, 166, 0)');
+      this.ctx.fillStyle = coreGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(echo.x, echo.y, 8, 0, Math.PI * 2);
+      this.ctx.fill();
+    });
+    this.ctx.restore();
+  }
+
+  private triggerShowerArrowExplosion(x: number, y: number, baseDamage: number) {
+    soundService.playHit();
+    this.screenShake = Math.max(this.screenShake, 8);
+
+    // Register active animated explosion ring
+    this.archermonExplosions.push({
+      x,
+      y,
+      radius: 8,
+      maxRadius: 76,
+      timer: 20,
+      maxTimer: 20,
+      color: '#10b981',
+      secondaryColor: '#fef08a'
+    });
+
+    // 24 directional radial blast particles
+    for (let p = 0; p < 24; p++) {
+      const ang = (p / 24) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+      const spd = 4 + Math.random() * 6;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 1.5,
+        size: Math.random() * 7 + 3,
+        color: p % 4 === 0 ? '#10b981' : p % 4 === 1 ? '#34d399' : p % 4 === 2 ? '#6ee7b7' : '#fef08a',
+        life: 22,
+        maxLife: 22
+      });
+    }
+
+    // Spark flash particles flying outward
+    for (let s = 0; s < 8; s++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = 7 + Math.random() * 5;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        size: Math.random() * 3 + 2,
+        color: '#ffffff',
+        life: 12,
+        maxLife: 12
+      });
+    }
+
+    const explosionRadius = 110;
+    const aoeDamage = Math.max(1, Math.floor(baseDamage * 0.85));
+    let hitAny = false;
+
+    this.enemies.forEach(e => {
+      if (e.hp <= 0) return;
+      const dist = Math.hypot(e.x + e.width / 2 - x, e.y + e.height / 2 - y);
+      if (dist <= explosionRadius) {
+        this.damageEnemy(e, aoeDamage);
+        this.spawnDustParticles(e.x + e.width / 2, e.y + e.height / 2, 10, '#10b981');
+        hitAny = true;
+      }
+    });
+
+    if (hitAny) {
+      this.addFloatingText(x, y - 15, FT_ARROW_SHOWER_EXPLOSION.text, FT_ARROW_SHOWER_EXPLOSION.color);
+    }
+  }
+
+  private updateArchermonExplosions() {
+    for (let i = this.archermonExplosions.length - 1; i >= 0; i--) {
+      const exp = this.archermonExplosions[i];
+      exp.timer--;
+      exp.radius += (exp.maxRadius - exp.radius) * 0.28;
+
+      // Micro sparks along expanding ring
+      if (exp.timer > 6 && this.frameCount % 2 === 0) {
+        const sparkAng = Math.random() * Math.PI * 2;
+        const sparkDist = exp.radius * (0.8 + Math.random() * 0.3);
+        this.particles.push({
+          x: exp.x + Math.cos(sparkAng) * sparkDist,
+          y: exp.y + Math.sin(sparkAng) * sparkDist,
+          vx: (Math.random() - 0.5) * 1.5,
+          vy: -Math.random() * 2 - 1,
+          size: Math.random() * 4 + 2,
+          color: Math.random() > 0.5 ? '#34d399' : '#fef08a',
+          life: 12,
+          maxLife: 12
+        });
+      }
+
+      if (exp.timer <= 0) {
+        this.archermonExplosions.splice(i, 1);
+      }
+    }
+  }
+
+  private drawArchermonExplosions() {
+    if (this.archermonExplosions.length === 0) return;
+    this.ctx.save();
+
+    this.archermonExplosions.forEach(exp => {
+      const progress = 1 - (exp.timer / exp.maxTimer);
+      const alpha = Math.max(0, exp.timer / exp.maxTimer);
+      const r = exp.radius;
+
+      // 1. Expanding Emerald Shockwave Sphere
+      const grad = this.ctx.createRadialGradient(exp.x, exp.y, 0, exp.x, exp.y, r);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.85})`);
+      grad.addColorStop(0.25, `rgba(254, 240, 138, ${alpha * 0.75})`);
+      grad.addColorStop(0.55, `rgba(52, 211, 153, ${alpha * 0.5})`);
+      grad.addColorStop(0.85, `rgba(16, 185, 129, ${alpha * 0.3})`);
+      grad.addColorStop(1, 'rgba(16, 185, 129, 0)');
+
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.arc(exp.x, exp.y, r, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 2. High-intensity Shockwave Rim Ring
+      this.ctx.strokeStyle = `rgba(167, 243, 208, ${alpha * 0.9})`;
+      this.ctx.lineWidth = Math.max(1, 4 * alpha);
+      this.ctx.beginPath();
+      this.ctx.arc(exp.x, exp.y, r * 0.95, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // 3. Inner Secondary Ring
+      this.ctx.strokeStyle = `rgba(254, 240, 138, ${alpha * 0.8})`;
+      this.ctx.lineWidth = Math.max(1, 2 * alpha);
+      this.ctx.beginPath();
+      this.ctx.arc(exp.x, exp.y, r * 0.55, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // 4. Rotating Cross Starburst Flare (first 12 frames)
+      if (progress < 0.7) {
+        const starAlpha = (1 - progress / 0.7) * alpha;
+        const starLen = r * 1.25;
+        const rot = progress * 0.8;
+
+        this.ctx.save();
+        this.ctx.translate(exp.x, exp.y);
+        this.ctx.rotate(rot);
+
+        this.ctx.strokeStyle = `rgba(255, 255, 255, ${starAlpha})`;
+        this.ctx.lineWidth = 2.5;
+
+        // 4-point cross star
+        this.ctx.beginPath();
+        this.ctx.moveTo(-starLen, 0);
+        this.ctx.lineTo(starLen, 0);
+        this.ctx.moveTo(0, -starLen);
+        this.ctx.lineTo(0, starLen);
+        this.ctx.stroke();
+
+        // 4 diagonal secondary rays
+        this.ctx.strokeStyle = `rgba(110, 231, 183, ${starAlpha * 0.75})`;
+        this.ctx.lineWidth = 1.5;
+        const diagLen = starLen * 0.65;
+        this.ctx.beginPath();
+        this.ctx.moveTo(-diagLen * 0.7, -diagLen * 0.7);
+        this.ctx.lineTo(diagLen * 0.7, diagLen * 0.7);
+        this.ctx.moveTo(diagLen * 0.7, -diagLen * 0.7);
+        this.ctx.lineTo(-diagLen * 0.7, diagLen * 0.7);
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      }
+    });
+
+    this.ctx.restore();
+  }
+
+  private triggerShieldmonDomeExplosion() {
+    soundService.playHit();
+    this.screenShake = 30;
+    const centerX = this.px + this.pWidth / 2;
+    const centerY = this.py + this.pHeight / 2;
+    const explosionRadius = 320;
+    const explosionDamage = Math.floor(this.stats.attack * 4.0);
+
+    this.addFloatingText(centerX, centerY - 45, FT_DOME_EXPLOSION.text, FT_DOME_EXPLOSION.color, true);
+
+    // Register active expanding Bastion Supernova Shockwave
+    this.shieldmonDomeDetonations.push({
+      x: centerX,
+      y: centerY,
+      radius: 40,
+      maxRadius: 320,
+      timer: 28,
+      maxTimer: 28
+    });
+
+    // Massive blue & cyan detonation particles
+    for (let p = 0; p < 45; p++) {
+      const ang = (p / 45) * Math.PI * 2;
+      const spd = 6 + Math.random() * 9;
+      this.particles.push({
+        x: centerX,
+        y: centerY,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        size: Math.random() * 10 + 4,
+        color: p % 3 === 0 ? '#3b82f6' : p % 3 === 1 ? '#60a5fa' : '#93c5fd',
+        life: 34,
+        maxLife: 34
+      });
+    }
+
+    // Stuns for 2 seconds (120 frames) and damages nearby enemies
+    this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      const ex = enemy.x + enemy.width / 2;
+      const ey = enemy.y + enemy.height / 2;
+      const dist = Math.hypot(ex - centerX, ey - centerY);
+      if (dist <= explosionRadius) {
+        enemy.stunnedTimer = Math.max(enemy.stunnedTimer || 0, 120);
+        this.damageEnemy(enemy, explosionDamage);
+        this.spawnDustParticles(ex, ey, 18, '#60a5fa');
+        this.addFloatingText(enemy.x, enemy.y - 20, '💥 STUNNED (2s)!', '#60a5fa');
+      }
+    });
+  }
+
+  private drawShieldmonDomeDetonations() {
+    if (this.shieldmonDomeDetonations.length === 0) return;
+    this.ctx.save();
+    this.shieldmonDomeDetonations.forEach(d => {
+      const alpha = Math.max(0, d.timer / d.maxTimer);
+      const progress = 1 - alpha;
+      const r = d.radius;
+
+      // 1. Bastion Supernova Shockwave Sphere
+      const grad = this.ctx.createRadialGradient(d.x, d.y, 10, d.x, d.y, r);
+      grad.addColorStop(0, `rgba(255, 255, 255, ${alpha * 0.85})`);
+      grad.addColorStop(0.3, `rgba(147, 197, 253, ${alpha * 0.6})`);
+      grad.addColorStop(0.65, `rgba(59, 130, 246, ${alpha * 0.35})`);
+      grad.addColorStop(1, 'rgba(30, 58, 138, 0)');
+      this.ctx.fillStyle = grad;
+      this.ctx.beginPath();
+      this.ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 2. High-intensity Outer Rim Shockwave
+      this.ctx.strokeStyle = `rgba(255, 255, 255, ${alpha * 0.95})`;
+      this.ctx.lineWidth = Math.max(1, 5 * alpha);
+      this.ctx.beginPath();
+      this.ctx.arc(d.x, d.y, r, 0, Math.PI * 2);
+      this.ctx.stroke();
+
+      // 3. Electric Cyan Fracture Ring
+      this.ctx.strokeStyle = `rgba(56, 189, 248, ${alpha * 0.8})`;
+      this.ctx.lineWidth = Math.max(1, 2.5 * alpha);
+      this.ctx.setLineDash([16, 10]);
+      this.ctx.beginPath();
+      this.ctx.arc(d.x, d.y, r * 0.8, progress * 0.5, Math.PI * 2 + progress * 0.5);
+      this.ctx.stroke();
+      this.ctx.setLineDash([]);
+    });
+    this.ctx.restore();
+  }
+
+  // ─── BOMBO-SCEPTER: AZURE HELLFIRE & EXPLOSIONS ─────────────────────────────
+  private triggerBluishFlameExplosion(x: number, y: number) {
+    // Hellfire detonation only explodes once every burn ends
+    if (this.frameCount - this.lastBluishExplosionTime < 60 && Math.abs(x - this.lastBluishExplosionX) < 250) {
+      return;
+    }
+    this.lastBluishExplosionTime = this.frameCount;
+    this.lastBluishExplosionX = x;
+
+    soundService.playHit();
+    this.screenShake = Math.max(this.screenShake, 22);
+    this.addFloatingText(x, y - 25, FT_BLUE_FLAME_BURST.text, FT_BLUE_FLAME_BURST.color, true);
+
+    const explosionRadius = 150;
+    const explosionDmg = Math.floor(this.stats.attack * 2.8);
+
+    this.enemies.forEach(enemy => {
+      if (enemy.hp <= 0) return;
+      const ex = enemy.x + enemy.width / 2;
+      const ey = enemy.y + enemy.height / 2;
+      const dist = Math.hypot(ex - x, ey - y);
+      if (dist <= explosionRadius) {
+        this.damageEnemy(enemy, explosionDmg);
+        (enemy as any).isBluishBurn = true;
+        enemy.burnTimer = 45;
+        enemy.burnLingerTimer = 240; // 4s lingering bluish burn
+        this.spawnDustParticles(ex, ey, 14, '#38bdf8');
+        this.addFloatingText(ex, ey - 10, FT_BLUE_BURN.text, FT_BLUE_BURN.color);
+      }
+    });
+
+    // Intense bluish plasma nova burst
+    for (let p = 0; p < 40; p++) {
+      const ang = (p / 40) * Math.PI * 2 + Math.random() * 0.2;
+      const spd = Math.random() * 8 + 3;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 1.5,
+        size: Math.random() * 8 + 4,
+        color: p % 3 === 0 ? '#38bdf8' : p % 3 === 1 ? '#60a5fa' : '#bfdbfe',
+        life: 26,
+        maxLife: 26
+      });
+    }
+  }
+
+  private triggerMiniBluishExplosion(x: number, y: number) {
+    soundService.playHit();
+    this.screenShake = Math.max(this.screenShake, 12);
+
+    const radius = 95;
+    const damage = Math.floor(this.stats.attack * 1.6);
+
+    this.enemies.forEach(other => {
+      if (other.hp <= 0) return;
+      const ox = other.x + other.width / 2;
+      const oy = other.y + other.height / 2;
+      if (Math.hypot(ox - x, oy - y) <= radius) {
+        this.damageEnemy(other, damage);
+        (other as any).isBluishBurn = true;
+        other.burnTimer = 30;
+        other.burnLingerTimer = 180;
+        this.addFloatingText(ox, oy - 10, '🔥 HELLFIRE CHAIN!', '#38bdf8');
+      }
+    });
+
+    for (let p = 0; p < 18; p++) {
+      const ang = (p / 18) * Math.PI * 2;
+      const spd = Math.random() * 5 + 2;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 1,
+        size: Math.random() * 6 + 2,
+        color: p % 2 === 0 ? '#38bdf8' : '#bfdbfe',
+        life: 18,
+        maxLife: 18
+      });
+    }
+  }
+
+  // ─── THUNDERMON-SCEPTER: THUNDER RELICS & REPLICATION ───────────────────────
+  private summonThunderRelic(x: number, y: number, duration: number = 480, isReplicated: boolean = false) {
+    const relic = {
+      id: this.thunderRelicIdCounter++,
+      x,
+      y,
+      duration,
+      maxDuration: duration,
+      intervalTimer: 120 // 2 seconds at 60 FPS
+    };
+    this.thunderRelics.push(relic);
+
+    soundService.playLevelUp(this.isDemoMode);
+    this.screenShake = Math.max(this.screenShake, 18);
+    this.addFloatingText(
+      x,
+      y - 35,
+      isReplicated ? FT_THUNDER_RELIC_REPLICATED.text : FT_THUNDER_RELIC_SUMMONED.text,
+      isReplicated ? FT_THUNDER_RELIC_REPLICATED.color : FT_THUNDER_RELIC_SUMMONED.color,
+      true
+    );
+
+    // Initial celestial lightning pillar onto the relic position
+    this.relicThunderbolts.push({
+      x,
+      y,
+      targetX: x,
+      targetY: y,
+      timer: 16,
+      maxTimer: 16
+    });
+
+    for (let p = 0; p < 25; p++) {
+      const ang = (p / 25) * Math.PI * 2;
+      const spd = Math.random() * 6 + 3;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd - 2,
+        size: Math.random() * 6 + 3,
+        color: p % 2 === 0 ? '#facc15' : '#06b6d4',
+        life: 25,
+        maxLife: 25
+      });
+    }
+  }
+
+  private triggerThunderRelicAttack(relic: { id: number; x: number; y: number; duration: number; maxDuration: number; intervalTimer: number }) {
+    const reachRadius = 380;
+    const nearbyEnemies = this.enemies.filter(
+      enemy => enemy.hp > 0 && Math.hypot((enemy.x + enemy.width / 2) - relic.x, (enemy.y + enemy.height / 2) - relic.y) <= reachRadius
+    );
+
+    if (nearbyEnemies.length === 0) return;
+
+    soundService.playHit();
+    this.screenShake = Math.max(this.screenShake, 20);
+    this.addFloatingText(relic.x, relic.y - 45, FT_THUNDER_RELIC_ZAP.text, FT_THUNDER_RELIC_ZAP.color);
+
+    const zapDmg = Math.floor(this.stats.attack * 2.5);
+
+    nearbyEnemies.forEach(enemy => {
+      const ex = enemy.x + enemy.width / 2;
+      const ey = enemy.y + enemy.height / 2;
+
+      this.relicThunderbolts.push({
+        x: relic.x,
+        y: relic.y,
+        targetX: ex,
+        targetY: ey,
+        timer: 16,
+        maxTimer: 16
+      });
+
+      const enemyWasAlive = enemy.hp > 0;
+      this.damageEnemy(enemy, zapDmg);
+      enemy.stunnedTimer = 30;
+
+      // When an enemy is killed, summons another Thunder relic for half the duration of relic that kills it
+      if (enemyWasAlive && enemy.hp <= 0) {
+        const nextDuration = Math.max(60, Math.floor(relic.duration / 2));
+        this.summonThunderRelic(ex, ey, nextDuration, true);
+      }
+    });
+  }
+
+  private updateThunderRelics() {
+    // 1. Update active thunderbolt visual strikes
+    for (let b = this.relicThunderbolts.length - 1; b >= 0; b--) {
+      this.relicThunderbolts[b].timer--;
+      if (this.relicThunderbolts[b].timer <= 0) {
+        this.relicThunderbolts.splice(b, 1);
+      }
+    }
+
+    // 2. Update Thunder Relic Totems
+    for (let r = this.thunderRelics.length - 1; r >= 0; r--) {
+      const relic = this.thunderRelics[r];
+      relic.duration--;
+      relic.intervalTimer--;
+
+      // Ambient electric sparks
+      if (this.frameCount % 5 === 0) {
+        this.particles.push({
+          x: relic.x + (Math.random() - 0.5) * 24,
+          y: relic.y - 20 + (Math.random() - 0.5) * 35,
+          vx: (Math.random() - 0.5) * 3,
+          vy: -Math.random() * 3 - 1,
+          size: Math.random() * 5 + 2,
+          color: Math.random() > 0.5 ? '#facc15' : '#06b6d4',
+          life: 14,
+          maxLife: 14
+        });
+      }
+
+      // Attack interval reached (every 2 seconds / 120 frames)
+      if (relic.intervalTimer <= 0) {
+        relic.intervalTimer = 120;
+        this.triggerThunderRelicAttack(relic);
+      }
+
+      if (relic.duration <= 0) {
+        this.spawnDustParticles(relic.x, relic.y - 20, 16, '#06b6d4');
+        this.thunderRelics.splice(r, 1);
+      }
+    }
+  }
+
+  private drawThunderRelics() {
+    if (this.thunderRelics.length === 0 && this.relicThunderbolts.length === 0) return;
+
+    // Draw active thunderbolt strikes
+    this.relicThunderbolts.forEach(bolt => {
+      this.ctx.save();
+      const skyY = Math.max(0, this.cameraY - 200);
+      const alpha = Math.max(0, bolt.timer / bolt.maxTimer);
+      this.ctx.globalAlpha = alpha;
+
+      // Outer plasma aura
+      this.ctx.strokeStyle = 'rgba(6, 182, 212, 0.45)';
+      this.ctx.lineWidth = 42;
+      this.ctx.lineCap = 'round';
+      this.ctx.beginPath();
+      this.ctx.moveTo(bolt.targetX, skyY);
+      this.ctx.lineTo(bolt.targetX, bolt.targetY);
+      this.ctx.stroke();
+
+      // Core electric lightning pillar
+      this.ctx.strokeStyle = '#facc15';
+      this.ctx.lineWidth = 14;
+      this.ctx.beginPath();
+      this.ctx.moveTo(bolt.targetX, skyY);
+
+      const segments = 6;
+      const totalY = bolt.targetY - skyY;
+      const segH = totalY / segments;
+      for (let s = 1; s <= segments; s++) {
+        const segY = skyY + s * segH;
+        const jitter = (Math.sin(this.frameCount * 0.8 + s * 3.1) * 16) * (1 - (s / segments) * 0.3);
+        this.ctx.lineTo(bolt.targetX + jitter, segY);
+      }
+      this.ctx.stroke();
+
+      // White inner core
+      this.ctx.strokeStyle = '#ffffff';
+      this.ctx.lineWidth = 4;
+      this.ctx.stroke();
+
+      this.ctx.restore();
+    });
+
+    // Draw Thunder Relic Totems
+    this.thunderRelics.forEach(relic => {
+      this.ctx.save();
+      const bob = Math.sin(this.frameCount * 0.08 + relic.id * 1.5) * 5;
+      const rx = relic.x;
+      const ry = relic.y - 25 + bob;
+
+      // 1. Radiant Aura
+      const auraGrad = this.ctx.createRadialGradient(rx, ry, 5, rx, ry, 48);
+      auraGrad.addColorStop(0, 'rgba(250, 204, 21, 0.55)');
+      auraGrad.addColorStop(0.5, 'rgba(6, 182, 212, 0.35)');
+      auraGrad.addColorStop(1, 'rgba(6, 182, 212, 0)');
+      this.ctx.fillStyle = auraGrad;
+      this.ctx.beginPath();
+      this.ctx.arc(rx, ry, 48, 0, Math.PI * 2);
+      this.ctx.fill();
+
+      // 2. Rotating Electric Orbit Rings
+      const rot = this.frameCount * 0.06 + relic.id;
+      this.ctx.save();
+      this.ctx.translate(rx, ry);
+      this.ctx.rotate(rot);
+      this.ctx.strokeStyle = 'rgba(6, 182, 212, 0.75)';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.ellipse(0, 0, 26, 10, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.restore();
+
+      this.ctx.save();
+      this.ctx.translate(rx, ry);
+      this.ctx.rotate(-rot * 1.3);
+      this.ctx.strokeStyle = 'rgba(250, 204, 21, 0.85)';
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
+      this.ctx.ellipse(0, 0, 22, 8, 0, 0, Math.PI * 2);
+      this.ctx.stroke();
+      this.ctx.restore();
+
+      // 3. Floating Crystalline Obelisk Body
+      this.ctx.fillStyle = '#0f172a';
+      this.ctx.strokeStyle = '#06b6d4';
+      this.ctx.lineWidth = 2.5;
+
+      this.ctx.beginPath();
+      this.ctx.moveTo(rx, ry - 22);
+      this.ctx.lineTo(rx + 11, ry - 6);
+      this.ctx.lineTo(rx + 8, ry + 16);
+      this.ctx.lineTo(rx, ry + 24);
+      this.ctx.lineTo(rx - 8, ry + 16);
+      this.ctx.lineTo(rx - 11, ry - 6);
+      this.ctx.closePath();
+      this.ctx.fill();
+      this.ctx.stroke();
+
+      // 4. Central Electric Core Crystal
+      const crystalGrad = this.ctx.createLinearGradient(rx - 6, ry - 14, rx + 6, ry + 14);
+      crystalGrad.addColorStop(0, '#fef08a');
+      crystalGrad.addColorStop(0.5, '#06b6d4');
+      crystalGrad.addColorStop(1, '#0284c7');
+      this.ctx.fillStyle = crystalGrad;
+      this.ctx.beginPath();
+      this.ctx.moveTo(rx, ry - 14);
+      this.ctx.lineTo(rx + 6, ry);
+      this.ctx.lineTo(rx, ry + 14);
+      this.ctx.lineTo(rx - 6, ry);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // 5. Thunderbolt Rune in center
+      this.ctx.fillStyle = '#ffffff';
+      this.ctx.beginPath();
+      this.ctx.moveTo(rx + 1, ry - 8);
+      this.ctx.lineTo(rx - 4, ry);
+      this.ctx.lineTo(rx, ry);
+      this.ctx.lineTo(rx - 1, ry + 8);
+      this.ctx.lineTo(rx + 4, ry - 1);
+      this.ctx.lineTo(rx, ry - 1);
+      this.ctx.closePath();
+      this.ctx.fill();
+
+      // 6. Remaining Duration Ring
+      const progress = relic.duration / relic.maxDuration;
+      this.ctx.strokeStyle = progress > 0.3 ? '#facc15' : '#ef4444';
+      this.ctx.lineWidth = 2.5;
+      this.ctx.beginPath();
+      this.ctx.arc(rx, ry, 28, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * progress);
+      this.ctx.stroke();
+
+      this.ctx.restore();
+    });
+  }
+
   public triggerStatUpdate(newStats: PlayerStats) {
     this.stats = newStats;
+    if (newStats.hasScepter !== undefined) {
+      this.hasScepter = !!newStats.hasScepter;
+    }
     const diffHp = newStats.hp - this.pMaxHP;
     this.pMaxHP = newStats.hp;
     if (diffHp > 0) {
@@ -6546,6 +7486,13 @@ export class GameEngine {
         this.musouSlashActive = false;
         this.cameraZoom = 1.0;
         this.assassinmonUltimateActive = false;
+
+        // SCEPTER: 8s Shining Blade buff
+        if (this.selectedDraco === 'Assassinmon' && this.hasScepter) {
+          this.assassinmonScepterActive = true;
+          this.assassinmonScepterTimer = 480; // 8 seconds @ 60fps
+          this.addFloatingText(this.px + this.pWidth / 2, this.py - 30, FT_SHINING_BLADE.text, FT_SHINING_BLADE.color, true);
+        }
       }
 
       return;
@@ -6660,6 +7607,13 @@ export class GameEngine {
           this.cameraZoom = 1.0;
           this.screenShake = 32;
           soundService.playHit();
+
+          if (this.hasScepter) {
+            this.jumpmonPlanetfallTimer = 480;
+            this.addFloatingText(this.px + this.pWidth / 2, this.py - 55, FT_PLANETFALL_ACTIVE.text, FT_PLANETFALL_ACTIVE.color, true);
+            soundService.playLevelUp(this.isDemoMode);
+            this.triggerPlanetfallEchoSlam();
+          }
 
           const groundY = this.py + this.pHeight;
 
@@ -6815,8 +7769,9 @@ export class GameEngine {
             isEnemy: false,
             damage: Math.floor(this.stats.attack * 1.2),
             color: arrowColor,
-            type: 'arrow'
-          });
+            type: 'arrow',
+            isShowerArrow: true
+          } as any);
           // Rich comet trail behind each arrow
           for (let t = 0; t < 5; t++) {
             this.particles.push({
@@ -8690,6 +9645,10 @@ export class GameEngine {
           });
         }
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 15, FT_GROUND_SHOCKWAVE.text, FT_GROUND_SHOCKWAVE.color);
+
+        if (this.hasScepter && this.jumpmonPlanetfallTimer > 0) {
+          this.triggerPlanetfallEchoSlam();
+        }
       }
     }
 
@@ -8856,6 +9815,52 @@ export class GameEngine {
         const distTraveled = Math.abs(proj.x - ((proj as any).startX || proj.x));
         if (distTraveled >= ((proj as any).rangeCap || 800)) {
           this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 6, '#93c5fd');
+          this.projectiles.splice(index, 1);
+          return;
+        }
+      }
+
+      if ((proj as any).type === 'flare_beam') {
+        proj.x += proj.vx;
+        proj.y += proj.vy;
+
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: proj.x + proj.width / 2,
+            y: proj.y + proj.height / 2,
+            vx: (Math.random() - 0.5) * 3,
+            vy: (Math.random() - 0.5) * 3,
+            size: Math.random() * 5 + 2,
+            color: Math.random() > 0.5 ? '#38bdf8' : '#bfdbfe',
+            life: 12,
+            maxLife: 12
+          });
+        }
+
+        const distTraveled = Math.abs(proj.x - ((proj as any).startX || proj.x));
+        const hitWall = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2) || proj.x < 0 || proj.x > this.levelWidth;
+
+        if (distTraveled >= ((proj as any).rangeCap || 800) || hitWall) {
+          const cx = proj.x + proj.width / 2;
+          const cy = proj.y + proj.height / 2;
+          soundService.playHit();
+          this.screenShake = Math.max(this.screenShake, 16);
+          this.addFloatingText(cx, cy - 15, FT_FLARE_BEAM_BURST.text, FT_FLARE_BEAM_BURST.color);
+          this.spawnDustParticles(cx, cy, 22, '#38bdf8');
+
+          this.enemies.forEach(e => {
+            if (e.hp <= 0) return;
+            const ex = e.x + e.width / 2;
+            const ey = e.y + e.height / 2;
+            if (Math.hypot(ex - cx, ey - cy) <= 110) {
+              this.damageEnemy(e, proj.damage);
+              (e as any).isBluishBurn = true;
+              e.burnTimer = 30;
+              e.burnLingerTimer = 180;
+              this.addFloatingText(ex, ey - 10, FT_BLUE_BURN.text, FT_BLUE_BURN.color);
+            }
+          });
+
           this.projectiles.splice(index, 1);
           return;
         }
@@ -9425,23 +10430,32 @@ export class GameEngine {
             }
           }
 
+          const isScepterBombamon = this.selectedDraco === 'Bombamon' && this.hasScepter;
           this.groundBurnZones.push({
             id: this.groundBurnIdCounter++,
-            x: dropX - 60,
+            x: dropX - (isScepterBombamon ? 75 : 60),
             y: groundY,
-            width: 120,
+            width: isScepterBombamon ? 100 : 120,
             height: 20,
-            timer: 120,
-            duration: 120
+            timer: isScepterBombamon ? 180 : 120,
+            duration: isScepterBombamon ? 180 : 120,
+            isBluishFlame: isScepterBombamon,
+            originX: dropX,
+            maxSpreadRange: 200,
+            burnGroupId: `hb_${dropX.toFixed(0)}_${this.frameCount}`
           });
 
           this.enemies.forEach(enemy => {
             if (enemy.hp <= 0) return;
             const dist = Math.hypot(enemy.x + enemy.width / 2 - proj.x, enemy.y + enemy.height / 2 - proj.y);
-            if (dist <= 100) {
-              this.damageEnemy(enemy, proj.damage);
+            if (dist <= (isScepterBombamon ? 130 : 100)) {
+              this.damageEnemy(enemy, isScepterBombamon ? Math.floor(proj.damage * 1.3) : proj.damage);
               enemy.burnTimer = 30;
-              enemy.burnLingerTimer = 120;
+              enemy.burnLingerTimer = isScepterBombamon ? 200 : 120;
+              if (isScepterBombamon) {
+                (enemy as any).isBluishBurn = true;
+                this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_BLUE_BURN.text, FT_BLUE_BURN.color);
+              }
             }
           });
 
@@ -9922,6 +10936,134 @@ export class GameEngine {
           }
           return;
         }
+        else if (proj.type === 'dark_cleave') {
+          let target: Enemy | null = (proj as any).targetEnemy || null;
+          if (!target || target.hp <= 0) {
+            let minDistance = 9999;
+            const px = proj.x + proj.width / 2;
+            const py = proj.y + proj.height / 2;
+            this.enemies.forEach(enemy => {
+              if (enemy.hp <= 0) return;
+              const dist = Math.hypot(enemy.x + enemy.width / 2 - px, enemy.y + enemy.height / 2 - py);
+              if (dist < minDistance && dist <= 900) {
+                minDistance = dist;
+                target = enemy;
+              }
+            });
+            (proj as any).targetEnemy = target;
+          }
+
+          if (target) {
+            const px = proj.x + proj.width / 2;
+            const py = proj.y + proj.height / 2;
+            const ex = (target as Enemy).x + (target as Enemy).width / 2;
+            const ey = (target as Enemy).y + (target as Enemy).height / 2;
+            const angle = Math.atan2(ey - py, ex - px);
+            const speed = 12.0;
+            proj.vx = Math.cos(angle) * speed;
+            proj.vy = Math.sin(angle) * speed;
+          }
+
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.hypot(proj.vx, proj.vy);
+          (proj as any).channelTimer = ((proj as any).channelTimer || 180) - 1;
+
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: (Math.random() - 0.5) * 2,
+              vy: (Math.random() - 0.5) * 2,
+              size: Math.random() * 5 + 2,
+              color: Math.random() > 0.5 ? '#c084fc' : '#e879f9',
+              life: 12,
+              maxLife: 12
+            });
+          }
+
+          let hitEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0 || hitEnemy) return;
+            if (
+              proj.x < enemy.x + enemy.width &&
+              proj.x + proj.width > enemy.x &&
+              proj.y < enemy.y + enemy.height &&
+              proj.y + proj.height > enemy.y
+            ) {
+              hitEnemy = enemy;
+            }
+          });
+
+          const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2);
+          const maxRangeReached = (proj as any).traveledDist >= ((proj as any).rangeCap || 900) || (proj as any).channelTimer <= 0;
+
+          if (hitEnemy || hitSolid || maxRangeReached) {
+            if (hitEnemy) {
+              this.damageEnemy(hitEnemy, proj.damage);
+              soundService.playHit();
+              (hitEnemy as any).ruptureBleedTimer = 120;
+              (hitEnemy as any).ruptureBleedDmg = Math.max(1, Math.floor(this.stats.attack * 0.4));
+              (hitEnemy as any).ruptureMoveDmg = Math.max(1, Math.floor(this.stats.attack * 0.7));
+              this.addFloatingText((hitEnemy as Enemy).x + (hitEnemy as Enemy).width / 2, (hitEnemy as Enemy).y - 12, FT_RUPTURE_BLEED.text, FT_RUPTURE_BLEED.color);
+              if ((hitEnemy as any).hp <= 0 && this.selectedDraco === 'Assassinmon' && this.hasScepter) {
+                this.triggerAssassinmonScreenSlash((hitEnemy as Enemy).x + (hitEnemy as Enemy).width / 2, (hitEnemy as Enemy).y + (hitEnemy as Enemy).height / 2);
+              }
+            }
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 12, '#c084fc');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          return;
+        }
+        else if (proj.type === 'gust_shot') {
+          proj.x += proj.vx;
+          proj.y += proj.vy;
+          (proj as any).traveledDist = ((proj as any).traveledDist || 0) + Math.hypot(proj.vx, proj.vy);
+          (proj as any).channelTimer = ((proj as any).channelTimer || 120) - 1;
+
+          if (this.frameCount % 2 === 0) {
+            this.particles.push({
+              x: proj.x + proj.width / 2,
+              y: proj.y + proj.height / 2,
+              vx: -proj.vx * 0.15 + (Math.random() - 0.5) * 1.5,
+              vy: -proj.vy * 0.15 + (Math.random() - 0.5) * 1.5,
+              size: Math.random() * 4 + 2,
+              color: Math.random() > 0.5 ? '#7dd3fc' : '#fef08a',
+              life: 10,
+              maxLife: 10
+            });
+          }
+
+          let hitEnemy: Enemy | null = null;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0 || hitEnemy) return;
+            if (
+              proj.x < enemy.x + enemy.width &&
+              proj.x + proj.width > enemy.x &&
+              proj.y < enemy.y + enemy.height &&
+              proj.y + proj.height > enemy.y
+            ) {
+              hitEnemy = enemy;
+            }
+          });
+
+          const hitSolid = this.isSolid(proj.x + proj.width / 2, proj.y + proj.height / 2);
+          const maxRangeReached = (proj as any).traveledDist >= ((proj as any).rangeCap || 800) || (proj as any).channelTimer <= 0;
+
+          if (hitEnemy || hitSolid || maxRangeReached) {
+            if (hitEnemy) {
+              this.damageEnemy(hitEnemy, proj.damage);
+              soundService.playHit();
+              (hitEnemy as Enemy).vx += (proj.vx > 0 ? 3.5 : -3.5);
+              this.addFloatingText((hitEnemy as Enemy).x + (hitEnemy as Enemy).width / 2, (hitEnemy as Enemy).y - 10, FT_HAWK_GALE.text, FT_HAWK_GALE.color);
+            }
+            this.spawnDustParticles(proj.x + proj.width / 2, proj.y + proj.height / 2, 8, '#38bdf8');
+            this.projectiles.splice(index, 1);
+            return;
+          }
+          return;
+        }
         else if (proj.type === 'endmon_enhanced_fireball') {
           let target: Enemy | null = (proj as any).targetEnemy || null;
           if (!target || target.hp <= 0) {
@@ -10096,6 +11238,9 @@ export class GameEngine {
         proj.y += proj.vy;
 
         if (this.isSolid(proj.x, proj.y) || proj.x < 0 || proj.x > this.levelWidth) {
+          if ((proj as any).isShowerArrow && this.hasScepter) {
+            this.triggerShowerArrowExplosion(proj.x + proj.width / 2, proj.y + proj.height / 2, proj.damage);
+          }
           this.projectiles.splice(index, 1);
           return;
         }
@@ -10230,6 +11375,45 @@ export class GameEngine {
                 this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 8, '#ffffff');
               }
             } else if (proj.type === 'sun_strike') {
+            } else if ((proj as any).type === 'flare_beam') {
+              const cx = proj.x + proj.width / 2;
+              const cy = proj.y + proj.height / 2;
+              soundService.playHit();
+              this.screenShake = Math.max(this.screenShake, 18);
+              this.addFloatingText(cx, cy - 20, FT_FLARE_BEAM_BURST.text, FT_FLARE_BEAM_BURST.color);
+              this.spawnDustParticles(cx, cy, 25, '#38bdf8');
+
+              const blastRadius = 120;
+              this.enemies.forEach(e => {
+                if (e.hp <= 0) return;
+                const ex = e.x + e.width / 2;
+                const ey = e.y + e.height / 2;
+                if (Math.hypot(ex - cx, ey - cy) <= blastRadius) {
+                  this.damageEnemy(e, proj.damage);
+                  (e as any).isBluishBurn = true;
+                  e.burnTimer = 40;
+                  e.burnLingerTimer = 200;
+                  this.addFloatingText(ex, ey - 10, FT_BLUE_BURN.text, FT_BLUE_BURN.color);
+                }
+              });
+
+              for (let p = 0; p < 28; p++) {
+                const ang = (p / 28) * Math.PI * 2;
+                const spd = Math.random() * 8 + 3;
+                this.particles.push({
+                  x: cx,
+                  y: cy,
+                  vx: Math.cos(ang) * spd,
+                  vy: Math.sin(ang) * spd - 1,
+                  size: Math.random() * 7 + 3,
+                  color: p % 3 === 0 ? '#38bdf8' : p % 3 === 1 ? '#60a5fa' : '#ffffff',
+                  life: 20,
+                  maxLife: 20
+                });
+              }
+
+              this.projectiles.splice(index, 1);
+              projSpliced = true;
             } else if ((proj as any).type === 'homing_bomb') {
               soundService.playHit();
               this.screenShake = 18;
@@ -10250,23 +11434,32 @@ export class GameEngine {
                 }
               }
 
+              const isScepterBombamon = this.selectedDraco === 'Bombamon' && this.hasScepter;
               this.groundBurnZones.push({
                 id: this.groundBurnIdCounter++,
-                x: dropX - 60,
+                x: dropX - (isScepterBombamon ? 75 : 60),
                 y: groundY,
-                width: 120,
+                width: isScepterBombamon ? 100 : 120,
                 height: 20,
-                timer: 120,
-                duration: 120
+                timer: isScepterBombamon ? 180 : 120,
+                duration: isScepterBombamon ? 180 : 120,
+                isBluishFlame: isScepterBombamon,
+                originX: dropX,
+                maxSpreadRange: 200,
+                burnGroupId: `hb_${dropX.toFixed(0)}_${this.frameCount}`
               });
 
               this.enemies.forEach(e => {
                 if (e.hp <= 0) return;
                 const dist = Math.hypot(e.x + e.width / 2 - dropX, e.y + e.height / 2 - enemy.y);
-                if (dist <= 100) {
-                  this.damageEnemy(e, proj.damage);
+                if (dist <= (isScepterBombamon ? 130 : 100)) {
+                  this.damageEnemy(e, isScepterBombamon ? Math.floor(proj.damage * 1.3) : proj.damage);
                   e.burnTimer = 30;
-                  e.burnLingerTimer = 120;
+                  e.burnLingerTimer = isScepterBombamon ? 200 : 120;
+                  if (isScepterBombamon) {
+                    (e as any).isBluishBurn = true;
+                    this.addFloatingText(e.x + e.width / 2, e.y - 10, FT_BLUE_BURN.text, FT_BLUE_BURN.color);
+                  }
                 }
               });
 
@@ -10288,7 +11481,11 @@ export class GameEngine {
               this.projectiles.splice(index, 1);
               projSpliced = true;
             } else {
-              this.damageEnemy(enemy, proj.damage);
+              if ((proj as any).isShowerArrow && this.hasScepter) {
+                this.triggerShowerArrowExplosion(proj.x + proj.width / 2, proj.y + proj.height / 2, proj.damage);
+              } else {
+                this.damageEnemy(enemy, proj.damage);
+              }
               this.projectiles.splice(index, 1);
               projSpliced = true;
             }
@@ -11864,6 +13061,7 @@ export class GameEngine {
               }
             }
 
+            const isScepterBombamon = this.selectedDraco === 'Bombamon' && this.hasScepter;
             this.groundBurnZones.push({
               id: this.groundBurnIdCounter++,
               x: dropX - 45,
@@ -11871,17 +13069,22 @@ export class GameEngine {
               width: 90,
               height: 20,
               timer: 300,
-              duration: 300
+              duration: 300,
+              isBluishFlame: isScepterBombamon,
+              burnGroupId: this.carpetBombingBurnGroupId || `cb_${this.frameCount}`
             });
 
             this.enemies.forEach(enemy => {
               if (enemy.hp <= 0) return;
-              if (Math.abs(enemy.x + enemy.width / 2 - dropX) < 65) {
+              if (Math.abs(enemy.x + enemy.width / 2 - dropX) < (isScepterBombamon ? 80 : 65)) {
                 // Cap impact damage to once every fire-stream tick = 0.1s at 60fps
                 if (((enemy as any).carpetBombDamageCooldown || 0) <= 0) {
-                  this.damageEnemy(enemy, Math.floor(this.stats.attack * 1.8));
+                  this.damageEnemy(enemy, isScepterBombamon ? Math.floor(this.stats.attack * 2.2) : Math.floor(this.stats.attack * 1.8));
                   enemy.burnTimer = 30;
-                  enemy.burnLingerTimer = 120;
+                  enemy.burnLingerTimer = isScepterBombamon ? 180 : 120;
+                  if (isScepterBombamon) {
+                    (enemy as any).isBluishBurn = true;
+                  }
                   (enemy as any).carpetBombDamageCooldown = 1; // 1 tick × 6 frames = 6 frames = 0.1s
                 }
               }
@@ -11934,6 +13137,10 @@ export class GameEngine {
             const ultDmg = Math.floor(this.stats.attack * 3.8);
             this.damageEnemy(enemy, ultDmg);
             enemy.stunnedTimer = 60;
+
+            if (this.hasScepter && this.selectedDraco === 'Thundermon') {
+              this.summonThunderRelic(enemy.x + enemy.width / 2, enemy.y + enemy.height - 15, 480);
+            }
 
             if (enemy.hp <= 0) {
               enemy.isBonePile = true;
@@ -12650,9 +13857,61 @@ export class GameEngine {
     this.groundBurnZones.forEach(zone => {
       zone.timer--;
 
+      // Bombamon Scepter: Bluish flames spread up to 200px (1/4 of original 800px) from originX
+      if (zone.isBluishFlame && zone.originX !== undefined) {
+        const maxRange = zone.maxSpreadRange || 200;
+        const spreadSpeed = 0.65;
+        if (zone.x - spreadSpeed >= zone.originX - maxRange) {
+          zone.x -= spreadSpeed;
+          zone.width += spreadSpeed;
+        }
+        if (zone.x + zone.width + spreadSpeed <= zone.originX + maxRange) {
+          zone.width += spreadSpeed;
+        }
+      }
+
+      // Bombamon Scepter: Hellfire detonation only explodes once every burn ends
+      if (zone.isBluishFlame && zone.timer === 1 && !zone.hasDetonated) {
+        const groupId = zone.burnGroupId;
+        if (groupId) {
+          const othersStillBurning = this.groundBurnZones.some(
+            other => other !== zone && other.burnGroupId === groupId && other.timer > 1
+          );
+          if (!othersStillBurning) {
+            const groupZones = this.groundBurnZones.filter(z => z.burnGroupId === groupId);
+            let minX = zone.x;
+            let maxX = zone.x + zone.width;
+            let avgY = zone.y;
+            groupZones.forEach(gz => {
+              minX = Math.min(minX, gz.x);
+              maxX = Math.max(maxX, gz.x + gz.width);
+              gz.hasDetonated = true;
+            });
+            const centerX = (minX + maxX) / 2;
+            this.triggerBluishFlameExplosion(centerX, avgY);
+          }
+        } else {
+          zone.hasDetonated = true;
+          this.triggerBluishFlameExplosion(zone.x + zone.width / 2, zone.y);
+        }
+      }
+
       const isElectric = (zone as any).isElectric;
 
-      if (this.frameCount % 4 === 0) {
+      if (zone.isBluishFlame) {
+        if (this.frameCount % 3 === 0) {
+          this.particles.push({
+            x: zone.x + Math.random() * zone.width,
+            y: zone.y + zone.height - Math.random() * 8,
+            vx: (Math.random() - 0.5) * 3,
+            vy: -Math.random() * 4 - 1.5,
+            size: Math.random() * 6 + 3,
+            color: Math.random() > 0.5 ? '#38bdf8' : (Math.random() > 0.5 ? '#60a5fa' : '#bfdbfe'),
+            life: 18,
+            maxLife: 18
+          });
+        }
+      } else if (this.frameCount % 4 === 0) {
         this.particles.push({
           x: zone.x + Math.random() * zone.width,
           y: zone.y + zone.height - Math.random() * 8,
@@ -12675,6 +13934,8 @@ export class GameEngine {
         ) {
           if (isElectric) {
             (enemy as any).touchingElectricZone = true;
+          } else if (zone.isBluishFlame) {
+            (enemy as any).touchingBluishFireZone = true;
           } else {
             (enemy as any).touchingFireZone = true;
           }
@@ -12723,6 +13984,20 @@ export class GameEngine {
           enemy.stunnedTimer = 12;
           this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_ELECTROCUTED.text, FT_ELECTROCUTED.color);
         }
+      } else if ((enemy as any).touchingBluishFireZone) {
+        enemy.burnTimer = 35;
+        enemy.burnLingerTimer = 200;
+        if (!(enemy as any).isBluishBurn) {
+          (enemy as any).isBluishBurn = true;
+          (enemy as any).hasHellfireExploded = false;
+        }
+
+        enemy.burnTickTimer = (enemy.burnTickTimer || 0) + 1;
+        // Bluish flame burn tick deals more damage (0.75x attack)
+        if (enemy.burnTickTimer % 6 === 0) {
+          this.damageEnemy(enemy, Math.max(1, Math.floor(this.stats.attack * 0.75)));
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 10, FT_BLUE_BURN.text, FT_BLUE_BURN.color);
+        }
       } else if ((enemy as any).touchingFireZone) {
         enemy.burnTimer = 30;
         enemy.burnLingerTimer = 120;
@@ -12747,16 +14022,90 @@ export class GameEngine {
       if (isBurning) {
         enemy.x += enemy.vx * 0.8;
         if (this.frameCount % 5 === 0) {
+          const isBlue = (enemy as any).isBluishBurn;
           this.particles.push({
             x: enemy.x + Math.random() * enemy.width,
             y: enemy.y + Math.random() * enemy.height,
             vx: (Math.random() - 0.5) * 3,
             vy: -Math.random() * 3 - 1,
             size: Math.random() * 5 + 2,
-            color: Math.random() > 0.5 ? '#ef4444' : '#f97316',
+            color: isBlue ? (Math.random() > 0.5 ? '#38bdf8' : '#bfdbfe') : (Math.random() > 0.5 ? '#ef4444' : '#f97316'),
             life: 14,
             maxLife: 14
           });
+        }
+      }
+
+      // Bombamon Scepter: Back-and-forth contagion and explosion on death/expiration
+      if ((enemy as any).isBluishBurn) {
+        if (this.frameCount % 15 === 0) {
+          const ex = enemy.x + enemy.width / 2;
+          const ey = enemy.y + enemy.height / 2;
+          this.enemies.forEach(other => {
+            if (other === enemy || other.hp <= 0) return;
+            const ox = other.x + other.width / 2;
+            const oy = other.y + other.height / 2;
+            if (Math.hypot(ox - ex, oy - ey) <= 120) {
+              if (!(other as any).isBluishBurn) {
+                (other as any).isBluishBurn = true;
+                (other as any).hasHellfireExploded = false;
+                other.burnTimer = 30;
+                other.burnLingerTimer = 180;
+                this.addFloatingText(ox, oy - 10, '🔥 HELLFIRE CHAIN!', '#38bdf8');
+              }
+            }
+          });
+        }
+
+        const burnEnded = enemy.hp <= 0 || (enemy.burnLingerTimer === 1 && (enemy.burnTimer || 0) <= 0);
+        if (burnEnded && !(enemy as any).hasHellfireExploded) {
+          (enemy as any).hasHellfireExploded = true;
+          (enemy as any).isBluishBurn = false;
+          this.triggerMiniBluishExplosion(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
+        }
+      }
+
+      // ASSASSINMON SCEPTER: Rupture Bleed
+      if ((enemy as any).ruptureBleedTimer && (enemy as any).ruptureBleedTimer > 0) {
+        (enemy as any).ruptureBleedTimer--;
+
+        // Bleed blood particles
+        if (this.frameCount % 4 === 0) {
+          this.particles.push({
+            x: enemy.x + Math.random() * enemy.width,
+            y: enemy.y + Math.random() * enemy.height,
+            vx: (Math.random() - 0.5) * 2,
+            vy: Math.random() * 3 + 1,
+            size: Math.random() * 4 + 2,
+            color: Math.random() > 0.5 ? '#e11d48' : '#7c3aed',
+            life: 16,
+            maxLife: 16
+          });
+        }
+
+        // Periodic bleed tick every 20 frames (~3 times per second)
+        if ((enemy as any).ruptureBleedTimer % 20 === 0) {
+          const bleedDmg = (enemy as any).ruptureBleedDmg || Math.max(1, Math.floor(this.stats.attack * 0.4));
+          this.damageEnemy(enemy, bleedDmg);
+          this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 12, FT_RUPTURE_BLEED.text, FT_RUPTURE_BLEED.color);
+        }
+
+        // Movement Rupture Damage: when enemies move, deal extra damage
+        const enemySpeed = Math.hypot(enemy.vx || 0, enemy.vy || 0);
+        if (enemySpeed > 0.3) {
+          (enemy as any).ruptureMoveTick = ((enemy as any).ruptureMoveTick || 0) + 1;
+          if ((enemy as any).ruptureMoveTick % 10 === 0) {
+            const moveDmg = (enemy as any).ruptureMoveDmg || Math.max(1, Math.floor(this.stats.attack * 0.7));
+            this.damageEnemy(enemy, moveDmg);
+            soundService.playHit();
+            this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 6, '#be185d');
+            this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 22, `🩸 MOVE RUPTURE -${moveDmg}`, '#f43f5e');
+          }
+        }
+
+        // Slaying enemy under Rupture triggers Screen-wide lethal slash & reset
+        if (enemy.hp <= 0 && this.selectedDraco === 'Assassinmon' && this.hasScepter) {
+          this.triggerAssassinmonScreenSlash(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2);
         }
       }
     });
@@ -12776,6 +14125,69 @@ export class GameEngine {
 
     if (this.birdAttackCooldown > 0) {
       this.birdAttackCooldown--;
+    }
+
+    // WHITEMON SCEPTER: Celestial Hawk transforms into ranged artillery
+    const hasScepterHawk = this.selectedDraco === 'Whitemon' && this.hasScepter;
+    if (hasScepterHawk) {
+      const hawkHomeX = this.px + (this.pFacing === 1 ? -25 : this.pWidth + 25);
+      const hawkHomeY = this.py - 65 + Math.sin(this.frameCount * 0.12) * 8;
+      this.birdX += (hawkHomeX - this.birdX) * 0.18;
+      this.birdY += (hawkHomeY - this.birdY) * 0.18;
+
+      if (this.birdAttackCooldown <= 0) {
+        let nearestEnemy: Enemy | null = null;
+        let minDist = 500;
+
+        for (const enemy of this.enemies) {
+          if (enemy.hp <= 0) continue;
+          const dist = Math.hypot(this.birdX - (enemy.x + enemy.width / 2), this.birdY - (enemy.y + enemy.height / 2));
+          if (dist < minDist) {
+            minDist = dist;
+            nearestEnemy = enemy;
+          }
+        }
+
+        if (nearestEnemy) {
+          const ex = (nearestEnemy as Enemy).x + (nearestEnemy as Enemy).width / 2;
+          const ey = (nearestEnemy as Enemy).y + (nearestEnemy as Enemy).height / 2;
+          const angle = Math.atan2(ey - this.birdY, ex - this.birdX);
+          const gustSpeed = 14.0;
+          const gustDmg = Math.floor(this.stats.attack * (isRampage ? 2.4 : 1.6));
+
+          soundService.playShoot();
+          this.projectiles.push({
+            x: this.birdX,
+            y: this.birdY,
+            vx: Math.cos(angle) * gustSpeed,
+            vy: Math.sin(angle) * gustSpeed,
+            width: 26,
+            height: 14,
+            isEnemy: false,
+            damage: gustDmg,
+            color: '#38bdf8',
+            type: 'gust_shot',
+            channelTimer: 90
+          } as any);
+
+          for (let p = 0; p < 6; p++) {
+            this.particles.push({
+              x: this.birdX,
+              y: this.birdY,
+              vx: Math.cos(angle + (Math.random() - 0.5) * 0.6) * (Math.random() * 4 + 2),
+              vy: Math.sin(angle + (Math.random() - 0.5) * 0.6) * (Math.random() * 4 + 2),
+              size: Math.random() * 4 + 2,
+              color: p % 2 === 0 ? '#38bdf8' : '#fef08a',
+              life: 12,
+              maxLife: 12
+            });
+          }
+
+          // +50% attack speed (20 frames vs 40 frames; 6 during rampage)
+          this.birdAttackCooldown = isRampage ? 6 : 20;
+        }
+      }
+      return;
     }
 
     const homeX = this.px + (this.pFacing === 1 ? -15 : this.pWidth + 15);
@@ -14180,6 +15592,11 @@ export class GameEngine {
       }
     });
 
+    this.drawPlanetfallEchoes();
+    this.drawArchermonExplosions();
+    this.drawShieldmonDomeDetonations();
+    this.drawThunderRelics();
+
     this.projectiles.forEach(proj => {
       this.ctx.fillStyle = proj.color;
 
@@ -14932,6 +16349,55 @@ export class GameEngine {
           drawSquare(x, y); drawSquare(x + ts, y); drawSquare(x + ts, y + ts);
         } else {
           drawSquare(x, y); drawSquare(x + ts, y); drawSquare(x, y + ts); drawSquare(x + ts, y + ts);
+        }
+
+        this.ctx.restore();
+      } else if ((proj as any).type === 'flare_beam') {
+        this.ctx.save();
+        const cx = proj.x + proj.width / 2;
+        const cy = proj.y + proj.height / 2;
+        const pw = proj.width;
+        const ph = proj.height;
+        const isRight = proj.vx >= 0;
+
+        // 1. Outer azure/cyan coronal flare aura
+        const auraGrad = this.ctx.createLinearGradient(proj.x, cy, proj.x + pw, cy);
+        auraGrad.addColorStop(0, 'rgba(56, 189, 248, 0.15)');
+        auraGrad.addColorStop(0.5, 'rgba(56, 189, 248, 0.6)');
+        auraGrad.addColorStop(1, 'rgba(191, 219, 254, 0.85)');
+        this.ctx.fillStyle = auraGrad;
+        this.ctx.beginPath();
+        this.ctx.ellipse(cx, cy, pw / 2 + 6, ph / 2 + 4, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // 2. Main High-Intensity Plasma Beam
+        const beamGrad = this.ctx.createLinearGradient(proj.x, cy, proj.x + pw, cy);
+        beamGrad.addColorStop(0, '#0284c7');
+        beamGrad.addColorStop(0.5, '#38bdf8');
+        beamGrad.addColorStop(1, '#ffffff');
+        this.ctx.fillStyle = beamGrad;
+        this.ctx.beginPath();
+        this.ctx.roundRect(proj.x, proj.y, pw, ph, 8);
+        this.ctx.fill();
+
+        // 3. Ultra-hot White Core
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.roundRect(proj.x + 4, proj.y + 4, pw - 8, ph - 8, 4);
+        this.ctx.fill();
+
+        // 4. Trailing solar flares
+        if (this.frameCount % 2 === 0) {
+          this.particles.push({
+            x: isRight ? proj.x : proj.x + pw,
+            y: cy + (Math.random() - 0.5) * ph,
+            vx: -proj.vx * 0.15 + (Math.random() - 0.5) * 2,
+            vy: (Math.random() - 0.5) * 3,
+            size: Math.random() * 6 + 2,
+            color: Math.random() > 0.5 ? '#38bdf8' : '#bfdbfe',
+            life: 12,
+            maxLife: 12
+          });
         }
 
         this.ctx.restore();
@@ -17055,7 +18521,15 @@ export class GameEngine {
         pType === 'wisp_orb' ||
         pType === 'pixel_sword' ||
         pType === 'boomerang' ||
-        pType === 'sci_fi_laser'
+        pType === 'sci_fi_laser' ||
+        pType === 'tetris_block' ||
+        pType === 'pacman' ||
+        pType === 'flare_beam' ||
+        pType === 'azure_vortex_ball' ||
+        pType === 'azure_light_ball' ||
+        pType === 'tidal_wave' ||
+        pType === 'ghost_boat' ||
+        pType === 'shrapnel'
       ) {
         return;
       }
@@ -17294,6 +18768,49 @@ export class GameEngine {
         this.ctx.beginPath();
         this.ctx.arc(-pw / 2 - 2, 0, 2, 0, Math.PI * 2);
         this.ctx.fill();
+      } else if (pType === 'dark_cleave') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(angle);
+
+        // Radiant violet/fuchsia crescent cleave
+        const grad = this.ctx.createLinearGradient(-pw / 2, 0, pw / 2, 0);
+        grad.addColorStop(0, 'rgba(192, 132, 252, 0.1)');
+        grad.addColorStop(0.4, '#c084fc');
+        grad.addColorStop(0.8, '#e879f9');
+        grad.addColorStop(1, '#ffffff');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.arc(0, 0, pw / 2, -Math.PI * 0.45, Math.PI * 0.45);
+        this.ctx.quadraticCurveTo(pw * 0.1, 0, 0, -pw / 2 * Math.sin(Math.PI * 0.45));
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Glowing outer arc
+        this.ctx.strokeStyle = '#f472b6';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.stroke();
+      } else if (pType === 'gust_shot') {
+        const angle = Math.atan2(proj.vy, proj.vx);
+        this.ctx.translate(cx, cy);
+        this.ctx.rotate(angle);
+
+        // Crescent celestial wind blade
+        const grad = this.ctx.createLinearGradient(-pw / 2, 0, pw / 2, 0);
+        grad.addColorStop(0, 'rgba(56, 189, 248, 0.2)');
+        grad.addColorStop(0.5, '#38bdf8');
+        grad.addColorStop(0.85, '#fef08a');
+        grad.addColorStop(1, '#ffffff');
+
+        this.ctx.fillStyle = grad;
+        this.ctx.beginPath();
+        this.ctx.ellipse(0, 0, pw / 2, ph / 2, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        this.ctx.strokeStyle = '#bae6fd';
+        this.ctx.lineWidth = 2;
+        this.ctx.stroke();
       } else {
         this.ctx.fillStyle = proj.color || '#fbbf24';
         this.ctx.fillRect(px, py, pw, ph);
@@ -17357,68 +18874,162 @@ export class GameEngine {
     if (this.birdActive) {
       this.ctx.save();
       const isRampage = this.birdRampageTimer > 0;
+      const isHawk = this.selectedDraco === 'Whitemon' && this.hasScepter;
 
-      if (isRampage) {
-        // Rampage aura — pulsing fire ring
-        const auraPulse = Math.sin(this.frameCount * 0.22) * 4;
-        const auraGrad = this.ctx.createRadialGradient(this.birdX, this.birdY, 4, this.birdX, this.birdY, 24 + auraPulse);
-        auraGrad.addColorStop(0, 'rgba(249, 115, 22, 0.8)');
-        auraGrad.addColorStop(0.5, 'rgba(245, 158, 11, 0.4)');
-        auraGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
-        this.ctx.fillStyle = auraGrad;
+      if (isHawk) {
+        // Celestial Hawk Aura: Divine golden & cyan vortex halo
+        const auraPulse = Math.sin(this.frameCount * 0.25) * 4;
+        const auraRadius = (isRampage ? 32 : 24) + auraPulse;
+        const hawkAura = this.ctx.createRadialGradient(this.birdX, this.birdY, 4, this.birdX, this.birdY, auraRadius);
+        hawkAura.addColorStop(0, isRampage ? 'rgba(249, 115, 22, 0.7)' : 'rgba(254, 240, 138, 0.6)');
+        hawkAura.addColorStop(0.5, isRampage ? 'rgba(239, 68, 68, 0.35)' : 'rgba(56, 189, 248, 0.3)');
+        hawkAura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        this.ctx.fillStyle = hawkAura;
         this.ctx.beginPath();
-        this.ctx.arc(this.birdX, this.birdY, 24 + auraPulse, 0, Math.PI * 2);
+        this.ctx.arc(this.birdX, this.birdY, auraRadius, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Rotating fire ring arcs
-        const ra0 = this.frameCount * 0.18;
-        this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
-        this.ctx.lineWidth = 2.5;
+        // Rotating wind rings
+        const rotAngle = this.frameCount * 0.12;
+        this.ctx.strokeStyle = isRampage ? 'rgba(249, 115, 22, 0.8)' : 'rgba(56, 189, 248, 0.75)';
+        this.ctx.lineWidth = 2;
         this.ctx.beginPath();
-        this.ctx.arc(this.birdX, this.birdY, 18 + auraPulse * 0.5, ra0, ra0 + Math.PI * 1.4);
+        this.ctx.arc(this.birdX, this.birdY, auraRadius - 6, rotAngle, rotAngle + Math.PI * 1.2);
         this.ctx.stroke();
-        this.ctx.strokeStyle = 'rgba(253, 186, 116, 0.7)';
+
+        // Hawk facing towards nearest enemy or player direction
+        const hawkFacing = this.pFacing || 1;
+
+        // Hawk Tail Feathers
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.birdX - hawkFacing * 8, this.birdY);
+        this.ctx.lineTo(this.birdX - hawkFacing * 18, this.birdY - 5);
+        this.ctx.lineTo(this.birdX - hawkFacing * 21, this.birdY);
+        this.ctx.lineTo(this.birdX - hawkFacing * 18, this.birdY + 5);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Celestial Hawk Body (larger, majestic)
+        const bodyGrad = this.ctx.createLinearGradient(this.birdX - 10, this.birdY - 10, this.birdX + 10, this.birdY + 10);
+        bodyGrad.addColorStop(0, '#ffffff');
+        bodyGrad.addColorStop(0.4, isRampage ? '#f97316' : '#38bdf8');
+        bodyGrad.addColorStop(1, isRampage ? '#ea580c' : '#0284c7');
+        this.ctx.fillStyle = bodyGrad;
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 1.8;
+        this.ctx.beginPath();
+        this.ctx.ellipse(this.birdX, this.birdY, 12, 8, hawkFacing === 1 ? 0.2 : -0.2, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Powerful Hawk Wings with golden crests
+        const wingFlap = Math.sin(this.frameCount * 0.45) * 10;
+        const wingSpan = 22;
+
+        // Top Wing
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.strokeStyle = '#f59e0b';
         this.ctx.lineWidth = 1.5;
         this.ctx.beginPath();
-        this.ctx.arc(this.birdX, this.birdY, 22 + auraPulse * 0.5, -ra0, -ra0 + Math.PI * 1.1);
+        this.ctx.moveTo(this.birdX - 3, this.birdY - 4);
+        this.ctx.lineTo(this.birdX - 6, this.birdY - wingSpan + wingFlap);
+        this.ctx.lineTo(this.birdX + 10, this.birdY - 8 + wingFlap * 0.5);
+        this.ctx.closePath();
+        this.ctx.fill();
         this.ctx.stroke();
+
+        // Bottom Wing
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.birdX - 3, this.birdY + 4);
+        this.ctx.lineTo(this.birdX - 6, this.birdY + wingSpan - wingFlap);
+        this.ctx.lineTo(this.birdX + 10, this.birdY + 8 - wingFlap * 0.5);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Sharp Hooked Raptor Beak
+        this.ctx.fillStyle = '#f59e0b';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.birdX + hawkFacing * 10, this.birdY - 3);
+        this.ctx.lineTo(this.birdX + hawkFacing * 18, this.birdY);
+        this.ctx.lineTo(this.birdX + hawkFacing * 14, this.birdY + 4);
+        this.ctx.lineTo(this.birdX + hawkFacing * 10, this.birdY + 2);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Glowing Predatory Eye
+        this.ctx.fillStyle = '#fef08a';
+        this.ctx.beginPath();
+        this.ctx.arc(this.birdX + hawkFacing * 6, this.birdY - 2, 2.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.beginPath();
+        this.ctx.arc(this.birdX + hawkFacing * 7, this.birdY - 2, 1.2, 0, Math.PI * 2);
+        this.ctx.fill();
+      } else {
+        if (isRampage) {
+          // Rampage aura — pulsing fire ring
+          const auraPulse = Math.sin(this.frameCount * 0.22) * 4;
+          const auraGrad = this.ctx.createRadialGradient(this.birdX, this.birdY, 4, this.birdX, this.birdY, 24 + auraPulse);
+          auraGrad.addColorStop(0, 'rgba(249, 115, 22, 0.8)');
+          auraGrad.addColorStop(0.5, 'rgba(245, 158, 11, 0.4)');
+          auraGrad.addColorStop(1, 'rgba(239, 68, 68, 0)');
+          this.ctx.fillStyle = auraGrad;
+          this.ctx.beginPath();
+          this.ctx.arc(this.birdX, this.birdY, 24 + auraPulse, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Rotating fire ring arcs
+          const ra0 = this.frameCount * 0.18;
+          this.ctx.strokeStyle = 'rgba(239, 68, 68, 0.85)';
+          this.ctx.lineWidth = 2.5;
+          this.ctx.beginPath();
+          this.ctx.arc(this.birdX, this.birdY, 18 + auraPulse * 0.5, ra0, ra0 + Math.PI * 1.4);
+          this.ctx.stroke();
+          this.ctx.strokeStyle = 'rgba(253, 186, 116, 0.7)';
+          this.ctx.lineWidth = 1.5;
+          this.ctx.beginPath();
+          this.ctx.arc(this.birdX, this.birdY, 22 + auraPulse * 0.5, -ra0, -ra0 + Math.PI * 1.1);
+          this.ctx.stroke();
+        }
+
+        // Bird body
+        this.ctx.fillStyle = isRampage ? '#f97316' : '#38bdf8';
+        this.ctx.strokeStyle = isRampage ? '#7c2d12' : '#0369a1';
+        this.ctx.lineWidth = 1.5;
+        this.ctx.beginPath();
+        this.ctx.arc(this.birdX, this.birdY, 8, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        // Wings
+        const wingFlap = Math.sin(this.frameCount * 0.4) * 6;
+        this.ctx.fillStyle = isRampage ? '#fef08a' : '#7dd3fc';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.birdX - 4, this.birdY);
+        this.ctx.lineTo(this.birdX - 14, this.birdY - 6 + wingFlap);
+        this.ctx.lineTo(this.birdX, this.birdY + 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.birdX + 4, this.birdY);
+        this.ctx.lineTo(this.birdX + 14, this.birdY - 6 + wingFlap);
+        this.ctx.lineTo(this.birdX, this.birdY + 4);
+        this.ctx.closePath();
+        this.ctx.fill();
+
+        // Beak
+        const birdFacing = this.birdState === 'swooping' && this.birdTargetEnemy
+          ? (this.birdTargetEnemy.x > this.birdX ? 1 : -1) : 1;
+        this.ctx.fillStyle = isRampage ? '#fbbf24' : '#facc15';
+        this.ctx.beginPath();
+        this.ctx.moveTo(this.birdX + birdFacing * 7, this.birdY);
+        this.ctx.lineTo(this.birdX + birdFacing * 13, this.birdY - 1.5);
+        this.ctx.lineTo(this.birdX + birdFacing * 13, this.birdY + 1.5);
+        this.ctx.closePath();
+        this.ctx.fill();
       }
-
-      // Bird body
-      this.ctx.fillStyle = isRampage ? '#f97316' : '#38bdf8';
-      this.ctx.strokeStyle = isRampage ? '#7c2d12' : '#0369a1';
-      this.ctx.lineWidth = 1.5;
-      this.ctx.beginPath();
-      this.ctx.arc(this.birdX, this.birdY, 8, 0, Math.PI * 2);
-      this.ctx.fill();
-      this.ctx.stroke();
-
-      // Wings
-      const wingFlap = Math.sin(this.frameCount * 0.4) * 6;
-      this.ctx.fillStyle = isRampage ? '#fef08a' : '#7dd3fc';
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.birdX - 4, this.birdY);
-      this.ctx.lineTo(this.birdX - 14, this.birdY - 6 + wingFlap);
-      this.ctx.lineTo(this.birdX, this.birdY + 4);
-      this.ctx.closePath();
-      this.ctx.fill();
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.birdX + 4, this.birdY);
-      this.ctx.lineTo(this.birdX + 14, this.birdY - 6 + wingFlap);
-      this.ctx.lineTo(this.birdX, this.birdY + 4);
-      this.ctx.closePath();
-      this.ctx.fill();
-
-      // Beak
-      const birdFacing = this.birdState === 'swooping' && this.birdTargetEnemy
-        ? (this.birdTargetEnemy.x > this.birdX ? 1 : -1) : 1;
-      this.ctx.fillStyle = isRampage ? '#fbbf24' : '#facc15';
-      this.ctx.beginPath();
-      this.ctx.moveTo(this.birdX + birdFacing * 7, this.birdY);
-      this.ctx.lineTo(this.birdX + birdFacing * 13, this.birdY - 1.5);
-      this.ctx.lineTo(this.birdX + birdFacing * 13, this.birdY + 1.5);
-      this.ctx.closePath();
-      this.ctx.fill();
 
       this.ctx.restore();
     }
@@ -17436,17 +19047,44 @@ export class GameEngine {
         this.ctx.rotate(this.jumpmonSpinAngle);
         this.ctx.translate(-(px + pw / 2), -(py + ph / 2));
 
+        // Modern Cyclone: Multi-blade whirling speed rings
         this.ctx.strokeStyle = '#fbbf24';
-        this.ctx.lineWidth = 6;
+        this.ctx.lineWidth = 4;
         this.ctx.beginPath();
-        this.ctx.arc(px + pw / 2, py + ph / 2, 34, 0, Math.PI * 2);
+        this.ctx.arc(px + pw / 2, py + ph / 2, 32, 0, Math.PI * 2);
         this.ctx.stroke();
 
-        this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.6)';
-        this.ctx.lineWidth = 14;
+        this.ctx.strokeStyle = 'rgba(249, 115, 22, 0.45)';
+        this.ctx.lineWidth = 12;
         this.ctx.beginPath();
         this.ctx.arc(px + pw / 2, py + ph / 2, 38, 0, Math.PI * 2);
         this.ctx.stroke();
+
+        // 4 Orbiting Cyclone Razor Crescent Blades
+        for (let b = 0; b < 4; b++) {
+          const bladeAngle = this.jumpmonSpinAngle * 2 + (b * Math.PI / 2);
+          const bx = px + pw / 2 + Math.cos(bladeAngle) * 36;
+          const by = py + ph / 2 + Math.sin(bladeAngle) * 36;
+          this.ctx.fillStyle = b % 2 === 0 ? '#fef08a' : '#f97316';
+          this.ctx.beginPath();
+          this.ctx.arc(bx, by, 6, bladeAngle - 1, bladeAngle + 1);
+          this.ctx.lineTo(px + pw / 2 + Math.cos(bladeAngle) * 22, py + ph / 2 + Math.sin(bladeAngle) * 22);
+          this.ctx.closePath();
+          this.ctx.fill();
+        }
+      } else if (this.selectedDraco === 'Jumpmon') {
+        const px = this.px;
+        const py = this.py;
+        const pw = this.pWidth;
+        const ph = this.pHeight;
+        const isAirborne = !this.pGrounded;
+        const squashY = isAirborne ? (this.pvy < 0 ? 1.12 : 0.90) : 1.0;
+        const stretchX = 1 / squashY;
+        const footX = px + pw / 2;
+        const footY = py + ph;
+        this.ctx.translate(footX, footY);
+        this.ctx.scale(stretchX, squashY);
+        this.ctx.translate(-footX, -footY);
       }
 
       if (this.pInvulnerableFrames > 0 && Math.floor(this.pInvulnerableFrames / 4) % 2 === 0) {
@@ -17457,6 +19095,13 @@ export class GameEngine {
       let accentColor = '#b45309';
       let bellyColor = '#fef08a';
       let detailColor = '#ffffff';
+
+      if (this.selectedDraco === 'Jumpmon' && this.jumpmonPlanetfallTimer > 0) {
+        mainColor = '#14b8a6';
+        accentColor = '#0f766e';
+        bellyColor = '#a7f3d0';
+        detailColor = '#5eead4';
+      }
 
       if (this.selectedDraco === 'Archermon') {
         mainColor = '#10b981';
@@ -18010,6 +19655,34 @@ export class GameEngine {
         this.ctx.fill();
       }
 
+      if (this.selectedDraco === 'Jumpmon' && this.jumpmonPlanetfallTimer > 0) {
+        const auraPulse = Math.sin(this.frameCount * 0.2) * 5;
+        const auraGrad = this.ctx.createRadialGradient(
+          px + pw / 2, py + ph / 2, 8,
+          px + pw / 2, py + ph / 2, 34 + auraPulse
+        );
+        auraGrad.addColorStop(0, 'rgba(45, 212, 191, 0.45)');
+        auraGrad.addColorStop(0.7, 'rgba(20, 184, 166, 0.22)');
+        auraGrad.addColorStop(1, 'rgba(13, 148, 136, 0)');
+        this.ctx.fillStyle = auraGrad;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py + ph / 2, 34 + auraPulse, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        if (this.frameCount % 4 === 0) {
+          this.particles.push({
+            x: px + Math.random() * pw,
+            y: py + ph - 2,
+            vx: (Math.random() - 0.5) * 1.5,
+            vy: -Math.random() * 2.5 - 1.5,
+            size: Math.random() * 5 + 2,
+            color: Math.random() > 0.5 ? '#2dd4bf' : '#5eead4',
+            life: 18,
+            maxLife: 18
+          });
+        }
+      }
+
       const isMoving = Math.abs(this.pvx) > 0.2;
       const idleBob = (this.pGrounded && !isMoving) ? Math.sin(this.frameCount * 0.09) * 1.5 : 0;
       const legStride = (this.pGrounded && isMoving) ? Math.sin(this.frameCount * 0.35) * 6 : 0;
@@ -18041,6 +19714,78 @@ export class GameEngine {
         this.ctx.ellipse(wingX - this.pFacing * 16, py + 22 - buzz, 10, 5, -this.pFacing * Math.PI / 4, 0, Math.PI * 2);
         this.ctx.fill();
         this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Whitemon') {
+        this.ctx.save();
+        // Pulsing divine halo overhead
+        const haloPulse = Math.sin(this.frameCount * 0.15) * 1.5;
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 2.5;
+        this.ctx.beginPath();
+        this.ctx.ellipse(px + pw / 2, py - 6 + idleBob, 12 + haloPulse, 4, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Soft halo beam
+        const haloBeam = this.ctx.createRadialGradient(px + pw / 2, py - 6 + idleBob, 2, px + pw / 2, py - 6 + idleBob, 16);
+        haloBeam.addColorStop(0, 'rgba(254, 240, 138, 0.4)');
+        haloBeam.addColorStop(1, 'rgba(254, 240, 138, 0)');
+        this.ctx.fillStyle = haloBeam;
+        this.ctx.beginPath();
+        this.ctx.arc(px + pw / 2, py - 6 + idleBob, 16, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Majestic angelic feathered wings
+        const wingFlap = Math.sin(this.frameCount * 0.18) * 6;
+        const wingBaseX = this.pFacing === 1 ? px + 4 : px + pw - 4;
+        this.ctx.fillStyle = '#f8fafc';
+        this.ctx.strokeStyle = '#38bdf8';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.beginPath();
+        this.ctx.moveTo(wingBaseX, py + 14 + idleBob);
+        this.ctx.quadraticCurveTo(wingBaseX - this.pFacing * 24, py - 8 + idleBob + wingFlap, wingBaseX - this.pFacing * 32, py + 4 + idleBob + wingFlap);
+        this.ctx.quadraticCurveTo(wingBaseX - this.pFacing * 18, py + 22 + idleBob, wingBaseX, py + 24 + idleBob);
+        this.ctx.closePath();
+        this.ctx.fill();
+        this.ctx.stroke();
+
+        this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Shieldmon' && this.shieldmonDashTimer > 0) {
+        this.ctx.save();
+        const barrierPulse = Math.sin(this.frameCount * 0.4) * 3;
+        const frontX = this.pFacing === 1 ? px + pw + 8 : px - 8;
+        this.ctx.strokeStyle = '#60a5fa';
+        this.ctx.lineWidth = 4;
+        this.ctx.beginPath();
+        this.ctx.arc(frontX, py + ph / 2, 28 + barrierPulse, -Math.PI * 0.4, Math.PI * 0.4);
+        this.ctx.stroke();
+
+        this.ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+        this.ctx.lineWidth = 2;
+        this.ctx.beginPath();
+        this.ctx.arc(frontX + this.pFacing * 4, py + ph / 2, 22, -Math.PI * 0.35, Math.PI * 0.35);
+        this.ctx.stroke();
+        this.ctx.restore();
+      }
+
+      if (this.selectedDraco === 'Archermon') {
+        if (this.frameCount % 5 === 0) {
+          const windAng = this.frameCount * 0.2;
+          const wx = px + pw / 2 + Math.cos(windAng) * 20;
+          const wy = py + ph / 2 + Math.sin(windAng) * 12;
+          this.particles.push({
+            x: wx,
+            y: wy,
+            vx: -Math.sin(windAng) * 1.5,
+            vy: -1.2,
+            size: Math.random() * 3.5 + 1.5,
+            color: Math.random() > 0.5 ? '#10b981' : '#a7f3d0',
+            life: 12,
+            maxLife: 12
+          });
+        }
       }
 
       this.ctx.fillStyle = accentColor;
@@ -20737,29 +22482,84 @@ export class GameEngine {
         this.ctx.rotate(swingRad);
 
         if (this.selectedDraco === 'Archermon') {
-          this.ctx.strokeStyle = '#34d399';
-          this.ctx.lineWidth = 3;
+          // Modern Recurve Longbow with energetic bowstring and glowing arrow
+          this.ctx.strokeStyle = '#059669';
+          this.ctx.lineWidth = 3.5;
           this.ctx.beginPath();
-          this.ctx.arc(0, 0, 24, -0.6, 0.6);
+          this.ctx.arc(0, 0, 26, -0.75, 0.75);
           this.ctx.stroke();
 
-          this.ctx.fillStyle = 'rgba(52, 211, 153, 0.35)';
+          // Golden tips
+          this.ctx.fillStyle = '#fef08a';
           this.ctx.beginPath();
-          this.ctx.arc(0, 0, 32, -0.8, 0.2);
+          this.ctx.arc(Math.cos(-0.75) * 26, Math.sin(-0.75) * 26, 3, 0, Math.PI * 2);
+          this.ctx.arc(Math.cos(0.75) * 26, Math.sin(0.75) * 26, 3, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Taut energetic bowstring
+          this.ctx.strokeStyle = '#a7f3d0';
+          this.ctx.lineWidth = 1.2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(Math.cos(-0.75) * 26, Math.sin(-0.75) * 26);
+          this.ctx.lineTo(-8, 0);
+          this.ctx.lineTo(Math.cos(0.75) * 26, Math.sin(0.75) * 26);
+          this.ctx.stroke();
+
+          // Glowing emerald energy arrow
+          this.ctx.strokeStyle = '#10b981';
+          this.ctx.lineWidth = 2;
+          this.ctx.beginPath();
+          this.ctx.moveTo(-6, 0);
+          this.ctx.lineTo(28, 0);
+          this.ctx.stroke();
+
+          // Radiant arrowhead
+          this.ctx.fillStyle = '#6ee7b7';
+          this.ctx.beginPath();
+          this.ctx.moveTo(34, 0);
+          this.ctx.lineTo(26, -4);
+          this.ctx.lineTo(26, 4);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          // Emerald wind swing trail
+          this.ctx.fillStyle = 'rgba(52, 211, 153, 0.28)';
+          this.ctx.beginPath();
+          this.ctx.arc(0, 0, 36, -0.85, 0.35);
           this.ctx.lineTo(0, 0);
           this.ctx.closePath();
           this.ctx.fill();
         } else if (this.selectedDraco === 'Shieldmon') {
-          this.ctx.fillStyle = '#60a5fa';
-          this.ctx.strokeStyle = '#1d4ed8';
-          this.ctx.lineWidth = 2.5;
-          this.ctx.fillRect(4, -14, 12, 28);
-          this.ctx.strokeRect(4, -14, 12, 28);
-
-          this.ctx.strokeStyle = 'rgba(96, 165, 250, 0.6)';
-          this.ctx.lineWidth = 4;
+          // Modern Layered Heavy Aegis Kite Shield
+          const shieldGrad = this.ctx.createLinearGradient(4, -18, 18, 18);
+          shieldGrad.addColorStop(0, '#60a5fa');
+          shieldGrad.addColorStop(0.5, '#2563eb');
+          shieldGrad.addColorStop(1, '#1e3a8a');
+          this.ctx.fillStyle = shieldGrad;
+          this.ctx.strokeStyle = '#93c5fd';
+          this.ctx.lineWidth = 2;
           this.ctx.beginPath();
-          this.ctx.arc(0, 0, 28, -0.5, 0.5);
+          this.ctx.moveTo(4, -18);
+          this.ctx.lineTo(18, -16);
+          this.ctx.lineTo(16, 12);
+          this.ctx.lineTo(4, 20);
+          this.ctx.lineTo(-2, 12);
+          this.ctx.lineTo(0, -16);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          // Shield Golden Boss Emblem
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.beginPath();
+          this.ctx.arc(8, 0, 4, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          // Kinetic Shield Bash Shockwave Edge
+          this.ctx.strokeStyle = 'rgba(147, 197, 253, 0.85)';
+          this.ctx.lineWidth = 3.5;
+          this.ctx.beginPath();
+          this.ctx.arc(10, 0, 24, -0.6, 0.6);
           this.ctx.stroke();
         } else if (this.selectedDraco === 'Assassinmon') {
           this.ctx.fillStyle = '#1e1b4b';
@@ -20794,12 +22594,27 @@ export class GameEngine {
           this.ctx.closePath();
           this.ctx.fill();
 
+          // ASSASSINMON SCEPTER: Shining Blade Radiant Aura
+          if (this.assassinmonScepterActive) {
+            const bladeGlow = Math.sin(this.frameCount * 0.25) * 4;
+            this.ctx.save();
+            this.ctx.shadowColor = '#e879f9';
+            this.ctx.shadowBlur = 18 + bladeGlow;
+            this.ctx.strokeStyle = '#fdf4ff';
+            this.ctx.lineWidth = 3;
+            this.ctx.beginPath();
+            this.ctx.moveTo(13, -3);
+            this.ctx.lineTo(46, 0);
+            this.ctx.stroke();
+            this.ctx.restore();
+          }
+
           this.ctx.save();
           this.ctx.rotate(-swingRad * 0.4);
 
           const grad = this.ctx.createRadialGradient(0, 0, 12, 0, 0, 50);
-          grad.addColorStop(0, 'rgba(192, 132, 252, 0.9)');
-          grad.addColorStop(0.5, 'rgba(168, 85, 247, 0.5)');
+          grad.addColorStop(0, this.assassinmonScepterActive ? 'rgba(232, 121, 249, 0.95)' : 'rgba(192, 132, 252, 0.9)');
+          grad.addColorStop(0.5, this.assassinmonScepterActive ? 'rgba(244, 114, 182, 0.6)' : 'rgba(168, 85, 247, 0.5)');
           grad.addColorStop(1, 'rgba(168, 85, 247, 0)');
 
           this.ctx.fillStyle = grad;
@@ -20928,17 +22743,49 @@ export class GameEngine {
         this.ctx.scale(this.pFacing, 1);
 
         if (this.selectedDraco === 'Archermon') {
-          this.ctx.strokeStyle = '#ca8a04';
-          this.ctx.lineWidth = 2.5;
+          // Modern Recurve Bow in idle state
+          this.ctx.strokeStyle = '#059669';
+          this.ctx.lineWidth = 3;
           this.ctx.beginPath();
-          this.ctx.arc(6, 0, 10, -Math.PI / 2, Math.PI / 2);
+          this.ctx.arc(6, 0, 14, -Math.PI * 0.45, Math.PI * 0.45);
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = '#fef08a';
+          this.ctx.beginPath();
+          this.ctx.arc(6 + Math.cos(-Math.PI * 0.45) * 14, Math.sin(-Math.PI * 0.45) * 14, 2, 0, Math.PI * 2);
+          this.ctx.arc(6 + Math.cos(Math.PI * 0.45) * 14, Math.sin(Math.PI * 0.45) * 14, 2, 0, Math.PI * 2);
+          this.ctx.fill();
+
+          this.ctx.strokeStyle = '#a7f3d0';
+          this.ctx.lineWidth = 1;
+          this.ctx.beginPath();
+          this.ctx.moveTo(6 + Math.cos(-Math.PI * 0.45) * 14, Math.sin(-Math.PI * 0.45) * 14);
+          this.ctx.lineTo(6 + Math.cos(Math.PI * 0.45) * 14, Math.sin(Math.PI * 0.45) * 14);
           this.ctx.stroke();
         } else if (this.selectedDraco === 'Shieldmon') {
-          this.ctx.fillStyle = '#475569';
-          this.ctx.strokeStyle = '#1e293b';
-          this.ctx.lineWidth = 2;
-          this.ctx.fillRect(2, -12, 10, 24);
-          this.ctx.strokeRect(2, -12, 10, 24);
+          // Modern Layered Heavy Aegis Kite Shield in idle state
+          const shieldGrad = this.ctx.createLinearGradient(2, -14, 14, 14);
+          shieldGrad.addColorStop(0, '#60a5fa');
+          shieldGrad.addColorStop(0.6, '#2563eb');
+          shieldGrad.addColorStop(1, '#1e3a8a');
+          this.ctx.fillStyle = shieldGrad;
+          this.ctx.strokeStyle = '#93c5fd';
+          this.ctx.lineWidth = 1.8;
+          this.ctx.beginPath();
+          this.ctx.moveTo(2, -14);
+          this.ctx.lineTo(14, -12);
+          this.ctx.lineTo(12, 10);
+          this.ctx.lineTo(2, 16);
+          this.ctx.lineTo(-4, 10);
+          this.ctx.lineTo(-2, -12);
+          this.ctx.closePath();
+          this.ctx.fill();
+          this.ctx.stroke();
+
+          this.ctx.fillStyle = '#fbbf24';
+          this.ctx.beginPath();
+          this.ctx.arc(5, 0, 3, 0, Math.PI * 2);
+          this.ctx.fill();
         } else if (this.selectedDraco === 'Assassinmon') {
           if (this.assassinmonDashActive) {
             this.ctx.fillStyle = '#1e1b4b';
@@ -20990,6 +22837,22 @@ export class GameEngine {
             this.ctx.closePath();
             this.ctx.fill();
             this.ctx.stroke();
+
+            // ASSASSINMON SCEPTER: Shining Blade Radiant Sheen in idle state
+            if (this.assassinmonScepterActive) {
+              const bladeGlow = Math.sin(this.frameCount * 0.2) * 3;
+              this.ctx.save();
+              this.ctx.shadowColor = '#e879f9';
+              this.ctx.shadowBlur = 14 + bladeGlow;
+              this.ctx.strokeStyle = '#f472b6';
+              this.ctx.lineWidth = 2.5;
+              this.ctx.beginPath();
+              this.ctx.moveTo(10, -2);
+              this.ctx.lineTo(38, -3);
+              this.ctx.lineTo(44, 0);
+              this.ctx.stroke();
+              this.ctx.restore();
+            }
           }
         } else if (this.selectedDraco === 'Flymon') {
           this.ctx.fillStyle = '#f43f5e';
@@ -21083,6 +22946,32 @@ export class GameEngine {
       this.ctx.beginPath();
       this.ctx.arc(centerX, centerY, radius - 8, this.frameCount * 0.05, Math.PI * 2 + this.frameCount * 0.05);
       this.ctx.stroke();
+      this.ctx.setLineDash([]);
+
+      // Hexagonal energy node lattice around dome perimeter
+      const nodes = 8;
+      for (let n = 0; n < nodes; n++) {
+        const nodeAngle = (n / nodes) * Math.PI * 2 + this.frameCount * 0.02;
+        const nx = centerX + Math.cos(nodeAngle) * (radius - 4);
+        const ny = centerY + Math.sin(nodeAngle) * (radius - 4);
+        this.ctx.fillStyle = '#93c5fd';
+        this.ctx.beginPath();
+        this.ctx.arc(nx, ny, 3.5, 0, Math.PI * 2);
+        this.ctx.fill();
+        this.ctx.strokeStyle = '#ffffff';
+        this.ctx.lineWidth = 1.2;
+        this.ctx.stroke();
+      }
+
+      if (this.hasScepter) {
+        const isExpiringSoon = this.avatarDuration <= 40;
+        this.ctx.strokeStyle = isExpiringSoon && this.frameCount % 4 < 2 ? '#ffffff' : '#38bdf8';
+        this.ctx.lineWidth = isExpiringSoon ? 6 : 3;
+        this.ctx.beginPath();
+        this.ctx.arc(centerX, centerY, radius + 4, 0, Math.PI * 2);
+        this.ctx.stroke();
+      }
+
       this.ctx.restore();
     }
 
@@ -21114,6 +23003,37 @@ export class GameEngine {
           this.ctx.lineTo(ax, zone.y - ah);
           this.ctx.lineTo(ax + 6, zone.y + 2);
           this.ctx.stroke();
+        }
+      } else if (zone.isBluishFlame) {
+        const burnGrad = this.ctx.createLinearGradient(zone.x, zone.y - 8, zone.x, zone.y + 6);
+        burnGrad.addColorStop(0, 'rgba(224, 242, 254, 0.95)');
+        burnGrad.addColorStop(0.35, 'rgba(56, 189, 248, 0.85)');
+        burnGrad.addColorStop(0.7, 'rgba(37, 99, 235, 0.65)');
+        burnGrad.addColorStop(1, 'rgba(30, 58, 138, 0.0)');
+
+        this.ctx.fillStyle = burnGrad;
+        this.ctx.fillRect(zone.x, zone.y - 4, zone.width, 8);
+
+        const numFlames = Math.floor(zone.width / 10);
+        for (let f = 0; f < numFlames; f++) {
+          const fx = zone.x + f * 10 + 5;
+          const fh = 12 + Math.sin(this.frameCount * 0.45 + f * 1.5) * 7;
+
+          this.ctx.fillStyle = f % 2 === 0 ? '#38bdf8' : '#bfdbfe';
+          this.ctx.beginPath();
+          this.ctx.moveTo(fx - 5, zone.y + 2);
+          this.ctx.lineTo(fx, zone.y - fh);
+          this.ctx.lineTo(fx + 5, zone.y + 2);
+          this.ctx.closePath();
+          this.ctx.fill();
+
+          this.ctx.fillStyle = '#ffffff';
+          this.ctx.beginPath();
+          this.ctx.moveTo(fx - 2, zone.y);
+          this.ctx.lineTo(fx, zone.y - fh * 0.55);
+          this.ctx.lineTo(fx + 2, zone.y);
+          this.ctx.closePath();
+          this.ctx.fill();
         }
       } else {
         const burnGrad = this.ctx.createLinearGradient(zone.x, zone.y - 8, zone.x, zone.y + 6);
@@ -24505,18 +26425,40 @@ export class GameEngine {
 
     if (this.flymonTornadoActive) {
       this.flymonTornadoTimer--;
+      const isScepterFlymon = this.selectedDraco === 'Flymon' && this.hasScepter;
+
       if (this.flymonTornadoTimer <= 0) {
         this.flymonTornadoActive = false;
+        if (isScepterFlymon) {
+          const tx = this.flymonTornadoX;
+          const ty = this.flymonTornadoY;
+          this.enemies.forEach(enemy => {
+            if (enemy.hp <= 0) return;
+            const dist = Math.hypot(enemy.x + enemy.width / 2 - tx, enemy.y + enemy.height / 2 - ty);
+            if ((enemy as any).isLiftedByTornado || dist <= 260) {
+              (enemy as any).isLiftedByTornado = false;
+              enemy.vy = 18; // Heavy fall crash
+              const fallDmg = Math.floor(this.stats.attack * 3.2);
+              this.damageEnemy(enemy, fallDmg);
+              enemy.stunnedTimer = 120; // 2 seconds stun
+              soundService.playHit();
+              this.addFloatingText(enemy.x + enemy.width / 2, enemy.y - 15, FT_TORNADO_FALL_SLAM.text, FT_TORNADO_FALL_SLAM.color, true);
+              this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height, 18, '#06b6d4');
+            }
+          });
+          this.screenShake = 18;
+        }
       } else {
         this.pvy = 0; // Hover player
         const tx = this.flymonTornadoX;
         const ty = this.flymonTornadoY;
-        const suckRadius = 300;
-        const coreRadius = 150;
+        const suckRadius = isScepterFlymon ? 350 : 300;
+        const coreRadius = isScepterFlymon ? 180 : 150;
 
         // Visual tornado swirling particles
         if (this.frameCount % 2 === 0) {
-          for (let i = 0; i < 4; i++) {
+          const particleCount = isScepterFlymon ? 7 : 4;
+          for (let i = 0; i < particleCount; i++) {
             const angle = Math.random() * Math.PI * 2;
             const dist = Math.random() * coreRadius;
             const px = tx + Math.cos(angle) * dist;
@@ -24527,7 +26469,7 @@ export class GameEngine {
               vx: -Math.sin(angle) * (3.0 + Math.random() * 2),
               vy: -Math.random() * 4.0 - 1.5,
               size: Math.random() * 5 + 2,
-              color: i % 2 === 0 ? '#06b6d4' : '#a5f3fc',
+              color: i % 2 === 0 ? '#06b6d4' : (isScepterFlymon && i % 3 === 0 ? '#fef08a' : '#a5f3fc'),
               life: 20,
               maxLife: 20
             });
@@ -24545,28 +26487,30 @@ export class GameEngine {
             const dx = tx - ex;
             const dy = ty - ey;
             const len = Math.hypot(dx, dy) || 1;
-            const pullForce = (1 - dist / suckRadius) * 6.5;
+            const pullForce = (1 - dist / suckRadius) * (isScepterFlymon ? 13.0 : 6.5);
 
             // Horizontal pull to center
             enemy.x += (dx / len) * pullForce;
 
-            // Lift them up vertically when they get close to the core (dist <= 100)
-            if (dist <= 100) {
-              enemy.y -= 4.5;
-              enemy.vy = -2.0;
+            // Lift them up vertically when they get close to the core
+            if (dist <= 110) {
+              enemy.y -= isScepterFlymon ? 7.0 : 4.5;
+              enemy.vy = -2.5;
               (enemy as any).isGrounded = false;
               (enemy as any).isLiftedByTornado = true;
               // Swirl effect
-              enemy.x += Math.sin(this.frameCount * 0.2 + enemy.id) * 3.5;
+              enemy.x += Math.sin(this.frameCount * 0.2 + enemy.id) * 4.0;
             } else {
               (enemy as any).isLiftedByTornado = false;
             }
 
-            // Periodic damage inside the tornado core (dist <= coreRadius)
+            // Periodic damage inside the tornado core: DoT every 8 frames if Scepter (15 frames default)
             if (dist <= coreRadius) {
-              if (this.frameCount % 15 === 0) {
-                this.damageEnemy(enemy, Math.floor(this.stats.attack * 0.8));
-                this.screenShake = 6;
+              const tickRate = isScepterFlymon ? 8 : 15;
+              if (this.frameCount % tickRate === 0) {
+                const dotDmg = Math.floor(this.stats.attack * (isScepterFlymon ? 1.25 : 0.8));
+                this.damageEnemy(enemy, dotDmg);
+                this.screenShake = isScepterFlymon ? 8 : 6;
               }
             }
           } else {
@@ -24580,6 +26524,30 @@ export class GameEngine {
       this.avatarDuration--;
       if (this.avatarDuration <= 0) {
         this.avatarActive = false;
+        if (this.selectedDraco === 'Shieldmon' && this.hasScepter) {
+          this.triggerShieldmonDomeExplosion();
+        }
+      }
+    }
+
+    if (this.jumpmonPlanetfallTimer > 0) {
+      this.jumpmonPlanetfallTimer--;
+    }
+    if (this.assassinmonScepterTimer > 0) {
+      this.assassinmonScepterTimer--;
+      if (this.assassinmonScepterTimer <= 0) {
+        this.assassinmonScepterActive = false;
+      }
+    }
+    this.updatePlanetfallEchoes();
+    this.updateArchermonExplosions();
+    this.updateThunderRelics();
+    for (let i = this.shieldmonDomeDetonations.length - 1; i >= 0; i--) {
+      const d = this.shieldmonDomeDetonations[i];
+      d.timer--;
+      d.radius += (d.maxRadius - d.radius) * 0.22;
+      if (d.timer <= 0) {
+        this.shieldmonDomeDetonations.splice(i, 1);
       }
     }
 
@@ -24733,5 +26701,57 @@ export class GameEngine {
         });
       }
     }
+  }
+
+  private triggerAssassinmonScreenSlash(cx: number, cy: number) {
+    soundService.playHit();
+    this.screenShake = 35;
+
+    // Cross-screen dimensional slashes
+    for (let s = 0; s < 4; s++) {
+      const slashAngle = (s * Math.PI / 4) + (Math.random() - 0.5) * 0.2;
+      for (let p = -8; p <= 8; p++) {
+        this.particles.push({
+          x: cx + Math.cos(slashAngle) * (p * 25),
+          y: cy + Math.sin(slashAngle) * (p * 25),
+          vx: Math.cos(slashAngle + Math.PI / 2) * (Math.random() * 6 - 3),
+          vy: Math.sin(slashAngle + Math.PI / 2) * (Math.random() * 6 - 3),
+          size: Math.random() * 6 + 2,
+          color: p % 2 === 0 ? '#f472b6' : '#c084fc',
+          life: 18,
+          maxLife: 18
+        });
+      }
+    }
+
+    // Radial burst sparks
+    for (let p = 0; p < 35; p++) {
+      const ang = Math.random() * Math.PI * 2;
+      const spd = Math.random() * 12 + 4;
+      this.particles.push({
+        x: cx,
+        y: cy,
+        vx: Math.cos(ang) * spd,
+        vy: Math.sin(ang) * spd,
+        size: Math.random() * 8 + 3,
+        color: p % 3 === 0 ? '#ffffff' : p % 3 === 1 ? '#e879f9' : '#a855f7',
+        life: 28,
+        maxLife: 28
+      });
+    }
+
+    // Lethal slash deals heavy damage to all living enemies
+    let hitCount = 0;
+    this.enemies.forEach(enemy => {
+      if (enemy.hp > 0) {
+        hitCount++;
+        const slashDmg = Math.floor(this.stats.attack * 2.8);
+        this.damageEnemy(enemy, slashDmg);
+        this.spawnDustParticles(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, 10, '#c084fc');
+      }
+    });
+
+    this.addFloatingText(cx, cy - 25, FT_ASSASSIN_RESET.text, FT_ASSASSIN_RESET.color, true);
+    this.assassinmonScepterTimer = 480; // Reset 8s buff duration
   }
 }
