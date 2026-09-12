@@ -857,6 +857,12 @@ export class GameEngine {
       soundService.playHit();
     }
 
+    if (reason === 'Damage' || reason === 'Hit' || reason === 'Stun') {
+      this.playerStunnedTimer = 120; // 2s stun if interrupted by damage or hit
+      this.pvx = 0;
+      this.addFloatingText(this.px + this.pWidth / 2, this.py - 45, FT_STUNNED.text, FT_STUNNED.color, true);
+    }
+
     this.channelingSpell = null;
     this.channelingTimer = 0;
   }
@@ -2004,6 +2010,11 @@ export class GameEngine {
   }
 
   public triggerAction(action: 'left' | 'right' | 'jump' | 'attack' | 'special' | 'ultimate' | 'down' | 'scepter') {
+    if (this.playerStunnedTimer > 0 || (this.selectedDraco === 'Megumon' && (this.megumonChanneling || this.megumonExplosionActive))) {
+      if (action === 'left' || action === 'right' || action === 'jump' || action === 'attack' || action === 'special' || action === 'ultimate') {
+        return;
+      }
+    }
     if (action === 'left') {
       this.keys['a'] = true;
       this.keys['d'] = false;
@@ -2044,8 +2055,13 @@ export class GameEngine {
 
   private jump() {
     if (this.isPaused || this.pHP <= 0) return;
+    if (this.playerStunnedTimer > 0) return;
+    if (this.selectedDraco === 'Megumon' && (this.megumonChanneling || this.megumonExplosionActive)) return;
 
     if (this.isChanneling) {
+      if (this.channelingSpell === 'crimson_demon_explosion') {
+        return; // Megumon cannot jump or move at all during channeling
+      }
       this.cancelChanneling('Jump');
     }
 
@@ -2136,6 +2152,8 @@ export class GameEngine {
 
   private performAttack() {
     if (this.isPaused || this.pHP <= 0 || this.attackCooldown > 0) return;
+    if (this.playerStunnedTimer > 0) return;
+    if (this.selectedDraco === 'Megumon' && (this.megumonChanneling || this.megumonExplosionActive)) return;
 
     this.isAttacking = true;
     this.attackDuration = 10;
@@ -3071,6 +3089,8 @@ export class GameEngine {
 
   private performSpecial() {
     if (this.isPaused || this.pHP <= 0 || this.specialCooldown > 0) return;
+    if (this.playerStunnedTimer > 0) return;
+    if (this.selectedDraco === 'Megumon' && (this.megumonChanneling || this.megumonExplosionActive)) return;
 
     if (this.selectedDraco === 'Shieldmon') {
       soundService.playBlock();
@@ -4563,6 +4583,8 @@ export class GameEngine {
 
   private triggerUltimate() {
     if (this.isPaused || this.pHP <= 0 || this.ultimateCinematicActive) return;
+    if (this.playerStunnedTimer > 0) return;
+    if (this.selectedDraco === 'Megumon' && (this.megumonChanneling || this.megumonExplosionActive)) return;
 
     const dracoLevel = (this.stats as any).level || 1;
     if (dracoLevel < 5) {
@@ -4574,7 +4596,7 @@ export class GameEngine {
     const cost = this.getUltimateCost();
     if (this.selectedDraco === 'Megumon') {
       if (this.pEnergy >= 300) {
-        // Does not deduct immediately; channeling drains 100/s until 0
+        // Does not deduct immediately; channeling drains 150/s until 0
         this.ultimateCinematicActive = true;
         this.ultimateCinematicDuration = 75;
         soundService.playLevelUp();
@@ -5470,6 +5492,7 @@ export class GameEngine {
       this.isChanneling = true;
       this.channelingSpell = 'crimson_demon_explosion';
       this.megumonChanneling = true;
+      this.megumonManaConvergenceTimer = 0; // Clear mana convergence so energy drain is strictly 150/s
       this.channelingTimer = 120; // 2 seconds (drains 150/sec from 300 energy)
       this.channelingMaxDuration = 120;
 
@@ -7055,9 +7078,13 @@ export class GameEngine {
     const _ftDmg = FT_DAMAGE(netDamage); this.addFloatingText(this.px + this.pWidth / 2, this.py, _ftDmg.text, _ftDmg.color);
     this.spawnDustParticles(this.px + this.pWidth / 2, this.py + this.pHeight / 2, 10, '#ef4444');
 
-    const dir = this.px > sourceX ? 1 : -1;
-    this.pvx = dir * 3.5;
-    this.pvy = -3;
+    if (this.playerStunnedTimer > 0 || (this.selectedDraco === 'Megumon' && (this.megumonChanneling || this.megumonExplosionActive))) {
+      this.pvx = 0;
+    } else {
+      const dir = this.px > sourceX ? 1 : -1;
+      this.pvx = dir * 3.5;
+      this.pvy = -3;
+    }
 
     if (this.pHP <= 0) {
       this.callbacks.onPlayerDeath();
@@ -9121,7 +9148,9 @@ export class GameEngine {
         this.addFloatingText(this.px + this.pWidth / 2, this.py - 20, FT_STUNNED.text, FT_STUNNED.color);
       }
       if (this.isChanneling) this.cancelChanneling('Stun');
-      return;
+      if (this.pGrounded) {
+        return;
+      }
     }
 
     if (this.isChanneling) {
@@ -9136,10 +9165,11 @@ export class GameEngine {
         this.keys['arrowdown'] ||
         this.keys[' '];
 
-      if (isMovingInput) {
+      if (isMovingInput && this.channelingSpell !== 'crimson_demon_explosion') {
         this.cancelChanneling('Movement');
       } else if (this.channelingSpell === 'crimson_demon_explosion') {
-        // Megumon Channeling: drain 150 energy/s (150 / 60 per frame, 300 total over 2 seconds)
+        // Megumon Channeling: she cannot move at all; drain 150 energy/s (150 / 60 per frame, 300 total over 2 seconds)
+        this.pvx = 0;
         this.pEnergy = Math.max(0, this.pEnergy - (150 / 60));
         this.channelingTimer = Math.max(0, this.channelingTimer - 1);
         this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
@@ -9161,7 +9191,9 @@ export class GameEngine {
           });
         }
 
-        if (this.pEnergy <= 0) {
+        if (this.pEnergy <= 0 || this.channelingTimer <= 0) {
+          this.pEnergy = 0;
+          this.callbacks.onEnergyChange?.(0, this.getMaxEnergy());
           // Channeling completed! Initiate sky beam descent transition followed by ground detonation
           this.isChanneling = false;
           this.channelingSpell = null;
@@ -9598,7 +9630,10 @@ export class GameEngine {
       }
     } else {
       const effectiveSpeed = Math.min(20, this.stats.speed);
-      if (this.keys['a'] || this.keys['arrowleft']) {
+      const isImmobilized = this.playerStunnedTimer > 0 || (this.selectedDraco === 'Megumon' && (this.megumonChanneling || this.megumonExplosionActive));
+      if (isImmobilized) {
+        this.pvx = 0;
+      } else if (this.keys['a'] || this.keys['arrowleft']) {
         this.pvx -= (effectiveSpeed * 0.08) * speedMultiplier;
         this.pFacing = -1;
       } else if (this.keys['d'] || this.keys['arrowright']) {
@@ -22393,8 +22428,8 @@ export class GameEngine {
             this.ctx.beginPath();
             this.ctx.arc(0, 0, 36, -0.4, 0.4);
             this.ctx.stroke();
-          } else if (this.megumonChanneling) {
-            // --- Channeling Ultimate Pose: Staff Held Forward Pointing at Target ---
+          } else if (this.megumonChanneling || this.megumonExplosionActive) {
+            // --- Channeling / Casting Ultimate Pose: Staff Held Forward Pointing at Target ---
             const aimAngle = this.pFacing === 1 ? -0.2 : Math.PI + 0.2;
             this.ctx.translate(staffBaseX, staffBaseY);
             this.ctx.rotate(aimAngle);
@@ -25916,17 +25951,38 @@ export class GameEngine {
         this.ctx.fillStyle = '#ffffff';
         this.ctx.fillRect(targetX - 8, skyY, 16, currentTipY - skyY);
 
-        // Blinding Arrowhead Tip of the descending beam
-        this.ctx.fillStyle = '#ffffff';
+        // Blinding Celestial Plasma Sphere / Oval Head of the descending beam (smooth circle/oval front, no triangle)
+        const orbRadiusX = spearWidth * 0.75;
+        const orbRadiusY = spearWidth * 0.68; // Smooth oval/circular plasma head
+
+        // Outer radiant energy aura at the beam head
+        const orbGrad = this.ctx.createRadialGradient(targetX, currentTipY, 4, targetX, currentTipY, orbRadiusX);
+        orbGrad.addColorStop(0, '#ffffff');
+        orbGrad.addColorStop(0.25, 'rgba(254, 240, 138, 0.95)');
+        orbGrad.addColorStop(0.55, 'rgba(239, 68, 68, 0.85)');
+        orbGrad.addColorStop(0.85, 'rgba(185, 28, 28, 0.5)');
+        orbGrad.addColorStop(1, 'rgba(220, 38, 38, 0)');
+        this.ctx.fillStyle = orbGrad;
         this.ctx.beginPath();
-        this.ctx.moveTo(targetX, currentTipY + 30);
-        this.ctx.lineTo(targetX - spearWidth * 0.7, currentTipY - 12);
-        this.ctx.lineTo(targetX + spearWidth * 0.7, currentTipY - 12);
-        this.ctx.closePath();
+        this.ctx.ellipse(targetX, currentTipY, orbRadiusX, orbRadiusY, 0, 0, Math.PI * 2);
         this.ctx.fill();
 
-        // Radiant diamond flare on the descending spearhead
-        const flareR = 26 + Math.sin(this.frameCount * 0.5) * 8;
+        // Intense pure white incandescent core (circle/oval)
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.beginPath();
+        this.ctx.ellipse(targetX, currentTipY, orbRadiusX * 0.48, orbRadiusY * 0.48, 0, 0, Math.PI * 2);
+        this.ctx.fill();
+
+        // Pulsating golden containment corona ring
+        const coronaPulse = Math.sin(this.frameCount * 0.4) * 3;
+        this.ctx.strokeStyle = '#fef08a';
+        this.ctx.lineWidth = 2.8;
+        this.ctx.beginPath();
+        this.ctx.ellipse(targetX, currentTipY, orbRadiusX * 0.72 + coronaPulse, orbRadiusY * 0.72 + coronaPulse, 0, 0, Math.PI * 2);
+        this.ctx.stroke();
+
+        // Radiant diamond flare on the descending orb head
+        const flareR = 28 + Math.sin(this.frameCount * 0.5) * 8;
         this.ctx.strokeStyle = '#fef08a';
         this.ctx.lineWidth = 3;
         this.ctx.beginPath();
@@ -27838,7 +27894,7 @@ export class GameEngine {
       return;
     }
 
-    if (this.pEnergy < this.getMaxEnergy()) {
+    if (!this.isChanneling && this.pEnergy < this.getMaxEnergy()) {
       const frameRegen = (1.0 / 60) * this.energyRegenRate;
       this.pEnergy = Math.min(this.getMaxEnergy(), this.pEnergy + frameRegen);
       this.callbacks.onEnergyChange?.(this.pEnergy, this.getMaxEnergy());
